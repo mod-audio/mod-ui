@@ -82,6 +82,7 @@ class Addressings(object):
     def init(self):
         desc = get_hardware_descriptor()
         self.hw_actuators = desc.get('actuators', [])
+        self.hw_actuators_uris = tuple(a['uri'] for a in self.hw_actuators)
         self.pages_nb = desc.get('pages_nb', 0)
         self.pages_cb = desc.get('pages_cb', 0)
         self.current_page = 0
@@ -91,7 +92,7 @@ class Addressings(object):
         # so per actuator we get:
         #  - 'addrs': list of addressings
         #  - 'idx'  : currently selected addressing (index)
-        self.hmi_addressings = dict((act['uri'], {'addrs': [], 'idx': -1}) for act in self.hw_actuators)
+        self.hmi_addressings = dict((uri, {'addrs': [], 'idx': -1}) for uri in self.hw_actuators_uris)
 
         self.cc_addressings = {}
         self.cc_metadata = {}
@@ -208,7 +209,7 @@ class Addressings(object):
                     continue
 
             # Continue if current actuator_uri is not part of the actual available actuators (hardware, virtual bpm or cc)
-            if actuator_uri not in [actuator['uri'] for actuator in self.hw_actuators] and not is_cc and actuator_uri != kBpmURI:
+            if actuator_uri not in self.hw_actuators_uris and not is_cc and actuator_uri != kBpmURI:
                 continue
 
             i = 0
@@ -576,7 +577,7 @@ class Addressings(object):
             if group is not None:
                 group_actuator = next((act for act in self.hw_actuators if act['uri'] == group), None)
                 if group_actuator is not None and group_actuator['group'].index(actuator_uri) == 0:
-                    hmitype = HMI_ADDRESSING_TYPE_REVERSE_ENUM
+                    hmitype |= HMI_ADDRESSING_TYPE_REVERSE_ENUM
 
             if hmitype & HMI_ADDRESSING_TYPE_SCALE_POINTS:
                 if not tempo and value not in [o[0] for o in options]:
@@ -717,7 +718,7 @@ class Addressings(object):
 
         if actuator_type == self.ADDRESSING_TYPE_HMI:
             group_actuators = self.get_group_actuators(actuator_uri)
-            if group_actuators:
+            if group_actuators is not None:
                 for i in range(len(group_actuators)):
                     group_actuator_uri = group_actuators[i]
                     group_addressing_data = addressing_data.copy()
@@ -981,13 +982,13 @@ class Addressings(object):
         return self.ADDRESSING_TYPE_CC
 
     def get_group_actuators(self, actuator_uri):
-        if not self.is_hmi_actuator(actuator_uri) or actuator_uri not in [a['uri'] for a in self.hw_actuators]:
-            return False
+        if not self.is_hmi_actuator(actuator_uri) or actuator_uri not in self.hw_actuators_uris:
+            return None
 
         actuator = next(a for a in self.hw_actuators if a['uri'] == actuator_uri)
         group_actuators = actuator.get('group', None)
-        if group_actuators is None:
-            return False
+        if group_actuators is None or len(group_actuators) == 0:
+            return None
         return group_actuators
 
     def get_presets_as_options(self, instance_id):

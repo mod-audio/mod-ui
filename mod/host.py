@@ -1761,7 +1761,7 @@ class Host(object):
             if actuator_type == Addressings.ADDRESSING_TYPE_HMI:
                 if actuator_uri not in used_hmi_actuators and was_active:
                     group_actuators = self.addressings.get_group_actuators(actuator_uri)
-                    if group_actuators:
+                    if group_actuators is not None:
                         for i in range(len(group_actuators)):
                             self.add_used_actuators(group_actuators[i], used_hmi_actuators, used_hw_ids)
                     else:
@@ -3641,7 +3641,7 @@ _:b%i
                     old_hw_ids = []
                     old_group_actuators = self.addressings.get_group_actuators(old_actuator_uri)
                     # Unadress all actuators in group
-                    if old_group_actuators:
+                    if old_group_actuators is not None:
                         old_hw_ids = [self.addressings.hmi_uri2hw_map[actuator_uri] for actuator_uri in old_group_actuators]
                     else:
                         old_hw_ids = [self.addressings.hmi_uri2hw_map[old_actuator_uri]]
@@ -3707,11 +3707,11 @@ _:b%i
             needsValueChange = True
 
         group_actuators = self.addressings.get_group_actuators(actuator_uri)
-        if group_actuators:
-            for i in range(len(group_actuators)):
-                group_actuator_uri = group_actuators[i]
+        if group_actuators is not None:
+            for i, group_actuator_uri in enumerate(group_actuators):
                 group_addressing = self.addressings.add(instance_id, pluginData['uri'], portsymbol, group_actuator_uri,
-                                              label, minimum, maximum, steps, value, tempo, dividers, page, actuator_uri)
+                                                        label, minimum, maximum, steps, value,
+                                                        tempo, dividers, page, actuator_uri)
                                               # group=[a for a in group_actuators if a != group_actuator_uri])
                 if group_addressing is None:
                     callback(False)
@@ -4024,7 +4024,7 @@ _:b%i
                 try:
                     if port_addressing:
                         group_actuators = self.addressings.get_group_actuators(port_addressing['actuator_uri'])
-                        if group_actuators:
+                        if group_actuators is not None:
                             def group_callback(ok):
                                 if not ok:
                                     callback(False)
@@ -4064,7 +4064,7 @@ _:b%i
             if port_addressing:
 
                 group_actuators = self.addressings.get_group_actuators(port_addressing['actuator_uri'])
-                if group_actuators:
+                if group_actuators is not None:
                     def group_callback(ok):
                         if not ok:
                             callback(False)
