@@ -3815,7 +3815,8 @@ _:b%i
         logging.error("hmi list banks %d %d", dir_up, bank_id)
 
         if len(self.allpedalboards) == 0:
-            callback(True, "")
+            logging.error("no pedalboards available, cant return any banks (%d %d)", dir_up, bank_id)
+            callback(True, "0 0 0")
             return
 
         if dir_up in (0, 1):
@@ -3827,7 +3828,8 @@ _:b%i
         numBanks = len(banks)
 
         if bank_id < 0 or bank_id >= numBanks:
-            callback(True, "")
+            logging.error("hmi wants out of bounds pedalboard data (%d %d)", dir_up, bank_id)
+            callback(True)
             return
 
         if numBanks <= 9 or bank_id < 4:
@@ -3858,8 +3860,9 @@ _:b%i
         # TODO: do something with page parameter
 
         if bank_id < 0 or bank_id > len(self.banks):
-            logging.error("Trying to list pedalboards using out of bounds bank id %d", bank_id)
-            callback(False, "")
+            logging.error("Trying to list pedalboards with an out of bounds bank id (%d %d %d)",
+                          props, pedalboard_id, bank_id)
+            callback(False)
             return
 
         dir_up  = props & HMI_LIST_PAGE_UP
@@ -3878,7 +3881,8 @@ _:b%i
 
         if pedalboard_id < 0 or pedalboard_id >= numPedals:
             if not wrap:
-                callback(True, "")
+                logging.error("hmi wants out of bounds pedalboard data (%d %d %d)", props, pedalboard_id, bank_id)
+                callback(True)
                 return
             # wrap around mode, neat
             if pedalboard_id < 0:
