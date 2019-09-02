@@ -3693,7 +3693,7 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
     }
 
     memset(&info, 0, sizeof(PedalboardInfo));
-    info.midi_legacy_mode = true;
+    info.midi_separated_mode = true;
 
     // define the needed stuff
     LilvNode* const ingen_arc       = lilv_new_uri(w, LILV_NS_INGEN "arc");
@@ -3995,13 +3995,13 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
                 handled_port_uris.push_back(portsym_s);
             }
 #endif
-
-            if (strcmp(portsym, "midi_legacy_mode") == 0)
+            // we began calling it legacy first, but separated makes more sense
+            if (strcmp(portsym, "midi_legacy_mode") == 0 || strcmp(portsym, "midi_separated_mode") == 0)
             {
-                if (LilvNode* const legacy = lilv_world_get(w, hwport, ingen_value, nullptr))
+                if (LilvNode* const separated = lilv_world_get(w, hwport, ingen_value, nullptr))
                 {
-                    info.midi_legacy_mode = lilv_node_as_int(legacy) != 0;
-                    lilv_node_free(legacy);
+                    info.midi_separated_mode = lilv_node_as_int(separated) != 0;
+                    lilv_node_free(separated);
                 }
                 lilv_free(portsym);
                 continue;

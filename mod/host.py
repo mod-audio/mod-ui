@@ -1422,7 +1422,7 @@ class Host(object):
             if has_midi_merger_output_port():
                 websocket.write_message("add_hw_port /graph/midi_merger_out midi 0 All_MIDI_In 1")
 
-        else: # 'legacy' mode until version 1.6
+        else:
             if self.hasSerialMidiIn:
                 websocket.write_message("add_hw_port /graph/serial_midi_in midi 0 Serial_MIDI_In 0")
 
@@ -2424,7 +2424,7 @@ class Host(object):
                     'title': "",
                     'width': 0,
                     'height': 0,
-                    'midi_legacy_mode': False,
+                    'midi_separated_mode': False,
                     'connections': [],
                     'plugins': [],
                     'timeInfo': {
@@ -2436,7 +2436,7 @@ class Host(object):
         self.msg_callback("loading_start %i 0" % int(isDefault))
         self.msg_callback("size %d %d" % (pb['width'],pb['height']))
 
-        midi_aggregated_mode = not pb.get('midi_legacy_mode', True)
+        midi_aggregated_mode = not pb.get('midi_separated_mode', True)
 
         if self.midi_aggregated_mode != midi_aggregated_mode:
             self.send_notmodified("feature_enable aggregated-midi {}".format(int(midi_aggregated_mode)))
@@ -3267,7 +3267,7 @@ _:b%i
         # MIDI Aggregated Mode
         index += 1
         ports += """
-<midi_legacy_mode>
+<midi_separated_mode>
     ingen:value %i ;
     lv2:index %i ;
     a atom:AtomPort ,
@@ -3313,7 +3313,7 @@ _:b%i
             pbdata += "    ingen:block <%s> ;\n" % args
 
         # Ports
-        portsyms = [":bpb",":bpm",":rolling","midi_legacy_mode","control_in","control_out"]
+        portsyms = [":bpb",":bpm",":rolling","midi_separated_mode","control_in","control_out"]
         if self.hasSerialMidiIn:
             portsyms.append("serial_midi_in")
         if self.hasSerialMidiOut:
@@ -4865,10 +4865,10 @@ _:b%i
 
         # If MIDI aggregated mode is off, we can handle device changes
         if not midi_aggregated_mode:
-            self.set_midi_devices_legacy(newDevs)
+            self.set_midi_devices_separated(newDevs)
 
     def set_midi_devices_change_mode(self, midi_aggregated_mode):
-        # from legacy to aggregated mode
+        # from separated to aggregated mode
         if midi_aggregated_mode:
             # Remove Serial MIDI ports
             if self.hasSerialMidiIn:
@@ -4897,7 +4897,7 @@ _:b%i
             #if has_midi_merger_output_port():
             self.msg_callback("add_hw_port /graph/midi_merger_out midi 0 All_MIDI_In 1")
 
-        # from aggregated to legacy mode
+        # from aggregated to separated mode
         else:
             # Remove "All MIDI In/Out" ports
             #if has_midi_broadcaster_input_port():
@@ -4916,7 +4916,7 @@ _:b%i
         self.midi_aggregated_mode = midi_aggregated_mode
 
     # Will remove or add new JACK ports (in mod-ui) as needed
-    def set_midi_devices_legacy(self, newDevs):
+    def set_midi_devices_separated(self, newDevs):
         def add_port(name, title, isOutput):
             index = int(name[-1])
             title = title.replace("-","_").replace(" ","_")

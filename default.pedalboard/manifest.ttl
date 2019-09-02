@@ -44,7 +44,7 @@ _:b2
     a lv2:AudioPort ,
         lv2:OutputPort .
 
-<midi_legacy_mode>
+<midi_separated_mode>
     ingen:value 0 ;
     lv2:index 4 ;
     a atom:AtomPort ,
@@ -61,7 +61,8 @@ _:b2
     lv2:port <capture_1> ,
              <capture_2> ,
              <playback_1> ,
-             <playback_2> ;
+             <playback_2> ,
+             <midi_separated_mode> ;
     a lv2:Plugin ,
         ingen:Graph ,
         pedal:Pedalboard .
