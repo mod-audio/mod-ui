@@ -1311,7 +1311,8 @@ class PedalboardTransportSetSyncMode(JsonRequestHandler):
         elif mode == "/link":
             transport_sync = Profile.TRANSPORT_SOURCE_ABLETON_LINK
         else:
-            return self.write(False)
+            self.write(False)
+            return
         ok = yield gen.Task(SESSION.web_set_sync_mode, transport_sync)
         self.write(ok)
 
