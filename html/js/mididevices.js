@@ -67,7 +67,7 @@ function MidiPortsWindow(options) {
             if(midiAggregatedMode) {
                 midiModeRadios.filter('[value=aggregated]').prop('checked', true);
             } else {
-                midiModeRadios.filter('[value=legacy]').prop('checked', true);
+                midiModeRadios.filter('[value=separated]').prop('checked', true);
             }
 
             options.midiPortsWindow.show()

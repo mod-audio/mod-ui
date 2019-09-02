@@ -270,10 +270,10 @@ class HMI(object):
         self.send(data, callback)
 
     def ui_con(self, callback):
-        self.send("ui_con", callback, datatype='boolean')
+        self.send("ui_con", callback, 'boolean')
 
     def ui_dis(self, callback):
-        self.send("ui_dis", callback, datatype='boolean')
+        self.send("ui_dis", callback, 'boolean')
 
     def control_add(self, data, hw_id, actuator_uri, callback):
         # instance_id = data['instance_id']
@@ -338,15 +338,15 @@ class HMI(object):
                     steps,
                     options,
                   ),
-                  cb, datatype='boolean')
+                  cb, 'boolean')
 
     def control_set_index(self, hw_id, index, n_controllers, callback):
-        self.send('si %d %d %d' % (hw_id, index, n_controllers), callback, datatype='boolean')
+        self.send('si %d %d %d' % (hw_id, index, n_controllers), callback, 'boolean')
 
     def control_set(self, hw_id, value, callback):
         """Set a plug-in's control port value on the HMI."""
         # control_set <hw_id> <value>"""
-        self.send('s %d %f' % (hw_id, value), callback, datatype='boolean')
+        self.send('s %d %f' % (hw_id, value), callback, 'boolean')
 
     def control_rm(self, hw_ids, callback):
         """
@@ -357,10 +357,10 @@ class HMI(object):
 
         ids = "%s" % (" ".join(idsStr))
         ids = ids.strip()
-        self.send('rm %s' % (ids), callback, datatype='boolean')
+        self.send('rm %s' % (ids), callback, 'boolean')
 
     def ping(self, callback):
-        self.send('ping', callback, datatype='boolean')
+        self.send('ping', callback, 'boolean')
 
     def tuner(self, freq, note, cents, callback):
         self.send('tu_v %f %s %f' % (freq, note, cents), callback)
@@ -378,7 +378,7 @@ class HMI(object):
             2: Pedalboard UP
             3: Pedalboard DOWN
         """
-        self.send('bank_config %d %d' % (hw_id, action), callback, datatype='boolean')
+        self.send('bank_config %d %d' % (hw_id, action), callback, 'boolean')
 
     # new messages
 
@@ -386,7 +386,7 @@ class HMI(object):
         self.send("pb_cl", callback)
 
     def set_profile_value(self, key, value, callback):
-        self.send("mc %i %i" % (key, int(value)), callback)
+        self.send("mc %i %i" % (key, int(value)), callback, 'boolean')
 
     def set_profile_values(self, playback_rolling, values, callback):
         msg  = "mc"

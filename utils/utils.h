@@ -235,7 +235,7 @@ typedef struct {
 typedef struct {
     const char* title;
     int width, height;
-    bool midi_legacy_mode;
+    bool midi_separated_mode;
     const PedalboardPlugin* plugins;
     const PedalboardConnection* connections;
     PedalboardHardware hardware;

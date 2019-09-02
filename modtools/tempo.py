@@ -259,8 +259,8 @@ def get_divider_options(port, min_bpm, max_bpm):
      list: all available dividers as dicts with subdivider value and label
     """
     # First, convert min and max port values to equivalent in seconds
-    min_value = convert_port_value_to_seconds_equivalent(port['ranges']['minimum'], port['units']['symbol'])
-    max_value = convert_port_value_to_seconds_equivalent(port['ranges']['maximum'], port['units']['symbol'])
+    min_value = max(convert_port_value_to_seconds_equivalent(port['ranges']['minimum'], port['units']['symbol']), 1)
+    max_value = max(convert_port_value_to_seconds_equivalent(port['ranges']['maximum'], port['units']['symbol']), 1)
 
     # Then, compute min and max subdividers that will fit all bpms
     s1_min_bpm = get_divider_value(min_bpm, min_value)

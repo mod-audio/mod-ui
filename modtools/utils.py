@@ -361,7 +361,7 @@ class PedalboardInfo(Structure):
         ("title", c_char_p),
         ("width", c_int),
         ("height", c_int),
-        ("midi_legacy_mode", c_bool),
+        ("midi_separated_mode", c_bool),
         ("plugins", POINTER(PedalboardPlugin)),
         ("connections", POINTER(PedalboardConnection)),
         ("hardware", PedalboardHardware),
