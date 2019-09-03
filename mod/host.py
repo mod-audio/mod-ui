@@ -2186,9 +2186,14 @@ class Host(object):
             if instance in self.plugins_removed:
                 continue
 
-            instance_id = self.mapper.get_id_without_creating(instance)
-            pluginData  = self.plugins[instance_id]
-            diffBypass  = pluginData['bypassed'] != data['bypassed']
+            try:
+                instance_id = self.mapper.get_id_without_creating(instance)
+            except KeyError:
+                self.plugins_removed.append(instance)
+                continue
+
+            pluginData = self.plugins[instance_id]
+            diffBypass = pluginData['bypassed'] != data['bypassed']
 
             if diffBypass:
                 addressing = pluginData['addressings'].get(":bypass", None)
