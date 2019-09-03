@@ -231,6 +231,7 @@ class Host(object):
         self.transport_bpm     = 120.0
         self.transport_sync    = "none"
         self.last_data_finish_msg = 0.0
+        self.last_data_finish_handle = None
         self.abort_progress_catcher = {}
         self.processing_pending_flag = False
         self.page_load_request_number = 0
@@ -1222,15 +1223,18 @@ class Host(object):
                     logging.exception(e)
 
         elif cmd == "data_finish":
-            now  = time.clock()
+            now  = time.time()
             diff = now-self.last_data_finish_msg
 
             if diff >= 0.5:
                 self.send_output_data_ready(now)
 
-            else:
-                diff = (0.5-diff)/0.5*0.064
-                ioloop.IOLoop.instance().call_later(diff, self.send_output_data_ready)
+            elif self.last_data_finish_handle is None:
+                if diff < 0.2:
+                    diff = 0.2
+                else:
+                    diff = 0.5-diff
+                self.last_data_finish_handle = ioloop.IOLoop.instance().call_later(diff, self.send_output_data_ready)
 
         else:
             logging.error("[host] unrecognized command: %s", cmd)
@@ -1270,8 +1274,9 @@ class Host(object):
 
     @gen.coroutine
     def send_output_data_ready(self, now = None):
-        self.last_data_finish_msg = time.clock() if now is None else now
+        self.last_data_finish_msg = time.time() if now is None else now
         yield gen.Task(self.send_notmodified, "output_data_ready", datatype='boolean')
+        self.last_data_finish_handle = None
 
     def process_write_queue(self):
         try:
@@ -3850,7 +3855,7 @@ _:b%i
         numBanks = len(banks)
 
         if bank_id < 0 or bank_id >= numBanks:
-            logging.error("hmi wants out of bounds pedalboard data (%d %d)", dir_up, bank_id)
+            logging.error("hmi wants out of bounds bank data (%d %d)", dir_up, bank_id)
             callback(True)
             return
 
