@@ -268,6 +268,16 @@ function HardwareManager(options) {
       form.find('input[name=max]').prop('disabled', disabled)
     }
 
+    this.toggleSensibility = function (port, select, actuators, actuatorUri) {
+      var currentActuator = actuators[actuatorUri]
+      if (currentActuator && currentActuator.steps.length === 0) {
+        select.parent().parent().hide()
+      } else if (!((port.properties.indexOf("integer") >= 0 || port.properties.indexOf("toggled") >= 0 || port.properties.indexOf("trigger") >= 0)
+        && port.symbol != ":bypass" && port.symbol != ":presets")) {
+        select.parent().parent().show()
+      }
+    }
+
     // Show dynamic field content based on selected type of addressing
     this.showDynamicField = function (form, typeInputVal, currentAddressing, port) {
       // Hide all then show the relevant content
@@ -311,7 +321,7 @@ function HardwareManager(options) {
       }
     }
 
-    this.buildDeviceTable = function (deviceTable, currentAddressing, actuators, hmiPageInput, hmiUriInput) {
+    this.buildDeviceTable = function (deviceTable, currentAddressing, actuators, hmiPageInput, hmiUriInput, sensibility, port) {
       var table = $('<table/>').addClass('hmi-table')
       var groupTable = $('<table/>').addClass('hmi-table')
       var row, cell, uri, uriAddressings, usedAddressings, addressing, groupActuator, groupAddressings
@@ -452,6 +462,10 @@ function HardwareManager(options) {
         // Remove 'selected' class to all cells then add it to the clicked one
         deviceTable.find('td').removeClass('selected')
         $(this).addClass('selected')
+
+        if (actuatorUri) {
+         self.toggleSensibility(port, sensibility, actuators, actuatorUri)
+       }
       })
     }
 
@@ -591,7 +605,12 @@ function HardwareManager(options) {
         self.buildSensibilityOptions(sensibility, port, currentAddressing.steps)
 
         var deviceTable = form.find('.device-table')
-        self.buildDeviceTable(deviceTable, currentAddressing, actuators, hmiPageInput, hmiUriInput)
+        self.buildDeviceTable(deviceTable, currentAddressing, actuators, hmiPageInput, hmiUriInput, sensibility, port)
+
+        // Hide sensibility if current addressing actuator does not support it
+        if (currentAddressing && currentAddressing['uri']) {
+          self.toggleSensibility(port, sensibility, actuators, currentAddressing['uri'])
+        }
 
         form.find('.js-save').click(function () {
             self.saveAddressing(instance, port, actuators, typeInput, hmiPageInput, hmiUriInput, ccActuatorSelect, min, max, label, pname, sensibility, tempo, divider, dividerOptions, form)

@@ -253,12 +253,12 @@ class HMI(object):
     def initial_state(self, bank_id, pedalboard_id, pedalboards, callback):
         numPedals = len(pedalboards)
 
-        if numPedals <= 9 or bank_id < 4:
+        if numPedals <= 9 or pedalboard_id < 4:
             startIndex = 0
-        elif bank_id+4 >= numPedals:
+        elif pedalboard_id+4 >= numPedals:
             startIndex = numPedals - 9
         else:
-            startIndex = bank_id - 4
+            startIndex = pedalboard_id - 4
 
         endIndex = min(startIndex+9, numPedals)
 
@@ -286,6 +286,13 @@ class HMI(object):
         xmax = data['maximum']
         steps = data['steps']
         options = data['options']
+
+        if data.get('group', None) is not None:
+            if data['hmitype'] & 0x100: # HMI_ADDRESSING_TYPE_REVERSE_ENUM
+                prefix = "- "
+            else:
+                prefix = "+ "
+            label = prefix + label
 
         label = '"%s"' % label.replace('"', "")[:31].upper()
         unit = '"%s"' % unit.replace('"', '')[:7]
