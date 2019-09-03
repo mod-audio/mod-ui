@@ -628,6 +628,11 @@ class Host(object):
                     logging.error("[host] address set value not in list %f", data['value'])
                     callback(False)
                     return
+                # FIXME the following code does a control_add instead of control_set in case of enums
+                # Making it work on HMI with pagination could be tricky, so work around this for now
+                actuator_uri = data['actuator_uri']
+                self.addressings.hmi_load_current(actuator_uri, callback)
+                return
             else:
                 value = data['value']
             return self.hmi.control_set(actuator, value, callback)
@@ -1671,9 +1676,6 @@ class Host(object):
         addressings_addrs = addressings['addrs']
         group_actuators   = self.addressings.get_group_actuators(actuator_uri)
 
-        # update value
-        current_addressing['value'] = float(value)
-
         # If not currently displayed on HMI screen, then we do not need to set the new value
         if self.addressings.pages_cb:
             if current_addressing.get('page', None) != self.addressings.current_page:
@@ -1687,6 +1689,9 @@ class Host(object):
                 if callback is not None:
                     callback(True)
                 return
+
+        # update value
+        current_addressing['value'] = float(value)
 
         # FIXME the following code does a control_add instead of control_set in case of enums
         # Making it work on HMI with pagination could be tricky, so work around this for now
@@ -1702,16 +1707,16 @@ class Host(object):
                     return
                 hw_id2 = self.addressings.hmi_uri2hw_map[group_actuators[1]]
                 #self.hmi.control_set(hw_id2, float(value), callback)
-                self.hmi.control_add(current_addressing, hw_id2, group_actuators[1], callback)
+                self.addressings.hmi_load_current(group_actuators[1], callback)
 
             hw_id1 = self.addressings.hmi_uri2hw_map[group_actuators[0]]
             #self.hmi.control_set(hw_id1, float(value), set_2nd_hmi_value)
-            self.hmi.control_add(current_addressing, hw_id1, group_actuators[0], set_2nd_hmi_value)
+            self.addressings.hmi_load_current(group_actuators[0], set_2nd_hmi_value)
 
         else:
             hw_id = self.addressings.hmi_uri2hw_map[actuator_uri]
             if current_addressing['hmitype'] & HMI_ADDRESSING_TYPE_ENUMERATION:
-                self.hmi.control_add(current_addressing, hw_id, actuator_uri, callback)
+                self.addressings.hmi_load_current(actuator_uri, callback)
             else:
                 self.hmi.control_set(hw_id, float(value), callback)
 
