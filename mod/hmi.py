@@ -287,6 +287,13 @@ class HMI(object):
         steps = data['steps']
         options = data['options']
 
+        if data.get('group', None) is not None:
+            if data['hmitype'] & 0x100: # HMI_ADDRESSING_TYPE_REVERSE_ENUM
+                prefix = "- "
+            else:
+                prefix = "+ "
+            label = prefix + label
+
         label = '"%s"' % label.replace('"', "")[:31].upper()
         unit = '"%s"' % unit.replace('"', '')[:7]
 
