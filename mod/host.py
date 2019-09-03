@@ -1195,18 +1195,22 @@ class Host(object):
             bpm      = float(msg_data[2])
             speed    = 1.0 if rolling else 0.0
 
+            rolling_changed = self.transport_rolling != rolling
+            bpb_changed     = self.transport_bpb != bpb
+            bpm_changed     = self.transport_bpm != bpm
+
             for pluginData in self.plugins.values():
                 _, _2, bpb_symbol, bpm_symbol, speed_symbol = pluginData['designations']
 
-                if bpb_symbol is not None:
+                if bpb_symbol is not None and bpb_changed:
                     pluginData['ports'][bpb_symbol] = bpb
                     self.msg_callback("param_set %s %s %f" % (pluginData['instance'], bpb_symbol, bpb))
 
-                elif bpm_symbol is not None:
+                if bpm_symbol is not None and bpm_changed:
                     pluginData['ports'][bpm_symbol] = bpm
                     self.msg_callback("param_set %s %s %f" % (pluginData['instance'], bpm_symbol, bpm))
 
-                elif speed_symbol is not None:
+                if speed_symbol is not None and rolling_changed:
                     pluginData['ports'][speed_symbol] = speed
                     self.msg_callback("param_set %s %s %f" % (pluginData['instance'], speed_symbol, speed))
 
@@ -1217,10 +1221,39 @@ class Host(object):
             self.msg_callback("transport %i %f %f %s" % (rolling, bpb, bpm, self.transport_sync))
 
             if self.hmi.initialized:
-                try:
-                    yield gen.Task(self.hmi.set_profile_value, Menu.TEMPO_BPM_ID, bpm)
-                except Exception as e:
-                    logging.exception(e)
+                if rolling_changed:
+                    try:
+                        yield gen.Task(self.hmi.set_profile_value, Menu.PLAY_STATUS_ID, int(rolling))
+                    except Exception as e:
+                        logging.exception(e)
+
+                if bpb_changed:
+                    try:
+                        yield gen.Task(self.hmi.set_profile_value, Menu.TEMPO_BPB_ID, bpb)
+                    except Exception as e:
+                        logging.exception(e)
+
+                if bpm_changed:
+                    try:
+                        yield gen.Task(self.hmi.set_profile_value, Menu.TEMPO_BPM_ID, bpm)
+                    except Exception as e:
+                        logging.exception(e)
+
+                    for actuator_uri in self.addressings.virtual_addressings:
+                        addrs = self.addressings.virtual_addressings[actuator_uri]
+                        for addr in addrs:
+                            try:
+                                yield gen.Task(self.set_param_from_bpm, addr, bpm)
+                            except Exception as e:
+                                logging.exception(e)
+
+                    for actuator_uri in self.addressings.hmi_addressings:
+                        addrs = self.addressings.hmi_addressings[actuator_uri]['addrs']
+                        for addr in addrs:
+                            try:
+                                yield gen.Task(self.set_param_from_bpm, addr, bpm)
+                            except Exception as e:
+                                logging.exception(e)
 
         elif cmd == "data_finish":
             now  = time.time()
