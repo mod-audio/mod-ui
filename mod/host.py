@@ -1670,6 +1670,9 @@ class Host(object):
         addressings_addrs = addressings['addrs']
         group_actuators   = self.addressings.get_group_actuators(actuator_uri)
 
+        # update value
+        current_addressing['value'] = float(value)
+
         # If not currently displayed on HMI screen, then we do not need to set the new value
         if self.addressings.pages_cb:
             if current_addressing.get('page', None) != self.addressings.current_page:
@@ -1679,13 +1682,19 @@ class Host(object):
 
         elif group_actuators is None:
             current_index = addressings['idx']
-            if current_index != addressings_addrs.index(current_addressing):
+            for i, addr in enumerate(addressings_addrs):
+                if current_addressing['actuator_uri'] != addr['actuator_uri']:
+                    continue
+                if current_addressing['instance_id'] != addr['instance_id']:
+                    continue
+                if current_addressing['port'] != addr['port']:
+                    continue
+                if current_index == i:
+                    break
+            else:
                 if callback is not None:
                     callback(True)
                 return
-
-        # update value
-        current_addressing['value'] = float(value)
 
         # FIXME the following code does a control_add instead of control_set in case of enums
         # Making it work on HMI with pagination could be tricky, so work around this for now
