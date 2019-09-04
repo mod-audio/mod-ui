@@ -278,10 +278,11 @@ class HMI(object):
     def control_add(self, data, hw_id, actuator_uri, callback):
         # instance_id = data['instance_id']
         # port = data['port']
+        hasTempo = data.get('tempo', False)
         label = data['label']
         var_type = data['hmitype']
         unit = data['unit']
-        value = data['dividers'] if data.get('tempo') else data['value']
+        value = data['dividers'] if hasTempo else data['value']
         xmin = data['minimum']
         xmax = data['maximum']
         steps = data['steps']
@@ -297,19 +298,39 @@ class HMI(object):
         label = '"%s"' % label.replace('"', "")[:31].upper()
         unit = '"%s"' % unit.replace('"', '')[:7]
 
+        if value < xmin:
+            logging.error('[hmi] control_add received value < min for %s', label)
+            value = xmin
+        elif value > xmax:
+            logging.error('[hmi] control_add received value > max for %s', label)
+            value = xmax
+
         if options:
             numOpts = len(options)
-            ivalue  = int(value)
             optionsData = []
 
-            if numOpts <= 5 or ivalue <= 2:
-                startIndex = 0
-            elif ivalue+2 >= numOpts:
-                startIndex = numOpts-5
+            for i, (ovalue, _) in enumerate(options):
+                if ovalue == value:
+                    ivalue = i
+                    break
             else:
-                startIndex = ivalue - 2
+                logging.error("[hmi] control_add received value which is not in list (%f) for %s", value, label)
+                ivalue = int(value)
 
-            for i in range(startIndex, min(startIndex+5, numOpts)):
+            if hasTempo:
+                startIndex = 0
+                endIndex = numOpts
+                unit = '""'
+            else:
+                if numOpts <= 5 or ivalue <= 2:
+                    startIndex = 0
+                elif ivalue+2 >= numOpts:
+                    startIndex = numOpts-5
+                else:
+                    startIndex = ivalue - 2
+                endIndex = min(startIndex+5, numOpts)
+
+            for i in range(startIndex, endIndex):
                 option = options[i]
                 xdata  = '"%s" %f' % (option[1].replace('"', '')[:31].upper(), float(option[0]))
                 optionsData.append(xdata)
