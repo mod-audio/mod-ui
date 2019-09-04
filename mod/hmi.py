@@ -304,7 +304,7 @@ class HMI(object):
         options = data['options']
 
         if data.get('group', None) is not None:
-            if data['hmitype'] & 0x100: # HMI_ADDRESSING_TYPE_REVERSE_ENUM
+            if var_type & 0x100: # HMI_ADDRESSING_TYPE_REVERSE_ENUM
                 prefix = "- "
             else:
                 prefix = "+ "
@@ -333,9 +333,14 @@ class HMI(object):
                 ivalue = int(value)
 
             if hasTempo:
+                unit = '""'
+                # yet another workaround
+                options = options.copy()
+                options.insert(0, (-2, "   "))
+                options.append((-1, "   "))
+                numOpts += 2
                 startIndex = 0
                 endIndex = numOpts
-                unit = '""'
             else:
                 if numOpts <= 5 or ivalue <= 2:
                     startIndex = 0
