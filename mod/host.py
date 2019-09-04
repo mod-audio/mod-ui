@@ -4219,10 +4219,17 @@ _:b%i
 
         if data is None:
             callback(False)
+            logging.error("hmi wants control data for invalid addressing (%d %d)", hw_id, props)
+            return
+        if data.get('tempo', False):
+            # serious pain if we have to deal with it here...
+            logging.debug("hmi wants control data for tempo addressing, no way (%d %d)", hw_id, props)
+            callback(True)
             return
 
         instance_id, portsymbol = self.get_addressed_port_info(hw_id)
         if instance_id is None:
+            logging.error("hmi wants control data for a non-existing plugin instance or port (%d %d)", hw_id, props)
             callback(False)
             return
 
@@ -4231,28 +4238,41 @@ _:b%i
 
         options = data['options']
         numOpts = len(options)
-        value   = int(self.addr_task_get_port_value(instance_id, portsymbol))
-        value  += 1 if dir_up != 0 else -1
+        value   = self.addr_task_get_port_value(instance_id, portsymbol)
 
-        if value < 0 or value >= numOpts:
+        for i, (ovalue, _) in enumerate(options):
+            if ovalue == value:
+                ivalue = i
+                break
+        else:
+            logging.error("hmi wants more control data but current value is not in list (%d %d %f)",
+                          hw_id, props, value)
+            ivalue = int(value)
+
+        ivalue += 1 if dir_up != 0 else -1
+
+        if ivalue < 0 or ivalue >= numOpts:
             if not wrap:
+                logging.debug("hmi wants out of bounds control data (%d %d)", hw_id, props)
                 callback(True)
                 return
             # wrap around mode, neat
-            if value < 0:
-                value = numOpts - 1
+            if ivalue < 0:
+                ivalue = numOpts - 1
             else:
-                value = 0
+                ivalue = 0
+
+        value = options[ivalue][0]
 
         # note: the code below matches hmi.py control_add
         optionsData = []
 
-        if numOpts <= 5 or value <= 2:
+        if numOpts <= 5 or ivalue <= 2:
             startIndex = 0
-        elif value+2 >= numOpts:
+        elif ivalue+2 >= numOpts:
             startIndex = numOpts-5
         else:
-            startIndex = value - 2
+            startIndex = ivalue - 2
 
         for i in range(startIndex, min(startIndex+5, numOpts)):
             option = options[i]
