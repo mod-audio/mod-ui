@@ -702,8 +702,19 @@ class Addressings(object):
     def remove_hmi(self, addressing_data, actuator_uri):
         addressings       = self.hmi_addressings[actuator_uri]
         addressings_addrs = addressings['addrs']
-        index = addressings_addrs.index(addressing_data)
-        addressings_addrs.pop(index)
+
+        for i, addr in enumerate(addressings_addrs):
+            if addressing_data['actuator_uri'] != addr['actuator_uri']:
+                continue
+            if addressing_data['instance_id'] != addr['instance_id']:
+                continue
+            if addressing_data['port'] != addr['port']:
+                continue
+            index = i
+            addressings_addrs.pop(index)
+            break
+        else:
+            return False
 
         old_idx = addressings['idx']
         # if addressings['idx'] == index:
