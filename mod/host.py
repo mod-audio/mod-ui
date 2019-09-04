@@ -4206,7 +4206,7 @@ _:b%i
         self.addressings.hmi_load_next_hw(hw_id, callback)
 
     def hmi_next_control_page(self, hw_id, props, callback):
-        logging.error("hmi next control page %d %d", hw_id, props)
+        logging.debug("hmi next control page %d %d", hw_id, props)
         try:
             self.hmi_next_control_page_real(hw_id, props, callback)
         except Exception as e:
