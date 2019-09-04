@@ -1654,8 +1654,15 @@ class Host(object):
             return
 
         current_addressing = plugin_data['addressings'].get(portsymbol, None)
+
         # Not addressed, not need to send control_set to the HMI
         if current_addressing is None:
+            if callback is not None:
+                callback(True)
+            return
+
+        # Don't bother HMI while it has tempo mapping, since those do not change values here
+        if current_addressing.get('tempo', False):
             if callback is not None:
                 callback(True)
             return
