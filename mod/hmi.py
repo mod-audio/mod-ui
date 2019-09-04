@@ -71,7 +71,6 @@ class SerialIOStream(BaseIOStream):
 
 class HMI(object):
     def __init__(self, port, baud_rate, timeout, init_cb, reinit_cb):
-        hw_actuators = get_hardware_actuators()
         self.sp = None
         self.port = port
         self.baud_rate = baud_rate
@@ -84,6 +83,8 @@ class HMI(object):
         self.timeout = timeout # in seconds
         self.ioloop = ioloop.IOLoop.instance()
         self.reinit_cb = reinit_cb
+        self.hw_desc = get_hardware_descriptor()
+        hw_actuators = self.hw_desc.get('actuators', [])
         self.hw_ids = [actuator['id'] for actuator in hw_actuators]
         self.init(init_cb)
 
@@ -302,6 +303,7 @@ class HMI(object):
         xmax = data['maximum']
         steps = data['steps']
         options = data['options']
+        hmi_set_index = self.hw_desc.get('hmi_set_index', 0)
 
         if data.get('group', None) is not None:
             if var_type & 0x100: # HMI_ADDRESSING_TYPE_REVERSE_ENUM
@@ -334,11 +336,12 @@ class HMI(object):
 
             if hasTempo:
                 unit = '""'
-                # yet another workaround
-                options = options.copy()
-                options.insert(0, (-2, "   "))
-                options.append((-1, "   "))
-                numOpts += 2
+                if hmi_set_index:
+                    # yet another workaround
+                    options = options.copy()
+                    options.insert(0, (-2, "   "))
+                    options.append((-1, "   "))
+                    numOpts += 2
                 startIndex = 0
                 endIndex = numOpts
             else:
@@ -370,7 +373,6 @@ class HMI(object):
             self.control_set_index(hw_id, index, n_controllers, callback)
 
         cb = callback
-        hmi_set_index = get_hardware_descriptor().get('hmi_set_index', 0)
 
         if not actuator_uri.startswith("/hmi/footswitch") and hmi_set_index:
             cb = control_add_callback
