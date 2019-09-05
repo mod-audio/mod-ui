@@ -107,6 +107,10 @@ def take_screenshot(bundle_path, html_dir, cache_dir, size):
     midi_output_img = Image.open(os.path.join(img_dir, 'midi-output.png'))
     midi_input_connected = Image.open(os.path.join(img_dir, 'midi-input-connected.png'))
     midi_output_connected = Image.open(os.path.join(img_dir, 'midi-output-connected.png'))
+    cv_input_img = Image.open(os.path.join(img_dir, 'cv-input.png'))
+    cv_output_img = Image.open(os.path.join(img_dir, 'cv-output.png'))
+    cv_input_connected = Image.open(os.path.join(img_dir, 'cv-input-connected.png'))
+    cv_output_connected = Image.open(os.path.join(img_dir, 'cv-output-connected.png'))
     default_screenshot = Image.open(os.path.join(html_dir, 'resources', 'pedals', 'default.png'))
 
     right_padding = audio_input_connected.size[0] * 2
@@ -196,7 +200,7 @@ def take_screenshot(bundle_path, html_dir, cache_dir, size):
             }
 
         # detect connectors
-        in_ports = data['ports']['audio']['input'] + data['ports']['midi']['input']
+        in_ports = data['ports']['audio']['input'] + data['ports']['midi']['input'] + data['ports']['cv']['input']
         if len(in_ports) > 0:
             for ix, conn in enumerate(chunks(columns['in_ports'], 2)):
                 if ix < len(in_ports):
@@ -205,13 +209,17 @@ def take_screenshot(bundle_path, html_dir, cache_dir, size):
                         in_ports[ix]['connected_img'] = audio_input_connected
                         in_ports[ix]['offset'] = (79, 15)
                         in_ports[ix]['type'] = 'audio'
+                    elif ix < len(data['ports']['cv']['input']):
+                        in_ports[ix]['connected_img'] = cv_input_connected
+                        in_ports[ix]['offset'] = (67, 15)
+                        in_ports[ix]['type'] = 'cv'
                     else:
                         in_ports[ix]['connected_img'] = midi_input_connected
                         in_ports[ix]['offset'] = (67, 9)
                         in_ports[ix]['type'] = 'midi'
             if not all('connector' in p for p in in_ports):
                 raise Exception('Connector detection for input ports of plugin {0} failed'.format(p['uri']))
-        out_ports = data['ports']['audio']['output'] + data['ports']['midi']['output']
+        out_ports = data['ports']['audio']['output'] + data['ports']['midi']['output'] + data['ports']['cv']['output']
         if len(out_ports) > 0:
             for ix, conn in enumerate(chunks(columns['out_ports'], 2)):
                 if ix < len(out_ports):
@@ -220,6 +228,10 @@ def take_screenshot(bundle_path, html_dir, cache_dir, size):
                         out_ports[ix]['connected_img'] = audio_output_connected
                         out_ports[ix]['offset'] = (8, 15)
                         out_ports[ix]['type'] = 'audio'
+                    elif ix < len(data['ports']['cv']['output']):
+                        out_ports[ix]['connected_img'] = cv_output_connected
+                        out_ports[ix]['offset'] = (11, 22)
+                        out_ports[ix]['type'] = 'cv'
                     else:
                         out_ports[ix]['connected_img'] = midi_output_connected
                         out_ports[ix]['offset'] = (8, 9)
@@ -276,7 +288,7 @@ def take_screenshot(bundle_path, html_dir, cache_dir, size):
                 continue
             source_i, source_s = c['source'].split('/')
             source = plugin_map[source_i]
-            all_ports = source['data']['ports']['audio']['output'] + source['data']['ports']['midi']['output']
+            all_ports = source['data']['ports']['audio']['output'] + source['data']['ports']['midi']['output'] + source['data']['ports']['cv']['output']
             port = next(p for p in all_ports if p['symbol'] == source_s)
             conn = port['connector']
             source_connected_img = port['connected_img']
@@ -297,7 +309,7 @@ def take_screenshot(bundle_path, html_dir, cache_dir, size):
                 continue
             target_i, target_s = c['target'].split('/')
             target = plugin_map[target_i]
-            all_ports = target['data']['ports']['audio']['input'] + target['data']['ports']['midi']['input']
+            all_ports = target['data']['ports']['audio']['input'] + target['data']['ports']['midi']['input'] + target['data']['ports']['cv']['input']
             port = next(p for p in all_ports if p['symbol'] == target_s)
             conn = port['connector']
             target_connected_img = port['connected_img']
@@ -341,9 +353,15 @@ def take_screenshot(bundle_path, html_dir, cache_dir, size):
         draw = aggdraw.Draw(img)
         audio_pen = aggdraw.Pen('#81009A', 7)
         midi_pen = aggdraw.Pen('#00546C', 7)
+        cv_pen = aggdraw.Pen('#BB6736', 7)
         for path, source_type, target_type in paths:
             symbol = aggdraw.Symbol(path)
-            draw.symbol((0, 0), symbol, midi_pen if source_type == 'midi' or target_type == 'midi' else audio_pen)
+            pen = audio_pen
+            if source_type == 'midi' or target_type == 'midi':
+                pen = midi_pen
+            if source_type == 'cv' or target_type == 'cv':
+                pen = cv_pen
+            draw.symbol((0, 0), symbol, pen)
         draw.flush()
     except:
         print('Aggdraw failed')
