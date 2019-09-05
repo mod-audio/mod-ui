@@ -359,7 +359,7 @@ def take_screenshot(bundle_path, html_dir, cache_dir, size):
             pen = audio_pen
             if source_type == 'midi' or target_type == 'midi':
                 pen = midi_pen
-            if source_type == 'cv' or target_type == 'cv':
+            elif source_type == 'cv' or target_type == 'cv':
                 pen = cv_pen
             draw.symbol((0, 0), symbol, pen)
         draw.flush()
