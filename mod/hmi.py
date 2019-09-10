@@ -142,6 +142,9 @@ class HMI(object):
                         if callback is not None:
                             logging.debug("[hmi] calling callback for %s", original_msg)
                             callback(msg.process_resp(datatype))
+                        if self.flush_io is not None:
+                            self.ioloop.remove_timeout(self.flush_io)
+                            self.flush_io = None
                         self.process_queue()
                 else:
                     def _callback(resp, resp_args=None):
@@ -169,7 +172,6 @@ class HMI(object):
     def flush(self, forced = False):
         prev_queue = self.need_flush
         self.need_flush = 0
-        self.flush_io = None
 
         if len(self.queue) < max(5, prev_queue) and not forced:
             logging.debug("[hmi] flushing ignored")
@@ -233,6 +235,7 @@ class HMI(object):
             logging.warn("[hmi] no response for %ds, giving up", self.timeout)
             if self.flush_io is not None:
                 self.ioloop.remove_timeout(self.flush_io)
+                self.flush_io = None
             self.flush(True)
 
         if not any([ msg.startswith(resp) for resp in Protocol.RESPONSES ]):
