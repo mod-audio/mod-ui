@@ -170,14 +170,13 @@ function getPortValue(b, s) {
  * @return {float}                  Output value
  */
 function convertEquivalent(value, conversionFactor, portUnitSymbol) {
-  // var portUnitSymbol = port.units.symbol;
+  if (value === 0) { // avoid division by zero
+    value = 0.001;
+  }
   if (portUnitSymbol === "s" || portUnitSymbol === "ms" || portUnitSymbol === "min") {
     var v = conversionFactor * value;
     return v.toFixed(3);
   } else if (portUnitSymbol === "Hz" || portUnitSymbol === "MHz" || portUnitSymbol === "kHz") {
-    if (value === 0) { // avoid division by zero
-      value = 0.001;
-    }
     var v = conversionFactor / value;
     return v.toFixed(3);
   } else {

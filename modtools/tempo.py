@@ -164,11 +164,11 @@ def convert_equivalent(value, conversion_factor, port_unit_symbol):
     Returns:
         float: output value
     """
+    if value == 0: # avoid division by zero
+        value = 0.001
     if port_unit_symbol == "s" or port_unit_symbol == "ms" or port_unit_symbol == "min":
         return conversion_factor * value
     elif port_unit_symbol == "Hz" or port_unit_symbol == "MHz" or port_unit_symbol == "kHz":
-        if value == 0: # avoid division by zero
-            value = 0.001
         return conversion_factor / value
     else:
         return None
