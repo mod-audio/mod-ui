@@ -662,7 +662,11 @@ function HardwareManager(options) {
         var portValuesWithDividerLabels = []
         // Sync port value to bpm
         if (tempoValue && dividerValue && port.units && port.units.symbol) {
-          port.value = convertSecondsToPortValueEquivalent(getPortValue(self.beatsPerMinutePort.value, dividerValue), port.units.symbol);
+          if (port.units.symbol === 'BPM') {
+            port.value = getPortValue(self.beatsPerMinutePort.value, dividerValue, port.units.symbol) // no need for conversion
+          } else {
+            port.value = convertSecondsToPortValueEquivalent(getPortValue(self.beatsPerMinutePort.value, dividerValue, port.units.symbol), port.units.symbol);
+          }
         }
 
         var addressing = {

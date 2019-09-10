@@ -3407,8 +3407,9 @@ _:b%i
             return
 
         # compute new port value based on new bpm
-        port_value_sec = get_port_value(bpm, addr['dividers'])
-        port_value = convert_seconds_to_port_value_equivalent(port_value_sec, addr['unit'])
+        port_value = get_port_value(bpm, addr['dividers'], addr['unit'])
+        if addr['unit'] != 'BPM': # convert back into port unit if needed
+            port_value = convert_seconds_to_port_value_equivalent(port_value, addr['unit'])
 
         instance_id = addr['instance_id']
         portsymbol   = addr['port']
@@ -4189,8 +4190,9 @@ _:b%i
                         callback(False)
                         return
                     port = ports[0]
-                    port_value_sec = get_port_value(self.transport_bpm, value)
-                    port_value = convert_seconds_to_port_value_equivalent(port_value_sec, port['units']['symbol'])
+                    port_value = get_port_value(self.transport_bpm, value, port['units']['symbol'])
+                    if port['units']['symbol'] != 'BPM': # convert back into port unit if needed
+                        port_value = convert_seconds_to_port_value_equivalent(port_value, port['units']['symbol'])
 
                     def address_callback(ok):
                         if not ok:
