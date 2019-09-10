@@ -165,11 +165,11 @@ def convert_equivalent(value, conversion_factor, port_unit_symbol):
         float: output value
     """
     if port_unit_symbol == "s" or port_unit_symbol == "ms" or port_unit_symbol == "min":
-        return round(conversion_factor * value, 3)
+        return conversion_factor * value
     elif port_unit_symbol == "Hz" or port_unit_symbol == "MHz" or port_unit_symbol == "kHz":
         if value == 0: # avoid division by zero
             value = 0.001
-        return round(conversion_factor / value, 3)
+        return conversion_factor / value
     else:
         return None
 
@@ -259,8 +259,8 @@ def get_divider_options(port, min_bpm, max_bpm):
      list: all available dividers as dicts with subdivider value and label
     """
     # First, convert min and max port values to equivalent in seconds
-    min_value = max(convert_port_value_to_seconds_equivalent(port['ranges']['minimum'], port['units']['symbol']), 1)
-    max_value = max(convert_port_value_to_seconds_equivalent(port['ranges']['maximum'], port['units']['symbol']), 1)
+    min_value = convert_port_value_to_seconds_equivalent(port['ranges']['minimum'], port['units']['symbol'])
+    max_value = convert_port_value_to_seconds_equivalent(port['ranges']['maximum'], port['units']['symbol'])
 
     # Then, compute min and max subdividers that will fit all bpms
     s1_min_bpm = get_divider_value(min_bpm, min_value)
