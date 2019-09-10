@@ -152,7 +152,7 @@ function HardwareManager(options) {
     }
 
     // Gets a list of available actuators for a port
-    this.availableActuators = function (instance, port) {
+    this.availableActuators = function (instance, port, tempo) {
         var key   = instance+"/"+port.symbol
         var types = self.availableAddressingTypes(port)
 
@@ -178,7 +178,8 @@ function HardwareManager(options) {
                     (types.indexOf("trigger"    ) >= 0 && modes.search(":trigger:"    ) >= 0) ||
                     (types.indexOf("taptempo"   ) >= 0 && modes.search(":taptempo:"   ) >= 0) ||
                     (types.indexOf("scalepoints") >= 0 && modes.search(":scalepoints:") >= 0) ||
-                    (types.indexOf("bypass"     ) >= 0 && modes.search(":bypass:"     ) >= 0)
+                    (types.indexOf("bypass"     ) >= 0 && modes.search(":bypass:"     ) >= 0) ||
+                    (tempo && modes.search(":enumeration:") >= 0)
                   )
                 {
                     available[actuator.uri] = actuator
@@ -481,6 +482,8 @@ function HardwareManager(options) {
         var typeInput = form.find('input[name=type]')
         var hmiPageInput = form.find('input[name=hmi-page]')
         var hmiUriInput = form.find('input[name=hmi-uri]')
+        var deviceTable = form.find('.device-table')
+        var sensibility = form.find('select[name=steps]')
 
         // Create selectable buttons to choose addressings type and show relevant dynamic content
         var typeInputVal = kNullAddressURI
@@ -495,7 +498,7 @@ function HardwareManager(options) {
         }
         typeInput.val(typeInputVal)
 
-        var actuators = self.availableActuators(instance, port)
+        var actuators = self.availableActuators(instance, port, currentAddressing.tempo)
         var typeOptions = [kNullAddressURI, deviceOption, kMidiLearnURI, ccOption]
         var i = 0
         typeSelect.find('option').unwrap().each(function() {
@@ -562,11 +565,10 @@ function HardwareManager(options) {
             self.disableMinMaxSteps(form, true)
           }
           form.find('input[name=tempo]').bind('change', function() {
-            if(this.checked) {
-              self.disableMinMaxSteps(form, true)
-            } else {
-              self.disableMinMaxSteps(form, false)
-            }
+            self.disableMinMaxSteps(form, this.checked)
+            actuators = self.availableActuators(instance, port, this.checked)
+            deviceTable.empty()
+            self.buildDeviceTable(deviceTable, currentAddressing, actuators, hmiPageInput, hmiUriInput, sensibility, port)
           })
           dividerOptions = self.buildDividerOptions(divider, port, currentAddressing.dividers)
         }
@@ -601,10 +603,8 @@ function HardwareManager(options) {
             }
         }
 
-        var sensibility = form.find('select[name=steps]')
         self.buildSensibilityOptions(sensibility, port, currentAddressing.steps)
 
-        var deviceTable = form.find('.device-table')
         self.buildDeviceTable(deviceTable, currentAddressing, actuators, hmiPageInput, hmiUriInput, sensibility, port)
 
         // Hide sensibility if current addressing actuator does not support it
