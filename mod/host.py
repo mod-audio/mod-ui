@@ -4008,7 +4008,7 @@ _:b%i
         if self.next_hmi_pedalboard is not None:
             print("NOTE: Delaying loading of %i:%i" % (bank_id, pedalboard_id))
             self.next_hmi_pedalboard = (bank_id, pedalboard_id)
-            callback(False)
+            callback(True)
             return
 
         if bank_id == 0:
@@ -4049,16 +4049,17 @@ _:b%i
                 self.processing_pending_flag = False
                 self.send_notmodified("feature_enable processing 1")
 
-        def host_loaded_callback(_):
+        def set_pb_name_callback(_):
             # Update the title in HMI
-            self.hmi.send("s_pbn {0}".format(self.pedalboard_name), hmi_loaded_callback)
+            self.hmi.send("s_pbn {0}".format(self.pedalboard_name[:31].upper()), hmi_loaded_callback)
 
         def load_callback(_):
             self.bank_id = bank_id
             self.load(bundlepath)
 
             # Dummy host call, just to receive callback when all other host messages finish
-            self.send_notmodified("cpu_load", host_loaded_callback, datatype='float_structure')
+            cb = set_pb_name_callback if self.descriptor.get('hmi_set_pb_name', False) else hmi_loaded_callback
+            self.send_notmodified("cpu_load", cb, datatype='float_structure')
 
         def footswitch_callback(_):
             self.setNavigateWithFootswitches(self.isBankFootswitchNavigationOn(), load_callback)
@@ -4902,6 +4903,11 @@ _:b%i
         except Exception as e:
             callback(False)
             logging.exception(e)
+
+    @gen.coroutine
+    def hmi_set_pb_name(self, name):
+        if self.descriptor.get('hmi_set_pb_name', False):
+            yield gen.Task(self.hmi.send, "s_pbn {0}".format(name[:31].upper()))
 
     # -----------------------------------------------------------------------------------------------------------------
     # JACK stuff

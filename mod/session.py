@@ -189,7 +189,7 @@ class Session(object):
         self.pedalboard_changed_callback(True, bundlepath, title)
 
         if self.hmi.initialized:
-            self.set_hmi_pb_title(title)
+            self.host.hmi_set_pb_name(title)
 
         self.screenshot_generator.schedule_screenshot(bundlepath)
         return bundlepath, newPB
@@ -325,10 +325,6 @@ class Session(object):
             if ws == ws2: continue
             ws.write_message(msg)
 
-    @gen.coroutine
-    def set_hmi_pb_title(self, title):
-        yield gen.Task(self.hmi.send, "s_pbn {0}".format(title))
-
     def load_pedalboard(self, bundlepath, isDefault):
         self.host.send_notmodified("feature_enable processing 0")
         title = self.host.load(bundlepath, isDefault)
@@ -338,7 +334,7 @@ class Session(object):
             title = ""
 
         if self.hmi.initialized:
-            self.set_hmi_pb_title(title or UNTITLED_PEDALBOARD_NAME)
+            self.host.hmi_set_pb_name(title or UNTITLED_PEDALBOARD_NAME)
 
         self.pedalboard_changed_callback(True, bundlepath, title)
         return title

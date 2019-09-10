@@ -300,7 +300,7 @@ class HMI(object):
         xmax = data['maximum']
         steps = data['steps']
         options = data['options']
-        hmi_set_index = self.hw_desc.get('hmi_set_index', 0)
+        hmi_set_index = self.hw_desc.get('hmi_set_index', False)
 
         if data.get('group', None) is not None:
             if var_type & 0x100: # HMI_ADDRESSING_TYPE_REVERSE_ENUM
