@@ -3791,20 +3791,20 @@ _:b%i
         has_strict_bounds = True
 
         # Retrieve port infos
-        if instance_id != PEDALBOARD_INSTANCE_ID:
-            pluginInfo = get_plugin_info(pluginData['uri'])
-            if pluginInfo:
-                controlPorts = pluginInfo['ports']['control']['input']
-                ports = [p for p in controlPorts if p['symbol'] == portsymbol]
-                if ports:
-                    port = ports[0]
-                    has_strict_bounds = "hasStrictBounds" in port['properties']
-                    # Set min and max to min and max value among dividers
-                    if tempo:
-                        divider_options = get_divider_options(port, 20.0, 280.0) # XXX min and max bpm hardcoded
-                        options_list = [opt['value'] for opt in divider_options]
-                        minimum = min(options_list)
-                        maximum = max(options_list)
+        # if instance_id != PEDALBOARD_INSTANCE_ID:
+        #     pluginInfo = get_plugin_info(pluginData['uri'])
+        #     if pluginInfo:
+        #         controlPorts = pluginInfo['ports']['control']['input']
+        #         ports = [p for p in controlPorts if p['symbol'] == portsymbol]
+        #         if ports:
+        #             port = ports[0]
+        #             has_strict_bounds = "hasStrictBounds" in port['properties']
+        #             # Set min and max to min and max value among dividers
+        #             if tempo:
+        #                 divider_options = get_divider_options(port, 20.0, 280.0) # XXX min and max bpm hardcoded
+        #                 options_list = [opt['value'] for opt in divider_options]
+        #                 minimum = min(options_list)
+        #                 maximum = max(options_list)
 
         if not tempo and has_strict_bounds:
             if value < minimum:
