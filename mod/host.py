@@ -185,6 +185,8 @@ class Host(object):
             from mod.hmi import HMI
             hmi = HMI()
 
+        self.ioloop = ioloop.IOLoop.instance()
+
         self.hmi = hmi
         self.prefs = prefs
         self.msg_callback = msg_callback
@@ -197,6 +199,7 @@ class Host(object):
         self._queue = []
         self._idle = True
         self.profile_applied = False
+        self.hmi_ping_io = None
 
         self.addressings = Addressings()
         self.mapper = InstanceIdMapper()
@@ -392,7 +395,7 @@ class Host(object):
         # not used
         #Protocol.register_cmd_callback("get_pb_name", self.hmi_get_pb_name)
 
-        ioloop.IOLoop.instance().add_callback(self.init_host)
+        self.ioloop.add_callback(self.init_host)
 
     def __del__(self):
         self.msg_callback("stop")
@@ -706,8 +709,15 @@ class Host(object):
     # Initialization
 
     def ping_hmi(self):
-        ioloop.IOLoop.instance().call_later(2, self.ping_hmi)
+        if self.hmi_ping_io is not None:
+            self.ioloop.remove_timeout(self.hmi_ping_io)
+        self.hmi_ping_io = self.ioloop.call_later(5, self.ping_hmi)
         self.hmi.ping(None)
+
+    def ping_hmi_stop(self):
+        if self.hmi_ping_io is not None:
+            self.ioloop.remove_timeout(self.hmi_ping_io)
+            self.hmi_ping_io = None
 
     def wait_hmi_initialized(self, callback):
         if (self.hmi.initialized or self.hmi.isFake()) and self.profile_applied:
@@ -719,11 +729,11 @@ class Host(object):
             if ((self.hmi.initialized or self.hmi.isFake()) and self.profile_applied) or self._attemptNumber >= 20:
                 print("HMI initialized FINAL", self._attemptNumber, self.hmi.initialized)
                 del self._attemptNumber
-                #ioloop.IOLoop.instance().call_later(5, self.ping_hmi)
+                #self.hmi_ping_io = self.ioloop.call_later(5, self.ping_hmi)
                 callback(self.hmi.initialized)
             else:
                 self._attemptNumber += 1
-                ioloop.IOLoop.instance().call_later(0.1, retry)
+                self.ioloop.call_later(0.1, retry)
                 print("HMI initialized waiting", self._attemptNumber)
 
         self._attemptNumber = 0
@@ -907,6 +917,7 @@ class Host(object):
 
         self.profile.apply_first()
         yield gen.Task(self.send_hmi_boot)
+        yield gen.Task(self.initialize_hmi, False)
 
         actuators = [actuator['uri'] for actuator in self.descriptor.get('actuators', [])]
         self.addressings.current_page = 0
@@ -1019,6 +1030,8 @@ class Host(object):
             callback(True)
             return
 
+        self.ping_hmi_stop()
+
         def footswitch_addr2_callback(_):
             self.addressings.hmi_load_first("/hmi/footswitch2", callback)
 
@@ -1042,6 +1055,7 @@ class Host(object):
             self.initialize_hmi(False, callback)
 
         self.hmi.ui_dis(initialize_callback)
+        self.hmi.ping(self.ping_hmi)
 
     # -----------------------------------------------------------------------------------------------------------------
     # Message handling
@@ -1266,7 +1280,7 @@ class Host(object):
                     diff = 0.2
                 else:
                     diff = 0.5-diff
-                self.last_data_finish_handle = ioloop.IOLoop.instance().call_later(diff, self.send_output_data_ready)
+                self.last_data_finish_handle = self.ioloop.call_later(diff, self.send_output_data_ready)
 
         else:
             logging.error("[host] unrecognized command: %s", cmd)
