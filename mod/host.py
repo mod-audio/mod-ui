@@ -237,7 +237,6 @@ class Host(object):
         self.last_data_finish_handle = None
         self.abort_progress_catcher = {}
         self.processing_pending_flag = False
-        self.page_load_request_number = 0
         self.init_plugins_data()
 
         if APP and os.getenv("MOD_LIVE_ISO") is not None:
@@ -858,6 +857,7 @@ class Host(object):
                 self._idle = True
 
         self._idle = False
+        self._queue = []
 
         # Main socket, used for sending messages
         self.writesock = iostream.IOStream(socket.socket(socket.AF_INET, socket.SOCK_STREAM))
@@ -908,6 +908,10 @@ class Host(object):
     def reconnect_hmi(self, hmi):
         abort_catcher = self.abort_previous_loading_progress("reconnect_hmi")
         self.hmi = hmi
+        self.hmi_snapshots = [None, None]
+        self.next_hmi_pedalboard = None
+        self.processing_pending_flag = False
+        self.open_connection_if_needed(None)
 
         # Wait for init
         yield gen.Task(self.wait_hmi_initialized)
@@ -2607,8 +2611,10 @@ class Host(object):
         skippedPortAddressings = []
         if self.transport_sync != "none":
             skippedPortAddressings.append(PEDALBOARD_INSTANCE+"/:bpm")
+            timeAvailable = False
+        else:
+            timeAvailable = pb['timeInfo']['available']
 
-        timeAvailable = pb['timeInfo']['available']
         if timeAvailable != 0:
             pluginData = self.plugins[PEDALBOARD_INSTANCE_ID]
             if timeAvailable & kPedalboardTimeAvailableBPB:
