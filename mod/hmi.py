@@ -131,6 +131,12 @@ class HMI(object):
                 logging.error('[hmi]   error code %s', e.error_code())
                 self.reply_protocol_error(e.error_code())
             else:
+                # reset timeout checks when a message is received
+                self.need_flush = 0
+                if self.flush_io is not None:
+                    self.ioloop.remove_timeout(self.flush_io)
+                    self.flush_io = None
+
                 if msg.is_resp():
                     try:
                         original_msg, callback, datatype = self.queue.pop(0)
@@ -147,11 +153,11 @@ class HMI(object):
                     def _callback(resp, resp_args=None):
                         resp = 0 if resp else -1
                         if resp_args is None:
-                            self.send("resp %d" % resp, None)
+                            self.send_reply("resp %d" % resp)
                             logging.debug('[hmi]     sent "resp %s"', resp)
 
                         else:
-                            self.send("resp %d %s" % (resp, resp_args), None)
+                            self.send_reply("resp %d %s" % (resp, resp_args))
                             logging.debug('[hmi]     sent "resp %s %s"', resp, resp_args)
 
                     msg.run_cmd(_callback)
@@ -169,7 +175,6 @@ class HMI(object):
     def flush(self, forced = False):
         prev_queue = self.need_flush
         self.need_flush = 0
-        self.flush_io = None
 
         if len(self.queue) < max(5, prev_queue) and not forced:
             logging.debug("[hmi] flushing ignored")
@@ -233,6 +238,7 @@ class HMI(object):
             logging.warn("[hmi] no response for %ds, giving up", self.timeout)
             if self.flush_io is not None:
                 self.ioloop.remove_timeout(self.flush_io)
+                self.flush_io = None
             self.flush(True)
 
         if not any([ msg.startswith(resp) for resp in Protocol.RESPONSES ]):
@@ -249,6 +255,12 @@ class HMI(object):
             return
 
         # is resp, just send
+        self.sp.write(msg.encode('utf-8') + b'\0')
+
+    def send_reply(self, msg):
+        if self.sp is None:
+            return
+
         self.sp.write(msg.encode('utf-8') + b'\0')
 
     def initial_state(self, bank_id, pedalboard_id, pedalboards, callback):
@@ -288,7 +300,7 @@ class HMI(object):
         xmax = data['maximum']
         steps = data['steps']
         options = data['options']
-        hmi_set_index = self.hw_desc.get('hmi_set_index', 0)
+        hmi_set_index = self.hw_desc.get('hmi_set_index', False)
 
         if data.get('group', None) is not None:
             if var_type & 0x100: # HMI_ADDRESSING_TYPE_REVERSE_ENUM
