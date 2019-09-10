@@ -524,7 +524,7 @@ class Addressings(object):
                 options = [(sp["value"], sp["label"]) for sp in port_info["scalePoints"]]
 
             # Load tap tempo addressings as tempo divider (1/4)
-            if "tapTempo" in pprops and actuator_uri.startswith("/hmi/footswitch"):
+            if not tempo and "tapTempo" in pprops and actuator_uri.startswith("/hmi/footswitch"):
                 tempo = True
                 dividers = 4
 
