@@ -2611,8 +2611,10 @@ class Host(object):
         skippedPortAddressings = []
         if self.transport_sync != "none":
             skippedPortAddressings.append(PEDALBOARD_INSTANCE+"/:bpm")
+            timeAvailable = False
+        else:
+            timeAvailable = pb['timeInfo']['available']
 
-        timeAvailable = pb['timeInfo']['available']
         if timeAvailable != 0:
             pluginData = self.plugins[PEDALBOARD_INSTANCE_ID]
             if timeAvailable & kPedalboardTimeAvailableBPB:
