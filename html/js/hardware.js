@@ -55,7 +55,7 @@ function is_control_chain_uri (uri) {
 }
 
 // Units supported for tap tempo (lowercase)
-var kTapTempoUnits = ['ms','s','hz','bpm']
+var kTapTempoUnits = ['bpm']
 
 function HardwareManager(options) {
     var self = this
@@ -140,7 +140,7 @@ function HardwareManager(options) {
             available.push("logarithmic")
         if (properties.indexOf("trigger") >= 0)
             available.push("trigger")
-        if (properties.indexOf("tapTempo") >= 0 && kTapTempoUnits.indexOf(port.units.symbol.toLowerCase()) >= 0)
+        if (port.symbol === ":bpm" && properties.indexOf("tapTempo") >= 0 && kTapTempoUnits.indexOf(port.units.symbol.toLowerCase()) >= 0)
             available.push("taptempo")
 
         if (port.scalePoints.length >= 2)
