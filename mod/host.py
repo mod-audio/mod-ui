@@ -4209,16 +4209,6 @@ _:b%i
             if port_addressing:
 
                 group_actuators = self.addressings.get_group_actuators(port_addressing['actuator_uri'])
-                if group_actuators is not None:
-                    def group_callback(ok):
-                        if not ok:
-                            callback(False)
-                            return
-                        pluginData['ports'][portsymbol] = value
-                        self.send_modified("param_set %d %s %f" % (instance_id, portsymbol, value), callback, datatype='boolean')
-                        self.msg_callback("param_set %s %s %f" % (instance, portsymbol, value))
-                    self.control_set_other_group_actuator(group_actuators, hw_id, value, group_callback)
-                    return
 
                 if port_addressing.get('tempo', None):
                     # compute new port value based on received divider value
@@ -4239,13 +4229,19 @@ _:b%i
                     if port['units']['symbol'] != 'BPM': # convert back into port unit if needed
                         port_value = convert_seconds_to_port_value_equivalent(port_value, port['units']['symbol'])
 
-                    def address_callback(ok):
+                    def param_set_callback(ok):
                         if not ok:
                             callback(False)
                             return
                         pluginData['ports'][portsymbol] = port_value
                         self.send_modified("param_set %d %s %f" % (instance_id, portsymbol, port_value), callback, datatype='boolean')
                         self.msg_callback("param_set %s %s %f" % (instance, portsymbol, port_value))
+
+                    def address_callback(ok):
+                        if not ok:
+                            callback(False)
+                            return
+                        self.control_set_other_group_actuator(group_actuators, hw_id, value, param_set_callback)
 
                     actuator_uri = port_addressing['actuator_uri']
                     label = port_addressing['label']
@@ -4255,8 +4251,21 @@ _:b%i
                     tempo = port_addressing['tempo']
                     dividers = value
                     page = port_addressing['page']
+
+                    cb = address_callback if group_actuators else param_set_callback
                     self.address(instance, portsymbol, actuator_uri, label, minimum, maximum, port_value, steps,
-                                 tempo, dividers, page, address_callback, not_param_set=True, send_hmi=False)
+                                 tempo, dividers, page, cb, not_param_set=True, send_hmi=False)
+                    return
+
+                if group_actuators is not None:
+                    def group_callback(ok):
+                        if not ok:
+                            callback(False)
+                            return
+                        pluginData['ports'][portsymbol] = value
+                        self.send_modified("param_set %d %s %f" % (instance_id, portsymbol, value), callback, datatype='boolean')
+                        self.msg_callback("param_set %s %s %f" % (instance, portsymbol, value))
+                    self.control_set_other_group_actuator(group_actuators, hw_id, value, group_callback)
                     return
 
             pluginData['ports'][portsymbol] = value
@@ -4267,8 +4276,8 @@ _:b%i
         for group_actuator_uri in group_actuators:
             group_hw_id = self.addressings.hmi_uri2hw_map[group_actuator_uri]
             if group_hw_id != hw_id:
-                #self.hmi.control_set(group_hw_id, float(value), callback)
-                self.addressings.hmi_load_current(group_actuator_uri, callback)
+                self.hmi.control_set(group_hw_id, float(value), callback)
+                # self.addressings.hmi_load_current(group_actuator_uri, callback)
                 return
         callback(True)
 
