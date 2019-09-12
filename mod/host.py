@@ -215,6 +215,8 @@ class Host(object):
         self.connections = []
         self.audioportsIn = []
         self.audioportsOut = []
+        self.cvportsIn = []
+        self.cvportsOut = []
         self.midiports = [] # [symbol, alias, pending-connections]
         self.midi_aggregated_mode = True
         self.hasSerialMidiIn = False
@@ -808,10 +810,18 @@ class Host(object):
             return False
 
         for port in get_jack_hardware_ports(True, False):
-            self.audioportsIn.append(port.split(":",1)[-1])
+            client_name, port_name = port.split(":",1)
+            if client_name == "mod-spi2jack":
+                self.cvportsIn.append("cv_"+port_name)
+            else:
+                self.audioportsIn.append(port_name)
 
         for port in get_jack_hardware_ports(True, True):
-            self.audioportsOut.append(port.split(":",1)[-1])
+            client_name, port_name = port.split(":",1)
+            if client_name == "mod-jack2spi":
+                self.cvportsOut.append("cv_"+port_name)
+            else:
+                self.audioportsOut.append(port_name)
 
         self.hasSerialMidiIn = has_serial_midi_input_port()
         self.hasSerialMidiOut = has_serial_midi_output_port()
@@ -1478,23 +1488,29 @@ class Host(object):
             else:
                 midiports.append(port_id)
 
-        # Control Voltage or Audio In
+        # Audio In
         for i in range(len(self.audioportsIn)):
             name  = self.audioportsIn[i]
             title = name.title().replace(" ","_")
-            if name.startswith("cv_"):
-                websocket.write_message("add_hw_port /graph/%s cv 0 %s %i" % (name, title, i+1))
-            else:
-                websocket.write_message("add_hw_port /graph/%s audio 0 %s %i" % (name, title, i+1))
+            websocket.write_message("add_hw_port /graph/%s audio 0 %s %i" % (name, title, i+1))
 
-        # Control Voltage or Audio Out
+        # Control Voltage In
+        for i in range(len(self.cvportsIn)):
+            name  = self.cvportsIn[i]
+            title = name.title().replace(" ","_")
+            websocket.write_message("add_hw_port /graph/%s cv 0 %s %i" % (name, title, i+1))
+
+        # Audio Out
         for i in range(len(self.audioportsOut)):
             name  = self.audioportsOut[i]
             title = name.title().replace(" ","_")
-            if name.startswith("cv_"):
-                websocket.write_message("add_hw_port /graph/%s cv 1 %s %i" % (name, title, i+1))
-            else:
-                websocket.write_message("add_hw_port /graph/%s audio 1 %s %i" % (name, title, i+1))
+            websocket.write_message("add_hw_port /graph/%s audio 1 %s %i" % (name, title, i+1))
+
+        # Control Voltage Out
+        for i in range(len(self.cvportsOut)):
+            name  = self.cvportsOut[i]
+            title = name.title().replace(" ","_")
+            websocket.write_message("add_hw_port /graph/%s cv 1 %s %i" % (name, title, i+1))
 
         # MIDI In
         if self.midi_aggregated_mode:
@@ -2443,13 +2459,13 @@ class Host(object):
                 num = data[2].replace("nooice_capture_","",1)
                 return "nooice%s:nooice_capture_%s" % (num, num)
 
-            # Handle the Control Voltage faker
+            # Handle the Control Voltage ports
             if data[2].startswith("cv_capture_"):
                 num = data[2].replace("cv_capture_", "", 1)
-                return "mod-fake-control-voltage:cv_capture_{0}".format(num)
+                return "mod-spi2jack:capture_{0}".format(num)
             if data[2].startswith("cv_playback_"):
                 num = data[2].replace("cv_playback_", "", 1)
-                return "mod-fake-control-voltage:cv_playback_{0}".format(num)
+                return "mod-jack2spi:playback_{0}".format(num)
 
             # Default guess
             return "system:%s" % data[2]
@@ -3289,6 +3305,19 @@ _:b%i
         lv2:InputPort .
 """ % (port, index, port.title().replace("_"," "), port)
 
+        # Ports (CV In)
+        for port in self.cvportsIn:
+            index += 1
+            ports += """
+<%s>
+    lv2:index %i ;
+    lv2:name "%s" ;
+    lv2:portProperty lv2:connectionOptional ;
+    lv2:symbol "%s" ;
+    a lv2:CVPort ,
+        lv2:InputPort .
+""" % (port, index, port.title().replace("_"," "), port)
+
         # Ports (Audio Out)
         for port in self.audioportsOut:
             index += 1
@@ -3299,6 +3328,19 @@ _:b%i
     lv2:portProperty lv2:connectionOptional ;
     lv2:symbol "%s" ;
     a lv2:AudioPort ,
+        lv2:OutputPort .
+""" % (port, index, port.title().replace("_"," "), port)
+
+        # Ports (CV Out)
+        for port in self.cvportsOut:
+            index += 1
+            ports += """
+<%s>
+    lv2:index %i ;
+    lv2:name "%s" ;
+    lv2:portProperty lv2:connectionOptional ;
+    lv2:symbol "%s" ;
+    a lv2:CVPort ,
         lv2:OutputPort .
 """ % (port, index, port.title().replace("_"," "), port)
 
@@ -3424,7 +3466,8 @@ _:b%i
             portsyms.append("serial_midi_out")
         portsyms += [p.replace("system:","",1) for p in midiportsIn ]
         portsyms += [p.replace("system:","",1) for p in midiportsOut]
-        pbdata += "    lv2:port <%s> ;\n" % ("> ,\n             <".join(portsyms+self.audioportsIn+self.audioportsOut))
+        portsyms += self.audioportsIn+self.cvportsIn+self.audioportsOut+self.cvportsOut
+        pbdata += "    lv2:port <%s> ;\n" % ("> ,\n             <".join(portsyms))
 
         # End
         pbdata += """\
