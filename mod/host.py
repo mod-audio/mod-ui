@@ -3893,62 +3893,101 @@ _:b%i
         logging.debug("hmi hardware disconnected")
         callback(True)
 
-    def hmi_list_banks(self, callback):
-        logging.debug("hmi list banks")
+    def hmi_list_banks(self, dir_up, bank_id, callback):
+        logging.error("hmi list banks %d %d", dir_up, bank_id)
 
         if len(self.allpedalboards) == 0:
+            logging.error("no pedalboards available, cant return any banks (%d %d)", dir_up, bank_id)
+            callback(True, "0 0 0")
+            return
+
+        if dir_up in (0, 1):
+            bank_id += 1 if dir_up else -1
+
+        # FIXME
+        banks  = [{'title':"All Pedalboards"}]
+        banks += self.banks
+        numBanks = len(banks)
+
+        if bank_id < 0 or bank_id >= numBanks:
+            logging.error("hmi wants out of bounds bank data (%d %d)", dir_up, bank_id)
             callback(True)
             return
 
-        banks = '"All Pedalboards" 0'
+        if numBanks <= 9 or bank_id < 4:
+            startIndex = 0
+        elif bank_id+4 >= numBanks:
+            startIndex = numBanks - 9
+        else:
+            startIndex = bank_id - 4
 
-        if len(self.banks) > 0:
-            banks += " "
-            banks += " ".join('"%s" %d' % (bank['title'].replace('"', '')[:31].upper(), i+1) for i, bank in enumerate(self.banks))
+        endIndex = min(startIndex+9, numBanks)
+        banksData = '%d %d %d' % (numBanks, startIndex, endIndex)
 
-        callback(True, banks)
+        #if startIndex == 0:
+            #endIndex = min(startIndex+5, numBanks)
+            #banksData = '%d %d "All Pedalboards" 0' % (startIndex, endIndex)
+        #else:
+            #startIndex -= 1
+            #endIndex = min(startIndex+5, numBanks)
+            #banksData = '%d %d "All Pedalboards" 0' % (startIndex, endIndex)
 
-    def hmi_list_bank_pedalboards(self, bank_id, callback):
-        logging.debug("hmi list bank pedalboards")
+        for i in range(startIndex, endIndex):
+            banksData += ' "%s" %d' % (banks[i]['title'].replace('"', '')[:31].upper(), i) # note use +1 for !all
+
+        callback(True, banksData)
+
+    def hmi_list_bank_pedalboards(self, props, pedalboard_id, bank_id, callback):
+        logging.error("hmi list bank pedalboards %d %d %d", props, pedalboard_id, bank_id)
+        # TODO: do something with page parameter
 
         if bank_id < 0 or bank_id > len(self.banks):
-            print("ERROR: Trying to list pedalboards using out of bounds bank id %i" % (bank_id))
+            logging.error("Trying to list pedalboards with an out of bounds bank id (%d %d %d)",
+                          props, pedalboard_id, bank_id)
             callback(False)
             return
+
+        dir_up  = props & HMI_LIST_PAGE_UP
+        wrap    = props & HMI_LIST_WRAP_AROUND
+        initial = props & HMI_LIST_INITIAL
+
+        if not initial:
+            pedalboard_id += 1 if dir_up else -1
 
         if bank_id == 0:
             pedalboards = self.allpedalboards
         else:
             pedalboards = self.banks[bank_id-1]['pedalboards']
 
-        numBytesFree = 1024-64
-        pedalboardsData = None
+        numPedals = len(pedalboards)
 
-        num = 0
-        for pb in pedalboards:
-            if num > 50:
-                break
-
-            title   = pb['title'].replace('"', '')[:31].upper()
-            data    = '"%s" %i' % (title, num)
-            dataLen = len(data)
-
-            if numBytesFree-dataLen-2 < 0:
-                print("ERROR: Controller out of memory when listing pedalboards (stopping at %i)" % num)
-                break
-
-            num += 1
-
-            if pedalboardsData is None:
-                pedalboardsData = ""
+        if pedalboard_id < 0 or pedalboard_id >= numPedals:
+            if not wrap:
+                logging.error("hmi wants out of bounds pedalboard data (%d %d %d)", props, pedalboard_id, bank_id)
+                callback(True)
+                return
+            # wrap around mode, neat
+            if pedalboard_id < 0:
+                pedalboard_id = numPedals - 1
             else:
-                pedalboardsData += " "
+                pedalboard_id = 0
 
-            numBytesFree -= dataLen+1
-            pedalboardsData += data
+        #if pedalboard_id < 0 or pedalboard_id > numPedals:
+            #callback(True, "")
+            #return
 
-        if pedalboardsData is None:
-            pedalboardsData = ""
+        if numPedals <= 9 or pedalboard_id < 4:
+            startIndex = 0
+        elif pedalboard_id+4 >= numPedals:
+            startIndex = numPedals - 9
+        else:
+            startIndex = pedalboard_id - 4
+
+        endIndex = min(startIndex+9, numPedals)
+        pedalboardsData = '%d %d %d' % (numPedals, startIndex, endIndex)
+
+        for i in range(startIndex, endIndex):
+            pedalboardsData += ' "%s" %d' % (pedalboards[i]['title'].replace('"', '')[:31].upper(), i+1)
 
         callback(True, pedalboardsData)
 
