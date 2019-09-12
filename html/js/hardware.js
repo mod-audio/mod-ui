@@ -168,6 +168,9 @@ function HardwareManager(options) {
                 // if (!PAGES_CB && usedAddressings.length >= actuator.max_assigns && usedAddressings.indexOf(key) < 0) {
                 //     continue
                 // }
+                if (tempo && modes.search(":enumeration:") < 0) {
+                  continue
+                }
 
                 if (
                     (types.indexOf("integer"    ) >= 0 && modes.search(":integer:"    ) >= 0) ||
@@ -182,9 +185,7 @@ function HardwareManager(options) {
                     (tempo && modes.search(":enumeration:") >= 0)
                   )
                 {
-                  if (!tempo || (tempo && !startsWith(actuator.uri, "/hmi/potentiometer"))) { // Disable pot addressing in tempo sync mode
                     available[actuator.uri] = actuator
-                  }
                 }
             }
         }
