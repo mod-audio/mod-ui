@@ -182,7 +182,9 @@ function HardwareManager(options) {
                     (tempo && modes.search(":enumeration:") >= 0)
                   )
                 {
+                  if (!tempo || (tempo && !startsWith(actuator.uri, "/hmi/potentiometer"))) { // Disable pot addressing in tempo sync mode
                     available[actuator.uri] = actuator
+                  }
                 }
             }
         }
