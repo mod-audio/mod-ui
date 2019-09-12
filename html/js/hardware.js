@@ -385,9 +385,8 @@ function HardwareManager(options) {
           }
         }
 
-        // when addressing an actuator group, all “child” actuators are no longer available to be addressed to anything else,
+        // when addressing an actuator group, all “child” actuators or intersecting actuator groups are no longer available to be addressed to anything else,
         // except on different pages
-        // TODO remove
         for (var i in HARDWARE_PROFILE) {
           if (HARDWARE_PROFILE[i].group) {
             groupActuator = HARDWARE_PROFILE[i]
@@ -396,7 +395,13 @@ function HardwareManager(options) {
               groupAddressings = self.addressingsData[instance]
               for (var k in groupActuator.group) {
                 table.find('[data-uri="' + groupActuator.group[k] + '"][data-page="' + groupAddressings.page + '"]').addClass('disabled')
+                for (var l = 0 in actuators) {
+                  if (l !== groupActuator.uri && actuators[l].group && actuators[l].group.includes(groupActuator.group[k])) {
+                    groupTable.find('[data-uri="' + l + '"][data-page="' + groupAddressings.page + '"]').addClass('disabled')
+                  }
+                }
               }
+
             }
           }
         }
@@ -435,7 +440,6 @@ function HardwareManager(options) {
         }
 
         // when addressing an actuator group, all “child” actuators are no longer available to be addressed to anything else
-        // TODO remove
         for (var i in HARDWARE_PROFILE) {
           if (HARDWARE_PROFILE[i].group) {
             groupActuator = HARDWARE_PROFILE[i]
