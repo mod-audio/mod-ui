@@ -713,6 +713,10 @@ class Host(object):
         self.hmi_ping_io = self.ioloop.call_later(5, self.ping_hmi)
         self.hmi.ping(None)
 
+    def ping_hmi_start(self):
+        if self.hmi_ping_io is None:
+            self.hmi_ping_io = self.ioloop.call_later(5, self.ping_hmi)
+
     def ping_hmi_stop(self):
         if self.hmi_ping_io is not None:
             self.ioloop.remove_timeout(self.hmi_ping_io)
@@ -728,7 +732,7 @@ class Host(object):
             if ((self.hmi.initialized or self.hmi.isFake()) and self.profile_applied) or self._attemptNumber >= 20:
                 print("HMI initialized FINAL", self._attemptNumber, self.hmi.initialized)
                 del self._attemptNumber
-                #self.hmi_ping_io = self.ioloop.call_later(5, self.ping_hmi)
+                #self.ping_hmi_start()
                 callback(self.hmi.initialized)
             else:
                 self._attemptNumber += 1
@@ -801,7 +805,7 @@ class Host(object):
         if not init_jack():
             self.hasSerialMidiIn = False
             self.hasSerialMidiOut = False
-            return
+            return False
 
         for port in get_jack_hardware_ports(True, False):
             self.audioportsIn.append(port.split(":",1)[-1])
@@ -811,6 +815,8 @@ class Host(object):
 
         self.hasSerialMidiIn = has_serial_midi_input_port()
         self.hasSerialMidiOut = has_serial_midi_output_port()
+
+        return True
 
     def close_jack(self):
         close_jack()
@@ -877,12 +883,25 @@ class Host(object):
     def writer_connection_closed(self):
         self.writesock = None
         self.crashed = True
+        self.connected = False
         self.statstimer.stop()
 
         if self.memtimer is not None:
             self.memtimer.stop()
 
         self.msg_callback("stop")
+
+        while True:
+            try:
+                msg, callback, datatype = self._queue.pop(0)
+                logging.debug("[host] popped from queue: %s", msg)
+            except IndexError:
+                self._idle = True
+                break
+
+            callback(process_resp(None, datatype))
+
+        self.ioloop.call_later(5, self.reconnect_jack)
 
     def send_hmi_boot(self, callback):
         display_brightness = self.prefs.get("display-brightness", DEFAULT_DISPLAY_BRIGHTNESS, int, DISPLAY_BRIGHTNESS_VALUES)
@@ -926,6 +945,11 @@ class Host(object):
         actuators = [actuator['uri'] for actuator in self.descriptor.get('actuators', [])]
         self.addressings.current_page = 0
         self.addressings.load_current(actuators, (None, None), False, abort_catcher)
+
+    def reconnect_jack(self):
+        if not self.init_jack():
+            return
+        self.open_connection_if_needed(None)
 
     # -----------------------------------------------------------------------------------------------------------------
 
@@ -1059,7 +1083,7 @@ class Host(object):
             self.initialize_hmi(False, callback)
 
         self.hmi.ui_dis(initialize_callback)
-        self.hmi.ping(self.ping_hmi)
+        #self.ping_hmi_start()
 
     # -----------------------------------------------------------------------------------------------------------------
     # Message handling
@@ -4207,16 +4231,6 @@ _:b%i
             if port_addressing:
 
                 group_actuators = self.addressings.get_group_actuators(port_addressing['actuator_uri'])
-                if group_actuators is not None:
-                    def group_callback(ok):
-                        if not ok:
-                            callback(False)
-                            return
-                        pluginData['ports'][portsymbol] = value
-                        self.send_modified("param_set %d %s %f" % (instance_id, portsymbol, value), callback, datatype='boolean')
-                        self.msg_callback("param_set %s %s %f" % (instance, portsymbol, value))
-                    self.control_set_other_group_actuator(group_actuators, hw_id, value, group_callback)
-                    return
 
                 if port_addressing.get('tempo', None):
                     # compute new port value based on received divider value
@@ -4237,13 +4251,19 @@ _:b%i
                     if port['units']['symbol'] != 'BPM': # convert back into port unit if needed
                         port_value = convert_seconds_to_port_value_equivalent(port_value, port['units']['symbol'])
 
-                    def address_callback(ok):
+                    def param_set_callback(ok):
                         if not ok:
                             callback(False)
                             return
                         pluginData['ports'][portsymbol] = port_value
                         self.send_modified("param_set %d %s %f" % (instance_id, portsymbol, port_value), callback, datatype='boolean')
                         self.msg_callback("param_set %s %s %f" % (instance, portsymbol, port_value))
+
+                    def address_callback(ok):
+                        if not ok:
+                            callback(False)
+                            return
+                        self.control_set_other_group_actuator(group_actuators, hw_id, value, param_set_callback)
 
                     actuator_uri = port_addressing['actuator_uri']
                     label = port_addressing['label']
@@ -4253,8 +4273,21 @@ _:b%i
                     tempo = port_addressing['tempo']
                     dividers = value
                     page = port_addressing['page']
+
+                    cb = address_callback if group_actuators else param_set_callback
                     self.address(instance, portsymbol, actuator_uri, label, minimum, maximum, port_value, steps,
-                                 tempo, dividers, page, address_callback, not_param_set=True, send_hmi=False)
+                                 tempo, dividers, page, cb, not_param_set=True, send_hmi=False)
+                    return
+
+                if group_actuators is not None:
+                    def group_callback(ok):
+                        if not ok:
+                            callback(False)
+                            return
+                        pluginData['ports'][portsymbol] = value
+                        self.send_modified("param_set %d %s %f" % (instance_id, portsymbol, value), callback, datatype='boolean')
+                        self.msg_callback("param_set %s %s %f" % (instance, portsymbol, value))
+                    self.control_set_other_group_actuator(group_actuators, hw_id, value, group_callback)
                     return
 
             pluginData['ports'][portsymbol] = value
@@ -4265,8 +4298,8 @@ _:b%i
         for group_actuator_uri in group_actuators:
             group_hw_id = self.addressings.hmi_uri2hw_map[group_actuator_uri]
             if group_hw_id != hw_id:
-                #self.hmi.control_set(group_hw_id, float(value), callback)
-                self.addressings.hmi_load_current(group_actuator_uri, callback)
+                self.hmi.control_set(group_hw_id, float(value), callback)
+                # self.addressings.hmi_load_current(group_actuator_uri, callback)
                 return
         callback(True)
 
