@@ -97,8 +97,8 @@ def process_resp(resp, datatype):
 class Protocol(object):
     # Make sure this is free of duplicates!
     COMMANDS = {
-        "banks": [],
-        "pedalboards": [int],
+        "banks": [int, int],
+        "pedalboards": [int, int, int],
         "pb": [int, str],
 
         "hw_con": [int, int],
