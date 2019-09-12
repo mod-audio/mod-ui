@@ -55,7 +55,7 @@ function is_control_chain_uri (uri) {
 }
 
 // Units supported for tap tempo (lowercase)
-var kTapTempoUnits = ['ms','s','hz','bpm']
+var kTapTempoUnits = ['bpm']
 
 function HardwareManager(options) {
     var self = this
@@ -122,9 +122,14 @@ function HardwareManager(options) {
 
     // Get all addressing types that can be used for a port
     // Most of these are 1:1 match to LV2 hints, but we have extra details.
-    this.availableAddressingTypes = function (port) {
+    this.availableAddressingTypes = function (port, tempo) {
         var properties = port.properties
         var available  = []
+
+        if (tempo) {
+          available.push("enumeration")
+          return available
+        }
 
         if (properties.indexOf("toggled") >= 0) {
             available.push("toggled")
@@ -140,7 +145,7 @@ function HardwareManager(options) {
             available.push("logarithmic")
         if (properties.indexOf("trigger") >= 0)
             available.push("trigger")
-        if (properties.indexOf("tapTempo") >= 0 && kTapTempoUnits.indexOf(port.units.symbol.toLowerCase()) >= 0)
+        if (port.symbol === ":bpm" && properties.indexOf("tapTempo") >= 0 && kTapTempoUnits.indexOf(port.units.symbol.toLowerCase()) >= 0)
             available.push("taptempo")
 
         if (port.scalePoints.length >= 2)
@@ -148,13 +153,14 @@ function HardwareManager(options) {
         if (port.symbol == ":bypass")
             available.push("bypass")
 
+
         return available
     }
 
     // Gets a list of available actuators for a port
-    this.availableActuators = function (instance, port) {
+    this.availableActuators = function (instance, port, tempo) {
         var key   = instance+"/"+port.symbol
-        var types = self.availableAddressingTypes(port)
+        var types = self.availableAddressingTypes(port, tempo)
 
         var available = {}
 
@@ -379,9 +385,8 @@ function HardwareManager(options) {
           }
         }
 
-        // when addressing an actuator group, all “child” actuators are no longer available to be addressed to anything else,
+        // when addressing an actuator group, all “child” actuators or intersecting actuator groups are no longer available to be addressed to anything else,
         // except on different pages
-        // TODO remove
         for (var i in HARDWARE_PROFILE) {
           if (HARDWARE_PROFILE[i].group) {
             groupActuator = HARDWARE_PROFILE[i]
@@ -390,7 +395,13 @@ function HardwareManager(options) {
               groupAddressings = self.addressingsData[instance]
               for (var k in groupActuator.group) {
                 table.find('[data-uri="' + groupActuator.group[k] + '"][data-page="' + groupAddressings.page + '"]').addClass('disabled')
+                for (var l = 0 in actuators) {
+                  if (l !== groupActuator.uri && actuators[l].group && actuators[l].group.includes(groupActuator.group[k])) {
+                    groupTable.find('[data-uri="' + l + '"][data-page="' + groupAddressings.page + '"]').addClass('disabled')
+                  }
+                }
               }
+
             }
           }
         }
@@ -429,7 +440,6 @@ function HardwareManager(options) {
         }
 
         // when addressing an actuator group, all “child” actuators are no longer available to be addressed to anything else
-        // TODO remove
         for (var i in HARDWARE_PROFILE) {
           if (HARDWARE_PROFILE[i].group) {
             groupActuator = HARDWARE_PROFILE[i]
@@ -481,6 +491,8 @@ function HardwareManager(options) {
         var typeInput = form.find('input[name=type]')
         var hmiPageInput = form.find('input[name=hmi-page]')
         var hmiUriInput = form.find('input[name=hmi-uri]')
+        var deviceTable = form.find('.device-table')
+        var sensibility = form.find('select[name=steps]')
 
         // Create selectable buttons to choose addressings type and show relevant dynamic content
         var typeInputVal = kNullAddressURI
@@ -495,7 +507,7 @@ function HardwareManager(options) {
         }
         typeInput.val(typeInputVal)
 
-        var actuators = self.availableActuators(instance, port)
+        var actuators = self.availableActuators(instance, port, currentAddressing.tempo)
         var typeOptions = [kNullAddressURI, deviceOption, kMidiLearnURI, ccOption]
         var i = 0
         typeSelect.find('option').unwrap().each(function() {
@@ -562,11 +574,10 @@ function HardwareManager(options) {
             self.disableMinMaxSteps(form, true)
           }
           form.find('input[name=tempo]').bind('change', function() {
-            if(this.checked) {
-              self.disableMinMaxSteps(form, true)
-            } else {
-              self.disableMinMaxSteps(form, false)
-            }
+            self.disableMinMaxSteps(form, this.checked)
+            actuators = self.availableActuators(instance, port, this.checked)
+            deviceTable.empty()
+            self.buildDeviceTable(deviceTable, currentAddressing, actuators, hmiPageInput, hmiUriInput, sensibility, port)
           })
           dividerOptions = self.buildDividerOptions(divider, port, currentAddressing.dividers)
         }
@@ -601,10 +612,8 @@ function HardwareManager(options) {
             }
         }
 
-        var sensibility = form.find('select[name=steps]')
         self.buildSensibilityOptions(sensibility, port, currentAddressing.steps)
 
-        var deviceTable = form.find('.device-table')
         self.buildDeviceTable(deviceTable, currentAddressing, actuators, hmiPageInput, hmiUriInput, sensibility, port)
 
         // Hide sensibility if current addressing actuator does not support it
@@ -662,7 +671,11 @@ function HardwareManager(options) {
         var portValuesWithDividerLabels = []
         // Sync port value to bpm
         if (tempoValue && dividerValue && port.units && port.units.symbol) {
-          port.value = convertSecondsToPortValueEquivalent(getPortValue(self.beatsPerMinutePort.value, dividerValue), port.units.symbol);
+          if (port.units.symbol === 'BPM') {
+            port.value = getPortValue(self.beatsPerMinutePort.value, dividerValue, port.units.symbol) // no need for conversion
+          } else {
+            port.value = convertSecondsToPortValueEquivalent(getPortValue(self.beatsPerMinutePort.value, dividerValue, port.units.symbol), port.units.symbol);
+          }
         }
 
         var addressing = {

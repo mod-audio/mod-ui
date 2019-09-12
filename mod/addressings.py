@@ -235,6 +235,7 @@ class Addressings(object):
                     else: # cannot address more because we've reached the max nb of pages for current actuator
                         break
 
+
                 curvalue = self._task_get_port_value(instance_id, portsymbol)
                 group = addr.get('group', None)
                 addrdata = self.add(instance_id, plugin_uri, portsymbol, actuator_uri,
@@ -522,8 +523,17 @@ class Addressings(object):
             if "enumeration" in pprops and len(port_info["scalePoints"]) > 0:
                 options = [(sp["value"], sp["label"]) for sp in port_info["scalePoints"]]
 
+            # Load tap tempo addressings as tempo divider (1/4)
+            if not tempo and "tapTempo" in pprops and actuator_uri.startswith("/hmi/footswitch"):
+                tempo = True
+                dividers = 4
+
             if tempo:
                 divider_options = get_divider_options(port_info, 20.0, 280.0) # XXX min and max bpm hardcoded
+                options_list = [opt['value'] for opt in divider_options]
+                # Set min and max to min and max value among dividers
+                minimum = min(options_list)
+                maximum = max(options_list)
                 options = [(o["value"], o["label"]) for o in divider_options]
 
         # TODO do something with spreset
@@ -567,7 +577,7 @@ class Addressings(object):
                 if "trigger" in pprops:
                     hmitype |= HMI_ADDRESSING_TYPE_TRIGGER
 
-                if "tapTempo" in pprops and actuator_uri.startswith("/hmi/footswitch"):
+                if portsymbol == ":bpm" and "tapTempo" in pprops and actuator_uri.startswith("/hmi/footswitch"):
                     hmitype |= HMI_ADDRESSING_TYPE_TAP_TEMPO
 
                 if tempo or "enumeration" in pprops and len(port_info["scalePoints"]) > 0:
