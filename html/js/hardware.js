@@ -122,9 +122,14 @@ function HardwareManager(options) {
 
     // Get all addressing types that can be used for a port
     // Most of these are 1:1 match to LV2 hints, but we have extra details.
-    this.availableAddressingTypes = function (port) {
+    this.availableAddressingTypes = function (port, tempo) {
         var properties = port.properties
         var available  = []
+
+        if (tempo) {
+          available.push("enumeration")
+          return available
+        }
 
         if (properties.indexOf("toggled") >= 0) {
             available.push("toggled")
@@ -148,13 +153,14 @@ function HardwareManager(options) {
         if (port.symbol == ":bypass")
             available.push("bypass")
 
+
         return available
     }
 
     // Gets a list of available actuators for a port
     this.availableActuators = function (instance, port, tempo) {
         var key   = instance+"/"+port.symbol
-        var types = self.availableAddressingTypes(port)
+        var types = self.availableAddressingTypes(port, tempo)
 
         var available = {}
 
@@ -168,9 +174,6 @@ function HardwareManager(options) {
                 // if (!PAGES_CB && usedAddressings.length >= actuator.max_assigns && usedAddressings.indexOf(key) < 0) {
                 //     continue
                 // }
-                if (tempo && modes.search(":enumeration:") < 0) {
-                  continue
-                }
 
                 if (
                     (types.indexOf("integer"    ) >= 0 && modes.search(":integer:"    ) >= 0) ||
@@ -181,8 +184,7 @@ function HardwareManager(options) {
                     (types.indexOf("trigger"    ) >= 0 && modes.search(":trigger:"    ) >= 0) ||
                     (types.indexOf("taptempo"   ) >= 0 && modes.search(":taptempo:"   ) >= 0) ||
                     (types.indexOf("scalepoints") >= 0 && modes.search(":scalepoints:") >= 0) ||
-                    (types.indexOf("bypass"     ) >= 0 && modes.search(":bypass:"     ) >= 0) ||
-                    (tempo && modes.search(":enumeration:") >= 0)
+                    (types.indexOf("bypass"     ) >= 0 && modes.search(":bypass:"     ) >= 0)
                   )
                 {
                     available[actuator.uri] = actuator
