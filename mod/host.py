@@ -713,6 +713,10 @@ class Host(object):
         self.hmi_ping_io = self.ioloop.call_later(5, self.ping_hmi)
         self.hmi.ping(None)
 
+    def ping_hmi_start(self):
+        if self.hmi_ping_io is None:
+            self.hmi_ping_io = self.ioloop.call_later(5, self.ping_hmi)
+
     def ping_hmi_stop(self):
         if self.hmi_ping_io is not None:
             self.ioloop.remove_timeout(self.hmi_ping_io)
@@ -728,7 +732,7 @@ class Host(object):
             if ((self.hmi.initialized or self.hmi.isFake()) and self.profile_applied) or self._attemptNumber >= 20:
                 print("HMI initialized FINAL", self._attemptNumber, self.hmi.initialized)
                 del self._attemptNumber
-                #self.hmi_ping_io = self.ioloop.call_later(5, self.ping_hmi)
+                #self.ping_hmi_start()
                 callback(self.hmi.initialized)
             else:
                 self._attemptNumber += 1
@@ -801,7 +805,7 @@ class Host(object):
         if not init_jack():
             self.hasSerialMidiIn = False
             self.hasSerialMidiOut = False
-            return
+            return False
 
         for port in get_jack_hardware_ports(True, False):
             self.audioportsIn.append(port.split(":",1)[-1])
@@ -811,6 +815,8 @@ class Host(object):
 
         self.hasSerialMidiIn = has_serial_midi_input_port()
         self.hasSerialMidiOut = has_serial_midi_output_port()
+
+        return True
 
     def close_jack(self):
         close_jack()
@@ -877,12 +883,25 @@ class Host(object):
     def writer_connection_closed(self):
         self.writesock = None
         self.crashed = True
+        self.connected = False
         self.statstimer.stop()
 
         if self.memtimer is not None:
             self.memtimer.stop()
 
         self.msg_callback("stop")
+
+        while True:
+            try:
+                msg, callback, datatype = self._queue.pop(0)
+                logging.debug("[host] popped from queue: %s", msg)
+            except IndexError:
+                self._idle = True
+                break
+
+            callback(process_resp(None, datatype))
+
+        self.ioloop.call_later(5, self.reconnect_jack)
 
     def send_hmi_boot(self, callback):
         display_brightness = self.prefs.get("display-brightness", DEFAULT_DISPLAY_BRIGHTNESS, int, DISPLAY_BRIGHTNESS_VALUES)
@@ -926,6 +945,11 @@ class Host(object):
         actuators = [actuator['uri'] for actuator in self.descriptor.get('actuators', [])]
         self.addressings.current_page = 0
         self.addressings.load_current(actuators, (None, None), False, abort_catcher)
+
+    def reconnect_jack(self):
+        if not self.init_jack():
+            return
+        self.open_connection_if_needed(None)
 
     # -----------------------------------------------------------------------------------------------------------------
 
@@ -1059,7 +1083,7 @@ class Host(object):
             self.initialize_hmi(False, callback)
 
         self.hmi.ui_dis(initialize_callback)
-        self.hmi.ping(self.ping_hmi)
+        #self.ping_hmi_start()
 
     # -----------------------------------------------------------------------------------------------------------------
     # Message handling
