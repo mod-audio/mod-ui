@@ -309,6 +309,21 @@ function HardwareManager(options) {
         }
       }
 
+      // Disabled/Enable save button
+      if (currentAddressing && currentAddressing.uri) {
+        if (typeInputVal === ccOption && !self.hasControlChainDevice()) {
+          form.find('.js-save').addClass('disabled')
+        } else {
+          form.find('.js-save').removeClass('disabled')
+        }
+      } else {
+        if (typeInputVal === kNullAddressURI || (typeInputVal === ccOption && !self.hasControlChainDevice())) {
+          form.find('.js-save').addClass('disabled')
+        } else {
+          form.find('.js-save').removeClass('disabled')
+        }
+      }
+
       // Hide/show extended specific content
       if (typeInputVal == kMidiLearnURI || typeInputVal.lastIndexOf(kMidiCustomPrefixURI, 0) === 0) {
         form.find('.sensibility').css({visibility:"hidden"})
@@ -622,6 +637,9 @@ function HardwareManager(options) {
         }
 
         form.find('.js-save').click(function () {
+            if ($(this).hasClass('disabled')) {
+              return
+            }
             self.saveAddressing(instance, port, actuators, typeInput, hmiPageInput, hmiUriInput, ccActuatorSelect, min, max, label, pname, sensibility, tempo, divider, dividerOptions, form)
         })
 
