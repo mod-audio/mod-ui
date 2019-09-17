@@ -125,9 +125,16 @@ def take_screenshot(bundle_path, html_dir, cache_dir, size):
             'connected_img': audio_output_connected,
             'type': 'audio',
         })
-    if pb['hardware'].get('serial_midi_in', False):
+    if pb['hardware'].get('serial_midi_in', False) and pb.get('midi_separated_mode', False):
         device_capture.append({
             'symbol': 'serial_midi_in',
+            'img': midi_output_img,
+            'connected_img': midi_output_connected,
+            'type': 'midi',
+        })
+    if not pb.get('midi_separated_mode', False):
+        device_capture.append({
+            'symbol': 'midi_merger_out',
             'img': midi_output_img,
             'connected_img': midi_output_connected,
             'type': 'midi',
@@ -148,9 +155,16 @@ def take_screenshot(bundle_path, html_dir, cache_dir, size):
             'connected_img': audio_input_connected,
             'type': 'audio',
         })
-    if pb['hardware'].get('serial_midi_out', False):
+    if pb['hardware'].get('serial_midi_out', False) and pb.get('midi_separated_mode', False):
         device_playback.append({
             'symbol': 'serial_midi_out',
+            'img': midi_input_img,
+            'connected_img': midi_input_connected,
+            'type': 'midi',
+        })
+    if not pb.get('midi_separated_mode', False):
+        device_playback.append({
+            'symbol': 'midi_broadcaster_in',
             'img': midi_input_img,
             'connected_img': midi_input_connected,
             'type': 'midi',
@@ -255,11 +269,11 @@ def take_screenshot(bundle_path, html_dir, cache_dir, size):
     used_symbols = [c['source'] for c in pb['connections']] + [c['target'] for c in pb['connections']]
     device_capture = [
         d for d in device_capture
-        if d['type'] == 'audio' or d['symbol'] == 'serial_midi_in' or d['symbol'] in used_symbols
+        if d['type'] == 'audio' or d['symbol'] == 'serial_midi_in' or d['symbol'] == 'midi_merger_out' or d['symbol'] in used_symbols
     ]
     device_playback = [
         d for d in device_playback
-        if d['type'] == 'audio' or d['symbol'] == 'serial_midi_out' or d['symbol'] in used_symbols
+        if d['type'] == 'audio' or d['symbol'] == 'serial_midi_out' or d['symbol'] == 'midi_broadcaster_in' or d['symbol'] in used_symbols
     ]
     step = rint(height / (len(device_capture) + 1))
     h = step
