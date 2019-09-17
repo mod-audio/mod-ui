@@ -123,24 +123,30 @@ function HardwareManager(options) {
     // Get all addressing types that can be used for a port
     // Most of these are 1:1 match to LV2 hints, but we have extra details.
     this.availableAddressingTypes = function (port, tempo) {
+        if (tempo) {
+            return ["enumeration"]
+        }
+
         var properties = port.properties
         var available  = []
 
-        if (tempo) {
-          available.push("enumeration")
-          return available
-        }
-
         if (properties.indexOf("toggled") >= 0) {
             available.push("toggled")
-        } else if (properties.indexOf("integer") >= 0) {
-            available.push("integer")
-        } else {
-            available.push("float")
         }
 
-        if (properties.indexOf("enumeration") >= 0)
+        if (properties.indexOf("enumeration") >= 0) {
             available.push("enumeration")
+        } else {
+            // prevent enumeration together with integer or float
+            if (properties.indexOf("toggled") >= 0) {
+                // handled above
+            } else if (properties.indexOf("integer") >= 0) {
+                available.push("integer")
+            } else {
+                available.push("float")
+            }
+        }
+
         if (properties.indexOf("logarithmic") >= 0)
             available.push("logarithmic")
         if (properties.indexOf("trigger") >= 0)
@@ -152,7 +158,6 @@ function HardwareManager(options) {
             available.push("scalepoints")
         if (port.symbol == ":bypass")
             available.push("bypass")
-
 
         return available
     }
