@@ -1320,6 +1320,9 @@ class Host(object):
                     diff = 0.5-diff
                 self.last_data_finish_handle = self.ioloop.call_later(diff, self.send_output_data_ready)
 
+            else:
+                logging.debug("[host] data_finish ignored")
+
         else:
             logging.error("[host] unrecognized command: %s", cmd)
 
@@ -1359,8 +1362,8 @@ class Host(object):
     @gen.coroutine
     def send_output_data_ready(self, now = None):
         self.last_data_finish_msg = time.time() if now is None else now
-        yield gen.Task(self.send_notmodified, "output_data_ready", datatype='boolean')
         self.last_data_finish_handle = None
+        yield gen.Task(self.send_notmodified, "output_data_ready")
 
     def process_write_queue(self):
         try:
