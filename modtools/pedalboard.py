@@ -146,6 +146,13 @@ def take_screenshot(bundle_path, html_dir, cache_dir, size):
             'connected_img': midi_output_connected,
             'type': 'midi',
         })
+    for ix in range(0, pb['hardware']['cv_ins']):
+        device_capture.append({
+            'symbol': 'cv_capture_{0}'.format(ix + 1),
+            'img': cv_output_img,
+            'connected_img': cv_output_connected,
+            'type': 'cv',
+        })
 
     device_playback = []
     for ix in range(0, pb['hardware']['audio_outs']):
@@ -175,6 +182,13 @@ def take_screenshot(bundle_path, html_dir, cache_dir, size):
             'img': midi_input_img,
             'connected_img': midi_input_connected,
             'type': 'midi',
+        })
+    for ix in range(0, pb['hardware']['cv_outs']):
+        device_playback.append({
+            'symbol': 'cv_playback_{0}'.format(ix + 1),
+            'img': cv_input_img,
+            'connected_img': cv_input_connected,
+            'type': 'cv',
         })
 
     # create plugins
@@ -268,11 +282,11 @@ def take_screenshot(bundle_path, html_dir, cache_dir, size):
     used_symbols = [c['source'] for c in pb['connections']] + [c['target'] for c in pb['connections']]
     device_capture = [
         d for d in device_capture
-        if d['type'] == 'audio' or d['symbol'] == 'serial_midi_in' or d['symbol'] == 'midi_merger_out' or d['symbol'] in used_symbols
+        if d['type'] == 'audio' or d['type'] == 'cv' or d['symbol'] == 'serial_midi_in' or d['symbol'] == 'midi_merger_out' or d['symbol'] in used_symbols
     ]
     device_playback = [
         d for d in device_playback
-        if d['type'] == 'audio' or d['symbol'] == 'serial_midi_out' or d['symbol'] == 'midi_broadcaster_in' or d['symbol'] in used_symbols
+        if d['type'] == 'audio' or d['type'] == 'cv' or d['symbol'] == 'serial_midi_out' or d['symbol'] == 'midi_broadcaster_in' or d['symbol'] in used_symbols
     ]
     step = rint(height / (len(device_capture) + 1))
     h = step
