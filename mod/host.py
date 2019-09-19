@@ -2672,7 +2672,7 @@ class Host(object):
                                                                                   ccData['channel'],
                                                                                   ccData['control'],
                                                                                   minimum, maximum)
-                self.set_transport_bpb(pb['timeInfo']['bpb'], False, True, False)
+                self.set_transport_bpb(pb['timeInfo']['bpb'], False, True, False, False)
 
             if timeAvailable & kPedalboardTimeAvailableBPM:
                 ccData = pb['timeInfo']['bpmCC']
@@ -2689,7 +2689,7 @@ class Host(object):
                                                                                   ccData['channel'],
                                                                                   ccData['control'],
                                                                                   minimum, maximum)
-                self.set_transport_bpm(pb['timeInfo']['bpm'], False, True, False)
+                self.set_transport_bpm(pb['timeInfo']['bpm'], False, True, False, False)
 
             if timeAvailable & kPedalboardTimeAvailableRolling:
                 ccData = pb['timeInfo']['rollingCC']
@@ -3600,9 +3600,16 @@ _:b%i
                 logging.exception(e)
 
     @gen.coroutine
-    def set_transport_bpb(self, bpb, sendHost, sendHMI, sendWeb, callback=None, datatype='int'):
+    def set_transport_bpb(self, bpb, sendHost, sendHMI, sendWeb, sendHMIAddressing=True, callback=None, datatype='int'):
         self.transport_bpb = bpb
         self.profile.set_tempo_bpb(bpb)
+
+        # If bpb is addressed to an actuator, then set value on hmi if currently displayed
+        if sendHMIAddressing:
+            try:
+                yield gen.Task(self.paramhmi_set, 'pedalboard', ":bpb", bpb)
+            except Exception as e:
+                logging.exception(e)
 
         if sendHost:
             self.send_modified("transport %i %f %f" % (self.transport_rolling,
@@ -3630,7 +3637,7 @@ _:b%i
                                                          self.transport_sync))
 
     @gen.coroutine
-    def set_transport_bpm(self, bpm, sendHost, sendHMI, sendWeb, callback=None, datatype='int'):
+    def set_transport_bpm(self, bpm, sendHost, sendHMI, sendWeb, sendHMIAddressing, callback=None, datatype='int'):
         self.transport_bpm = bpm
         self.profile.set_tempo_bpm(bpm)
 
@@ -3649,6 +3656,13 @@ _:b%i
                     yield gen.Task(self.set_param_from_bpm, addr, bpm)
                 except Exception as e:
                     logging.exception(e)
+
+        # If bpm is addressed to an actuator, then set value on hmi if currently displayed
+        if sendHMIAddressing:
+            try:
+                yield gen.Task(self.paramhmi_set, 'pedalboard', ":bpm", bpm)
+            except Exception as e:
+                logging.exception(e)
 
         if sendHost:
             self.send_modified("transport %i %f %f" % (self.transport_rolling,
@@ -4230,9 +4244,9 @@ _:b%i
         elif instance_id == PEDALBOARD_INSTANCE_ID:
             # NOTE do not use try/except to send callback here, since the callback is not the last action
             if portsymbol == ":bpb":
-                self.set_transport_bpb(value, True, False, True, callback)
+                self.set_transport_bpb(value, True, True, True, False, callback)
             elif portsymbol == ":bpm":
-                self.set_transport_bpm(value, True, False, True, callback)
+                self.set_transport_bpm(value, True, True, True, False, callback)
             elif portsymbol == ":rolling":
                 rolling = bool(value > 0.5)
                 self.set_transport_rolling(rolling, True, False, True, callback)
@@ -4674,7 +4688,7 @@ _:b%i
     def hmi_set_tempo_bpm(self, bpm, callback):
         """Set the Jack BPM."""
         logging.debug("hmi tempo bpm set to %f", float(bpm))
-        self.set_transport_bpm(bpm, True, False, True, callback)
+        self.set_transport_bpm(bpm, True, False, True, True, callback)
 
     def hmi_get_tempo_bpb(self, callback):
         """Get the Jack Beats Per Bar."""
@@ -4685,7 +4699,7 @@ _:b%i
     def hmi_set_tempo_bpb(self, bpb, callback):
         """Set the Jack Beats Per Bar."""
         logging.debug("hmi tempo bpb set to %f", float(bpb))
-        self.set_transport_bpb(bpb, True, False, True, callback)
+        self.set_transport_bpb(bpb, True, False, True, True, callback)
 
     def hmi_get_snapshot_prgch(self, callback):
         """Query the MIDI channel for selecting a snapshot via Program Change."""
@@ -5180,8 +5194,8 @@ _:b%i
     @gen.coroutine
     def profile_apply(self, values, isIntermediate):
         try:
-            yield gen.Task(self.set_transport_bpb, values['transportBPB'], True, True, True)
-            yield gen.Task(self.set_transport_bpm, values['transportBPM'], True, True, True)
+            yield gen.Task(self.set_transport_bpb, values['transportBPB'], True, True, True, True)
+            yield gen.Task(self.set_transport_bpm, values['transportBPM'], True, True, True, True)
         except Exception as e:
             logging.exception(e)
 
