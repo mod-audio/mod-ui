@@ -317,7 +317,7 @@ function HardwareManager(options) {
           form.find('.js-save').removeClass('disabled')
         }
       } else {
-        if (typeInputVal === kNullAddressURI || (typeInputVal === ccOption && !self.hasControlChainDevice())) {
+        if ((!form.find('input[name=tempo]').prop("checked") && typeInputVal === kNullAddressURI) || (typeInputVal === ccOption && !self.hasControlChainDevice())) {
           form.find('.js-save').addClass('disabled')
         } else {
           form.find('.js-save').removeClass('disabled')
@@ -590,6 +590,15 @@ function HardwareManager(options) {
           }
           form.find('input[name=tempo]').bind('change', function() {
             self.disableMinMaxSteps(form, this.checked)
+
+            if (currentAddressing.uri == null) {
+              if (this.checked) {
+                form.find('.js-save').removeClass('disabled')
+              } else if (typeInput.val() === kNullAddressURI) {
+                form.find('.js-save').addClass('disabled')
+              }
+            }
+
             actuators = self.availableActuators(instance, port, this.checked)
             deviceTable.empty()
             self.buildDeviceTable(deviceTable, currentAddressing, actuators, hmiPageInput, hmiUriInput, sensibility, port)
