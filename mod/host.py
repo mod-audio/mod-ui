@@ -2559,7 +2559,6 @@ class Host(object):
                     },
                     'version': 0,
                 }
-
         self.msg_callback("loading_start %i 0" % int(isDefault))
         self.msg_callback("size %d %d" % (pb['width'],pb['height']))
 
