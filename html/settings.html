@@ -472,7 +472,7 @@ $('document').ready(function() {
         }
 
         var name
-        if ($("#prefs-bluetooth-name").prop("checked")) {
+        if ($("#prefs-bluetooth-custom").prop("checked")) {
             name = $("#prefs-bluetooth-name").val()
         } else {
             name = ""
@@ -535,7 +535,7 @@ $('document').ready(function() {
     $("#prefs-prefs-disable-peakmeter").click(function () {
         enable_service("mod-peakmeter", $(this).prop("checked"), true)
     })
-    
+
     // ----------------------------------------------------------------------------------------------------------------
     // --- Backup & Restore
 
