@@ -2297,14 +2297,6 @@ class Host(object):
                 num = data[2].replace("nooice_capture_","",1)
                 return "nooice%s:nooice_capture_%s" % (num, num)
 
-            # Handle the Control Voltage faker
-            if data[2].startswith("cv_capture_"):
-                num = data[2].replace("cv_capture_", "", 1)
-                return "mod-fake-control-voltage:cv_capture_{0}".format(num)
-            if data[2].startswith("cv_playback_"):
-                num = data[2].replace("cv_playback_", "", 1)
-                return "mod-fake-control-voltage:cv_playback_{0}".format(num)
-
             # Default guess
             return "system:%s" % data[2]
 
