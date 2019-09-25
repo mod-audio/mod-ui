@@ -4216,13 +4216,16 @@ _:b%i
 
         elif instance_id == PEDALBOARD_INSTANCE_ID:
             # NOTE do not use try/except to send callback here, since the callback is not the last action
-            if portsymbol == ":bpb":
-                self.set_transport_bpb(value, True, True, True, False, callback)
-            elif portsymbol == ":bpm":
-                self.set_transport_bpm(value, True, True, True, False, callback)
-            elif portsymbol == ":rolling":
-                rolling = bool(value > 0.5)
-                self.set_transport_rolling(rolling, True, False, True, callback)
+            if portsymbol in (":bpb", ":bpm", ":rolling"):
+                callback(True)
+                callback = None
+                if portsymbol == ":bpb":
+                    self.set_transport_bpb(value, True, True, True, False)
+                elif portsymbol == ":bpm":
+                    self.set_transport_bpm(value, True, True, True, False)
+                elif portsymbol == ":rolling":
+                    rolling = bool(value > 0.5)
+                    self.set_transport_rolling(rolling, True, False, True)
             else:
                 print("ERROR: Trying to set value for the wrong pedalboard port:", portsymbol)
                 callback(False)
