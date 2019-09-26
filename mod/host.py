@@ -63,7 +63,7 @@ from modtools.tempo import (
 )
 from mod.settings import (
     APP, LOG, DEFAULT_PEDALBOARD, LV2_PEDALBOARDS_DIR, PEDALBOARD_INSTANCE, PEDALBOARD_INSTANCE_ID, PEDALBOARD_URI,
-    TUNER_URI, TUNER_INSTANCE_ID, TUNER_INPUT_PORT, TUNER_MONITOR_PORT, UNTITLED_PEDALBOARD_NAME,
+    TUNER_URI, TUNER_INSTANCE_ID, TUNER_INPUT_PORT, TUNER_MONITOR_PORT, HMI_TIMEOUT, UNTITLED_PEDALBOARD_NAME,
     MIDI_BEAT_CLOCK_SENDER_URI, MIDI_BEAT_CLOCK_SENDER_INSTANCE_ID, MIDI_BEAT_CLOCK_SENDER_OUTPUT_PORT
 )
 from mod.tuner import find_freqnotecents
@@ -732,7 +732,8 @@ class Host(object):
             if ((self.hmi.initialized or self.hmi.isFake()) and self.profile_applied) or self._attemptNumber >= 20:
                 print("HMI initialized FINAL", self._attemptNumber, self.hmi.initialized)
                 del self._attemptNumber
-                #self.ping_hmi_start()
+                if HMI_TIMEOUT > 0:
+                    self.ping_hmi_start()
                 callback(self.hmi.initialized)
             else:
                 self._attemptNumber += 1
@@ -1084,7 +1085,9 @@ class Host(object):
             self.initialize_hmi(False, callback)
 
         self.hmi.ui_dis(initialize_callback)
-        #self.ping_hmi_start()
+
+        if HMI_TIMEOUT > 0:
+            self.ping_hmi_start()
 
     # -----------------------------------------------------------------------------------------------------------------
     # Message handling

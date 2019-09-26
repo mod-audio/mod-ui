@@ -380,7 +380,6 @@ class SystemPreferences(JsonRequestHandler):
         self.prefs = []
 
         self.make_pref("bluetooth_name", self.OPTION_FILE_CONTENTS, "/data/bluetooth/name", str)
-        self.make_pref("disable_peakmeter", self.OPTION_FILE_EXISTS, "/data/disable-mod-peakmeter")
         self.make_pref("jack_mono_copy", self.OPTION_FILE_EXISTS, "/data/jack-mono-copy")
         self.make_pref("jack_sync_mode", self.OPTION_FILE_EXISTS, "/data/jack-sync-mode")
         self.make_pref("jack_256_frames",  self.OPTION_FILE_EXISTS, "/data/using-256-frames")
@@ -389,6 +388,10 @@ class SystemPreferences(JsonRequestHandler):
         self.make_pref("service_mixserver",  self.OPTION_FILE_EXISTS, "/data/enable-mixserver")
         self.make_pref("service_mod_sdk",    self.OPTION_FILE_EXISTS, "/data/enable-mod-sdk")
         self.make_pref("service_netmanager", self.OPTION_FILE_EXISTS, "/data/enable-netmanager")
+
+        # Workarounds
+        self.make_pref("autorestart_hmi", self.OPTION_FILE_EXISTS, "/data/autorestart-hmi")
+        self.make_pref("disable_peakmeter", self.OPTION_FILE_EXISTS, "/data/disable-mod-peakmeter")
 
     def make_pref(self, label, otype, data, valtype=None, valdef=None):
         self.prefs.append({
@@ -486,7 +489,11 @@ class SystemExeChange(JsonRequestHandler):
             path   = self.get_argument('path')
             create = bool(int(self.get_argument('create')))
 
-            if path not in ("disable-peakmeter", "jack-mono-copy", "jack-sync-mode", "using-256-frames"):
+            if path not in ("autorestart-hmi",
+                            "disable-peakmeter",
+                            "jack-mono-copy",
+                            "jack-sync-mode",
+                            "using-256-frames"):
                 self.write(False)
                 return
 
