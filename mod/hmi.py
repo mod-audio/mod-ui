@@ -22,7 +22,6 @@ from tornado import ioloop
 
 from mod import get_hardware_actuators, get_hardware_descriptor
 from mod.protocol import Protocol, ProtocolError, process_resp
-from mod.settings import LOG
 
 import logging
 import serial
@@ -165,7 +164,7 @@ class HMI(object):
         if self.need_flush != 0:
             if self.flush_io is not None:
                 self.ioloop.remove_timeout(self.flush_io)
-            self.flush_io = self.ioloop.call_later(2, self.flush)
+            self.flush_io = self.ioloop.call_later(self.timeout/2, self.flush)
 
         try:
             self.sp.read_until(b'\0', self.checker)
@@ -231,15 +230,16 @@ class HMI(object):
         if self.sp is None:
             return
 
-        if len(self.queue) > 30:
-            self.need_flush = len(self.queue)
+        if self.timeout > 0:
+            if len(self.queue) > 30:
+                self.need_flush = len(self.queue)
 
-        elif self.last_write_time != 0 and time.time() - self.last_write_time > self.timeout:
-            logging.warn("[hmi] no response for %ds, giving up", self.timeout)
-            if self.flush_io is not None:
-                self.ioloop.remove_timeout(self.flush_io)
-                self.flush_io = None
-            self.flush(True)
+            elif self.last_write_time != 0 and time.time() - self.last_write_time > self.timeout:
+                logging.warn("[hmi] no response for %ds, giving up", self.timeout)
+                if self.flush_io is not None:
+                    self.ioloop.remove_timeout(self.flush_io)
+                    self.flush_io = None
+                self.flush(True)
 
         if not any([ msg.startswith(resp) for resp in Protocol.RESPONSES ]):
             # make an exception for control_set, calling callback right away without waiting

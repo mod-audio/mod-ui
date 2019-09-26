@@ -68,7 +68,7 @@ LV2_PEDALBOARDS_DIR = os.path.expanduser("~/.pedalboards/")
 
 HMI_BAUD_RATE = os.environ.get('MOD_HMI_BAUD_RATE', 10000000)
 HMI_SERIAL_PORT = os.environ.get('MOD_HMI_SERIAL_PORT', "/dev/ttyUSB0")
-HMI_TIMEOUT = int(os.environ.get('MOD_HMI_TIMEOUT', 5))
+HMI_TIMEOUT = int(os.environ.get('MOD_HMI_TIMEOUT', 0))
 
 DEVICE_WEBSERVER_PORT = int(os.environ.get('MOD_DEVICE_WEBSERVER_PORT', 80))
 
