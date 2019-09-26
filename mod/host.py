@@ -5212,9 +5212,15 @@ _:b%i
         except Exception as e:
             logging.exception(e)
 
-        self.set_sync_mode(values['transportSource'], True, True, False, lambda r:None)
+        try:
+            if values['midiClockSend']:
+                yield gen.Task(self.hmi_set_send_midi_clk_on)
+            else:
+                yield gen.Task(self.hmi_set_send_midi_clk_off)
+        except Exception as e:
+            logging.exception(e)
 
-        self.hmi_set_send_midi_clk(values['midiClockSend'], lambda r:None)
+        self.set_sync_mode(values['transportSource'], True, True, False, lambda r:None)
 
         # skip alsamixer related things on intermediate/boot
         if not isIntermediate:
