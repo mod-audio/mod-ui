@@ -166,10 +166,7 @@ function HardwareManager(options) {
     this.availableActuators = function (instance, port, tempo) {
         var key   = instance+"/"+port.symbol
         var defaultTypes = self.availableAddressingTypes(port, false)
-        var types = defaultTypes
-        if (tempo) {
-          types = self.availableAddressingTypes(port, tempo)
-        }
+        var types = tempo ? self.availableAddressingTypes(port, tempo) : defaultTypes
 
         var available = {}
 
