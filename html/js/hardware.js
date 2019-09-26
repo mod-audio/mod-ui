@@ -165,7 +165,11 @@ function HardwareManager(options) {
     // Gets a list of available actuators for a port
     this.availableActuators = function (instance, port, tempo) {
         var key   = instance+"/"+port.symbol
-        var types = self.availableAddressingTypes(port, tempo)
+        var defaultTypes = self.availableAddressingTypes(port, false)
+        var types = defaultTypes
+        if (tempo) {
+          types = self.availableAddressingTypes(port, tempo)
+        }
 
         var available = {}
 
@@ -198,7 +202,7 @@ function HardwareManager(options) {
         }
 
         // midi-learn is always available, except for enumeration
-        if (types.indexOf("enumeration") < 0 || port.scalePoints.length == 2)
+        if (defaultTypes.indexOf("enumeration") < 0 || port.scalePoints.length == 2)
         {
             available[kMidiLearnURI] = {
                 uri  : kMidiLearnURI,
