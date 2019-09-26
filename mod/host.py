@@ -4834,6 +4834,10 @@ _:b%i
         """Query the status of sending MIDI Beat Clock."""
         logging.debug("hmi set midi beat clock status to %i", onoff)
 
+        if not self.profile.set_send_midi_clk(onoff):
+            callback(False)
+            return
+
         if onoff == 0:
             self.hmi_set_send_midi_clk_off(callback)
         elif onoff == 1:
