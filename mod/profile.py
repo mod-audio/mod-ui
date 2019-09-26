@@ -278,6 +278,9 @@ class Profile(object):
     def set_tempo_bpm(self, bpm):
         return self._compare_and_set_value('transportBPM', bpm)
 
+    def set_send_midi_clk(self, onoff):
+        return self._compare_and_set_value('midiClockSend', onoff)
+
     # -----------------------------------------------------------------------------------------------------------------
     # persistent state
 
