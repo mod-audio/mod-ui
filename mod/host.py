@@ -899,7 +899,8 @@ class Host(object):
                 self._idle = True
                 break
 
-            callback(process_resp(None, datatype))
+            if callback is not None:
+                callback(process_resp(None, datatype))
 
         self.ioloop.call_later(5, self.reconnect_jack)
 
