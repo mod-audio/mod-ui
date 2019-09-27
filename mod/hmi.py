@@ -333,12 +333,6 @@ class HMI(object):
 
             if hasTempo:
                 unit = '""'
-                if hmi_set_index:
-                    # yet another workaround
-                    options = options.copy()
-                    options.insert(0, (-2, "   "))
-                    options.append((-1, "   "))
-                    numOpts += 2
                 startIndex = 0
                 endIndex = numOpts
             else:
@@ -350,13 +344,16 @@ class HMI(object):
                     startIndex = ivalue - 2
                 endIndex = min(startIndex+5, numOpts)
 
+            isPaginated = int(startIndex != 0 or endIndex != numOpts)
+
             for i in range(startIndex, endIndex):
                 option = options[i]
                 xdata  = '"%s" %f' % (option[1].replace('"', '')[:31].upper(), float(option[0]))
                 optionsData.append(xdata)
 
-            options = "%d %s" % (len(optionsData), " ".join(optionsData))
+            options = "%d %d %s" % (len(optionsData), isPaginated, " ".join(optionsData))
             options = options.strip()
+            print(options)
 
         else:
             options = "0"
