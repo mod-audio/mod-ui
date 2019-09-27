@@ -4391,12 +4391,14 @@ _:b%i
         else:
             startIndex = ivalue - 2
 
+        isPaginated = int(startIndex != 0 or endIndex != numOpts)
+
         for i in range(startIndex, min(startIndex+5, numOpts)):
             option = options[i]
             xdata  = '"%s" %f' % (option[1].replace('"', '')[:31].upper(), float(option[0]))
             optionsData.append(xdata)
 
-        options = "%d %s" % (len(optionsData), " ".join(optionsData))
+        options = "%d %s" % (len(optionsData), isPaginated, " ".join(optionsData))
         options = options.strip()
 
         label = data['label']
