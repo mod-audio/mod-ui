@@ -4419,10 +4419,11 @@ _:b%i
             startIndex = numOpts-5
         else:
             startIndex = ivalue - 2
+        endIndex = min(startIndex+5, numOpts)
 
         isPaginated = int(startIndex != 0 or endIndex != numOpts)
 
-        for i in range(startIndex, min(startIndex+5, numOpts)):
+        for i in range(startIndex, endIndex):
             option = options[i]
             xdata  = '"%s" %f' % (option[1].replace('"', '')[:31].upper(), float(option[0]))
             optionsData.append(xdata)
