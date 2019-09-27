@@ -215,8 +215,8 @@ def take_screenshot(bundle_path, html_dir, cache_dir, size):
                     columns = json.loads(fh.read())
             else:
                 columns = {
-                    'in_ports': (tuple(c) for c in detect_first_column(pimg, pimg.size[0])),
-                    'out_ports': (tuple(c) for c in detect_first_column(pimg, pimg.size[0], rtol=True)),
+                    'in_ports': tuple(tuple(c) for c in detect_first_column(pimg, pimg.size[0])),
+                    'out_ports': tuple(tuple(c) for c in detect_first_column(pimg, pimg.size[0], rtol=True)),
                 }
                 with open(filename, 'w') as fh:
                     fh.write(json.dumps(columns))
