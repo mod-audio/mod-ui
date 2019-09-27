@@ -353,7 +353,6 @@ class HMI(object):
 
             options = "%d %d %s" % (len(optionsData), isPaginated, " ".join(optionsData))
             options = options.strip()
-            print(options)
 
         else:
             options = "0"
