@@ -62,16 +62,16 @@ def rgbtoi(r, g, b):
 
 
 def detect_first_column(img, scan=20, rtol=False):
-    was_zero = True
+    was_transparent = True
     found = False
     for _i in range(0, scan):
         i = img.size[0] - _i - 1 if rtol else _i
         for j in range(0, img.size[1]):
             pixel = img.getpixel((i, j))
-            is_zero = rgbtoi(*pixel[0:3]) == 0
-            if was_zero != is_zero:
+            is_transparent = pixel[3] < 255
+            if was_transparent != is_transparent:
                 yield i, j
-                was_zero = is_zero
+                was_transparent = is_transparent
                 found = True
         if found:
             return
