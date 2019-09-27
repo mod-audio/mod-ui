@@ -62,16 +62,16 @@ def rgbtoi(r, g, b):
 
 
 def detect_first_column(img, scan=20, rtol=False):
-    was_zero = True
+    was_transparent = True
     found = False
     for _i in range(0, scan):
         i = img.size[0] - _i - 1 if rtol else _i
         for j in range(0, img.size[1]):
             pixel = img.getpixel((i, j))
-            is_zero = rgbtoi(*pixel[0:3]) == 0
-            if was_zero != is_zero:
+            is_transparent = pixel[3] < 255
+            if was_transparent != is_transparent:
                 yield i, j
-                was_zero = is_zero
+                was_transparent = is_transparent
                 found = True
         if found:
             return
@@ -230,14 +230,16 @@ def take_screenshot(bundle_path, html_dir, cache_dir, size):
         # detect connectors
         in_ports = data['ports']['audio']['input'] + data['ports']['midi']['input'] + data['ports']['cv']['input']
         if len(in_ports) > 0:
+            audio_in_ix = len(data['ports']['audio']['input'])
+            cv_in_ix = len(data['ports']['cv']['input']) + audio_in_ix
             for ix, conn in enumerate(chunks(columns['in_ports'], 2)):
                 if ix < len(in_ports):
                     in_ports[ix]['connector'] = conn
-                    if ix < len(data['ports']['audio']['input']):
+                    if ix < audio_in_ix:
                         in_ports[ix]['connected_img'] = audio_input_connected
                         in_ports[ix]['offset'] = (79, 15)
                         in_ports[ix]['type'] = 'audio'
-                    elif ix < len(data['ports']['cv']['input']):
+                    elif ix < cv_in_ix:
                         in_ports[ix]['connected_img'] = cv_input_connected
                         in_ports[ix]['offset'] = (67, 15)
                         in_ports[ix]['type'] = 'cv'
@@ -249,14 +251,16 @@ def take_screenshot(bundle_path, html_dir, cache_dir, size):
                 raise Exception('Connector detection for input ports of plugin {0} failed'.format(p['uri']))
         out_ports = data['ports']['audio']['output'] + data['ports']['midi']['output'] + data['ports']['cv']['output']
         if len(out_ports) > 0:
+            audio_out_ix = len(data['ports']['audio']['output'])
+            cv_out_ix = len(data['ports']['cv']['output']) + audio_out_ix
             for ix, conn in enumerate(chunks(columns['out_ports'], 2)):
                 if ix < len(out_ports):
                     out_ports[ix]['connector'] = conn
-                    if ix < len(data['ports']['audio']['output']):
+                    if ix < audio_out_ix:
                         out_ports[ix]['connected_img'] = audio_output_connected
                         out_ports[ix]['offset'] = (8, 15)
                         out_ports[ix]['type'] = 'audio'
-                    elif ix < len(data['ports']['cv']['output']):
+                    elif ix < cv_out_ix:
                         out_ports[ix]['connected_img'] = cv_output_connected
                         out_ports[ix]['offset'] = (11, 22)
                         out_ports[ix]['type'] = 'cv'
