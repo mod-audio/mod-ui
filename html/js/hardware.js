@@ -920,7 +920,7 @@ function HardwareManager(options) {
         }
 
         // disable this control
-        options.setEnabled(instance, portSymbol, false, true)
+        options.setEnabled(instance, portSymbol, false, true, true)
     }
 
     this.addActuator = function (actuator) {
