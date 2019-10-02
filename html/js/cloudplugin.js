@@ -182,6 +182,15 @@ JqueryClass('cloudPluginBox', {
             summary: "true",
             image_version: VERSION,
         }
+        // hide/show featured plugins if searching/not searching
+        var featuredPlugins = self.find('.featured-plugins')
+        if (query.text) {
+          if (featuredPlugins.is(':visible')) {
+            featuredPlugins.hide()
+          }
+        } else if (featuredPlugins.is(':hidden')) {
+          featuredPlugins.show()
+        }
         if (self.find('input:checkbox[name=unstable]:checked').length == 0) {
             query.stable = "true"
         }
