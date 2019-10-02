@@ -4700,6 +4700,7 @@ _:b%i
     def hmi_set_tempo_bpm(self, bpm, callback):
         """Set the Jack BPM."""
         logging.debug("hmi tempo bpm set to %f", float(bpm))
+        self.hmi.set_bpm(bpm)
         self.set_transport_bpm(bpm, True, False, True, True, callback)
 
     def hmi_get_tempo_bpb(self, callback):
