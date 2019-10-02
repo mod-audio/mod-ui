@@ -78,7 +78,7 @@ def detect_first_column(img, scan=20, rtol=False):
 
 
 def chunks(l, n):
-    o = list(l) if type(l) is not list else l
+    o = l if isinstance(l, tuple) else tuple(l)
     for i in range(0, len(o), n):
         yield o[i:i + n]
 
@@ -125,16 +125,16 @@ def take_screenshot(bundle_path, html_dir, cache_dir, size):
             'connected_img': audio_output_connected,
             'type': 'audio',
         })
-    if pb['hardware'].get('serial_midi_in', False) and pb.get('midi_separated_mode', False):
+    if not pb.get('midi_separated_mode', False):
         device_capture.append({
-            'symbol': 'serial_midi_in',
+            'symbol': 'midi_merger_out',
             'img': midi_output_img,
             'connected_img': midi_output_connected,
             'type': 'midi',
         })
-    if not pb.get('midi_separated_mode', False):
+    elif pb['hardware'].get('serial_midi_in', False):
         device_capture.append({
-            'symbol': 'midi_merger_out',
+            'symbol': 'serial_midi_in',
             'img': midi_output_img,
             'connected_img': midi_output_connected,
             'type': 'midi',
@@ -162,16 +162,16 @@ def take_screenshot(bundle_path, html_dir, cache_dir, size):
             'connected_img': audio_input_connected,
             'type': 'audio',
         })
-    if pb['hardware'].get('serial_midi_out', False) and pb.get('midi_separated_mode', False):
+    if not pb.get('midi_separated_mode', False):
         device_playback.append({
-            'symbol': 'serial_midi_out',
+            'symbol': 'midi_broadcaster_in',
             'img': midi_input_img,
             'connected_img': midi_input_connected,
             'type': 'midi',
         })
-    if not pb.get('midi_separated_mode', False):
+    elif pb['hardware'].get('serial_midi_out', False):
         device_playback.append({
-            'symbol': 'midi_broadcaster_in',
+            'symbol': 'serial_midi_out',
             'img': midi_input_img,
             'connected_img': midi_input_connected,
             'type': 'midi',
@@ -216,15 +216,15 @@ def take_screenshot(bundle_path, html_dir, cache_dir, size):
                     columns = json.loads(fh.read())
             else:
                 columns = {
-                    'in_ports': [list(c) for c in detect_first_column(pimg, pimg.size[0])],
-                    'out_ports': [list(c) for c in detect_first_column(pimg, pimg.size[0], rtol=True)],
+                    'in_ports': tuple(tuple(c) for c in detect_first_column(pimg, pimg.size[0])),
+                    'out_ports': tuple(tuple(c) for c in detect_first_column(pimg, pimg.size[0], rtol=True)),
                 }
                 with open(filename, 'w') as fh:
                     fh.write(json.dumps(columns))
         else:  # tuna can, we have to guess the position of the connectors
             columns = {
-                'in_ports': [[-9, 121], [-9, 146], [-9, 190], [-9, 215], [-9, 259], [-9, -284], [-9, 328], [-9, 353]],
-                'out_ports': [[259, 121], [259, 146], [259, 190], [259, 215], [259, 259], [259, 284], [259, 328], [259, 353]]
+                'in_ports': ((-9, 121), (-9, 146), (-9, 190), (-9, 215), (-9, 259), (-9, -284), (-9, 328), (-9, 353)),
+                'out_ports': ((259, 121), (259, 146), (259, 190), (259, 215), (259, 259), (259, 284), (259, 328), (259, 353))
             }
 
         # detect connectors
@@ -284,15 +284,16 @@ def take_screenshot(bundle_path, html_dir, cache_dir, size):
     height = rint(height) or rint(1112)
 
     # calculate device connectors positions
-    used_symbols = [c['source'] for c in pb['connections']] + [c['target'] for c in pb['connections']]
-    device_capture = [
+    used_symbols = tuple(c['source'] for c in pb['connections']) + tuple(c['target'] for c in pb['connections'])
+    used_types = ('audio', 'cv')
+    device_capture = tuple(
         d for d in device_capture
-        if d['type'] == 'audio' or d['type'] == 'cv' or d['symbol'] == 'serial_midi_in' or d['symbol'] == 'midi_merger_out' or d['symbol'] in used_symbols
-    ]
-    device_playback = [
+        if d['type'] in used_types or d['symbol'] in ('serial_midi_in', 'midi_merger_out') or d['symbol'] in used_symbols
+    )
+    device_playback = tuple(
         d for d in device_playback
-        if d['type'] == 'audio' or d['type'] == 'cv' or d['symbol'] == 'serial_midi_out' or d['symbol'] == 'midi_broadcaster_in' or d['symbol'] in used_symbols
-    ]
+        if d['type'] in used_types or d['symbol'] in ('serial_midi_out', 'midi_broadcaster_in') or d['symbol'] in used_symbols
+    )
     step = rint(height / (len(device_capture) + 1))
     h = step
     for d in device_capture:

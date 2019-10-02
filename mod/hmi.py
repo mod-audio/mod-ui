@@ -85,6 +85,7 @@ class HMI(object):
         self.hw_desc = get_hardware_descriptor()
         hw_actuators = self.hw_desc.get('actuators', [])
         self.hw_ids = [actuator['id'] for actuator in hw_actuators]
+        self.bpm = None
         self.init(init_cb)
 
     def isFake(self):
@@ -423,13 +424,23 @@ class HMI(object):
         """
         self.send('bank_config %d %d' % (hw_id, action), callback, 'boolean')
 
+    def set_bpm(self, bpm):
+        if int(bpm) != self.bpm:
+            self.bpm = int(bpm)
+            return True
+        return False
+
     # new messages
 
     def clear(self, callback):
         self.send("pb_cl", callback)
 
     def set_profile_value(self, key, value, callback):
-        self.send("mc %i %i" % (key, int(value)), callback, 'boolean')
+        # Do not send new bpm value to HMI if its int value is the same
+        if key == Menu.TEMPO_BPM_ID and not self.set_bpm(value):
+            callback(True)
+        else:
+            self.send("mc %i %i" % (key, int(value)), callback, 'boolean')
 
     def set_profile_values(self, playback_rolling, values, callback):
         msg  = "mc"

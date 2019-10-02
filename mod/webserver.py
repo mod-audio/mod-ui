@@ -2091,7 +2091,8 @@ def prepare(isModApp = False):
 
             print("Host failed to initialize, is the backend running?")
             SESSION.host.close_jack()
-            sys.exit(1)
+            if not isModApp:
+                sys.exit(1)
 
         elif not SESSION.host.connected:
             ioinstance.call_later(0.2, checkhost)
