@@ -38,7 +38,7 @@ import os, json, socket, time, logging
 from mod import get_hardware_descriptor, read_file_contents, safe_json_load, symbolify, TextFileFlusher
 from mod.addressings import Addressings, HMI_ADDRESSING_TYPE_ENUMERATION, HMI_ADDRESSING_TYPE_REVERSE_ENUM
 from mod.bank import list_banks, get_last_bank_and_pedalboard, save_last_bank_and_pedalboard
-from mod.hmi import Menu
+from mod.hmi import Menu, HMI_ADDRESSING_FLAG_PAGINATED, HMI_ADDRESSING_FLAG_WRAP_AROUND, HMI_ADDRESSING_FLAG_PAGE_END
 from mod.profile import Profile
 from mod.protocol import Protocol, ProtocolError, process_resp
 from modtools.utils import (
@@ -4392,14 +4392,20 @@ _:b%i
             startIndex = ivalue - 2
         endIndex = min(startIndex+5, numOpts)
 
-        isPaginated = int(startIndex != 0 or endIndex != numOpts)
+        flags = 0x0
+        if startIndex != 0 or endIndex != numOpts:
+            flags |= HMI_ADDRESSING_FLAG_PAGINATED
+        if data.get('group', None) is None:
+            flags |= HMI_ADDRESSING_FLAG_WRAP_AROUND
+        if endIndex == numOpts:
+            flags |= HMI_ADDRESSING_FLAG_PAGE_END
 
         for i in range(startIndex, endIndex):
             option = options[i]
             xdata  = '"%s" %f' % (option[1].replace('"', '')[:31].upper(), float(option[0]))
             optionsData.append(xdata)
 
-        options = "%d %d %s" % (len(optionsData), isPaginated, " ".join(optionsData))
+        options = "%d %d %s" % (len(optionsData), flags, " ".join(optionsData))
         options = options.strip()
 
         label = data['label']
