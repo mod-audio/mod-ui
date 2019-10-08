@@ -58,6 +58,9 @@ JqueryClass('cloudPluginBox', {
         self.data('searchbox', searchbox)
         searchbox.cleanableInput()
 
+        self.data('category', null)
+        self.cloudPluginBox('setCategory', "All")
+
         searchbox.keydown(function (e) {
             if (e.keyCode == 13) { //detect enter
                 self.cloudPluginBox('search')
@@ -107,14 +110,12 @@ JqueryClass('cloudPluginBox', {
 
         var results = {}
         self.data('results', results)
-        self.data('category', null)
+
         self.data('firstLoad', true)
         self.find('ul.categories li').click(function () {
             var category = $(this).attr('id').replace(/^cloud-plugin-tab-/, '')
             self.cloudPluginBox('setCategory', category)
         })
-
-        self.cloudPluginBox('setCategory', "All")
 
         options.open = function () {
             self.data('firstLoad', true)
@@ -135,11 +136,15 @@ JqueryClass('cloudPluginBox', {
 
     setCategory: function (category) {
         var self = $(this)
+
         self.find('ul.categories li').removeClass('selected')
         self.find('.plugins-wrapper').hide()
         self.find('#cloud-plugin-tab-' + category).addClass('selected')
         self.find('#cloud-plugin-content-' + category).show().css('display', 'inline-block')
         self.data('category', category)
+
+        // hide/show featured plugins if specific category/All
+        self.cloudPluginBox('toggleFeaturedPlugins')
     },
     cleanResults: function () {
         var self = $(this)
@@ -174,6 +179,21 @@ JqueryClass('cloudPluginBox', {
         }
     },
 
+    toggleFeaturedPlugins: function () {
+      var self  = $(this)
+      var featuredPlugins = self.find('.featured-plugins')
+      var queryText = self.data('searchbox').val()
+      var category = self.data('category')
+
+      if (queryText === '' && category === 'All') {
+        if (featuredPlugins.is(':hidden')) {
+          featuredPlugins.show()
+        }
+      } else if (featuredPlugins.is(':visible')) {
+        featuredPlugins.hide()
+      }
+    },
+
     // search all or installed, depending on selected option
     search: function (customRenderCallback) {
         var self  = $(this)
@@ -182,15 +202,10 @@ JqueryClass('cloudPluginBox', {
             summary: "true",
             image_version: VERSION,
         }
+
         // hide/show featured plugins if searching/not searching
-        var featuredPlugins = self.find('.featured-plugins')
-        if (query.text) {
-          if (featuredPlugins.is(':visible')) {
-            featuredPlugins.hide()
-          }
-        } else if (featuredPlugins.is(':hidden')) {
-          featuredPlugins.show()
-        }
+        self.cloudPluginBox('toggleFeaturedPlugins')
+
         if (self.find('input:checkbox[name=unstable]:checked').length == 0) {
             query.stable = "true"
         }
