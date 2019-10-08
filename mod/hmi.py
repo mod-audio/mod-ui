@@ -425,8 +425,8 @@ class HMI(object):
         self.send('bank_config %d %d' % (hw_id, action), callback, 'boolean')
 
     def set_bpm(self, bpm):
-        if int(bpm) != self.bpm:
-            self.bpm = int(bpm)
+        if round(bpm) != self.bpm:
+            self.bpm = round(bpm)
             return True
         return False
 
@@ -440,6 +440,8 @@ class HMI(object):
         if key == Menu.TEMPO_BPM_ID and not self.set_bpm(value):
             callback(True)
         else:
+            if key == Menu.TEMPO_BPM_ID:
+                value = self.bpm # set rounded value for bpm
             self.send("mc %i %i" % (key, int(value)), callback, 'boolean')
 
     def set_profile_values(self, playback_rolling, values, callback):
