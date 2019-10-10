@@ -4238,7 +4238,7 @@ _:b%i
 
                         # Update value on the HMI for the other actuator in the group
                         def group_callback(ok):
-                            self.control_set_other_group_actuator(group_actuators, hw_id, value, callback)
+                            self.control_set_other_group_actuator(group_actuators, hw_id, port_addressing, value, callback)
 
                         cb = group_callback if group_actuators is not None else callback
                         self.preset_load(instance, pluginData['mapPresets'][value], abort_catcher, cb)
@@ -4307,7 +4307,7 @@ _:b%i
                         if not ok:
                             callback(False)
                             return
-                        self.control_set_other_group_actuator(group_actuators, hw_id, value, param_set_callback)
+                        self.control_set_other_group_actuator(group_actuators, hw_id, port_addressing, value, param_set_callback)
 
                     actuator_uri = port_addressing['actuator_uri']
                     label = port_addressing['label']
@@ -4331,19 +4331,30 @@ _:b%i
                         pluginData['ports'][portsymbol] = value
                         self.send_modified("param_set %d %s %f" % (instance_id, portsymbol, value), callback, datatype='boolean')
                         self.msg_callback("param_set %s %s %f" % (instance, portsymbol, value))
-                    self.control_set_other_group_actuator(group_actuators, hw_id, value, group_callback)
+                    self.control_set_other_group_actuator(group_actuators, hw_id, port_addressing, value, group_callback)
                     return
 
             pluginData['ports'][portsymbol] = value
             self.send_modified("param_set %d %s %f" % (instance_id, portsymbol, value), callback, datatype='boolean')
             self.msg_callback("param_set %s %s %f" % (instance, portsymbol, value))
 
-    def control_set_other_group_actuator(self, group_actuators, hw_id, value, callback):
+    def control_set_other_group_actuator(self, group_actuators, hw_id, port_addressing, value, callback):
+        addressing_data = port_addressing.copy()
+
+        # Update value in addressing data sent to hmi
+        if addressing_data.get('tempo', False):
+            addressing_data['dividers'] = value
+        else:
+            addressing_data['value'] = value
+
         for group_actuator_uri in group_actuators:
             group_hw_id = self.addressings.hmi_uri2hw_map[group_actuator_uri]
             if group_hw_id != hw_id:
-                self.hmi.control_set(group_hw_id, float(value), callback)
-                # self.addressings.hmi_load_current(group_actuator_uri, callback)
+                # Set reverse enum type if re-addressing first actuator in group
+                group_actuator = next((act for act in self.addressings.hw_actuators if act['uri'] == addressing_data['group']), None)
+                if group_actuator is not None and group_actuator['group'].index(group_actuator_uri) == 0:
+                    addressing_data['hmitype'] |= HMI_ADDRESSING_TYPE_REVERSE_ENUM
+                self.addressings.load_addr(group_actuator_uri, addressing_data, callback)
                 return
         callback(True)
 
