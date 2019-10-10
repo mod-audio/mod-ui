@@ -38,8 +38,8 @@ import os, json, socket, time, logging
 from mod import get_hardware_descriptor, read_file_contents, safe_json_load, symbolify, TextFileFlusher
 from mod.addressings import Addressings, HMI_ADDRESSING_TYPE_ENUMERATION, HMI_ADDRESSING_TYPE_REVERSE_ENUM
 from mod.bank import list_banks, get_last_bank_and_pedalboard, save_last_bank_and_pedalboard
-from mod.hmi import Menu
-from mod.profile import Profile
+from mod.hmi import Menu, HMI_ADDRESSING_FLAG_PAGINATED, HMI_ADDRESSING_FLAG_WRAP_AROUND, HMI_ADDRESSING_FLAG_PAGE_END
+from mod.profile import Profile, apply_mixer_values
 from mod.protocol import Protocol, ProtocolError, process_resp
 from modtools.utils import (
     charPtrToString,
@@ -203,9 +203,9 @@ class Host(object):
 
         self.addressings = Addressings()
         self.mapper = InstanceIdMapper()
-        self.profile = Profile(self.profile_apply)
-        self.banks = list_banks()
         self.descriptor = get_hardware_descriptor()
+        self.profile = Profile(self.profile_apply, self.descriptor)
+        self.banks = list_banks()
 
         self.current_tuner_port = 1
         self.current_tuner_mute = self.prefs.get("tuner-mutes-outputs", False, bool)
@@ -367,8 +367,8 @@ class Host(object):
         Protocol.register_cmd_callback("g_hp", self.hmi_get_hp_cv)
         Protocol.register_cmd_callback("s_hp", self.hmi_set_hp_cv)
 
-        Protocol.register_cmd_callback("g_ex_m", self.hmi_get_exp_mode)
-        Protocol.register_cmd_callback("s_ex_m", self.hmi_set_exp_mode)
+        Protocol.register_cmd_callback("g_exp_m", self.hmi_get_exp_mode)
+        Protocol.register_cmd_callback("s_exp_m", self.hmi_set_exp_mode)
         Protocol.register_cmd_callback("g_cvb", self.hmi_get_control_voltage_bias)
         Protocol.register_cmd_callback("s_cvb", self.hmi_set_control_voltage_bias)
 
@@ -739,7 +739,7 @@ class Host(object):
                 callback(self.hmi.initialized)
             else:
                 self._attemptNumber += 1
-                self.ioloop.call_later(0.1, retry)
+                self.ioloop.call_later(0.25, retry)
                 print("HMI initialized waiting", self._attemptNumber)
 
         self._attemptNumber = 0
@@ -4443,14 +4443,20 @@ _:b%i
             startIndex = ivalue - 2
         endIndex = min(startIndex+5, numOpts)
 
-        isPaginated = int(startIndex != 0 or endIndex != numOpts)
+        flags = 0x0
+        if startIndex != 0 or endIndex != numOpts:
+            flags |= HMI_ADDRESSING_FLAG_PAGINATED
+        if data.get('group', None) is None:
+            flags |= HMI_ADDRESSING_FLAG_WRAP_AROUND
+        if endIndex == numOpts:
+            flags |= HMI_ADDRESSING_FLAG_PAGE_END
 
         for i in range(startIndex, endIndex):
             option = options[i]
             xdata  = '"%s" %f' % (option[1].replace('"', '')[:31].upper(), float(option[0]))
             optionsData.append(xdata)
 
-        options = "%d %d %s" % (len(optionsData), isPaginated, " ".join(optionsData))
+        options = "%d %d %s" % (len(optionsData), flags, " ".join(optionsData))
         options = options.strip()
 
         label = data['label']
@@ -5246,20 +5252,14 @@ _:b%i
         except Exception as e:
             logging.exception(e)
 
-        self.set_sync_mode(values['transportSource'], True, True, False, lambda r:None)
+        try:
+            yield gen.Task(self.set_sync_mode, values['transportSource'], True, True, False)
+        except Exception as e:
+            logging.exception(e)
 
         # skip alsamixer related things on intermediate/boot
         if not isIntermediate:
-            os.system("mod-amixer in 1 xvol %f" % values['input1volume'])
-            os.system("mod-amixer in 2 xvol %f" % values['input2volume'])
-            os.system("mod-amixer out 1 xvol %f" % values['output1volume'])
-            os.system("mod-amixer out 2 xvol %f" % values['output2volume'])
-            os.system("mod-amixer hp xvol %f" % values['headphoneVolume'])
-            # TODO
-            #'cvBias'
-            #'expressionPedalMode'
-            #'inputMode' (exp, cv)
-            #'outputMode' (hp, cv)
+            apply_mixer_values(values, self.descriptor.get("platform", None))
 
         try:
             yield gen.Task(self.hmi.set_profile_values, self.transport_rolling, values)

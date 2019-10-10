@@ -27,6 +27,10 @@ import logging
 import serial
 import time
 
+HMI_ADDRESSING_FLAG_PAGINATED   = 0x1
+HMI_ADDRESSING_FLAG_WRAP_AROUND = 0x2
+HMI_ADDRESSING_FLAG_PAGE_END    = 0x4
+
 class Menu(object):
     # implemented
     STEREOLINK_INP_ID     = 13
@@ -345,14 +349,20 @@ class HMI(object):
                     startIndex = ivalue - 2
                 endIndex = min(startIndex+5, numOpts)
 
-            isPaginated = int(startIndex != 0 or endIndex != numOpts)
+            flags = 0x0
+            if startIndex != 0 or endIndex != numOpts:
+                flags |= HMI_ADDRESSING_FLAG_PAGINATED
+            if data.get('group', None) is None:
+                flags |= HMI_ADDRESSING_FLAG_WRAP_AROUND
+            if endIndex == numOpts:
+                flags |= HMI_ADDRESSING_FLAG_PAGE_END
 
             for i in range(startIndex, endIndex):
                 option = options[i]
                 xdata  = '"%s" %f' % (option[1].replace('"', '')[:31].upper(), float(option[0]))
                 optionsData.append(xdata)
 
-            options = "%d %d %s" % (len(optionsData), isPaginated, " ".join(optionsData))
+            options = "%d %d %s" % (len(optionsData), flags, " ".join(optionsData))
             options = options.strip()
 
         else:
@@ -425,8 +435,8 @@ class HMI(object):
         self.send('bank_config %d %d' % (hw_id, action), callback, 'boolean')
 
     def set_bpm(self, bpm):
-        if int(bpm) != self.bpm:
-            self.bpm = int(bpm)
+        if round(bpm) != self.bpm:
+            self.bpm = round(bpm)
             return True
         return False
 
@@ -440,6 +450,8 @@ class HMI(object):
         if key == Menu.TEMPO_BPM_ID and not self.set_bpm(value):
             callback(True)
         else:
+            if key == Menu.TEMPO_BPM_ID:
+                value = self.bpm # set rounded value for bpm
             self.send("mc %i %i" % (key, int(value)), callback, 'boolean')
 
     def set_profile_values(self, playback_rolling, values, callback):
