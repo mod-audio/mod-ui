@@ -154,8 +154,8 @@ class Protocol(object):
         "s_ex": [int],   # set_exp_cv
         "g_hp": [],      # get_hp_cv
         "s_hp": [int],   # set_hp_cv
-        "g_ex_m": [],    # get_exp_mode
-        "s_ex_m": [int], # set_exp_mode
+        "g_exp_m": [],    # get_exp_mode
+        "s_exp_m": [int], # set_exp_mode
         "g_cvb": [],     # get_cv_bias
         "s_cvb": [int],  # set_cv_bias
 

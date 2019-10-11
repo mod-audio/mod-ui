@@ -22,14 +22,51 @@ def ensure_data_index_valid(data, fallback):
     if not isinstance(index, int) or index < 1 or index > Profile.NUM_PROFILES:
         data['index'] = fallback
 
-def fill_in_mixer_values(data):
+def apply_mixer_values(values, platform):
     if not os.path.exists("/usr/bin/mod-amixer"):
         return
-    data['input1volume']    = float(getoutput("/usr/bin/mod-amixer in 1 xvol").strip())
-    data['input2volume']    = float(getoutput("/usr/bin/mod-amixer in 2 xvol").strip())
-    data['output1volume']   = float(getoutput("/usr/bin/mod-amixer out 1 xvol").strip())
-    data['output1volume']   = float(getoutput("/usr/bin/mod-amixer out 2 xvol").strip())
-    data['headphoneVolume'] = float(getoutput("/usr/bin/mod-amixer hp xvol").strip())
+    if platform == "duo":
+        os.system("/usr/bin/mod-amixer in 1 dvol %f" % values['input1volume'])
+        os.system("/usr/bin/mod-amixer in 2 dvol %f" % values['input2volume'])
+        os.system("/usr/bin/mod-amixer out 1 dvol %f" % values['output1volume'])
+        os.system("/usr/bin/mod-amixer out 2 dvol %f" % values['output2volume'])
+        os.system("/usr/bin/mod-amixer hp dvol %f" % values['headphoneVolume'])
+        os.system("/usr/bin/mod-amixer hp byp %s" % ("on" if values['headphoneBypass'] else "off"))
+        return
+    if platform == "duox":
+        os.system("/usr/bin/mod-amixer in 1 xvol %f" % values['input1volume'])
+        os.system("/usr/bin/mod-amixer in 2 xvol %f" % values['input2volume'])
+        os.system("/usr/bin/mod-amixer out 1 xvol %f" % values['output1volume'])
+        os.system("/usr/bin/mod-amixer out 2 xvol %f" % values['output2volume'])
+        os.system("/usr/bin/mod-amixer hp xvol %f" % values['headphoneVolume'])
+        return
+    if platform is None:
+        logging.error("[profile] apply_mixer_values called without platform")
+    else:
+        logging.error("[profile] apply_mixer_values called with unknown platform %s", platform)
+
+def fill_in_mixer_values(data, platform):
+    if not os.path.exists("/usr/bin/mod-amixer"):
+        return
+    if platform == "duo":
+        data['input1volume']    = float(getoutput("/usr/bin/mod-amixer in 1 dvol").strip())
+        data['input2volume']    = float(getoutput("/usr/bin/mod-amixer in 2 dvol").strip())
+        data['output1volume']   = float(getoutput("/usr/bin/mod-amixer out 1 dvol").strip())
+        data['output1volume']   = float(getoutput("/usr/bin/mod-amixer out 2 dvol").strip())
+        data['headphoneVolume'] = float(getoutput("/usr/bin/mod-amixer hp dvol").strip())
+        data['headphoneBypass'] = bool(getoutput("/usr/bin/mod-amixer hp byp").strip() == "on")
+        return
+    if platform == "duox":
+        data['input1volume']    = float(getoutput("/usr/bin/mod-amixer in 1 xvol").strip())
+        data['input2volume']    = float(getoutput("/usr/bin/mod-amixer in 2 xvol").strip())
+        data['output1volume']   = float(getoutput("/usr/bin/mod-amixer out 1 xvol").strip())
+        data['output1volume']   = float(getoutput("/usr/bin/mod-amixer out 2 xvol").strip())
+        data['headphoneVolume'] = float(getoutput("/usr/bin/mod-amixer hp xvol").strip())
+        return
+    if platform is None:
+        logging.error("[profile] fill_in_mixer_values called without platform")
+    else:
+        logging.error("[profile] fill_in_mixer_values called with unknown platform %s", platform)
 
 # The user profile models environmental context.
 # That is all settings that are related to the physical hookup of the device.
@@ -66,7 +103,7 @@ class Profile(object):
 
     DEFAULTS = {
         'cvBias': CONTROL_VOLTAGE_BIAS_0_to_5,
-        'expressionPedalMode': EXPRESSION_PEDAL_MODE_TIP,
+        'expPedalMode': EXPRESSION_PEDAL_MODE_TIP,
         'headphoneVolume': -6.0, # 60%
         'inputMode': INPUT_MODE_EXP_PEDAL,
         'inputStereoLink': True,
@@ -109,10 +146,11 @@ class Profile(object):
         },
     }
 
-    def __init__(self, applyFn):
-        self.applyFn = applyFn
-        self.changed = False
-        self.values  = self.DEFAULTS.copy()
+    def __init__(self, applyFn, hwdescriptor):
+        self.applyFn  = applyFn
+        self.platform = hwdescriptor.get("platform", None)
+        self.changed  = False
+        self.values   = self.DEFAULTS.copy()
 
         if os.path.exists(self.INTERMEDIATE_PROFILE_PATH):
             data = safe_json_load(self.INTERMEDIATE_PROFILE_PATH, dict)
@@ -125,7 +163,7 @@ class Profile(object):
             except IOError:
                 pass
 
-        fill_in_mixer_values(self.values)
+        fill_in_mixer_values(self.values, self.platform)
         ioloop.IOLoop.instance().add_callback(self.apply_first)
 
     # -----------------------------------------------------------------------------------------------------------------
@@ -168,7 +206,7 @@ class Profile(object):
         return self.values['cvBias']
 
     def get_exp_mode(self):
-        return self.values['expressionPedalMode']
+        return self.values['expPedalMode']
 
     def get_master_volume_channel_mode(self):
         return self.values['masterVolumeChannelMode']
@@ -220,7 +258,7 @@ class Profile(object):
         if value not in (self.EXPRESSION_PEDAL_MODE_TIP, self.EXPRESSION_PEDAL_MODE_SLEEVE):
             logging.error("[profile] set_exp_mode called with invalid value %s", value)
             return False
-        return self._compare_and_set_value('expressionPedalMode', value)
+        return self._compare_and_set_value('expPedalMode', value)
 
     def set_headphone_volume(self, value):
         if value < 0 or value > 100:
