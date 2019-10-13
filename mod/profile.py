@@ -89,14 +89,14 @@ class Profile(object):
     NUM_PROFILES = 4
     INTERMEDIATE_PROFILE_PATH = index_to_filepath(NUM_PROFILES + 1)
 
-    CONTROL_VOLTAGE_BIAS_m2d5_to_2d5 = 0 # 2.5 to 2.5 volts
-    CONTROL_VOLTAGE_BIAS_0_to_5      = 1 # 0 to 5 volts
+    CONTROL_VOLTAGE_BIAS_0_to_5      = 0 # 0 to 5 volts
+    CONTROL_VOLTAGE_BIAS_m2d5_to_2d5 = 1 # 2.5 to 2.5 volts
 
-    EXPRESSION_PEDAL_MODE_RING = 0 # signal on ring/sleeve
-    EXPRESSION_PEDAL_MODE_TIP  = 1 # signal on tip
+    EXPRESSION_PEDAL_MODE_TIP  = 0 # signal on tip
+    EXPRESSION_PEDAL_MODE_RING = 1 # signal on ring/sleeve
 
-    INPUT_MODE_EXP_PEDAL = 0
-    INPUT_MODE_CV        = 1
+    INPUT_MODE_CV        = 0
+    INPUT_MODE_EXP_PEDAL = 1
 
     MASTER_VOLUME_CHANNEL_MODE_BOTH = 0
     MASTER_VOLUME_CHANNEL_MODE_1    = 1
@@ -166,10 +166,10 @@ class Profile(object):
             if string == "off":
                 return False
         if key == "cvBias":
-            if string == "m2d5":
-                return cls.CONTROL_VOLTAGE_BIAS_m2d5_to_2d5
             if string == "0to5":
                 return cls.CONTROL_VOLTAGE_BIAS_0_to_5
+            if string == "m2d5":
+                return cls.CONTROL_VOLTAGE_BIAS_m2d5_to_2d5
         if key == "expPedalMode":
             if string == "ring":
                 return cls.EXPRESSION_PEDAL_MODE_RING
@@ -181,10 +181,10 @@ class Profile(object):
             if string == "exp":
                 return cls.INPUT_MODE_EXP_PEDAL
         if key == "outputMode":
-            if string == "hp":
-                return cls.OUTPUT_MODE_HEADPHONE
             if string == "cv":
                 return cls.OUTPUT_MODE_CV
+            if string == "hp":
+                return cls.OUTPUT_MODE_HEADPHONE
 
         logging.error("[profile] string_to_value called with invalid arg '%s' '%s'", key, string)
         return cls.DEFAULTS.get(key, None)
@@ -197,10 +197,10 @@ class Profile(object):
             if value == False:
                 return "off"
         if key == "cvBias":
-            if value == cls.CONTROL_VOLTAGE_BIAS_m2d5_to_2d5:
-                return "m2d5"
             if value == cls.CONTROL_VOLTAGE_BIAS_0_to_5:
                 return "0to5"
+            if value == cls.CONTROL_VOLTAGE_BIAS_m2d5_to_2d5:
+                return "m2d5"
         if key == "expPedalMode":
             if value == cls.EXPRESSION_PEDAL_MODE_RING:
                 return "ring"
@@ -212,10 +212,10 @@ class Profile(object):
             if value == cls.INPUT_MODE_EXP_PEDAL:
                 return "exp"
         if key == "outputMode":
-            if value == cls.OUTPUT_MODE_HEADPHONE:
-                return "hp"
             if value == cls.OUTPUT_MODE_CV:
                 return "cv"
+            if value == cls.OUTPUT_MODE_HEADPHONE:
+                return "hp"
 
         logging.error("[profile] value_to_string called with invalid arg '%s' '%s'", key, value)
         return ""
