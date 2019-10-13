@@ -41,9 +41,6 @@ kMidiCustomPrefixURI = "/midi-custom_" # to show current one
 # URI for BPM sync (for non-addressed control ports)
 kBpmURI ="/bpm"
 
-# Limits
-kMaxAddressableScalepoints = 100
-
 class Addressings(object):
     ADDRESSING_TYPE_NONE = 0
     ADDRESSING_TYPE_HMI  = 1
@@ -1016,16 +1013,16 @@ class Addressings(object):
         pluginData = self._task_get_plugin_data(instance_id)
         presets    = self._task_get_plugin_presets(pluginData["uri"])
 
-        value   = 0
-        maximum = min(len(presets), kMaxAddressableScalepoints)
-        options = []
         handled = False
+        maximum = len(presets)
+        options = []
+        value   = 0
 
         # save preset mapping
         pluginData['mapPresets'] = []
 
         # safety check
-        if len(presets) == 0:
+        if maximum == 0:
             pluginData['preset'] = ""
             print("ERROR: get_presets_as_options() called with 0 presets available for '%s'" % pluginData["uri"])
             return None
@@ -1047,18 +1044,11 @@ class Addressings(object):
                 handled = True
 
         # check if selected preset is non-existent
-        if not handled and len(presets) == maximum:
+        if not handled:
             pluginData['mapPresets'] = []
             pluginData['preset'] = ""
             print("ERROR: get_presets_as_options() called with an invalid preset uri '%s'" % pluginData['preset'])
             return None
-
-        # handle case of current preset out of limits (>100)
-        if pluginData['preset'] not in pluginData['mapPresets']:
-            i = value = maximum
-            maximum += 1
-            pluginData['mapPresets'].append(presets[i]['uri'])
-            options.append((i, presets[i]['label']))
 
         return (value, maximum, options, pluginData['preset'])
 
