@@ -172,6 +172,13 @@ class Addressings(object):
 
     # -----------------------------------------------------------------------------------------------------------------
 
+    # common function used in load() to finish waiting callbacks
+    def _dont_wait_for_cc(self):
+        self.waiting_for_cc = False
+        for cb in self.waiting_for_cc_cbs:
+            cb()
+        self.waiting_for_cc_cbs = []
+
     @gen.coroutine
     def load(self, bundlepath, instances, skippedPorts):
         # Check if this is the first time we load addressings (ie, first time mod-ui starts)
@@ -181,7 +188,7 @@ class Addressings(object):
         # Check if pedalboard contains addressings first
         datafile = os.path.join(bundlepath, "addressings.json")
         if not os.path.exists(datafile):
-            self.waiting_for_cc = False
+            self._dont_wait_for_cc()
             return
 
         # Load addressings
@@ -276,7 +283,7 @@ class Addressings(object):
 
         # Check if we need to wait for Control Chain
         if not first_load or (cc_initialized and not retry_cc_addrs):
-            self.waiting_for_cc = False
+            self._dont_wait_for_cc()
             return
 
         if retry_cc_addrs:
@@ -296,11 +303,7 @@ class Addressings(object):
             except Exception as e:
                 logging.exception(e)
 
-        self.waiting_for_cc = False
-
-        for cb in self.waiting_for_cc_cbs:
-            cb()
-        self.waiting_for_cc_cbs = []
+        self._dont_wait_for_cc()
 
         # Don't bother continuing if there are no Control Chain addressesings
         if not has_cc_addrs:
@@ -941,7 +944,6 @@ class Addressings(object):
         if not self.waiting_for_cc:
             callback()
             return
-
         self.waiting_for_cc_cbs.append(callback)
 
     # -----------------------------------------------------------------------------------------------------------------
