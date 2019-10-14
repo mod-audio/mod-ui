@@ -948,6 +948,9 @@ class EffectParameterSet(JsonRequestHandler):
     @web.asynchronous
     @gen.engine
     def post(self):
+        if not SESSION.hmi.initialized:
+            self.write(True)
+            return
         data = json.loads(self.request.body.decode("utf-8", errors="ignore"))
         symbol, instance, portsymbol, value = data.rsplit("/",3)
         ok = yield gen.Task(SESSION.host.paramhmi_set, instance, portsymbol, value)
