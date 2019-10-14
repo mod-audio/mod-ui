@@ -264,6 +264,7 @@ function Desktop(elements) {
                 new Bug ("Couldn't address parameter, server error")
             },
             cache: false,
+            global: false,
             dataType: 'json'
         })
     }
