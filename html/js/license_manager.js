@@ -55,6 +55,7 @@ LicenseManager.prototype.installLicenses = function(licenseIds, callback) {
         if (licenseIds.length == 0) {
             $.ajax({
                 url: '/effect/refresh',
+                cache: false,
                 dataType: 'json',
                 success: function() {
                     callback(installedLicenses)
@@ -67,7 +68,7 @@ LicenseManager.prototype.installLicenses = function(licenseIds, callback) {
     installNext();
 }
 
-// Download single license from cloud and sends to MOD
+// Download single license from cloud and send to MOD
 LicenseManager.prototype.installLicense = function(licenseId, callback) {
     var self = this;
     var success =  function() {
@@ -84,6 +85,7 @@ LicenseManager.prototype.installLicense = function(licenseId, callback) {
         success: function(data) {
             $.ajax({
                 url: '/effect/licenses/save/' + licenseId,
+                cache: false,
                 data: data,
                 method: 'POST',
                 success: success,
