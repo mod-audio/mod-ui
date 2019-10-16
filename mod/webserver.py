@@ -1652,6 +1652,12 @@ class BulkTemplateLoader(TimelessRequestHandler):
                        )
         self.finish()
 
+    # custom call, we cannot use CachedJsonRequestHandler
+    def set_default_headers(self):
+        TimelessRequestHandler.set_default_headers(self)
+        self.set_header("Cache-Control", "public, max-age=31536000")
+        self.set_header("Expires", "Mon, 31 Dec 2035 12:00:00 gmt")
+
 class Ping(JsonRequestHandler):
     @web.asynchronous
     @gen.engine
