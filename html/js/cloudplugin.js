@@ -738,6 +738,7 @@ JqueryClass('cloudPluginBox', {
         var plugin_data = {
             uri: uri,
             screenshot_href: plugin.screenshot_href,
+            thumbnail_href: plugin.thumbnail_href,
             has_comment: has_comment,
             comment: comment,
             status: plugin.status,

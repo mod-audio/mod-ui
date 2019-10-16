@@ -1847,6 +1847,7 @@ Desktop.prototype.getDeviceShopToken = function(callback) {
     var getToken = function() {
         $.ajax({
             url: SITEURL + '/licenses/requests/',
+            cache: false,
             method: 'GET',
             headers: {
                 'Authorization' : 'MOD ' + self.cloudAccessToken
