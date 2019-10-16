@@ -24,7 +24,7 @@ from modtools.utils import init as lv2_init, get_pedalboard_info, get_plugin_inf
 
 MAX_THUMB_HEIGHT = 640
 MAX_THUMB_WIDTH = 640
-__version__ = '1.0.0'
+__version__ = '1.0.1'
 
 
 def resize_image(img):
@@ -61,21 +61,33 @@ def rgbtoi(r, g, b):
     return (r << 16) + (g << 8) + b
 
 
-def detect_first_column(img, scan=20, rtol=False):
+def detect_first_column(img, scan, num_ports, rtol=False):
+    if num_ports == 0:
+        return []
+
     was_transparent = True
     found = False
+    ret = []
+
     for _i in range(0, scan):
         i = img.size[0] - _i - 1 if rtol else _i
         for j in range(0, img.size[1]):
             pixel = img.getpixel((i, j))
             is_transparent = pixel[3] < 255
             if was_transparent != is_transparent:
-                yield i, j
+                ret.append((i, j))
                 was_transparent = is_transparent
                 found = True
         if found:
-            return
+            break
+    else:
+        return []
 
+    # in case pixel detection failed and we need more ports, add them at the top
+    for i in range(len(ret), num_ports*2):
+        ret.insert(0, (ret[0][0], 0))
+
+    return ret
 
 def chunks(l, n):
     o = list(l) if type(l) is not list else l
@@ -206,6 +218,9 @@ def take_screenshot(bundle_path, html_dir, cache_dir, size):
         pimg = Image.open(screenshot_path).convert('RGBA') if screenshot_path else default_screenshot
         p['img'] = pimg
 
+        in_ports = data['ports']['audio']['input'] + data['ports']['midi']['input'] + data['ports']['cv']['input']
+        out_ports = data['ports']['audio']['output'] + data['ports']['midi']['output'] + data['ports']['cv']['output']
+
         if screenshot_path:
             # detect ports and save/read
             version = '{0}.{1}'.format(data['version'], data.get('release', 0)).replace('.', '_')
@@ -216,8 +231,8 @@ def take_screenshot(bundle_path, html_dir, cache_dir, size):
                     columns = json.loads(fh.read())
             else:
                 columns = {
-                    'in_ports': [list(c) for c in detect_first_column(pimg, pimg.size[0])],
-                    'out_ports': [list(c) for c in detect_first_column(pimg, pimg.size[0], rtol=True)],
+                    'in_ports': [list(c) for c in detect_first_column(pimg, pimg.size[0], len(in_ports))],
+                    'out_ports': [list(c) for c in detect_first_column(pimg, pimg.size[0], len(out_ports), rtol=True)],
                 }
                 with open(filename, 'w') as fh:
                     fh.write(json.dumps(columns))
@@ -228,7 +243,6 @@ def take_screenshot(bundle_path, html_dir, cache_dir, size):
             }
 
         # detect connectors
-        in_ports = data['ports']['audio']['input'] + data['ports']['midi']['input'] + data['ports']['cv']['input']
         if len(in_ports) > 0:
             audio_in_ix = len(data['ports']['audio']['input'])
             cv_in_ix = len(data['ports']['cv']['input']) + audio_in_ix
@@ -249,7 +263,7 @@ def take_screenshot(bundle_path, html_dir, cache_dir, size):
                         in_ports[ix]['type'] = 'midi'
             if not all('connector' in p for p in in_ports):
                 raise Exception('Connector detection for input ports of plugin {0} failed'.format(p['uri']))
-        out_ports = data['ports']['audio']['output'] + data['ports']['midi']['output'] + data['ports']['cv']['output']
+
         if len(out_ports) > 0:
             audio_out_ix = len(data['ports']['audio']['output'])
             cv_out_ix = len(data['ports']['cv']['output']) + audio_out_ix
