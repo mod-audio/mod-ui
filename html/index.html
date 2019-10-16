@@ -162,6 +162,7 @@ $('document').ready(function() {
         desktop.authenticateDevice(function (ok) {
             if (ok) {
                 console.log("MOD authentication succeeded")
+                desktop.resetPedalboardStats();
             } else {
                 console.log("MOD authentication failed")
                 desktop.upgradeWindow.upgradeWindow('setErrored')
@@ -219,8 +220,6 @@ $('document').ready(function() {
         dataType: 'json'
     });
     */
-
-    desktop.resetPedalboardStats();
 })
 </script>
 
