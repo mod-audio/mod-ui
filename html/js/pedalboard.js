@@ -1272,6 +1272,7 @@ JqueryClass('pedalboard', {
             defaultSettingsTemplate: DEFAULT_SETTINGS_TEMPLATE
         }, guiOptions)
 
+        /* FIXME this is not used anywhere. remove?
         var preset_list = []
         for (var key in pluginData['presets']) {
             preset_list.push({
@@ -1282,6 +1283,7 @@ JqueryClass('pedalboard', {
         pluginData = $.extend({
             preset_list: preset_list
         }, pluginData)
+        */
         var pluginGui = new GUI(pluginData, options)
 
         pluginGui.render(instance, function (icon, settings) {
