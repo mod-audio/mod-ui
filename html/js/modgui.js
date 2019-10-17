@@ -42,9 +42,10 @@ function loadDependencies(gui, effect, callback) { //source, effect, bundle, cal
     var settingsLoaded = true
     var cssLoaded = true
     var jsLoaded = true
+    var nonCachedInfoLoaded = true
 
     var cb = function () {
-        if (iconLoaded && settingsLoaded && cssLoaded && jsLoaded) {
+        if (iconLoaded && settingsLoaded && cssLoaded && jsLoaded && nonCachedInfoLoaded) {
             setTimeout(callback, 0)
         }
     }
@@ -58,6 +59,28 @@ function loadDependencies(gui, effect, callback) { //source, effect, bundle, cal
     var version    = [effect.builder, effect.microVersion, effect.minorVersion, effect.release].join('_')
     var escapeduri = escape(effect.uri)
     var plughash   = escapeduri + version
+
+    if (! isSDK) {
+        nonCachedInfoLoaded = false
+        $.ajax({
+            url: '/effect/get_non_cached',
+            data: {
+                uri: effect.uri
+            },
+            success: function (data) {
+                effect.licensed = data.licensed
+                effect.presets = data.presets
+                nonCachedInfoLoaded = true
+                cb()
+            },
+            error: function () {
+                nonCachedInfoLoaded = true
+                cb()
+            },
+            cache: false,
+            dataType: 'json'
+        })
+    }
 
     if (effect.gui.iconTemplate) {
         if (loadedIcons[plughash]) {

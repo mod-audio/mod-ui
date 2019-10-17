@@ -142,6 +142,11 @@ typedef struct {
 } PluginInfo;
 
 typedef struct {
+    int licensed;
+    const PluginPreset* presets;
+} NonCachedPluginInfo;
+
+typedef struct {
     bool valid;
     const char* uri;
     const char* name;
@@ -306,6 +311,10 @@ MOD_API const PluginInfo_Mini* const* get_all_plugins(void);
 // get a specific plugin
 // NOTE: may return null
 MOD_API const PluginInfo* get_plugin_info(const char* uri);
+
+// get a specific plugin (non-cached specific info)
+// NOTE: may return null
+MOD_API const NonCachedPluginInfo* get_non_cached_plugin_info(const char* uri);
 
 // get a specific plugin's modgui
 // NOTE: may return null

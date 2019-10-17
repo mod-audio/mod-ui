@@ -517,7 +517,7 @@ class Host(object):
 
     def addr_task_addressing(self, atype, actuator, data, callback, send_hmi=True):
         if atype == Addressings.ADDRESSING_TYPE_HMI:
-            if send_hmi:
+            if send_hmi and self.hmi.initialized:
                 actuator_uri = self.addressings.hmi_hw2uri_map[actuator]
                 return self.hmi.control_add(data, actuator, actuator_uri, callback)
             else:
@@ -618,6 +618,8 @@ class Host(object):
 
     def addr_task_set_value(self, atype, actuator, data, callback):
         if atype == Addressings.ADDRESSING_TYPE_HMI:
+            if not self.hmi.initialized:
+                return callback(False)
             if data['hmitype'] & HMI_ADDRESSING_TYPE_ENUMERATION:
                 options = tuple(o[0] for o in data['options'])
                 try:
@@ -5272,10 +5274,11 @@ _:b%i
         if not isIntermediate:
             apply_mixer_values(values, self.descriptor.get("platform", None))
 
-        try:
-            yield gen.Task(self.hmi.set_profile_values, self.transport_rolling, values)
-        except Exception as e:
-            logging.exception(e)
+        if self.hmi.initialized:
+            try:
+                yield gen.Task(self.hmi.set_profile_values, self.transport_rolling, values)
+            except Exception as e:
+                logging.exception(e)
 
         self.profile_applied = True
 
