@@ -47,7 +47,7 @@ from mod.bank import list_banks, save_banks, remove_pedalboard_from_banks
 from mod.session import SESSION
 from mod.licensing import check_missing_licenses, save_license, get_new_licenses_and_flush
 from modtools.utils import (
-    init as lv2_init, cleanup as lv2_cleanup, get_plugin_list, get_all_plugins, get_plugin_info, get_plugin_gui,
+    init as lv2_init, cleanup as lv2_cleanup, get_plugin_list, get_all_plugins, get_plugin_info, get_non_cached_plugin_info, get_plugin_gui,
     get_plugin_gui_mini, get_all_pedalboards, get_broken_pedalboards, get_pedalboard_info, get_jack_buffer_size,
     reset_get_all_pedalboards_cache, update_cached_pedalboard_version,
     set_jack_buffer_size, get_jack_sample_rate, set_truebypass_value, set_process_name, reset_xruns
@@ -879,6 +879,18 @@ class EffectGet(CachedJsonRequestHandler):
             data = get_plugin_info(uri)
         except:
             print("ERROR in webserver.py: get_plugin_info for '%s' failed" % uri)
+            raise web.HTTPError(404)
+
+        self.write(data)
+
+class EffectGetNonCached(JsonRequestHandler):
+    def get(self):
+        uri = self.get_argument('uri')
+
+        try:
+            data = get_non_cached_plugin_info(uri)
+        except:
+            print("ERROR in webserver.py: get_non_cached_plugin_info for '%s' failed" % uri)
             raise web.HTTPError(404)
 
         self.write(data)
@@ -1928,6 +1940,7 @@ application = web.Application(
             (r"/effect/add/*(/[A-Za-z0-9_/]+[^/])/?", EffectAdd),
             (r"/effect/remove/*(/[A-Za-z0-9_/]+[^/])/?", EffectRemove),
             (r"/effect/get", EffectGet),
+            (r"/effect/get_non_cached", EffectGetNonCached),
             (r"/effect/bulk/?", EffectBulk),
             (r"/effect/list", EffectList),
 

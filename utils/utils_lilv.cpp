@@ -3368,6 +3368,19 @@ const PluginInfo* get_plugin_info(const char* const uri_)
     return nullptr;
 }
 
+const NonCachedPluginInfo* get_non_cached_plugin_info(const char* uri)
+{
+    const PluginInfo* const info = get_plugin_info(uri);
+
+    if (info == nullptr || ! info->valid)
+        return nullptr;
+
+    static NonCachedPluginInfo ncInfo;
+    ncInfo.licensed = info->licensed;
+    ncInfo.presets = info->presets;
+    return &ncInfo;
+}
+
 const PluginGUI* get_plugin_gui(const char* uri_)
 {
     const std::string uri = uri_;
