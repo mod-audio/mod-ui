@@ -116,6 +116,7 @@ JqueryClass('pedalboardBox', {
 
         options = $.extend({
             resultCanvas: self.find('.js-pedalboards'),
+            viewMode: self.find('.view-mode'),
             list: function (callback) {
                 callback([])
             },
@@ -163,6 +164,13 @@ JqueryClass('pedalboardBox', {
         self.find('.js-close').click(function () {
             self.window('close')
         })
+
+        // self.find('.view-mode').click(function () {
+        //
+        // })
+        //
+        options.viewMode.pedalboardsModeSelector(options.resultCanvas)
+
 
         return self
     },
@@ -244,17 +252,13 @@ JqueryClass('pedalboardBox', {
 JqueryClass('pedalboardsModeSelector', {
     init: function (canvas) {
         var self = $(this)
-        self.find('.grid').click(function () {
-            self.children().removeClass('selected')
-            $(this).addClass('selected')
-            canvas.removeClass('list-selected')
-            canvas.addClass('grid-selected')
+        self.click(function () {
+            // self.children().removeClass('selected')
+            // $(this).addClass('selected')
+            // TODO update view-mode icon (list/grid)
+            // TODO save view mode in user preferences
+            canvas.toggleClass('list-selected')
         })
-        self.find('.list').click(function () {
-            self.children().removeClass('selected')
-            $(this).addClass('selected')
-            canvas.removeClass('grid-selected')
-            canvas.addClass('list-selected')
-        })
+
     }
 })
