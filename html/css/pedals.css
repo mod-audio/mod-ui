@@ -684,6 +684,7 @@ body > .mod-settings.mod-window-visible {
     width:450px;
     max-height: 70%;
     overflow-y: auto;
+    overflow-x: hidden;
 }
 
 .mod-pedal-settings-address h1 {
