@@ -26,6 +26,19 @@
         width: 200px !important;
       }
     }
+    .view-modes {
+      float: right;
+      margin-right: 12px;
+
+      .view-mode {
+        font-size: 130%;
+        cursor: pointer;
+
+        &.selected {
+          color: #fff;
+        }
+      }
+    }
   }
   .filter {
     border-color: #111;
@@ -169,7 +182,7 @@
 
     &.list-selected {
       .pedalboard {
-        width: 100%;
+        // width: 98%;
       }
       .img {
         display: none;
