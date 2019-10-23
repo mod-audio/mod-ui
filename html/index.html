@@ -26,7 +26,6 @@
 
 <link rel="stylesheet" type="text/css" href="css/fontello/css/fontello.css?v={{version}}"/>
 <link rel="stylesheet" type="text/css" href="css/main.css?v={{version}}"/>
-<link rel="stylesheet" type="text/css" href="css/bootstrap.min.css?v={{version}}"/>
 <link rel="stylesheet" type="text/css" href="css/dashboard.css?v={{version}}"/>
 <link rel="stylesheet" type="text/css" href="css/fonts.css?v={{version}}"/>
 <link rel="stylesheet" type="text/css" href="img/icons/icons.css?v={{version}}"/>
@@ -193,6 +192,7 @@ $('document').ready(function() {
     if (PREFERENCES['show-unstable-plugins'] == "true") {
         $("#cloud-plugins-stable").parent().show()
     }
+    desktop.pedalboardBox.pedalboardBox('initViewMode', PREFERENCES['pb-view-mode'])
 
     // start code for ajax loading bar
 
@@ -764,10 +764,9 @@ $('document').ready(function() {
                     <span style="vertical-align: middle;">Browse Online Pedalboards</span>
                 </a>
                 <span class="view-modes">
-                  <i class="view-mode view-mode-grid icon-th-1 selected"></i>
-                  <i class="view-mode view-mode-list icon-th-list"></i>
+                  <i id="view-mode-grid" class="view-mode icon-th-1"></i>
+                  <i id="view-mode-list" class="view-mode icon-th-list"></i>
                 </span>
-
 
             </header>
             <div class="pedalboards clearfix js-pedalboards"></div>

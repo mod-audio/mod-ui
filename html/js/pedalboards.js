@@ -117,6 +117,8 @@ JqueryClass('pedalboardBox', {
         options = $.extend({
             resultCanvas: self.find('.js-pedalboards'),
             viewModes: self.find('.view-modes'),
+            viewModeList: self.find('#view-mode-list'),
+            viewModeGrid: self.find('#view-mode-grid'),
             list: function (callback) {
                 callback([])
             },
@@ -128,6 +130,9 @@ JqueryClass('pedalboardBox', {
             },
             load: function (bundlepath, broken, callback) {
                 callback()
+            },
+            saveConfigValue: function (key, value, callback) {
+                callback([])
             },
             isMainWindow: true,
             windowName: "Pedalboards",
@@ -165,9 +170,20 @@ JqueryClass('pedalboardBox', {
             self.window('close')
         })
 
-        options.viewModes.pedalboardsModeSelector(options.resultCanvas)
+        options.viewModes.pedalboardsModeSelector(options.resultCanvas, options.saveConfigValue)
 
         return self
+    },
+
+    initViewMode: function (viewMode) {
+      var self = $(this)
+      if (viewMode === 'list') {
+        self.data('resultCanvas').addClass('list-selected')
+        self.data('viewModeList').addClass('selected')
+        self.data('viewModeGrid').removeClass('selected')
+      } else { // grid or no value yet (grid is default)
+        self.data('viewModeGrid').addClass('selected')
+      }
     },
 
     mode: function (mode) {
@@ -245,16 +261,20 @@ JqueryClass('pedalboardBox', {
  * Takes a pedalboard canvas and select between grid and list mode
  */
 JqueryClass('pedalboardsModeSelector', {
-    init: function (canvas) {
+    init: function (canvas, saveConfigValue) {
         var self = $(this)
         self.click(function () {
-            // Update view-mode icon (list/grid)
             // self.toggleClass('icon-th-1')
             // self.toggleClass('icon-th-list')
-            self.find('.view-mode-list').toggleClass('selected')
-            self.find('.view-mode-grid').toggleClass('selected')
-            // TODO save view mode in user preferences
-            canvas.toggleClass('list-selected')
+            // save view mode in user preferences
+            var viewModeList = self.find('#view-mode-list')
+            var viewModeGrid = self.find('#view-mode-grid')
+            var newViewMode = viewModeList.hasClass('selected') ? 'grid' : 'list'
+            saveConfigValue('pb-view-mode', newViewMode, function () {
+              canvas.toggleClass('list-selected')
+              viewModeList.toggleClass('selected')
+              viewModeGrid.toggleClass('selected')
+            })
         })
 
     }

@@ -32,8 +32,9 @@ JqueryClass('bankBox', {
 
         self.data(options)
 
-        options.pedalboardCanvasMode.pedalboardsModeSelector(options.pedalboardCanvas)
-        options.resultCanvasMode.pedalboardsModeSelector(options.resultCanvas)
+        // Not used anymore
+        // options.pedalboardCanvasMode.pedalboardsModeSelector(options.pedalboardCanvas)
+        // options.resultCanvasMode.pedalboardsModeSelector(options.resultCanvas)
 
         options.pedalboardCanvas.hide()
         options.pedalboardCanvasMode.hide()
