@@ -26,6 +26,7 @@
 
 <link rel="stylesheet" type="text/css" href="css/fontello/css/fontello.css?v={{version}}"/>
 <link rel="stylesheet" type="text/css" href="css/main.css?v={{version}}"/>
+<link rel="stylesheet" type="text/css" href="css/bootstrap.min.css?v={{version}}"/>
 <link rel="stylesheet" type="text/css" href="css/dashboard.css?v={{version}}"/>
 <link rel="stylesheet" type="text/css" href="css/fonts.css?v={{version}}"/>
 <link rel="stylesheet" type="text/css" href="img/icons/icons.css?v={{version}}"/>
@@ -754,7 +755,6 @@ $('document').ready(function() {
                 <h1 class="bottom top">
                     Pedalboards Library
                 </h1>
-                <span class="view-mode">MODE</span>
                 <div class="form-group">
                     <input id="searchPedalboard" class="form-control" maxlength="20" placeholder="Filter by keyword(s)" type="search"/>
                 </div>
@@ -763,6 +763,12 @@ $('document').ready(function() {
                     <img style="width: 1.2em; height: 1.2em; opacity: 0.6; vertical-align: middle;" src="img/icons/25/language.png" alt=""/>
                     <span style="vertical-align: middle;">Browse Online Pedalboards</span>
                 </a>
+                <span class="view-modes">
+                  <i class="view-mode view-mode-grid icon-th-1 selected"></i>
+                  <i class="view-mode view-mode-list icon-th-list"></i>
+                </span>
+
+
             </header>
             <div class="pedalboards clearfix js-pedalboards"></div>
         </div>

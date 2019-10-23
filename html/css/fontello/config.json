@@ -7,28 +7,58 @@
   "ascent": 850,
   "glyphs": [
     {
+      "uid": "dd492243d64e21dfe16a92452f7861cb",
+      "css": "th-large",
+      "code": 59392,
+      "src": "fontawesome"
+    },
+    {
+      "uid": "b1887b423d2fd15c345e090320c91ca0",
+      "css": "th",
+      "code": 59393,
+      "src": "fontawesome"
+    },
+    {
       "uid": "e99461abfef3923546da8d745372c995",
       "css": "cog",
-      "code": 59392,
+      "code": 59394,
       "src": "fontawesome"
     },
     {
       "uid": "z18zsyvbrpsea0f49kd61kkue1ofsafy",
       "css": "trash",
-      "code": 59393,
+      "code": 59395,
       "src": "modernpics"
-    },
-    {
-      "uid": "e82cedfa1d5f15b00c5a81c9bd731ea2",
-      "css": "info",
-      "code": 59394,
-      "src": "fontawesome"
     },
     {
       "uid": "3ba4275937db277075fc47d6b5a69a2e",
       "css": "back",
-      "code": 59395,
+      "code": 59396,
       "src": "entypo"
+    },
+    {
+      "uid": "3v2lgx3os8ub377alyqm8mn2o7r4zywg",
+      "css": "th-1",
+      "code": 59397,
+      "src": "modernpics"
+    },
+    {
+      "uid": "cy7vw87w1slwyalc4vd8cdhrb50asud3",
+      "css": "th-list",
+      "code": 59398,
+      "src": "modernpics"
+    },
+    {
+      "uid": "f805bb95d40c7ef2bc51b3d50d4f2e5c",
+      "css": "th-list-1",
+      "code": 59399,
+      "src": "fontawesome"
+    },
+    {
+      "uid": "e82cedfa1d5f15b00c5a81c9bd731ea2",
+      "css": "info-circled",
+      "code": 59400,
+      "src": "fontawesome"
     }
   ]
 }
