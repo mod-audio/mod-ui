@@ -4205,17 +4205,18 @@ _:b%i
                     logging.exception(e)
             else:
                 port_addressing = pluginData['addressings'].get(portsymbol, None)
+                if port_addressing is None:
+                    callback(False)
+                    return
+                group_actuators = self.addressings.get_group_actuators(port_addressing['actuator_uri'])
+
+                # Update value on the HMI for the other actuator in the group
+                def group_callback(ok):
+                    self.control_set_other_group_actuator(group_actuators, hw_id, port_addressing, value, callback)
+
+                cb = group_callback if group_actuators is not None else callback
                 try:
-                    if port_addressing:
-                        group_actuators = self.addressings.get_group_actuators(port_addressing['actuator_uri'])
-
-                        # Update value on the HMI for the other actuator in the group
-                        def group_callback(ok):
-                            self.control_set_other_group_actuator(group_actuators, hw_id, port_addressing, value, callback)
-
-                        cb = group_callback if group_actuators is not None else callback
-                        self.preset_load(instance, pluginData['mapPresets'][value], abort_catcher, cb)
-
+                    self.preset_load(instance, pluginData['mapPresets'][value], abort_catcher, cb)
                 except Exception as e:
                     callback(False)
                     logging.exception(e)
