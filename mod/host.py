@@ -219,6 +219,7 @@ class Host(object):
         self.midi_aggregated_mode = True
         self.hasSerialMidiIn = False
         self.hasSerialMidiOut = False
+        self.first_pedalboard    = True
         self.pedalboard_empty    = True
         self.pedalboard_modified = False
         self.pedalboard_name     = ""
@@ -2538,6 +2539,9 @@ class Host(object):
     # Host stuff - load & save
 
     def load(self, bundlepath, isDefault=False):
+        first_pedalboard = self.first_pedalboard
+        self.first_pedalboard = False
+
         try:
             pb = get_pedalboard_info(bundlepath)
         except:
@@ -2657,9 +2661,8 @@ class Host(object):
         skippedPortAddressings = []
         if self.transport_sync != "none":
             skippedPortAddressings.append(PEDALBOARD_INSTANCE+"/:bpm")
-            timeAvailable = False
-        else:
-            timeAvailable = pb['timeInfo']['available']
+
+        timeAvailable = pb['timeInfo']['available'] if first_pedalboard or self.transport_sync == "none" else 0
 
         if timeAvailable != 0:
             pluginData = self.plugins[PEDALBOARD_INSTANCE_ID]
@@ -2707,6 +2710,11 @@ class Host(object):
                                                                                       ccData['control'],
                                                                                       0.0, 1.0)
                 self.set_transport_rolling(pb['timeInfo']['rolling'], False, True, False)
+
+        else: # time not available
+            self.set_transport_bpb(self.transport_bpb, False, True, False, False)
+            self.set_transport_bpm(self.transport_bpm, False, True, False, False)
+            self.set_transport_rolling(self.transport_rolling, False, True, False, False)
 
         self.send_notmodified("transport %i %f %f" % (self.transport_rolling,
                                                       self.transport_bpb,
