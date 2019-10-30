@@ -3961,7 +3961,7 @@ _:b%i
         callback(True)
 
     def hmi_list_banks(self, dir_up, bank_id, callback):
-        logging.error("hmi list banks %d %d", dir_up, bank_id)
+        logging.debug("hmi list banks %d %d", dir_up, bank_id)
 
         if len(self.allpedalboards) == 0:
             logging.error("no pedalboards available, cant return any banks (%d %d)", dir_up, bank_id)
@@ -4005,7 +4005,7 @@ _:b%i
         callback(True, banksData)
 
     def hmi_list_bank_pedalboards(self, props, pedalboard_id, bank_id, callback):
-        logging.error("hmi list bank pedalboards %d %d %d", props, pedalboard_id, bank_id)
+        logging.debug("hmi list bank pedalboards %d %d %d", props, pedalboard_id, bank_id)
         # TODO: do something with page parameter
 
         if bank_id < 0 or bank_id > len(self.banks):
