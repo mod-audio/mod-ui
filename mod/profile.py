@@ -330,7 +330,7 @@ class Profile(object):
         self.values['index'] = index
 
         # request and store mixer values
-        fill_in_mixer_values(self.values)
+        fill_in_mixer_values(self.values, self.platform)
 
         # save intermediate file first
         with TextFileFlusher(self.INTERMEDIATE_PROFILE_PATH) as fh:
