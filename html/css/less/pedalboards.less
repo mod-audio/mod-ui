@@ -26,6 +26,19 @@
         width: 200px !important;
       }
     }
+    .view-modes {
+      float: right;
+      margin-right: 12px;
+      cursor: pointer;
+
+      .view-mode {
+        font-size: 130%;
+
+        &.selected {
+          color: #fff;
+        }
+      }
+    }
   }
   .filter {
     border-color: #111;
@@ -61,6 +74,7 @@
     overflow: auto;
     background: #111 url(../img/watermark.png) 100% 100% no-repeat;
     padding-top: 1%;
+
     .pedalboard {
       color: #fff;
       float: left;
@@ -74,6 +88,7 @@
       background-size: auto 100%;
       transition: all 0.33s;
       cursor: pointer;
+
       &:hover {
         .info {
           background-color: @brand-primary;
@@ -162,6 +177,15 @@
         &.duplicate {
           margin: 0 6px;
         }
+      }
+    }
+
+    &.list-selected {
+      .pedalboard {
+        // width: 98%;
+      }
+      .img {
+        display: none;
       }
     }
   }

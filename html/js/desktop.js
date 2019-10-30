@@ -698,7 +698,7 @@ function Desktop(elements) {
         })
     }
 
-    this.saveConfigValue = function (key, value) {
+    this.saveConfigValue = function (key, value, callback) {
         $.ajax({
             url: '/config/set',
             type: 'POST',
@@ -706,8 +706,16 @@ function Desktop(elements) {
                 key  : key,
                 value: value,
             },
-            success: function () {},
-            error: function () {},
+            success: function () {
+              if (callback) {
+                callback(true)
+              }
+            },
+            error: function () {
+              if (callback) {
+                callback(false)
+              }
+            },
             cache: false,
             dataType: 'json'
         })
@@ -1568,6 +1576,7 @@ Desktop.prototype.makePedalboardBox = function (el, trigger) {
         windowManager: this.windowManager,
         list: self.pedalboardListFunction,
         search: self.pedalboardSearchFunction,
+        saveConfigValue: self.saveConfigValue,
         remove: function (pedalboard, callback) {
             if (!confirm(sprintf('The pedalboard "%s" will be permanently removed! Confirm?', pedalboard.title)))
                 return

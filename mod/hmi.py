@@ -465,3 +465,10 @@ class HMI(object):
         msg += " %i %i" % (Menu.SNAPSHOT_PRGCHGE_ID, values['midiChannelForSnapshotsNavigation'])
         msg += " %i %i" % (Menu.PB_PRGCHNGE_ID, values['midiChannelForPedalboardsNavigation'])
         self.send(msg, callback)
+
+    # pages is a list of int (1 if page available else 0)
+    def set_available_pages(self, pages, callback):
+        msg = "pa"
+        for page in pages:
+            msg += " %i" % page
+        self.send(msg, callback)
