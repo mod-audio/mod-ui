@@ -80,6 +80,7 @@ class HMI(object):
         self.queue = []
         self.queue_idle = True
         self.initialized = False
+        self.handling_response = False
         self.need_flush = 0 # 0 means False, otherwise use it as counter
         self.flush_io = None
         self.last_write_time = 0
@@ -164,6 +165,11 @@ class HMI(object):
                             self.send_reply("resp %d %s" % (resp, resp_args))
                             logging.debug('[hmi]     sent "resp %s %s"', resp, resp_args)
 
+                        self.handling_response = False
+                        if self.queue_idle:
+                            self.process_queue()
+
+                    self.handling_response = True
                     msg.run_cmd(_callback)
 
         if self.need_flush != 0:
@@ -255,7 +261,7 @@ class HMI(object):
             #else:
             self.queue.append((msg, callback, datatype))
             logging.debug("[hmi] scheduling -> %s", msg)
-            if self.queue_idle:
+            if self.queue_idle and not self.handling_response:
                 self.process_queue()
             return
 
