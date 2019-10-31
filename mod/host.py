@@ -935,13 +935,17 @@ class Host(object):
         pb_name = self.pedalboard_name or UNTITLED_PEDALBOARD_NAME
 
         def send_boot(_):
-            self.hmi.send("boot {} {} {} {} {} {} {}".format(display_brightness,
-                                                              quick_bypass_mode,
-                                                              int(self.current_tuner_mute),
-                                                              self.profile.get_index(),
-                                                              master_chan_mode,
-                                                              get_master_volume(master_chan_is_mode_2),
-                                                              pb_name), callback)
+            pages = self.addressings.available_pages
+            self.hmi.send("boot {} {} {} {} {} {} {} {} {} {}".format(display_brightness,
+                                                                      quick_bypass_mode,
+                                                                      int(self.current_tuner_mute),
+                                                                      self.profile.get_index(),
+                                                                      master_chan_mode,
+                                                                      get_master_volume(master_chan_is_mode_2),
+                                                                      int(0 in pages),
+                                                                      int(1 in pages),
+                                                                      int(2 in pages),
+                                                                      pb_name), callback)
         if self.isBankFootswitchNavigationOn():
             self.hmi.send("mc {} 1".format(Menu.FOOTSWITCH_NAVEG_ID), send_boot)
         else:
