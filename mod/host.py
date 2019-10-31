@@ -633,6 +633,7 @@ class Host(object):
                 # FIXME the following code does a control_add instead of control_set in case of enums
                 # Making it work on HMI with pagination could be tricky, so work around this for now
                 actuator_uri = data['actuator_uri']
+                logging.error("[host] addr_task_set_value called with an enumeration %s", actuator_uri)
                 self.addressings.hmi_load_current(actuator_uri, callback)
                 return
             else:
@@ -2439,10 +2440,8 @@ class Host(object):
             next_addressing_data['value'] = self.addr_task_get_port_value(next_addressing_data['instance_id'],
                                                                           next_addressing_data['port'])
 
-            try:
-                yield gen.Task(self.hmi.control_add, next_addressing_data, hw_id, uri)
-            except Exception as e:
-                logging.exception(e)
+            # NOTE: ignoring callback here, as HMI is handling a request right now
+            self.hmi.control_add(next_addressing_data, hw_id, uri, None)
 
         self.addressings.current_page = idx % self.addressings.pages_nb
 
