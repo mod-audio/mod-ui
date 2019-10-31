@@ -230,7 +230,8 @@ class Host(object):
         self.pedalboard_version  = 0
         self.current_pedalboard_snapshot_id = -1
         self.pedalboard_snapshots  = []
-        self.next_hmi_pedalboard = None
+        self.next_hmi_pedalboard_init = None
+        self.next_hmi_pedalboard_load = None
         self.hmi_snapshots = [None, None]
         self.transport_rolling = False
         self.transport_bpb     = 4.0
@@ -951,7 +952,8 @@ class Host(object):
         abort_catcher = self.abort_previous_loading_progress("reconnect_hmi")
         self.hmi = hmi
         self.hmi_snapshots = [None, None]
-        self.next_hmi_pedalboard = None
+        self.next_hmi_pedalboard_init = None
+        self.next_hmi_pedalboard_load = None
         self.processing_pending_flag = False
         self.open_connection_if_needed(None)
 
@@ -1242,6 +1244,8 @@ class Host(object):
                     pedalboards = self.allpedalboards
 
                 if program >= 0 and program < len(pedalboards):
+                    while self.next_hmi_pedalboard_init is not None:
+                        yield gen.sleep(0.25)
                     try:
                         yield gen.Task(self.hmi_load_bank_pedalboard, bank_id, program)
                     except Exception as e:
@@ -2409,8 +2413,8 @@ class Host(object):
             return
 
         # If a pedalboard is loading (via MIDI program messsage), wait for it to finish
-        while self.next_hmi_pedalboard is not None:
-            yield gen.sleep(0.5)
+        while self.next_hmi_pedalboard_load is not None:
+            yield gen.sleep(0.25)
 
         for uri, addressings in self.addressings.hmi_addressings.items():
             if abort_catcher.get('abort', False):
@@ -4159,9 +4163,9 @@ _:b%i
             callback(False)
             return
 
-        if self.next_hmi_pedalboard is not None:
+        if self.next_hmi_pedalboard_load is not None:
             print("NOTE: Delaying loading of %i:%i" % (bank_id, pedalboard_id))
-            self.next_hmi_pedalboard = (bank_id, pedalboard_id)
+            self.next_hmi_pedalboard_load = (bank_id, pedalboard_id)
             callback(True)
             return
 
@@ -4176,44 +4180,46 @@ _:b%i
             callback(False)
             return
 
-        self.next_hmi_pedalboard = (bank_id, pedalboard_id)
+        self.next_hmi_pedalboard_init = (bank_id, pedalboard_id)
         callback(True)
 
         bundlepath = pedalboards[pedalboard_id]['bundle']
 
         def load_different_callback(ok):
-            if self.next_hmi_pedalboard is None:
-                print("ERROR: Delayed loading is in corrupted state")
+            if self.next_hmi_pedalboard_load is None:
                 return
             if ok:
-                print("NOTE: Delayed loading of %i:%i has started" % self.next_hmi_pedalboard)
+                print("NOTE: Delayed loading of %i:%i has started" % self.next_hmi_pedalboard_load)
             else:
-                print("ERROR: Delayed loading of %i:%i failed!" % self.next_hmi_pedalboard)
+                print("ERROR: Delayed loading of %i:%i failed!" % self.next_hmi_pedalboard_load)
 
-        def hmi_loaded_callback(_):
+        def load_finish_callback(_):
+            self.processing_pending_flag = False
+            self.send_notmodified("feature_enable processing 1")
+
+        def pb_host_loaded_callback(_):
             print("NOTE: Loading of %i:%i finished" % (bank_id, pedalboard_id))
 
-            # Check if there's a pending pedalboard to be loaded
-            next_pedalboard = self.next_hmi_pedalboard
-            self.next_hmi_pedalboard = None
+            next_pedalboard = self.next_hmi_pedalboard_load
+            self.next_hmi_pedalboard_load = None
 
+            # Check if there's a pending pedalboard to be loaded
             if next_pedalboard != (bank_id, pedalboard_id):
                 self.hmi_load_bank_pedalboard(next_pedalboard[0], next_pedalboard[1], load_different_callback)
             else:
-                self.processing_pending_flag = False
-                self.send_notmodified("feature_enable processing 1")
-
-        def set_pb_name_callback(_):
-            # Update the title in HMI
-            self.hmi.send("s_pbn {0}".format(self.pedalboard_name[:31].upper()), hmi_loaded_callback)
+            # No, so just set title if needed and we are done
+                if self.descriptor.get('hmi_set_pb_name', False):
+                    self.hmi.send("s_pbn {0}".format(self.pedalboard_name[:31].upper()), load_finish_callback)
+                else:
+                    load_finish_callback(True)
 
         def load_callback(_):
             self.bank_id = bank_id
+            self.next_hmi_pedalboard_load = self.next_hmi_pedalboard_init
+            self.next_hmi_pedalboard_init = None
             self.load(bundlepath)
-
             # Dummy host call, just to receive callback when all other host messages finish
-            cb = set_pb_name_callback if self.descriptor.get('hmi_set_pb_name', False) else hmi_loaded_callback
-            self.send_notmodified("cpu_load", cb, datatype='float_structure')
+            self.send_notmodified("cpu_load", pb_host_loaded_callback, datatype='float_structure')
 
         def footswitch_callback(_):
             self.setNavigateWithFootswitches(self.isBankFootswitchNavigationOn(), load_callback)
