@@ -851,7 +851,8 @@ class Addressings(object):
             addressing['value'] = addressing_data['value'] = self._task_get_port_value(addressing['instance_id'],
                                                                                        addressing['port'])
 
-        if updateValue:
+        # NOTE we never call `control_set` for HMI lists, as it breaks pagination
+        if updateValue and not (addressing_data['hmitype'] & HMI_ADDRESSING_TYPE_ENUMERATION):
             self._task_set_value(self.ADDRESSING_TYPE_HMI, actuator_hmi, addressing_data, callback)
         else:
             self._task_addressing(self.ADDRESSING_TYPE_HMI, actuator_hmi, addressing_data, callback, send_hmi=send_hmi)
