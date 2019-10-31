@@ -932,20 +932,25 @@ class Host(object):
         quick_bypass_mode = self.prefs.get("quick-bypass-mode", DEFAULT_QUICK_BYPASS_MODE, int, QUICK_BYPASS_MODE_VALUES)
         master_chan_mode = self.profile.get_master_volume_channel_mode()
         master_chan_is_mode_2 = master_chan_mode == Profile.MASTER_VOLUME_CHANNEL_MODE_2
-        pb_name = self.pedalboard_name or UNTITLED_PEDALBOARD_NAME
 
         def send_boot(_):
-            pages = self.addressings.available_pages
-            self.hmi.send("boot {} {} {} {} {} {} {} {} {} {}".format(display_brightness,
-                                                                      quick_bypass_mode,
-                                                                      int(self.current_tuner_mute),
-                                                                      self.profile.get_index(),
-                                                                      master_chan_mode,
-                                                                      get_master_volume(master_chan_is_mode_2),
-                                                                      int(0 in pages),
-                                                                      int(1 in pages),
-                                                                      int(2 in pages),
-                                                                      pb_name), callback)
+            data = "boot {} {} {} {} {} {}".format(display_brightness,
+                                                   quick_bypass_mode,
+                                                   int(self.current_tuner_mute),
+                                                   self.profile.get_index(),
+                                                   master_chan_mode,
+                                                   get_master_volume(master_chan_is_mode_2))
+
+            if self.descriptor.get('pages_cb', False):
+                pages = self.addressings.available_pages
+                data += " {} {} {}".format(int(0 in pages), int(1 in pages), int(2 in pages))
+
+            if self.descriptor.get('hmi_set_pb_name', False):
+                pname = self.pedalboard_name or UNTITLED_PEDALBOARD_NAME
+                data += " {}".format(pname)
+
+            self.hmi.send(data, callback)
+
         if self.isBankFootswitchNavigationOn():
             self.hmi.send("mc {} 1".format(Menu.FOOTSWITCH_NAVEG_ID), send_boot)
         else:
