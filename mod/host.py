@@ -816,6 +816,8 @@ class Host(object):
     def init_jack(self):
         self.audioportsIn  = []
         self.audioportsOut = []
+        self.cvportsIn  = []
+        self.cvportsOut = []
 
         if not init_jack():
             self.hasSerialMidiIn = False
