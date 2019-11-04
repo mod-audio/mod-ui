@@ -85,6 +85,9 @@ class Addressings(object):
         self.pages_cb = desc.get('pages_cb', 0)
         self.current_page = 0
 
+        if self.pages_cb:
+            self.available_pages = [1 if i == 0 else 0 for i in range(self.pages_nb)]
+
         # 'hmi_addressings' uses a structure like this:
         # "/hmi/knob1": {'addrs': [...], 'idx': 0}
         # so per actuator we get:
