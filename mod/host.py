@@ -4225,7 +4225,12 @@ _:b%i
 
                 # Update value on the HMI for the other actuator in the group
                 def group_callback(ok):
-                    self.control_set_other_group_actuator(group_actuators, hw_id, port_addressing, value, callback)
+                    if not ok:
+                        callback(False)
+                        return
+                    # NOTE: we cannot wait for HMI callback while giving a response to HMI
+                    self.control_set_other_group_actuator(group_actuators, hw_id, port_addressing, value, None)
+                    callback(True)
 
                 cb = group_callback if group_actuators is not None else callback
                 try:
@@ -4294,7 +4299,9 @@ _:b%i
                         if not ok:
                             callback(False)
                             return
-                        self.control_set_other_group_actuator(group_actuators, hw_id, port_addressing, value, param_set_callback)
+                        # NOTE: we cannot wait for HMI callback while giving a response to HMI
+                        self.control_set_other_group_actuator(group_actuators, hw_id, port_addressing, value, None)
+                        param_set_callback(True)
 
                     actuator_uri = port_addressing['actuator_uri']
                     label = port_addressing['label']
@@ -4311,14 +4318,12 @@ _:b%i
                     return
 
                 if group_actuators is not None:
-                    def group_callback(ok):
-                        if not ok:
-                            callback(False)
-                            return
-                        pluginData['ports'][portsymbol] = value
-                        self.send_modified("param_set %d %s %f" % (instance_id, portsymbol, value), callback, datatype='boolean')
-                        self.msg_callback("param_set %s %s %f" % (instance, portsymbol, value))
-                    self.control_set_other_group_actuator(group_actuators, hw_id, port_addressing, value, group_callback)
+                    # NOTE: we cannot wait for HMI callback while giving a response to HMI
+                    self.control_set_other_group_actuator(group_actuators, hw_id, port_addressing, value, None)
+
+                    pluginData['ports'][portsymbol] = value
+                    self.send_modified("param_set %d %s %f" % (instance_id, portsymbol, value), callback, datatype='boolean')
+                    self.msg_callback("param_set %s %s %f" % (instance, portsymbol, value))
                     return
 
             pluginData['ports'][portsymbol] = value
