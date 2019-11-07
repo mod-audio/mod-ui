@@ -4287,6 +4287,7 @@ _:b%i
             return
 
         pluginData = self.plugins[instance_id]
+
         if portsymbol == ":bypass":
             bypassed = bool(value)
             pluginData['bypassed'] = bypassed
@@ -4307,30 +4308,32 @@ _:b%i
             if value < 0 or value >= len(pluginData['mapPresets']):
                 callback(False)
                 return
+
+            port_addressing = pluginData['addressings'].get(portsymbol, None)
+            if port_addressing is None:
+                callback(False)
+                return
+            group_actuators = self.addressings.get_group_actuators(port_addressing['actuator_uri'])
+
+            # Update value on the HMI for the other actuator in the group
+            def group_callback(ok):
+                if not ok:
+                    callback(False)
+                    return
+                # NOTE: we cannot wait for HMI callback while giving a response to HMI
+                self.control_set_other_group_actuator(group_actuators, hw_id, port_addressing, value, callback)
+                callback(True)
+
+            cb = group_callback if group_actuators is not None else callback
+
             if instance_id == PEDALBOARD_INSTANCE_ID:
                 value = int(pluginData['mapPresets'][value].replace("file:///",""))
                 try:
-                    self.snapshot_load(value, True, abort_catcher, callback)
+                    self.snapshot_load(value, True, abort_catcher, cb)
                 except Exception as e:
                     callback(False)
                     logging.exception(e)
             else:
-                port_addressing = pluginData['addressings'].get(portsymbol, None)
-                if port_addressing is None:
-                    callback(False)
-                    return
-                group_actuators = self.addressings.get_group_actuators(port_addressing['actuator_uri'])
-
-                # Update value on the HMI for the other actuator in the group
-                def group_callback(ok):
-                    if not ok:
-                        callback(False)
-                        return
-                    # NOTE: we cannot wait for HMI callback while giving a response to HMI
-                    self.control_set_other_group_actuator(group_actuators, hw_id, port_addressing, value, None)
-                    callback(True)
-
-                cb = group_callback if group_actuators is not None else callback
                 try:
                     self.preset_load(instance, pluginData['mapPresets'][value], abort_catcher, cb)
                 except Exception as e:
