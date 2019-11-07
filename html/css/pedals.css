@@ -678,7 +678,7 @@ body > .mod-settings.mod-window-visible {
     background:white;
     left:50%;
     margin:-150px -193px;
-    padding:18px;
+    padding: 18px 18px 0 18px;
     position:absolute;
     top:40%;
     width:450px;
