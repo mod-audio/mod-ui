@@ -4445,8 +4445,11 @@ _:b%i
             if group_hw_id != hw_id:
                 # Set reverse enum type if re-addressing first actuator in group
                 group_actuator = next((act for act in self.addressings.hw_actuators if act['uri'] == addressing_data['group']), None)
-                if group_actuator is not None and group_actuator['group'].index(group_actuator_uri) == 0:
-                    addressing_data['hmitype'] |= HMI_ADDRESSING_TYPE_REVERSE_ENUM
+                if group_actuator is not None:
+                    if group_actuator['group'].index(group_actuator_uri) == 0:
+                        addressing_data['hmitype'] |= HMI_ADDRESSING_TYPE_REVERSE_ENUM
+                    else:
+                        addressing_data['hmitype'] &= ~HMI_ADDRESSING_TYPE_REVERSE_ENUM
                 self.addressings.load_addr(group_actuator_uri, addressing_data, callback)
                 return
         callback(True)

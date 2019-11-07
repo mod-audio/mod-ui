@@ -615,8 +615,11 @@ class Addressings(object):
             # first actuator in group should have reverse enum hmi type
             if group is not None:
                 group_actuator = next((act for act in self.hw_actuators if act['uri'] == group), None)
-                if group_actuator is not None and group_actuator['group'].index(actuator_uri) == 0:
-                    hmitype |= HMI_ADDRESSING_TYPE_REVERSE_ENUM
+                if group_actuator is not None:
+                    if group_actuator['group'].index(actuator_uri) == 0:
+                        hmitype |= HMI_ADDRESSING_TYPE_REVERSE_ENUM
+                    else:
+                        hmitype &= ~HMI_ADDRESSING_TYPE_REVERSE_ENUM
 
             if hmitype & HMI_ADDRESSING_TYPE_SCALE_POINTS:
                 if not tempo and value not in [o[0] for o in options]:
@@ -774,7 +777,9 @@ class Addressings(object):
                     group_addressing_data = addressing_data.copy()
                     group_addressing_data['actuator_uri'] = group_actuator_uri
                     if i == 0: # first actuator has reverse enum hmi type
-                        group_addressing_data['hmitype'] = HMI_ADDRESSING_TYPE_REVERSE_ENUM
+                        group_addressing_data['hmitype'] |= HMI_ADDRESSING_TYPE_REVERSE_ENUM
+                    else:
+                        group_addressing_data['hmitype'] &= ~HMI_ADDRESSING_TYPE_REVERSE_ENUM
                     was_active = self.remove_hmi(group_addressing_data, group_actuator_uri)
                 return was_active
 
