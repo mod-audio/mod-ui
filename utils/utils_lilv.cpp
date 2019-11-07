@@ -538,39 +538,23 @@ char* lilv_file_abspath(const char* const path)
     return nullptr;
 }
 
-// refresh everything
-// plugins are not truly scanned here, only later per request
-void _refresh()
+// fill in `bundles` vector with all known data bundles (main bundle + local presets)
+void _fill_bundles_for_plugin(std::list<std::string>& bundles, const LilvPlugin* const p, LilvNode* const pset_Preset)
 {
-    BUNDLES.clear();
-    PLUGNFO.clear();
-    PLUGNFO_Mini.clear();
-    PLUGINS = lilv_world_get_all_plugins(W);
+    char* lilvparsed;
+    const char* bundlepath;
+    size_t bundlepathsize;
 
-    // Make a list of all installed bundles
-    LILV_FOREACH(plugins, itpls, PLUGINS)
+    if (const LilvNodes* const datanodes = lilv_plugin_get_data_uris(p))
     {
-        const LilvPlugin* const p = lilv_plugins_get(PLUGINS, itpls);
-
-        const LilvNodes* const bundles = lilv_plugin_get_data_uris(p);
-
-        const std::string uri = lilv_node_as_uri(lilv_plugin_get_uri(p));
-
-        // store empty dict for later
-        PLUGNFO[uri] = PluginInfo_Init;
-        PLUGNFO_Mini[uri] = PluginInfo_Mini_Init;
-
-        LILV_FOREACH(nodes, itbnds, bundles)
+        LILV_FOREACH(nodes, itbnds, datanodes)
         {
-            const LilvNode* const bundlenode = lilv_nodes_get(bundles, itbnds);
+            const LilvNode* const bundlenode = lilv_nodes_get(datanodes, itbnds);
 
             if (bundlenode == nullptr)
                 continue;
             if (! lilv_node_is_uri(bundlenode))
                 continue;
-
-            char* lilvparsed;
-            const char* bundlepath;
 
             lilvparsed = lilv_file_uri_parse(lilv_node_as_uri(bundlenode), nullptr);
             if (lilvparsed == nullptr)
@@ -583,7 +567,6 @@ void _refresh()
                 continue;
             }
 
-            size_t bundlepathsize;
             bundlepath = _get_safe_bundlepath(bundlepath, bundlepathsize);
             lilv_free(lilvparsed);
 
@@ -592,10 +575,72 @@ void _refresh()
 
             const std::string bundlestr = bundlepath;
 
-            if (std::find(BUNDLES.begin(), BUNDLES.end(), bundlestr) == BUNDLES.end())
-                BUNDLES.push_back(bundlestr);
+            if (std::find(bundles.begin(), bundles.end(), bundlestr) == bundles.end())
+                bundles.push_back(bundlestr);
         }
     }
+
+    if (LilvNodes* const presetnodes = lilv_plugin_get_related(p, pset_Preset))
+    {
+        LILV_FOREACH(nodes, itprs, presetnodes)
+        {
+            const LilvNode* const presetnode = lilv_nodes_get(presetnodes, itprs);
+
+            if (presetnode == nullptr)
+                continue;
+            if (! lilv_node_is_uri(presetnode))
+                continue;
+
+            lilvparsed = lilv_file_uri_parse(lilv_node_as_uri(presetnode), nullptr);
+            if (lilvparsed == nullptr)
+                continue;
+
+            bundlepath = dirname(lilvparsed);
+            if (bundlepath == nullptr)
+            {
+                lilv_free(lilvparsed);
+                continue;
+            }
+
+            bundlepath = _get_safe_bundlepath(bundlepath, bundlepathsize);
+            lilv_free(lilvparsed);
+
+            if (bundlepath == nullptr)
+                continue;
+
+            const std::string bundlestr = bundlepath;
+
+            if (std::find(bundles.begin(), bundles.end(), bundlestr) == bundles.end())
+                bundles.push_back(bundlestr);
+        }
+    }
+}
+
+// refresh everything
+// plugins are not truly scanned here, only later per request
+void _refresh()
+{
+    BUNDLES.clear();
+    PLUGNFO.clear();
+    PLUGNFO_Mini.clear();
+    PLUGINS = lilv_world_get_all_plugins(W);
+
+    LilvNode* const pset_Preset = lilv_new_uri(W, LV2_PRESETS__Preset);
+
+    // Make a list of all installed bundles
+    LILV_FOREACH(plugins, itpls, PLUGINS)
+    {
+        const LilvPlugin* const p = lilv_plugins_get(PLUGINS, itpls);
+        const std::string uri = lilv_node_as_uri(lilv_plugin_get_uri(p));
+
+        // store empty dict for later
+        PLUGNFO[uri] = PluginInfo_Init;
+        PLUGNFO_Mini[uri] = PluginInfo_Mini_Init;
+
+        _fill_bundles_for_plugin(BUNDLES, p, pset_Preset);
+    }
+
+    lilv_node_free(pset_Preset);
 }
 
 // common function used in 2 places
@@ -1425,8 +1470,9 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
     // bundles
 
     {
-        std::vector<std::string> bundles;
+        std::list<std::string> bundles;
 
+        // make sure the main bundle is the first in the list
         size_t bundlepathsize;
         const char* bundlepath = _get_safe_bundlepath(bundle, bundlepathsize);
 
@@ -1436,41 +1482,8 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
             bundles.push_back(bundlestr);
         }
 
-        if (const LilvNodes* const bundlenodes = lilv_plugin_get_data_uris(p))
-        {
-            LILV_FOREACH(nodes, itbnds, bundlenodes)
-            {
-                const LilvNode* const bundlenode = lilv_nodes_get(bundlenodes, itbnds);
-
-                if (bundlenode == nullptr)
-                    continue;
-                if (! lilv_node_is_uri(bundlenode))
-                    continue;
-
-                char* lilvparsed;
-                lilvparsed = lilv_file_uri_parse(lilv_node_as_uri(bundlenode), nullptr);
-                if (lilvparsed == nullptr)
-                    continue;
-
-                bundlepath = dirname(lilvparsed);
-                if (bundlepath == nullptr)
-                {
-                    lilv_free(lilvparsed);
-                    continue;
-                }
-
-                bundlepath = _get_safe_bundlepath(bundlepath, bundlepathsize);
-                lilv_free(lilvparsed);
-
-                if (bundlepath == nullptr)
-                    continue;
-
-                const std::string bundlestr = bundlepath;
-
-                if (std::find(bundles.begin(), bundles.end(), bundlestr) == bundles.end())
-                    bundles.push_back(bundlestr);
-            }
-        }
+        // now add everything else
+        _fill_bundles_for_plugin(bundles, p, ns.pset_Preset);
 
         size_t count = bundles.size();
         const char** const cbundles = new const char*[count+1];
@@ -3105,13 +3118,12 @@ const char* const* remove_bundle_from_lilv_world(const char* const bundle)
     LILV_FOREACH(plugins, itpls, PLUGINS)
     {
         const LilvPlugin* const p = lilv_plugins_get(PLUGINS, itpls);
-
-        const LilvNodes* const bundles = lilv_plugin_get_data_uris(p);
-
         const std::string uri = lilv_node_as_uri(lilv_plugin_get_uri(p));
 
         if (PLUGNFO.count(uri) == 0)
             continue;
+
+        const LilvNodes* const bundles = lilv_plugin_get_data_uris(p);
 
         LILV_FOREACH(nodes, itbnds, bundles)
         {
