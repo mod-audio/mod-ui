@@ -838,19 +838,22 @@ class Addressings(object):
 
         if addressings_len == 0:
             print("T2 addressings_len == 0")
-            callback(False)
+            if callback is not None:
+                callback(False)
             return
 
         if self.pages_cb: # device supports pages
             current_page_assigned = self.is_page_assigned(addressings_addrs, self.current_page)
             if not current_page_assigned:
-                callback(False)
+                if callback is not None:
+                    callback(False)
                 return
             else:
                 addressing_data = self.get_addressing_for_page(addressings_addrs, self.current_page)
                 if (addressing_data['instance_id'], addressing_data['port']) == skippedPort:
                     print("skippedPort", skippedPort)
-                    callback(True)
+                    if callback is not None:
+                        callback(True)
                     return
 
                 addressing_data['value'] = self._task_get_port_value(addressing_data['instance_id'],
@@ -869,7 +872,8 @@ class Addressings(object):
 
             if canSkipAddressing and (addressing_data['instance_id'], addressing_data['port']) == skippedPort:
                 print("skippedPort", skippedPort)
-                callback(True)
+                if callback is not None:
+                    callback(True)
                 return
 
             # needed fields for addressing task
@@ -909,7 +913,7 @@ class Addressings(object):
         # ready to load
         self.hmi_load_current(actuator_uri, callback)
 
-    def hmi_load_next_hw(self, hw_id, callback):
+    def hmi_load_next_hw(self, hw_id):
         actuator_uri    = self.hmi_hw2uri_map[hw_id]
         addressings     = self.hmi_addressings[actuator_uri]
         addressings_len = len(addressings['addrs'])
@@ -922,7 +926,7 @@ class Addressings(object):
         addressings['idx'] = (addressings['idx'] + 1) % addressings_len
 
         # ready to load
-        self.hmi_load_current(actuator_uri, callback)
+        self.hmi_load_current(actuator_uri, None)
 
     def hmi_get_addr_data(self, hw_id):
         actuator_uri      = self.hmi_hw2uri_map[hw_id]
