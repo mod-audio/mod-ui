@@ -230,8 +230,8 @@ class Host(object):
         self.pedalboard_version  = 0
         self.current_pedalboard_snapshot_id = -1
         self.pedalboard_snapshots  = []
-        self.next_hmi_pedalboard_init = None
-        self.next_hmi_pedalboard_load = None
+        self.next_hmi_pedalboard_to_load = None
+        self.next_hmi_pedalboard_loading = False
         self.hmi_snapshots = [None, None]
         self.transport_rolling = False
         self.transport_bpb     = 4.0
@@ -963,8 +963,8 @@ class Host(object):
         abort_catcher = self.abort_previous_loading_progress("reconnect_hmi")
         self.hmi = hmi
         self.hmi_snapshots = [None, None]
-        self.next_hmi_pedalboard_init = None
-        self.next_hmi_pedalboard_load = None
+        self.next_hmi_pedalboard_to_load = None
+        self.next_hmi_pedalboard_loading = False
         self.processing_pending_flag = False
         self.open_connection_if_needed(None)
 
@@ -1255,7 +1255,7 @@ class Host(object):
                     pedalboards = self.allpedalboards
 
                 if program >= 0 and program < len(pedalboards):
-                    while self.next_hmi_pedalboard_init is not None:
+                    while self.next_hmi_pedalboard_loading:
                         yield gen.sleep(0.25)
                     try:
                         yield gen.Task(self.hmi_load_bank_pedalboard, bank_id, program)
@@ -2446,7 +2446,7 @@ class Host(object):
             return
 
         # If a pedalboard is loading (via MIDI program messsage), wait for it to finish
-        while self.next_hmi_pedalboard_load is not None:
+        while self.next_hmi_pedalboard_to_load is not None:
             yield gen.sleep(0.25)
 
         for uri, addressings in self.addressings.hmi_addressings.items():
@@ -2594,7 +2594,7 @@ class Host(object):
     # -----------------------------------------------------------------------------------------------------------------
     # Host stuff - load & save
 
-    def load(self, bundlepath, isDefault=False):
+    def load(self, bundlepath, isDefault=False, abort_catcher=None):
         first_pedalboard = self.first_pedalboard
         self.first_pedalboard = False
 
@@ -2772,6 +2772,10 @@ class Host(object):
             self.set_transport_bpm(self.transport_bpm, False, True, False, False)
             self.set_transport_rolling(self.transport_rolling, False, True, False, False)
 
+        if abort_catcher is not None and abort_catcher.get('abort', False):
+            print("WARNING: Abort triggered during PB load request 1, caller:", abort_catcher['caller'])
+            return
+
         self.send_notmodified("transport %i %f %f" % (self.transport_rolling,
                                                       self.transport_bpb,
                                                       self.transport_bpm))
@@ -2786,7 +2790,12 @@ class Host(object):
         self.load_pb_connections(pb['connections'], mappedOldMidiIns, mappedOldMidiOuts,
                                                     mappedNewMidiIns, mappedNewMidiOuts)
 
-        self.addressings.load(bundlepath, instances, skippedPortAddressings)
+        self.addressings.load(bundlepath, instances, skippedPortAddressings, abort_catcher)
+
+        if abort_catcher is not None and abort_catcher.get('abort', False):
+            print("WARNING: Abort triggered during PB load request 2, caller:", abort_catcher['caller'])
+            return
+
         self.addressings.registerMappings(self.msg_callback, rinstances)
 
         self.msg_callback("loading_end %d" % self.current_pedalboard_snapshot_id)
@@ -4196,9 +4205,9 @@ _:b%i
             callback(False)
             return
 
-        if self.next_hmi_pedalboard_load is not None:
+        if self.next_hmi_pedalboard_to_load is not None:
             print("NOTE: Delaying loading of %i:%i" % (bank_id, pedalboard_id))
-            self.next_hmi_pedalboard_load = (bank_id, pedalboard_id)
+            self.next_hmi_pedalboard_to_load = (bank_id, pedalboard_id)
             callback(True)
             return
 
@@ -4213,18 +4222,20 @@ _:b%i
             callback(False)
             return
 
-        self.next_hmi_pedalboard_init = (bank_id, pedalboard_id)
+        next_pb_to_load = (bank_id, pedalboard_id)
+        self.next_hmi_pedalboard_loading = True
         callback(True)
 
         bundlepath = pedalboards[pedalboard_id]['bundle']
+        abort_catcher = self.abort_previous_loading_progress("host PB load " + bundlepath)
 
         def load_different_callback(ok):
-            if self.next_hmi_pedalboard_load is None:
+            if self.next_hmi_pedalboard_to_load is None:
                 return
             if ok:
-                print("NOTE: Delayed loading of %i:%i has started" % self.next_hmi_pedalboard_load)
+                print("NOTE: Delayed loading of %i:%i has started" % self.next_hmi_pedalboard_to_load)
             else:
-                print("ERROR: Delayed loading of %i:%i failed!" % self.next_hmi_pedalboard_load)
+                print("ERROR: Delayed loading of %i:%i failed!" % self.next_hmi_pedalboard_to_load)
 
         def load_finish_callback(_):
             self.processing_pending_flag = False
@@ -4233,8 +4244,12 @@ _:b%i
         def pb_host_loaded_callback(_):
             print("NOTE: Loading of %i:%i finished" % (bank_id, pedalboard_id))
 
-            next_pedalboard = self.next_hmi_pedalboard_load
-            self.next_hmi_pedalboard_load = None
+            next_pedalboard = self.next_hmi_pedalboard_to_load
+            self.next_hmi_pedalboard_to_load = None
+
+            if next_pedalboard is None:
+                logging.error("ERROR: Inconsistent state detected when loading next pedalboard (will not activate audio)")
+                return
 
             # Check if there's a pending pedalboard to be loaded
             if next_pedalboard != (bank_id, pedalboard_id):
@@ -4248,9 +4263,9 @@ _:b%i
 
         def load_callback(_):
             self.bank_id = bank_id
-            self.next_hmi_pedalboard_load = self.next_hmi_pedalboard_init
-            self.next_hmi_pedalboard_init = None
-            self.load(bundlepath)
+            self.next_hmi_pedalboard_to_load = next_pb_to_load
+            self.next_hmi_pedalboard_loading = False
+            self.load(bundlepath, False, abort_catcher)
             # Dummy host call, just to receive callback when all other host messages finish
             self.send_notmodified("cpu_load", pb_host_loaded_callback, datatype='float_structure')
 
@@ -4298,6 +4313,12 @@ _:b%i
     # def hmi_parameter_set(self, instance_id, portsymbol, value, callback):
     def hmi_parameter_set(self, hw_id, value, callback):
         logging.debug("hmi parameter set")
+
+        if self.next_hmi_pedalboard_loading:
+            callback(False)
+            logging.error("hmi parameter set ignored, pedalboard loading is in progress")
+            return
+
         abort_catcher = self.abort_previous_loading_progress("hmi_parameter_set")
 
         instance_id, portsymbol = self.get_addressed_port_info(hw_id)
@@ -4309,6 +4330,7 @@ _:b%i
             return
 
         pluginData = self.plugins[instance_id]
+
         if portsymbol == ":bypass":
             bypassed = bool(value)
             pluginData['bypassed'] = bypassed
@@ -4329,25 +4351,32 @@ _:b%i
             if value < 0 or value >= len(pluginData['mapPresets']):
                 callback(False)
                 return
+
+            port_addressing = pluginData['addressings'].get(portsymbol, None)
+            if port_addressing is None:
+                callback(False)
+                return
+            group_actuators = self.addressings.get_group_actuators(port_addressing['actuator_uri'])
+
+            # Update value on the HMI for the other actuator in the group
+            def group_callback(ok):
+                if not ok:
+                    callback(False)
+                    return
+                # NOTE: we cannot wait for HMI callback while giving a response to HMI
+                self.control_set_other_group_actuator(group_actuators, hw_id, port_addressing, value, callback)
+                callback(True)
+
+            cb = group_callback if group_actuators is not None else callback
+
             if instance_id == PEDALBOARD_INSTANCE_ID:
                 value = int(pluginData['mapPresets'][value].replace("file:///",""))
                 try:
-                    self.snapshot_load(value, True, abort_catcher, callback)
+                    self.snapshot_load(value, True, abort_catcher, cb)
                 except Exception as e:
                     callback(False)
                     logging.exception(e)
             else:
-                port_addressing = pluginData['addressings'].get(portsymbol, None)
-                if port_addressing is None:
-                    callback(False)
-                    return
-                group_actuators = self.addressings.get_group_actuators(port_addressing['actuator_uri'])
-
-                # Update value on the HMI for the other actuator in the group
-                def group_callback(ok):
-                    self.control_set_other_group_actuator(group_actuators, hw_id, port_addressing, value, callback)
-
-                cb = group_callback if group_actuators is not None else callback
                 try:
                     self.preset_load(instance, pluginData['mapPresets'][value], abort_catcher, cb)
                 except Exception as e:
@@ -4414,7 +4443,9 @@ _:b%i
                         if not ok:
                             callback(False)
                             return
-                        self.control_set_other_group_actuator(group_actuators, hw_id, port_addressing, value, param_set_callback)
+                        # NOTE: we cannot wait for HMI callback while giving a response to HMI
+                        self.control_set_other_group_actuator(group_actuators, hw_id, port_addressing, value, None)
+                        param_set_callback(True)
 
                     actuator_uri = port_addressing['actuator_uri']
                     label = port_addressing['label']
@@ -4431,14 +4462,12 @@ _:b%i
                     return
 
                 if group_actuators is not None:
-                    def group_callback(ok):
-                        if not ok:
-                            callback(False)
-                            return
-                        pluginData['ports'][portsymbol] = value
-                        self.send_modified("param_set %d %s %f" % (instance_id, portsymbol, value), callback, datatype='boolean')
-                        self.msg_callback("param_set %s %s %f" % (instance, portsymbol, value))
-                    self.control_set_other_group_actuator(group_actuators, hw_id, port_addressing, value, group_callback)
+                    # NOTE: we cannot wait for HMI callback while giving a response to HMI
+                    self.control_set_other_group_actuator(group_actuators, hw_id, port_addressing, value, None)
+
+                    pluginData['ports'][portsymbol] = value
+                    self.send_modified("param_set %d %s %f" % (instance_id, portsymbol, value), callback, datatype='boolean')
+                    self.msg_callback("param_set %s %s %f" % (instance, portsymbol, value))
                     return
 
             pluginData['ports'][portsymbol] = value
@@ -4459,15 +4488,19 @@ _:b%i
             if group_hw_id != hw_id:
                 # Set reverse enum type if re-addressing first actuator in group
                 group_actuator = next((act for act in self.addressings.hw_actuators if act['uri'] == addressing_data['group']), None)
-                if group_actuator is not None and group_actuator['group'].index(group_actuator_uri) == 0:
-                    addressing_data['hmitype'] |= HMI_ADDRESSING_TYPE_REVERSE_ENUM
+                if group_actuator is not None:
+                    if group_actuator['group'].index(group_actuator_uri) == 0:
+                        addressing_data['hmitype'] |= HMI_ADDRESSING_TYPE_REVERSE_ENUM
+                    else:
+                        addressing_data['hmitype'] &= ~HMI_ADDRESSING_TYPE_REVERSE_ENUM
                 self.addressings.load_addr(group_actuator_uri, addressing_data, callback)
                 return
         callback(True)
 
     def hmi_parameter_addressing_next(self, hw_id, callback):
         logging.debug("hmi parameter addressing next")
-        self.addressings.hmi_load_next_hw(hw_id, callback)
+        self.addressings.hmi_load_next_hw(hw_id)
+        callback(True)
 
     def hmi_next_control_page(self, hw_id, props, callback):
         logging.error("hmi next control page %d %d", hw_id, props)
