@@ -180,7 +180,7 @@ class Addressings(object):
         self.waiting_for_cc_cbs = []
 
     @gen.coroutine
-    def load(self, bundlepath, instances, skippedPorts):
+    def load(self, bundlepath, instances, skippedPorts, abort_catcher):
         # Check if this is the first time we load addressings (ie, first time mod-ui starts)
         first_load = self.first_load
         self.first_load = False
@@ -239,7 +239,6 @@ class Addressings(object):
                     else: # cannot address more because we've reached the max nb of pages for current actuator
                         break
 
-
                 curvalue = self._task_get_port_value(instance_id, portsymbol)
                 group = addr.get('group', None)
                 addrdata = self.add(instance_id, plugin_uri, portsymbol, actuator_uri,
@@ -263,19 +262,39 @@ class Addressings(object):
 
         # Load HMI and Control Chain addressings
         for actuator_uri in used_actuators:
+            if abort_catcher is not None and abort_catcher.get('abort', False):
+                print("WARNING: Abort triggered during addressings.load actuator requests, caller:", abort_catcher['caller'])
+                return
             if self.get_actuator_type(actuator_uri) == self.ADDRESSING_TYPE_HMI:
                 try:
                     yield gen.Task(self.hmi_load_first, actuator_uri)
                 except Exception as e:
                     logging.exception(e)
-                yield gen.Task(self.hmi_load_first, actuator_uri)
             elif self.get_actuator_type(actuator_uri) == self.ADDRESSING_TYPE_CC and cc_initialized:
                 self.cc_load_all(actuator_uri)
 
         # Load MIDI addressings
         # NOTE: MIDI addressings are not stored in addressings.json.
-        #       They must be loaded by calling 'add_midi' before calling this function.
-        self.midi_load_everything()
+        #       They must be loaded by calling 'add_midi' before this `load` function.
+        for actuator_uri, addressings in self.midi_addressings.items():
+            for addressing in addressings:
+                if abort_catcher is not None and abort_catcher.get('abort', False):
+                    print("WARNING: Abort triggered during addressings.load MIDI requests, caller:", abort_catcher['caller'])
+                    return
+                # NOTE: label, value, steps and options missing, not needed or used for MIDI
+                data = {
+                    'instance_id': addressing['instance_id'],
+                    'port'       : addressing['port'],
+                    'minimum'    : addressing['minimum'],
+                    'maximum'    : addressing['maximum'],
+                    # MIDI specific
+                    'midichannel': addressing['midichannel'],
+                    'midicontrol': addressing['midicontrol'],
+                }
+                try:
+                    yield gen.Task(self._task_addressing, self.ADDRESSING_TYPE_MIDI, actuator_uri, data)
+                except Exception as e:
+                    logging.exception(e)
 
         # Unset retry flag if at least 1 Control Chain device is connected
         if retry_cc_addrs and len(self.cc_metadata) > 0:
@@ -319,6 +338,9 @@ class Addressings(object):
 
         # Re-do the same as we did above
         for actuator_uri, addrs in data.items():
+            if abort_catcher is not None and abort_catcher.get('abort', False):
+                print("WARNING: Abort triggered during addressings.load CC requests, caller:", abort_catcher['caller'])
+                return
             if self.get_actuator_type(actuator_uri) != self.ADDRESSING_TYPE_CC:
                 continue
             for addr in addrs:
@@ -951,28 +973,6 @@ class Addressings(object):
             callback()
             return
         self.waiting_for_cc_cbs.append(callback)
-
-    # -----------------------------------------------------------------------------------------------------------------
-    # MIDI specific functions
-
-    @gen.coroutine
-    def midi_load_everything(self):
-        for actuator_uri, addressings in self.midi_addressings.items():
-            for addressing in addressings:
-                # NOTE: label, value, steps and options missing, not needed or used for MIDI
-                data = {
-                    'instance_id': addressing['instance_id'],
-                    'port'       : addressing['port'],
-                    'minimum'    : addressing['minimum'],
-                    'maximum'    : addressing['maximum'],
-                    # MIDI specific
-                    'midichannel': addressing['midichannel'],
-                    'midicontrol': addressing['midicontrol'],
-                }
-                try:
-                    yield gen.Task(self._task_addressing, self.ADDRESSING_TYPE_MIDI, actuator_uri, data)
-                except Exception as e:
-                    logging.exception(e)
 
     # -----------------------------------------------------------------------------------------------------------------
     # Utilities

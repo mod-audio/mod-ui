@@ -228,8 +228,8 @@ class Host(object):
         self.pedalboard_version  = 0
         self.current_pedalboard_snapshot_id = -1
         self.pedalboard_snapshots  = []
-        self.next_hmi_pedalboard_init = None
-        self.next_hmi_pedalboard_load = None
+        self.next_hmi_pedalboard_to_load = None
+        self.next_hmi_pedalboard_loading = False
         self.hmi_snapshots = [None, None]
         self.transport_rolling = False
         self.transport_bpb     = 4.0
@@ -935,8 +935,8 @@ class Host(object):
         abort_catcher = self.abort_previous_loading_progress("reconnect_hmi")
         self.hmi = hmi
         self.hmi_snapshots = [None, None]
-        self.next_hmi_pedalboard_init = None
-        self.next_hmi_pedalboard_load = None
+        self.next_hmi_pedalboard_to_load = None
+        self.next_hmi_pedalboard_loading = False
         self.processing_pending_flag = False
         self.open_connection_if_needed(None)
 
@@ -1227,7 +1227,7 @@ class Host(object):
                     pedalboards = self.allpedalboards
 
                 if program >= 0 and program < len(pedalboards):
-                    while self.next_hmi_pedalboard_init is not None:
+                    while self.next_hmi_pedalboard_loading:
                         yield gen.sleep(0.25)
                     try:
                         yield gen.Task(self.hmi_load_bank_pedalboard, bank_id, program)
@@ -2401,7 +2401,7 @@ class Host(object):
             return
 
         # If a pedalboard is loading (via MIDI program messsage), wait for it to finish
-        while self.next_hmi_pedalboard_load is not None:
+        while self.next_hmi_pedalboard_to_load is not None:
             yield gen.sleep(0.25)
 
         for uri, addressings in self.addressings.hmi_addressings.items():
@@ -2541,7 +2541,7 @@ class Host(object):
     # -----------------------------------------------------------------------------------------------------------------
     # Host stuff - load & save
 
-    def load(self, bundlepath, isDefault=False):
+    def load(self, bundlepath, isDefault=False, abort_catcher=None):
         first_pedalboard = self.first_pedalboard
         self.first_pedalboard = False
 
@@ -2719,6 +2719,10 @@ class Host(object):
             self.set_transport_bpm(self.transport_bpm, False, True, False, False)
             self.set_transport_rolling(self.transport_rolling, False, True, False, False)
 
+        if abort_catcher is not None and abort_catcher.get('abort', False):
+            print("WARNING: Abort triggered during PB load request 1, caller:", abort_catcher['caller'])
+            return
+
         self.send_notmodified("transport %i %f %f" % (self.transport_rolling,
                                                       self.transport_bpb,
                                                       self.transport_bpm))
@@ -2733,7 +2737,12 @@ class Host(object):
         self.load_pb_connections(pb['connections'], mappedOldMidiIns, mappedOldMidiOuts,
                                                     mappedNewMidiIns, mappedNewMidiOuts)
 
-        self.addressings.load(bundlepath, instances, skippedPortAddressings)
+        self.addressings.load(bundlepath, instances, skippedPortAddressings, abort_catcher)
+
+        if abort_catcher is not None and abort_catcher.get('abort', False):
+            print("WARNING: Abort triggered during PB load request 2, caller:", abort_catcher['caller'])
+            return
+
         self.addressings.registerMappings(self.msg_callback, rinstances)
 
         self.msg_callback("loading_end %d" % self.current_pedalboard_snapshot_id)
@@ -4076,9 +4085,9 @@ _:b%i
             callback(False)
             return
 
-        if self.next_hmi_pedalboard_load is not None:
+        if self.next_hmi_pedalboard_to_load is not None:
             print("NOTE: Delaying loading of %i:%i" % (bank_id, pedalboard_id))
-            self.next_hmi_pedalboard_load = (bank_id, pedalboard_id)
+            self.next_hmi_pedalboard_to_load = (bank_id, pedalboard_id)
             callback(True)
             return
 
@@ -4093,18 +4102,20 @@ _:b%i
             callback(False)
             return
 
-        self.next_hmi_pedalboard_init = (bank_id, pedalboard_id)
+        next_pb_to_load = (bank_id, pedalboard_id)
+        self.next_hmi_pedalboard_loading = True
         callback(True)
 
         bundlepath = pedalboards[pedalboard_id]['bundle']
+        abort_catcher = self.abort_previous_loading_progress("host PB load " + bundlepath)
 
         def load_different_callback(ok):
-            if self.next_hmi_pedalboard_load is None:
+            if self.next_hmi_pedalboard_to_load is None:
                 return
             if ok:
-                print("NOTE: Delayed loading of %i:%i has started" % self.next_hmi_pedalboard_load)
+                print("NOTE: Delayed loading of %i:%i has started" % self.next_hmi_pedalboard_to_load)
             else:
-                print("ERROR: Delayed loading of %i:%i failed!" % self.next_hmi_pedalboard_load)
+                print("ERROR: Delayed loading of %i:%i failed!" % self.next_hmi_pedalboard_to_load)
 
         def load_finish_callback(_):
             self.processing_pending_flag = False
@@ -4113,8 +4124,12 @@ _:b%i
         def pb_host_loaded_callback(_):
             print("NOTE: Loading of %i:%i finished" % (bank_id, pedalboard_id))
 
-            next_pedalboard = self.next_hmi_pedalboard_load
-            self.next_hmi_pedalboard_load = None
+            next_pedalboard = self.next_hmi_pedalboard_to_load
+            self.next_hmi_pedalboard_to_load = None
+
+            if next_pedalboard is None:
+                logging.error("ERROR: Inconsistent state detected when loading next pedalboard (will not activate audio)")
+                return
 
             # Check if there's a pending pedalboard to be loaded
             if next_pedalboard != (bank_id, pedalboard_id):
@@ -4128,9 +4143,9 @@ _:b%i
 
         def load_callback(_):
             self.bank_id = bank_id
-            self.next_hmi_pedalboard_load = self.next_hmi_pedalboard_init
-            self.next_hmi_pedalboard_init = None
-            self.load(bundlepath)
+            self.next_hmi_pedalboard_to_load = next_pb_to_load
+            self.next_hmi_pedalboard_loading = False
+            self.load(bundlepath, False, abort_catcher)
             # Dummy host call, just to receive callback when all other host messages finish
             self.send_notmodified("cpu_load", pb_host_loaded_callback, datatype='float_structure')
 
@@ -4178,6 +4193,12 @@ _:b%i
     # def hmi_parameter_set(self, instance_id, portsymbol, value, callback):
     def hmi_parameter_set(self, hw_id, value, callback):
         logging.debug("hmi parameter set")
+
+        if self.next_hmi_pedalboard_loading:
+            callback(False)
+            logging.error("hmi parameter set ignored, pedalboard loading is in progress")
+            return
+
         abort_catcher = self.abort_previous_loading_progress("hmi_parameter_set")
 
         instance_id, portsymbol = self.get_addressed_port_info(hw_id)
