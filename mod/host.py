@@ -4379,7 +4379,8 @@ _:b%i
 
     def hmi_parameter_addressing_next(self, hw_id, callback):
         logging.debug("hmi parameter addressing next")
-        self.addressings.hmi_load_next_hw(hw_id, callback)
+        self.addressings.hmi_load_next_hw(hw_id)
+        callback(True)
 
     def hmi_next_control_page(self, hw_id, props, callback):
         logging.debug("hmi next control page %d %d", hw_id, props)
