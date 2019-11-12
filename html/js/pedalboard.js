@@ -1125,7 +1125,7 @@ JqueryClass('pedalboard', {
         // Redraw all cables that connect to or from hardware ports
         //self.data('connectionManager').iterateInstance(':system:', function (jack) {
         self.data('connectionManager').iterate(function (jack) {
-            self.pedalboard('drawJack', jack)
+            self.pedalboard('drawJack', jack, false, true)
         })
     },
 
@@ -1923,7 +1923,6 @@ JqueryClass('pedalboard', {
                 self.pedalboard('preventDrag', false)
 
                 self.pedalboard('highlightInputs', false)
-
                 jack.removeClass('jack-connecting')
                 output.removeClass('output-connecting')
                 canvas.removeClass('cable-connecting')
@@ -1935,7 +1934,7 @@ JqueryClass('pedalboard', {
                         marginTop: 'auto',
                     })
                 }
-                self.pedalboard('drawJack', jack)
+                self.pedalboard('drawJack', jack, false, true)
             }
         })
 
@@ -1963,9 +1962,8 @@ JqueryClass('pedalboard', {
 
     // Draws a cable from jack's source (the output) to it's current position
     // Force parameter will force drawing when jack is disconnected
-    drawJack: function (jack, force) {
+    drawJack: function (jack, force, removeTopPosition) {
         var self = $(this)
-
         // We used settimeout so that drawing will occur after all events are processed. This avoids some bad
         // user experience
         setTimeout(function () {
@@ -1991,7 +1989,9 @@ JqueryClass('pedalboard', {
             var xi = source.offset().left / scale - self.offset().left / scale + source.width()
             var yi = source.offset().top / scale - self.offset().top / scale + source.height() / 2
             var xo = jack.offset().left / scale - self.offset().left / scale
-            var yo = jack.offset().top / scale - self.offset().top / scale + jack.height() / 2
+            var jackOffsetTop = removeTopPosition ? (jack.offset().top - jack.position().top) : jack.offset().top
+            var yo = jackOffsetTop / scale - self.offset().top / scale + jack.height() / 2
+
             //if (source.hasClass("mod-audio-output"))
                 //self.pedalboard('drawBezier', jack.data('canvas'), xi+12, yi, xo, yo, '')
             //else
@@ -2280,7 +2280,7 @@ JqueryClass('pedalboard', {
                 marginTop: 'auto',
             })
             jack.draggable(count <= 1 ? 'enable' : 'disable')
-            self.pedalboard('drawJack', jack)
+            self.pedalboard('drawJack', jack, false, true)
         });
 
         if (input.data('expanded'))

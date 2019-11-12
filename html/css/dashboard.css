@@ -252,6 +252,7 @@
     width: 128px !important;
     height: 56px;
     cursor: pointer;
+    top: 0;
 }
 .mod-audio-output.output-connected .mod-output-jack {
     background-image: url(../img/audio-jack.png);
@@ -399,6 +400,7 @@
     width: 80px !important;
     height: 56px;
     cursor: pointer;
+    top: 0;
 }
 .mod-cv-output.output-connected .mod-output-jack {
     background-image: url(../img/cv-jack.png);
