@@ -35,7 +35,11 @@ from shutil import rmtree
 from tornado import gen, iostream, ioloop
 import os, json, socket, time, logging
 
-from mod import get_hardware_descriptor, read_file_contents, safe_json_load, symbolify, TextFileFlusher
+from mod import (
+  get_hardware_descriptor, get_nearest_valid_scalepoint_value,
+  read_file_contents, safe_json_load, symbolify,
+  TextFileFlusher
+)
 from mod.addressings import Addressings, HMI_ADDRESSING_TYPE_ENUMERATION, HMI_ADDRESSING_TYPE_REVERSE_ENUM
 from mod.bank import list_banks, get_last_bank_and_pedalboard, save_last_bank_and_pedalboard
 from mod.hmi import Menu, HMI_ADDRESSING_FLAG_PAGINATED, HMI_ADDRESSING_FLAG_WRAP_AROUND, HMI_ADDRESSING_FLAG_PAGE_END
@@ -4526,14 +4530,7 @@ _:b%i
         numOpts = len(options)
         value   = self.addr_task_get_port_value(instance_id, portsymbol)
 
-        for i, (ovalue, _) in enumerate(options):
-            if ovalue == value:
-                ivalue = i
-                break
-        else:
-            logging.error("hmi wants more control data but current value is not in list (%d %d %f)",
-                          hw_id, props, value)
-            ivalue = int(value)
+        ivalue, value = get_nearest_valid_scalepoint_value(value, options)
 
         ivalue += 1 if dir_up != 0 else -1
 
