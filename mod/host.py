@@ -945,7 +945,7 @@ class Host(object):
 
             if self.descriptor.get('pages_cb', False):
                 pages = self.addressings.available_pages
-                data += " {} {} {}".format(int(0 in pages), int(1 in pages), int(2 in pages))
+                data += " {} {} {}".format(pages[0], pages[1], pages[2])
 
             if self.descriptor.get('hmi_set_pb_name', False):
                 pname = self.pedalboard_name or UNTITLED_PEDALBOARD_NAME
