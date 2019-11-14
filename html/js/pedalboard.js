@@ -958,7 +958,7 @@ JqueryClass('pedalboard', {
 
         var drawFactory = function (plugin) {
             return function () {
-                self.pedalboard('drawPluginJacks', plugin)
+                self.pedalboard('drawPluginJacks', plugin, true)
             }
         }
 
@@ -1213,19 +1213,20 @@ JqueryClass('pedalboard', {
                 ui.position.left /= scale
                 ui.position.top /= scale
                 self.trigger('modified')
-                self.pedalboard('drawPluginJacks', obj.icon)
+                self.pedalboard('drawPluginJacks', obj.icon, true)
             },
             dragStop: function (e, ui) {
                 self.trigger('pluginDragStop')
                 self.trigger('modified')
-                self.pedalboard('drawPluginJacks', obj.icon)
+                self.pedalboard('drawPluginJacks', obj.icon, true)
                 obj.icon.removeClass('dragging')
                 self.data('pluginMove')(instance, ui.position.left, ui.position.top)
                 self.pedalboard('adapt', false)
             },
             click: function (event) {
                 obj.icon.css({'z-index': self.data('z_index')+1})
-                self.pedalboard('drawPluginJacks', obj.icon)
+                var removeTopPosition = ! $(event.target).hasClass('mod-output-jack')
+                self.pedalboard('drawPluginJacks', obj.icon, removeTopPosition)
                 self.data('z_index', self.data('z_index')+1)
 
                 // only zoom-in if event was triggered by a click on the drag-handle
@@ -1582,7 +1583,7 @@ JqueryClass('pedalboard', {
     },
 
     // Redraw all connections from or to a plugin
-    drawPluginJacks: function (plugin) {
+    drawPluginJacks: function (plugin, removeTopPosition) {
         var self = $(this)
         var myjacks = []
         var connMgr = self.data('connectionManager')
@@ -1592,7 +1593,7 @@ JqueryClass('pedalboard', {
         $('.hasSVG.cable-connected').filter(function(e) {!(e in myjacks)}).css({'z-index': 0})
 
         connMgr.iterateInstance(plugin.data('instance'), function (jack) {
-            self.pedalboard('drawJack', jack)
+            self.pedalboard('drawJack', jack, false, removeTopPosition)
             $(jack.data('svg')._container).css({ 'z-index': self.data("z_index")-1, 'pointer-events': 'none'})
         })
     },

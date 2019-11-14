@@ -35,7 +35,11 @@ from shutil import rmtree
 from tornado import gen, iostream, ioloop
 import os, json, socket, time, logging
 
-from mod import get_hardware_descriptor, read_file_contents, safe_json_load, symbolify, TextFileFlusher
+from mod import (
+  get_hardware_descriptor, get_nearest_valid_scalepoint_value,
+  read_file_contents, safe_json_load, symbolify,
+  TextFileFlusher
+)
 from mod.addressings import Addressings, HMI_ADDRESSING_TYPE_ENUMERATION, HMI_ADDRESSING_TYPE_REVERSE_ENUM
 from mod.bank import list_banks, get_last_bank_and_pedalboard, save_last_bank_and_pedalboard
 from mod.hmi import Menu, HMI_ADDRESSING_FLAG_PAGINATED, HMI_ADDRESSING_FLAG_WRAP_AROUND, HMI_ADDRESSING_FLAG_PAGE_END
@@ -117,6 +121,17 @@ kMaxAddressableScalepoints = 50
 # TODO: check pluginData['designations'] when doing addressing
 # TODO: hmi_save_current_pedalboard does not send browser msgs, needed?
 # TODO: finish presets, testing
+
+def midi_port_alias_to_name(alias, withSpaces):
+    space = " " if withSpaces else "_"
+    if False:
+        # for alsa-raw midi option
+        return alias.split("-",5)[-1].replace("-",space).replace(";",".")
+    else:
+        # for alsa-seq midi option
+        return alias.split(":",1)[-1].replace("-",space).replace(";",".")\
+          .replace("/midi_capture_",space+"MIDI"+space)\
+          .replace("/midi_playback_",space+"MIDI"+space)
 
 def get_all_good_pedalboards():
     allpedals  = get_all_pedalboards()
@@ -433,7 +448,7 @@ class Host(object):
         alias = get_jack_port_alias(name)
         if not alias:
             return
-        alias = alias.split("-",5)[-1].replace("-"," ").replace(";",".")
+        alias = midi_port_alias_to_name(alias, True)
 
         if not isOutput:
             connect_jack_ports(name, "mod-host:midi_in")
@@ -945,7 +960,7 @@ class Host(object):
 
             if self.descriptor.get('pages_cb', False):
                 pages = self.addressings.available_pages
-                data += " {} {} {}".format(int(0 in pages), int(1 in pages), int(2 in pages))
+                data += " {} {} {}".format(pages[0], pages[1], pages[2])
 
             if self.descriptor.get('hmi_set_pb_name', False):
                 pname = self.pedalboard_name or UNTITLED_PEDALBOARD_NAME
@@ -1562,7 +1577,7 @@ class Host(object):
                 alias = get_jack_port_alias(name)
 
                 if alias:
-                    title = alias.split("-",5)[-1].replace("-","_").replace(";",".")
+                    title = midi_port_alias_to_name(alias, False)
                 else:
                     title = name.split(":",1)[-1].title()
                 title = title.replace(" ","_")
@@ -1584,7 +1599,7 @@ class Host(object):
                     continue
                 alias = get_jack_port_alias(name)
                 if alias:
-                    title = alias.split("-",5)[-1].replace("-","_").replace(";",".")
+                    title = midi_port_alias_to_name(alias, False)
                 else:
                     title = name.split(":",1)[-1].title()
                 title = title.replace(" ","_")
@@ -2632,9 +2647,9 @@ class Host(object):
             mappedOldMidiIns   = dict((p['symbol'], p['name']) for p in pb['hardware']['midi_ins'])
             mappedOldMidiOuts  = dict((p['symbol'], p['name']) for p in pb['hardware']['midi_outs'])
             mappedOldMidiOuts2 = dict((p['name'], p['symbol']) for p in pb['hardware']['midi_outs'])
-            mappedNewMidiIns   = OrderedDict((get_jack_port_alias(p).split("-",5)[-1].replace("-"," ").replace(";","."),
+            mappedNewMidiIns   = OrderedDict((midi_port_alias_to_name(get_jack_port_alias(p), True),
                                             p.split(":",1)[-1]) for p in get_jack_hardware_ports(False, False))
-            mappedNewMidiOuts  = OrderedDict((get_jack_port_alias(p).split("-",5)[-1].replace("-"," ").replace(";","."),
+            mappedNewMidiOuts  = OrderedDict((midi_port_alias_to_name(get_jack_port_alias(p), True),
                                             p.split(":",1)[-1]) for p in get_jack_hardware_ports(False, True))
 
         else:
@@ -4409,6 +4424,8 @@ _:b%i
 
             port_addressing = pluginData['addressings'].get(portsymbol, None)
             if port_addressing:
+                if port_addressing.get('hmitype', 0x0) & HMI_ADDRESSING_TYPE_ENUMERATION:
+                    value = get_nearest_valid_scalepoint_value(value, port_addressing['options'])[1]
 
                 group_actuators = self.addressings.get_group_actuators(port_addressing['actuator_uri'])
 
@@ -4537,14 +4554,7 @@ _:b%i
         numOpts = len(options)
         value   = self.addr_task_get_port_value(instance_id, portsymbol)
 
-        for i, (ovalue, _) in enumerate(options):
-            if ovalue == value:
-                ivalue = i
-                break
-        else:
-            logging.error("hmi wants more control data but current value is not in list (%d %d %f)",
-                          hw_id, props, value)
-            ivalue = int(value)
+        ivalue, value = get_nearest_valid_scalepoint_value(value, options)
 
         ivalue += 1 if dir_up != 0 else -1
 
@@ -5198,7 +5208,7 @@ _:b%i
             alias = get_jack_port_alias(port)
             if not alias:
                 continue
-            title = alias.split("-",5)[-1].replace("-"," ").replace(";",".")
+            title = midi_port_alias_to_name(alias, True)
             out_ports[title] = port
 
         # Extra MIDI Ins
@@ -5209,7 +5219,7 @@ _:b%i
             alias = get_jack_port_alias(port)
             if not alias:
                 continue
-            title = alias.split("-",5)[-1].replace("-"," ").replace(";",".")
+            title = midi_port_alias_to_name(alias, True)
             if title in out_ports.keys():
                 port = "%s;%s" % (port, out_ports[title])
             full_ports[port] = title
@@ -5231,7 +5241,7 @@ _:b%i
         alias = get_jack_port_alias(portname)
 
         if alias:
-            return alias.split("-",5)[-1].replace("-"," ").replace(";",".")
+            return midi_port_alias_to_name(alias, True)
 
         return portname.split(":",1)[-1].title()
 

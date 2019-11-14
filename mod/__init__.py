@@ -105,6 +105,31 @@ def check_environment():
     return True
 
 
+def get_nearest_valid_scalepoint_value(value, options):
+    # find a value that matches
+    for i, (ovalue, olabel) in enumerate(options):
+        if ovalue == value:
+            ivalue = i
+            return (i, ovalue)
+
+    # find a value within a small range
+    for i, (ovalue, olabel) in enumerate(options):
+        if abs(ovalue - value) <= 0.0001:
+            ivalue = i
+            return (i, ovalue)
+
+    # find a value by comparing previous and next, nasty but used as last resort
+    for i in range(len(options)-1):
+        ovalue, olabel = options[i]
+        nvalue, nlabel = options[i+1]
+
+        if abs(ovalue-value) < abs(nvalue-value):
+            return (i, ovalue)
+
+    else:
+        return (i+1, nvalue)
+
+
 def safe_json_load(path, objtype):
     if not os.path.exists(path):
         return objtype()

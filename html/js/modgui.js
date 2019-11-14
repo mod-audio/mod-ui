@@ -1821,10 +1821,11 @@ JqueryClass('customSelect', baseWidget, {
 
     setValue: function (value, only_gui) {
         var self = $(this)
-        value = parseFloat(value)
         self.find('[mod-role=enumeration-option]').removeClass('selected')
 
-        var selected = self.find('[mod-role=enumeration-option][mod-port-value="' + value + '"]')
+        value = parseFloat(value)
+
+        var selected = self.customSelect('getSelectedByValue', value)
         selected.addClass('selected')
 
         var valueField = self.find('[mod-role=input-control-value]')
@@ -1836,5 +1837,35 @@ JqueryClass('customSelect', baseWidget, {
         if (!only_gui) {
             self.trigger('valuechange', value)
         }
-    }
+    },
+
+    // NOTE: this code matches the one in server-side `get_nearest_valid_scalepoint_value`
+    getSelectedByValue: function (value) {
+        var self = $(this)
+
+        var selected = self.find('[mod-role=enumeration-option][mod-port-value="' + value + '"]')
+        if (selected.length !== 0) {
+            return selected
+        }
+
+        var options = self.find('[mod-role=enumeration-option]')
+        var ovalue, nvalue
+        for (var i=0; i<options.length; ++i) {
+            ovalue = options[i].getAttribute("mod-port-value")
+            if (Math.abs(parseFloat(ovalue)-value) < 0.0001) {
+                return self.find('[mod-role=enumeration-option][mod-port-value="' + ovalue + '"]')
+            }
+        }
+
+        for (var i=0; i<options.length-1; ++i) {
+            ovalue = options[i].getAttribute("mod-port-value")
+            nvalue = options[i+1].getAttribute("mod-port-value")
+
+            if (Math.abs(parseFloat(ovalue)-value) < Math.abs(parseFloat(nvalue)-value)) {
+                return self.find('[mod-role=enumeration-option][mod-port-value="' + ovalue + '"]')
+            }
+        }
+
+        return self.find('[mod-role=enumeration-option][mod-port-value="' + nvalue + '"]')
+    },
 })
