@@ -118,6 +118,17 @@ kMaxAddressableScalepoints = 50
 # TODO: hmi_save_current_pedalboard does not send browser msgs, needed?
 # TODO: finish presets, testing
 
+def midi_port_alias_to_name(alias, withSpaces):
+    space = " " if withSpaces else "_"
+    if False:
+        # for alsa-raw midi option
+        return alias.split("-",5)[-1].replace("-",space).replace(";",".")
+    else:
+        # for alsa-seq midi option
+        return alias.split(":",1)[-1].replace("-",space).replace(";",".")\
+          .replace("/midi_capture_",space+"MIDI"+space)\
+          .replace("/midi_playback_",space+"MIDI"+space)
+
 def get_all_good_pedalboards():
     allpedals  = get_all_pedalboards()
     goodpedals = []
@@ -433,7 +444,7 @@ class Host(object):
         alias = get_jack_port_alias(name)
         if not alias:
             return
-        alias = alias.split("-",5)[-1].replace("-"," ").replace(";",".")
+        alias = midi_port_alias_to_name(alias, True)
 
         if not isOutput:
             connect_jack_ports(name, "mod-host:midi_in")
@@ -1562,7 +1573,7 @@ class Host(object):
                 alias = get_jack_port_alias(name)
 
                 if alias:
-                    title = alias.split("-",5)[-1].replace("-","_").replace(";",".")
+                    title = midi_port_alias_to_name(alias, False)
                 else:
                     title = name.split(":",1)[-1].title()
                 title = title.replace(" ","_")
@@ -1584,7 +1595,7 @@ class Host(object):
                     continue
                 alias = get_jack_port_alias(name)
                 if alias:
-                    title = alias.split("-",5)[-1].replace("-","_").replace(";",".")
+                    title = midi_port_alias_to_name(alias, False)
                 else:
                     title = name.split(":",1)[-1].title()
                 title = title.replace(" ","_")
@@ -2610,9 +2621,9 @@ class Host(object):
             mappedOldMidiIns   = dict((p['symbol'], p['name']) for p in pb['hardware']['midi_ins'])
             mappedOldMidiOuts  = dict((p['symbol'], p['name']) for p in pb['hardware']['midi_outs'])
             mappedOldMidiOuts2 = dict((p['name'], p['symbol']) for p in pb['hardware']['midi_outs'])
-            mappedNewMidiIns   = OrderedDict((get_jack_port_alias(p).split("-",5)[-1].replace("-"," ").replace(";","."),
+            mappedNewMidiIns   = OrderedDict((midi_port_alias_to_name(get_jack_port_alias(p), True),
                                             p.split(":",1)[-1]) for p in get_jack_hardware_ports(False, False))
-            mappedNewMidiOuts  = OrderedDict((get_jack_port_alias(p).split("-",5)[-1].replace("-"," ").replace(";","."),
+            mappedNewMidiOuts  = OrderedDict((midi_port_alias_to_name(get_jack_port_alias(p), True),
                                             p.split(":",1)[-1]) for p in get_jack_hardware_ports(False, True))
 
         else:
@@ -5176,7 +5187,7 @@ _:b%i
             alias = get_jack_port_alias(port)
             if not alias:
                 continue
-            title = alias.split("-",5)[-1].replace("-"," ").replace(";",".")
+            title = midi_port_alias_to_name(alias, True)
             out_ports[title] = port
 
         # Extra MIDI Ins
@@ -5187,7 +5198,7 @@ _:b%i
             alias = get_jack_port_alias(port)
             if not alias:
                 continue
-            title = alias.split("-",5)[-1].replace("-"," ").replace(";",".")
+            title = midi_port_alias_to_name(alias, True)
             if title in out_ports.keys():
                 port = "%s;%s" % (port, out_ports[title])
             full_ports[port] = title
@@ -5209,7 +5220,7 @@ _:b%i
         alias = get_jack_port_alias(portname)
 
         if alias:
-            return alias.split("-",5)[-1].replace("-"," ").replace(";",".")
+            return midi_port_alias_to_name(alias, True)
 
         return portname.split(":",1)[-1].title()
 
