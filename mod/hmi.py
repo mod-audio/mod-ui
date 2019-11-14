@@ -20,7 +20,7 @@ from datetime import timedelta
 from tornado.iostream import BaseIOStream, StreamClosedError
 from tornado import ioloop
 
-from mod import get_hardware_actuators, get_hardware_descriptor
+from mod import get_hardware_actuators, get_hardware_descriptor, get_nearest_valid_scalepoint_value
 from mod.protocol import Protocol, ProtocolError, process_resp
 
 import logging
@@ -334,13 +334,7 @@ class HMI(object):
             numOpts = len(options)
             optionsData = []
 
-            for i, (ovalue, _) in enumerate(options):
-                if ovalue == value:
-                    ivalue = i
-                    break
-            else:
-                logging.error("[hmi] control_add received value which is not in list (%f) for %s", value, label)
-                ivalue = int(value)
+            ivalue, value = get_nearest_valid_scalepoint_value(value, options)
 
             if hasTempo:
                 unit = '""'
