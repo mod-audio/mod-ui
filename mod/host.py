@@ -4304,6 +4304,8 @@ _:b%i
 
             port_addressing = pluginData['addressings'].get(portsymbol, None)
             if port_addressing:
+                if port_addressing.get('hmitype', 0x0) & HMI_ADDRESSING_TYPE_ENUMERATION:
+                    value = get_nearest_valid_scalepoint_value(value, port_addressing['options'])[1]
 
                 group_actuators = self.addressings.get_group_actuators(port_addressing['actuator_uri'])
 
