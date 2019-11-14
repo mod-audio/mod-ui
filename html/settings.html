@@ -141,6 +141,9 @@ function refresh_sysinfo() {
             $("#info-kernel-machine").text(INFO.uname.machine)
             $("#info-kernel-release").text(INFO.uname.release)
             $("#info-kernel-version").text(INFO.uname.version)
+            if (info.platform != "duox") {
+                $("#workarounds-disable-peakmeter").hide()
+            }
         },
         cache: false,
         global: false,
@@ -921,25 +924,29 @@ $('document').ready(function() {
 
                 <h1>Workarounds</h1>
                 <form class="form">
-                    <label>
-                        <input type="checkbox" autocomplete="off" id="prefs-workarounds-autorestart-hmi">
-                            Automatically restart controller screen
-                        </input>
-                    </label>
-                    <p>
-                        If the controller displays locks up or stops working correctly, we can try to detect this and automatically trigger a restart.<br/>
-                        This is not completely safe though, false positives can happen and the controller screen might be restarted by mistake.<br/>
-                        A reboot is required in order for this option to take place.
-                    </p>
-                    <label>
-                        <input type="checkbox" autocomplete="off" id="prefs-workarounds-disable-peakmeter">
-                            Disable audio peak meters
-                        </input>
-                    </label>
-                    <p>
-                        If you are experiencing issues because of the peak meters, you can disable them here.<br/>
-                        This is a temporary countermeasure against issues in a few Duo X units.
-                    </p>
+                    <div id="workarounds-autorestart-hmi">
+                        <label>
+                            <input type="checkbox" autocomplete="off" id="prefs-workarounds-autorestart-hmi">
+                                Automatically restart controller screen
+                            </input>
+                        </label>
+                        <p>
+                            If the controller displays locks up or stops working correctly, we can try to detect this and automatically trigger a restart.<br/>
+                            This is not completely safe though, false positives can happen and the controller screen might be restarted by mistake.<br/>
+                            A reboot is required in order for this option to take place.
+                        </p>
+                    </div>
+                    <div id="workarounds-disable-peakmeter">
+                        <label>
+                            <input type="checkbox" autocomplete="off" id="prefs-workarounds-disable-peakmeter">
+                                Disable audio peak meters
+                            </input>
+                        </label>
+                        <p>
+                            If you are experiencing issues because of the peak meters, you can disable them here.<br/>
+                            This is a temporary countermeasure against issues in a few Duo X units.
+                        </p>
+                    </div>
                 </form>
             </div>
         </div>
