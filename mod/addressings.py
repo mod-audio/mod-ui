@@ -6,7 +6,7 @@ import logging
 import os
 
 from tornado import gen
-from mod import safe_json_load, TextFileFlusher, get_hardware_descriptor
+from mod import get_hardware_descriptor, get_nearest_valid_scalepoint_value, safe_json_load, TextFileFlusher
 from mod.control_chain import ControlChainDeviceListener
 from mod.settings import PEDALBOARD_INSTANCE_ID
 from modtools.utils import get_plugin_control_inputs_and_monitored_outputs
@@ -645,8 +645,8 @@ class Addressings(object):
 
             if hmitype & HMI_ADDRESSING_TYPE_SCALE_POINTS:
                 if not tempo and value not in [o[0] for o in options]:
-                    print("ERROR: current value '%f' for '%s' is not a valid scalepoint" % (value, portsymbol))
-                    addressing_data['value'] = float(options[0][0])
+                    print("WARNING: current value '%f' for '%s' is not a valid scalepoint" % (value, portsymbol))
+                    addressing_data['value'] = get_nearest_valid_scalepoint_value(value, options)[1]
 
             # hmi specific
             addressing_data['hmitype'] = hmitype
