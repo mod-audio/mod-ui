@@ -4065,24 +4065,18 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
                                 mchan = (int8_t)mchantest;
                                 mctrl = (uint8_t)mctrltest;
 
-                                if (mchantest >= 0 && mchantest < 16 && mctrltest >= 0 && mctrltest < 255)
+                                LilvNode* const bindMin = lilv_world_get(w, bind, lv2_minimum, nullptr);
+                                LilvNode* const bindMax = lilv_world_get(w, bind, lv2_maximum, nullptr);
+
+                                if (bindMin != nullptr && bindMax != nullptr)
                                 {
-                                    mchan = (int8_t)mchantest;
-                                    mctrl = (uint8_t)mctrltest;
-
-                                    LilvNode* const bindMin = lilv_world_get(w, bind, lv2_minimum, nullptr);
-                                    LilvNode* const bindMax = lilv_world_get(w, bind, lv2_maximum, nullptr);
-
-                                    if (bindMin != nullptr && bindMax != nullptr)
-                                    {
-                                        hasRanges = true;
-                                        minimum = lilv_node_as_float(bindMin);
-                                        maximum = lilv_node_as_float(bindMax);
-                                    }
-
-                                    lilv_node_free(bindMin);
-                                    lilv_node_free(bindMax);
+                                    hasRanges = true;
+                                    minimum = lilv_node_as_float(bindMin);
+                                    maximum = lilv_node_as_float(bindMax);
                                 }
+
+                                lilv_node_free(bindMin);
+                                lilv_node_free(bindMax);
                             }
                         }
 
