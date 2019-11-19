@@ -4047,6 +4047,8 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
                     float value;
                     int8_t mchan = -1;
                     uint8_t mctrl = 0;
+                    float minimum = 0.0f, maximum = 0.0f;
+                    bool hasRanges = false;
 
                     if (LilvNode* const bind = lilv_world_get(w, hwport, midi_binding, nullptr))
                     {
@@ -4062,6 +4064,25 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
                             {
                                 mchan = (int8_t)mchantest;
                                 mctrl = (uint8_t)mctrltest;
+
+                                if (mchantest >= 0 && mchantest < 16 && mctrltest >= 0 && mctrltest < 255)
+                                {
+                                    mchan = (int8_t)mchantest;
+                                    mctrl = (uint8_t)mctrltest;
+
+                                    LilvNode* const bindMin = lilv_world_get(w, bind, lv2_minimum, nullptr);
+                                    LilvNode* const bindMax = lilv_world_get(w, bind, lv2_maximum, nullptr);
+
+                                    if (bindMin != nullptr && bindMax != nullptr)
+                                    {
+                                        hasRanges = true;
+                                        minimum = lilv_node_as_float(bindMin);
+                                        maximum = lilv_node_as_float(bindMax);
+                                    }
+
+                                    lilv_node_free(bindMin);
+                                    lilv_node_free(bindMax);
+                                }
                             }
                         }
 
@@ -4077,7 +4098,7 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
                         if (value >= 1.0f && value <= 16.0f)
                         {
                             info.timeInfo.bpb = value;
-                            info.timeInfo.bpbCC = { mchan, mctrl, false, 0.0f, 0.0f };
+                            info.timeInfo.bpbCC = { mchan, mctrl, hasRanges, minimum, maximum };
                             info.timeInfo.available |= kPedalboardTimeAvailableBPB;
                         }
                         break;
@@ -4087,14 +4108,14 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
                         if (value >= 20.0f && value <= 280.0f)
                         {
                             info.timeInfo.bpm = value;
-                            info.timeInfo.bpmCC = { mchan, mctrl, false, 0.0f, 0.0f };
+                            info.timeInfo.bpmCC = { mchan, mctrl, hasRanges, minimum, maximum };
                             info.timeInfo.available |= kPedalboardTimeAvailableBPM;
                         }
                         break;
 
                     case 3:
                         info.timeInfo.rolling = lilv_node_as_int(portvalue) != 0;
-                        info.timeInfo.rollingCC = { mchan, mctrl, false, 0.0f, 0.0f };
+                        info.timeInfo.rollingCC = { mchan, mctrl, hasRanges, minimum, maximum };
                         info.timeInfo.available |= kPedalboardTimeAvailableRolling;
                         break;
                     }
