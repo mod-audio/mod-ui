@@ -956,7 +956,7 @@ JqueryClass('pedalboard', {
 
         var drawFactory = function (plugin) {
             return function () {
-                self.pedalboard('drawPluginJacks', plugin, true)
+                self.pedalboard('drawPluginJacks', plugin)
             }
         }
 
@@ -1125,7 +1125,7 @@ JqueryClass('pedalboard', {
         // Redraw all cables that connect to or from hardware ports
         //self.data('connectionManager').iterateInstance(':system:', function (jack) {
         self.data('connectionManager').iterate(function (jack) {
-            self.pedalboard('drawJack', jack, false, true)
+            self.pedalboard('drawJack', jack)
         })
     },
 
@@ -1211,20 +1211,19 @@ JqueryClass('pedalboard', {
                 ui.position.left /= scale
                 ui.position.top /= scale
                 self.trigger('modified')
-                self.pedalboard('drawPluginJacks', obj.icon, true)
+                self.pedalboard('drawPluginJacks', obj.icon)
             },
             dragStop: function (e, ui) {
                 self.trigger('pluginDragStop')
                 self.trigger('modified')
-                self.pedalboard('drawPluginJacks', obj.icon, true)
+                self.pedalboard('drawPluginJacks', obj.icon)
                 obj.icon.removeClass('dragging')
                 self.data('pluginMove')(instance, ui.position.left, ui.position.top)
                 self.pedalboard('adapt', false)
             },
             click: function (event) {
                 obj.icon.css({'z-index': self.data('z_index')+1})
-                var removeTopPosition = ! $(event.target).hasClass('mod-output-jack')
-                self.pedalboard('drawPluginJacks', obj.icon, removeTopPosition)
+                self.pedalboard('drawPluginJacks', obj.icon)
                 self.data('z_index', self.data('z_index')+1)
 
                 // only zoom-in if event was triggered by a click on the drag-handle
@@ -1560,7 +1559,7 @@ JqueryClass('pedalboard', {
     },
 
     // Redraw all connections from or to a plugin
-    drawPluginJacks: function (plugin, removeTopPosition) {
+    drawPluginJacks: function (plugin) {
         var self = $(this)
         var myjacks = []
         var connMgr = self.data('connectionManager')
@@ -1570,7 +1569,7 @@ JqueryClass('pedalboard', {
         $('.hasSVG.cable-connected').filter(function(e) {!(e in myjacks)}).css({'z-index': 0})
 
         connMgr.iterateInstance(plugin.data('instance'), function (jack) {
-            self.pedalboard('drawJack', jack, false, removeTopPosition)
+            self.pedalboard('drawJack', jack)
             $(jack.data('svg')._container).css({ 'z-index': self.data("z_index")-1, 'pointer-events': 'none'})
         })
     },
@@ -1934,8 +1933,14 @@ JqueryClass('pedalboard', {
                         left: 'auto',
                         marginTop: 'auto',
                     })
+
+                    // if jack output previous sibling has a margin-bottom,
+                    // adjust jack top position in accordance
+                    if (jack.data('origin') && jack.data('origin').prev() && jack.data('origin').prev().css('margin-bottom')) {
+                      jack.css('top', parseInt(jack.css('top')) - parseInt(jack.data('origin').prev().css('margin-bottom')))
+                    }
                 }
-                self.pedalboard('drawJack', jack, false, true)
+                self.pedalboard('drawJack', jack)
             }
         })
 
@@ -1963,7 +1968,7 @@ JqueryClass('pedalboard', {
 
     // Draws a cable from jack's source (the output) to it's current position
     // Force parameter will force drawing when jack is disconnected
-    drawJack: function (jack, force, removeTopPosition) {
+    drawJack: function (jack, force) {
         var self = $(this)
         // We used settimeout so that drawing will occur after all events are processed. This avoids some bad
         // user experience
@@ -1990,7 +1995,13 @@ JqueryClass('pedalboard', {
             var xi = source.offset().left / scale - self.offset().left / scale + source.width()
             var yi = source.offset().top / scale - self.offset().top / scale + source.height() / 2
             var xo = jack.offset().left / scale - self.offset().left / scale
-            var jackOffsetTop = removeTopPosition ? (jack.offset().top - jack.position().top) : jack.offset().top
+            var jackOffsetTop = jack.offset().top
+
+            // Adjust jack offset top position
+            // that is sometimes biased by jack destination previous sibling margin bottom
+            if (!force && (parseInt(jack.css('top')) + parseInt(jack.css('bottom')) === 0)) {
+              jackOffsetTop = jack.offset().top - jack.position().top
+            }
             var yo = jackOffsetTop / scale - self.offset().top / scale + jack.height() / 2
 
             //if (source.hasClass("mod-audio-output"))
@@ -2128,11 +2139,18 @@ JqueryClass('pedalboard', {
                 jack.data('canvas').addClass('cable-connected')
                 jack.data('connected', true)
                 input.addClass('input-connected')
+
                 jack.css({
                     top: 'auto',
                     left: 'auto',
                     marginTop: 'auto',
                 })
+
+                // if jack input previous sibling has a margin-bottom,
+                // adjust jack top position in accordance
+                if (jack.data('destination') && jack.data('destination').prev() && jack.data('destination').prev().css('margin-bottom')) {
+                  jack.css('top', parseInt(jack.css('top')) - parseInt(jack.data('destination').prev().css('margin-bottom')))
+                }
             // If output is already connected to this input through another jack, abort connection
             } else {
                 self.pedalboard('disconnect', jack)
@@ -2241,6 +2259,12 @@ JqueryClass('pedalboard', {
                 left: 'auto',
                 marginTop: 'auto',
             })
+
+            // if jack output previous sibling has a margin-bottom,
+            // adjust jack top position in accordance
+            if (jack.data('origin') && jack.data('origin').prev() && jack.data('origin').prev().css('margin-bottom')) {
+              jack.css('top', parseInt(jack.css('top')) - parseInt(jack.data('origin').prev().css('margin-bottom')))
+            }
         }
 
         jack.data('connected', false)
@@ -2275,13 +2299,20 @@ JqueryClass('pedalboard', {
 
         jacks.each(function () {
             var jack = $(this)
+
             jack.css({
                 top: 'auto',
                 left: 'auto',
                 marginTop: 'auto',
             })
+
+            // if jack input previous sibling has a margin-bottom,
+            // adjust jack top position in accordance
+            if (jack.data('destination') && jack.data('destination').prev() && jack.data('destination').prev().css('margin-bottom')) {
+              jack.css('top', parseInt(jack.css('top')) - parseInt(jack.data('destination').prev().css('margin-bottom')))
+            }
             jack.draggable(count <= 1 ? 'enable' : 'disable')
-            self.pedalboard('drawJack', jack, false, true)
+            self.pedalboard('drawJack', jack)
         });
 
         if (input.data('expanded'))
