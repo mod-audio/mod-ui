@@ -918,19 +918,17 @@ JqueryClass('cloudPluginBox', {
             if (!cloudChecked || !localChecked)
                 return
 
-            function formatNum(x) {
-                var parts = x.toString().split(".");
-                parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-                return parts.join(".");
-            }
-
             // formating numbers and flooring ranges up to two decimal cases
             for (var i = 0; i < plugin.ports.control.input.length; i++) {
-                plugin.ports.control.input[i].formatted = {
-                    "default": formatNum(Math.floor(plugin.ports.control.input[i].ranges.default * 100) / 100),
-                    "maximum": formatNum(Math.floor(plugin.ports.control.input[i].ranges.maximum * 100) / 100),
-                    "minimum": formatNum(Math.floor(plugin.ports.control.input[i].ranges.minimum * 100) / 100)
-                }
+                plugin.ports.control.input[i].formatted = format(plugin.ports.control.input[i])
+            }
+
+            for (var i = 0; i < plugin.ports.cv.input.length; i++) {
+              plugin.ports.cv.input[i].formatted = format(plugin.ports.cv.input[i])
+            }
+
+            for (var i = 0; i < plugin.ports.cv.output.length; i++) {
+              plugin.ports.cv.output[i].formatted = format(plugin.ports.cv.output[i])
             }
 
             var category = plugin.category[0]
@@ -984,6 +982,16 @@ JqueryClass('cloudPluginBox', {
             // hide control ports table if none available
             if (plugin.ports.control.input.length == 0) {
                 info.find('.plugin-controlports').hide()
+            }
+
+            // hide cv inputs table if none available
+            if (plugin.ports.cv.input.length == 0) {
+                info.find('.plugin-cvinputs').hide()
+            }
+
+            // hide cv ouputs ports table if none available
+            if (plugin.ports.cv.output.length == 0) {
+                info.find('.plugin-cvoutputs').hide()
             }
 
             var canInstall = false,
