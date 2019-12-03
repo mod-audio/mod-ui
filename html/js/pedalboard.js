@@ -1413,7 +1413,7 @@ JqueryClass('pedalboard', {
         var icon;
         for (var instance in plugins) {
             icon = plugins[instance]
-            if (icon && icon.data('uri') == uri) {
+            if (icon && icon.data && icon.data('uri') == uri) {
                 icon.find('[mod-role="drag-handle"]').removeClass('demo-plugin').removeClass('demo-plugin-light');
             }
         }
