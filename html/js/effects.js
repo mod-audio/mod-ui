@@ -403,12 +403,16 @@ JqueryClass('effectBox', {
                 plugin.ports.control.input[i].formatted = format(plugin.ports.control.input[i])
             }
 
-            for (var i = 0; i < plugin.ports.cv.input.length; i++) {
-              plugin.ports.cv.input[i].formatted = format(plugin.ports.cv.input[i])
+            if (plugin.ports.cv && plugin.ports.cv.input) {
+              for (var i = 0; i < plugin.ports.cv.input.length; i++) {
+                plugin.ports.cv.input[i].formatted = format(plugin.ports.cv.input[i])
+              }
             }
 
-            for (var i = 0; i < plugin.ports.cv.output.length; i++) {
-              plugin.ports.cv.output[i].formatted = format(plugin.ports.cv.output[i])
+            if (plugin.ports.cv && plugin.ports.cv.output) {
+              for (var i = 0; i < plugin.ports.cv.output.length; i++) {
+                plugin.ports.cv.output[i].formatted = format(plugin.ports.cv.output[i])
+              }
             }
 
             var ver = [plugin.builder, plugin.microVersion, plugin.minorVersion, plugin.release].join('_')
@@ -452,12 +456,12 @@ JqueryClass('effectBox', {
             }
 
             // hide cv inputs table if none available
-            if (plugin.ports.cv.input.length == 0) {
+            if (!plugin.ports.cv || (plugin.ports.cv && plugin.ports.cv.input && plugin.ports.cv.input.length == 0)) {
                 info.find('.plugin-cvinputs').hide()
             }
 
             // hide cv ouputs ports table if none available
-            if (plugin.ports.cv.output.length == 0) {
+            if (!plugin.ports.cv || (plugin.ports.cv && plugin.ports.cv.output && plugin.ports.cv.output.length == 0)) {
                 info.find('.plugin-cvoutputs').hide()
             }
 
