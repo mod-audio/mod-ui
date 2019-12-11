@@ -15,6 +15,56 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+
+ $.ui.intersect = function(draggable, droppable, toleranceMode) {
+
+ 	if (!droppable.offset) {
+ 		return false;
+ 	}
+
+ 	var draggableLeft, draggableTop,
+ 		x1 = (draggable.positionAbs || draggable.position.absolute).left,
+ 		y1 = (draggable.positionAbs || draggable.position.absolute).top,
+ 		x2 = x1 + draggable.helperProportions.width,
+ 		y2 = y1 + draggable.helperProportions.height,
+ 		l = droppable.offset.left,
+ 		t = droppable.offset.top,
+ 		r = l + droppable.proportions.width,
+ 		b = t + droppable.proportions.height;
+
+ 	switch (toleranceMode) {
+   case "custom":
+ 			return (l < x1 + (draggable.helperProportions.width / 2) && // Right Half
+ 				x2 - (draggable.helperProportions.width / 2) < r && // Left Half
+        t < y1 + (draggable.helperProportions.height / 4) && // Bottom Half
+        y2 - (draggable.helperProportions.height / 4) < b ); // Top Half
+ 		case "fit":
+ 			return (l <= x1 && x2 <= r && t <= y1 && y2 <= b);
+ 		case "intersect":
+ 			return (l < x1 + (draggable.helperProportions.width / 2) && // Right Half
+ 				x2 - (draggable.helperProportions.width / 2) < r && // Left Half
+ 				t < y1 + (draggable.helperProportions.height / 2) && // Bottom Half
+ 				y2 - (draggable.helperProportions.height / 2) < b ); // Top Half
+ 		case "pointer":
+ 			draggableLeft = ((draggable.positionAbs || draggable.position.absolute).left + (draggable.clickOffset || draggable.offset.click).left);
+ 			draggableTop = ((draggable.positionAbs || draggable.position.absolute).top + (draggable.clickOffset || draggable.offset.click).top);
+ 			return isOverAxis( draggableTop, t, droppable.proportions().height ) && isOverAxis( draggableLeft, l, droppable.proportions().width );
+ 		case "touch":
+ 			return (
+ 				(y1 >= t && y1 <= b) ||	// Top edge touching
+ 				(y2 >= t && y2 <= b) ||	// Bottom edge touching
+ 				(y1 < t && y2 > b)		// Surrounded vertically
+ 			) && (
+ 				(x1 >= l && x1 <= r) ||	// Left edge touching
+ 				(x2 >= l && x2 <= r) ||	// Right edge touching
+ 				(x1 < l && x2 > r)		// Surrounded horizontally
+ 			);
+ 		default:
+ 			return false;
+ 		}
+
+ };
+
 JqueryClass('pedalboard', {
     init: function (options) {
         var self = $(this)
@@ -1776,6 +1826,7 @@ JqueryClass('pedalboard', {
 
         element.droppable({
             accept: '[mod-role=output-jack]',
+            tolerance: 'custom',
             drop: function (event, ui) {
                 var overCount = self.data('overCount');
                 self.data('overCount', 0);
@@ -2356,7 +2407,7 @@ JqueryClass('pedalboard', {
         var wrapper = $('<div class="mod-pedal-input-wrapper">')
         //var arrow = $('<div class="mod-pedal-input-arrow">').appendTo(wrapper)
         wrapper.appendTo(input)
-        wrapper.css('top', (input.height() - wrapper.height()) / 2)
+
         //arrow.css('top', wrapper.height() / 2 - 12)
         var jack
         var h = 0;
@@ -2366,13 +2417,15 @@ JqueryClass('pedalboard', {
             w = jack.width();
             jack.css({
                 position: 'absolute',
-                marginTop: -wrapper.height() / 2 + h / 2 + h * i,
+                marginTop: (-jacks.length * h) / 2 + h / 2 + h * i,
             })
             h = jack.height();
             self.pedalboard('drawJack', jack)
             jack.draggable('enable')
         }
+
         wrapper.innerHeight(jacks.length * h);
+        wrapper.css('top', (input.height() - wrapper.height()) / 2)
         wrapper.css("width", w);
         wrapper.click(function () {
             self.pedalboard('colapseInput', input)

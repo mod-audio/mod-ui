@@ -305,7 +305,7 @@
 .mod-audio-input.input-connecting-highlight {
     background-image: url(../img/audio-input-connecting-highlight.png);
 }
-.mod-audio-input.input-connected {
+.mod-audio-input.input-connected:not(.expanded) {
     background-image: url(../img/audio-input-connected.png);
 }
 .mod-audio-input.input-connected.input-connecting-highlight {
@@ -378,7 +378,7 @@
 .mod-midi-input.input-connecting-highlight {
     background-image: url(../img/midi-input-connecting-highlight.png);
 }
-.mod-midi-input.input-connected {
+.mod-midi-input.input-connected:not(.expanded) {
     background-image: url(../img/midi-input-connected.png);
 }
 .mod-midi-input.input-connected.input-connecting-highlight {
@@ -453,7 +453,7 @@
 .mod-cv-input.input-connecting-highlight {
     background-image: url(../img/cv-input-connecting-highlight.png);
 }
-.mod-cv-input.input-connected {
+.mod-cv-input.input-connected:not(.expanded) {
     background-image: url(../img/cv-input-connected.png);
 }
 .mod-cv-input.input-connected.input-connecting-highlight {
