@@ -25,6 +25,8 @@ def ensure_data_index_valid(data, fallback):
 def apply_mixer_values(values, platform):
     if not os.path.exists("/usr/bin/mod-amixer"):
         return
+    if os.getenv("MOD_SOUNDCARD", None) is None:
+        return
     if platform == "duo":
         os.system("/usr/bin/mod-amixer in 1 dvol %f" % values['input1volume'])
         os.system("/usr/bin/mod-amixer in 2 dvol %f" % values['input2volume'])
@@ -52,6 +54,8 @@ def apply_mixer_values(values, platform):
 
 def fill_in_mixer_values(data, platform):
     if not os.path.exists("/usr/bin/mod-amixer"):
+        return
+    if os.getenv("MOD_SOUNDCARD", None) is None:
         return
     if platform == "duo":
         data['input1volume']    = float(getoutput("/usr/bin/mod-amixer in 1 dvol").strip())
