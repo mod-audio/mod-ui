@@ -37,6 +37,8 @@ class Menu(object):
     STEREOLINK_OUTP_ID    = 23
     MASTER_VOL_PORT_ID    = 24
     FOOTSWITCH_NAVEG_ID   = 150
+    BYPASS_1_ID           = 171
+    BYPASS_2_ID           = 172
     PLAY_STATUS_ID        = 180
     TEMPO_BPM_ID          = 181
     TEMPO_BPB_ID          = 182

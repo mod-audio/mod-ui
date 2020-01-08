@@ -254,6 +254,8 @@ class Host(object):
         self.transport_sync    = "none"
         self.last_data_finish_msg = 0.0
         self.last_data_finish_handle = None
+        self.last_true_bypass_left = None
+        self.last_true_bypass_right = None
         self.abort_progress_catcher = {}
         self.processing_pending_flag = False
         self.init_plugins_data()
@@ -515,6 +517,15 @@ class Host(object):
 
     def true_bypass_changed(self, left, right):
         self.msg_callback("truebypass %i %i" % (left, right))
+
+        if self.hmi.initialized:
+            if self.last_true_bypass_left != left:
+                self.hmi.set_profile_value(Menu.BYPASS_1_ID, int(left), None)
+            if self.last_true_bypass_right != right:
+                self.hmi.set_profile_value(Menu.BYPASS_2_ID, int(right), None)
+
+        self.last_true_bypass_left = left
+        self.last_true_bypass_right = right
 
     def remove_port_from_connections(self, name):
         removed_conns = []
