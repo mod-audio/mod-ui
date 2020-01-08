@@ -411,6 +411,8 @@ class Host(object):
         Protocol.register_cmd_callback("ss", self.hmi_snapshot_save)
         Protocol.register_cmd_callback("lp", self.hmi_page_load)
 
+        Protocol.register_cmd_callback("am", self.hmi_amixer)
+
         # not used
         #Protocol.register_cmd_callback("get_pb_name", self.hmi_get_pb_name)
 
@@ -5159,6 +5161,13 @@ _:b%i
         except Exception as e:
             callback(False)
             logging.exception(e)
+
+    def hmi_amixer(self, arg1, arg2, arg3, arg4, callback):
+        if not os.path.exists("/usr/bin/mod-amixer"):
+            callback(False)
+            return
+        os.system("/usr/bin/mod-amixer {} {} {} {}".format(arg1, arg2, arg3, arg4))
+        callback(True)
 
     @gen.coroutine
     def hmi_set_pb_name(self, name):

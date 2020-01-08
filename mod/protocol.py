@@ -188,6 +188,8 @@ class Protocol(object):
 
         "lp": [int], # page_load
 
+        "am": [str, str, str, str], # alsamixer
+
         # unused
         "get_pb_name": [],
         "encoder_clicked": [int],
