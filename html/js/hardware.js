@@ -29,6 +29,7 @@ var kBpmURI ="/bpm"
 // Grouped options
 var deviceOption = "/hmi"
 var ccOption = "/cc"
+var cvOption = "/cv"
 
 // use pitchbend as midi cc, with an invalid MIDI controller number
 var MIDI_PITCHBEND_AS_CC = 131
@@ -41,7 +42,7 @@ function create_midi_cc_uri (channel, controller) {
 }
 
 function startsWith (value, pattern) {
-    return value.lastIndexOf(pattern) === 0;
+    return value.indexOf(pattern) === 0;
 };
 
 function is_control_chain_uri (uri) {
@@ -51,7 +52,17 @@ function is_control_chain_uri (uri) {
   if (uri == kMidiLearnURI || startsWith(uri, kMidiCustomPrefixURI)) {
     return false;
   }
+  if (isCvUri(uri)) {
+    return false;
+  }
   return true;
+}
+
+function isCvUri (uri) {
+  if (startsWith(uri, cvOption)) {
+    return true;
+  }
+  return false;
 }
 
 // Units supported for tap tempo (lowercase)
@@ -80,6 +91,23 @@ function HardwareManager(options) {
       value: null
     }
 
+    this.cvOutputPorts = [
+      // {
+      //   uri: '/cv/graph/cv_capture_1',
+      //   name: 'Cv Capture 1',
+      //   modes: ":float:",
+      //   steps: [],
+      //   max_assigns: 99
+      // },
+      // {
+      //   uri: '/cv/graph/cv_capture_2',
+      //   name: 'Cv Capture 2',
+      //   modes: ":float:",
+      //   steps: [],
+      //   max_assigns: 99
+      // }
+    ]
+
     this.setBeatsPerMinuteValue = function (bpm) {
       if (self.beatsPerMinutePort.value === bpm) {
           return
@@ -105,7 +133,6 @@ function HardwareManager(options) {
            value: dict(AddressData)
         */
         self.addressingsData = {}
-
         // Initializes actuators
         if (HARDWARE_PROFILE) {
             var uri
@@ -116,6 +143,7 @@ function HardwareManager(options) {
         }
         self.addressingsByActuator[kMidiLearnURI] = []
         self.addressingsByActuator[kBpmURI] = []
+
     }
 
     this.reset()
@@ -162,41 +190,44 @@ function HardwareManager(options) {
         return available
     }
 
+    this.availableActuatorsWithModes = function (list, types) {
+      var available = {}
+      if (list) {
+        for (var i in list) {
+            actuator = list[i]
+            modes    = actuator.modes
+
+            // usedAddressings = self.addressingsByActuator[actuator.uri]
+            // if (!PAGES_CB && usedAddressings.length >= actuator.max_assigns && usedAddressings.indexOf(key) < 0) {
+            //     continue
+            // }
+
+            if (
+                (types.indexOf("integer"    ) >= 0 && modes.search(":integer:"    ) >= 0) ||
+                (types.indexOf("float"      ) >= 0 && modes.search(":float:"      ) >= 0) ||
+                (types.indexOf("enumeration") >= 0 && modes.search(":enumeration:") >= 0) ||
+                (types.indexOf("logarithmic") >= 0 && modes.search(":logarithmic:") >= 0) ||
+                (types.indexOf("toggled"    ) >= 0 && modes.search(":toggled:"    ) >= 0) ||
+                (types.indexOf("trigger"    ) >= 0 && modes.search(":trigger:"    ) >= 0) ||
+                (types.indexOf("taptempo"   ) >= 0 && modes.search(":taptempo:"   ) >= 0) ||
+                (types.indexOf("scalepoints") >= 0 && modes.search(":scalepoints:") >= 0) ||
+                (types.indexOf("bypass"     ) >= 0 && modes.search(":bypass:"     ) >= 0)
+              )
+            {
+                available[actuator.uri] = actuator
+            }
+        }
+      }
+      return available
+    }
+
     // Gets a list of available actuators for a port
     this.availableActuators = function (instance, port, tempo) {
         var key   = instance+"/"+port.symbol
         var defaultTypes = self.availableAddressingTypes(port, false)
         var types = tempo ? self.availableAddressingTypes(port, tempo) : defaultTypes
 
-        var available = {}
-
-        if (HARDWARE_PROFILE) {
-            var actuator, modes
-            for (var i in HARDWARE_PROFILE) {
-                actuator = HARDWARE_PROFILE[i]
-                modes    = actuator.modes
-
-                // usedAddressings = self.addressingsByActuator[actuator.uri]
-                // if (!PAGES_CB && usedAddressings.length >= actuator.max_assigns && usedAddressings.indexOf(key) < 0) {
-                //     continue
-                // }
-
-                if (
-                    (types.indexOf("integer"    ) >= 0 && modes.search(":integer:"    ) >= 0) ||
-                    (types.indexOf("float"      ) >= 0 && modes.search(":float:"      ) >= 0) ||
-                    (types.indexOf("enumeration") >= 0 && modes.search(":enumeration:") >= 0) ||
-                    (types.indexOf("logarithmic") >= 0 && modes.search(":logarithmic:") >= 0) ||
-                    (types.indexOf("toggled"    ) >= 0 && modes.search(":toggled:"    ) >= 0) ||
-                    (types.indexOf("trigger"    ) >= 0 && modes.search(":trigger:"    ) >= 0) ||
-                    (types.indexOf("taptempo"   ) >= 0 && modes.search(":taptempo:"   ) >= 0) ||
-                    (types.indexOf("scalepoints") >= 0 && modes.search(":scalepoints:") >= 0) ||
-                    (types.indexOf("bypass"     ) >= 0 && modes.search(":bypass:"     ) >= 0)
-                  )
-                {
-                    available[actuator.uri] = actuator
-                }
-            }
-        }
+        var available = self.availableActuatorsWithModes(HARDWARE_PROFILE, types)
 
         // midi-learn is always available, except for enumeration
         if (defaultTypes.indexOf("enumeration") < 0 || port.scalePoints.length == 2)
@@ -209,6 +240,8 @@ function HardwareManager(options) {
                 max_assigns: 99
             }
         }
+
+        available = $.extend(self.availableActuatorsWithModes(self.cvOutputPorts, types), available)
 
         return available
     }
@@ -313,6 +346,8 @@ function HardwareManager(options) {
         } else {
           form.find('.no-cc').show()
         }
+      } else if (typeInputVal === cvOption) {
+        form.find('.cv-select').show()
       }
 
       // Disabled/Enable save button
@@ -331,14 +366,14 @@ function HardwareManager(options) {
       }
 
       // Hide/show extended specific content
-      if (typeInputVal == kMidiLearnURI || typeInputVal.lastIndexOf(kMidiCustomPrefixURI, 0) === 0) {
+      if (typeInputVal === kMidiLearnURI || typeInputVal.lastIndexOf(kMidiCustomPrefixURI, 0) === 0 || typeInputVal === cvOption) {
         form.find('.sensibility').css({visibility:"hidden"})
         self.disableMinMaxSteps(form, false)
       } else {
         form.find('.sensibility').css({visibility:"visible"})
       }
 
-      if (typeInputVal == kMidiLearnURI || typeInputVal.lastIndexOf(kMidiCustomPrefixURI, 0) === 0 || typeInputVal == ccOption) {
+      if (typeInputVal === kMidiLearnURI || typeInputVal.lastIndexOf(kMidiCustomPrefixURI, 0) === 0 || typeInputVal === ccOption || typeInputVal === cvOption) {
         form.find('.tempo').css({display:"none"})
       } else if (hasTempoRelatedDynamicScalePoints(port)) {
         form.find('.tempo').css({display:"block"})
@@ -500,6 +535,16 @@ function HardwareManager(options) {
       })
     }
 
+    this.addOption = function (addressings, actuator, currentAddressing, select) {
+      var addressedToMe = currentAddressing.uri && currentAddressing.uri === actuator.uri
+      if ((addressings && addressings.length < actuator.max_assigns) || addressedToMe) {
+        $('<option>').attr('value', actuator.uri).text(actuator.name).appendTo(select)
+        if (addressedToMe) {
+          select.val(currentAddressing.uri)
+        }
+      }
+    }
+
     // Opens an addressing window to address this a port
     this.open = function (instance, port, pluginLabel) {
         var instanceAndSymbol = instance+"/"+port.symbol
@@ -529,14 +574,19 @@ function HardwareManager(options) {
         typeInput.val(typeInputVal)
 
         var actuators = self.availableActuators(instance, port, currentAddressing.tempo)
-        var typeOptions = [kNullAddressURI, deviceOption, kMidiLearnURI, ccOption]
+        var typeOptions = [kNullAddressURI, deviceOption, kMidiLearnURI, ccOption, cvOption]
         var i = 0
         typeSelect.find('option').unwrap().each(function() {
             var btn = $('<div class="btn js-type" data-value="'+typeOptions[i]+'">'+$(this).text()+'</div>')
             if($(btn).attr('data-value') == typeInput.val()) {
               btn.addClass('selected')
             }
+            // Hide MIDI tab if not available
             if ($(btn).attr('data-value') === kMidiLearnURI && !actuators[kMidiLearnURI]) {
+              $(btn).hide()
+            }
+            // Hide CV tab if not available
+            if ($(btn).attr('data-value') === cvOption && self.cvOutputPorts.length < 1) {
               $(btn).hide()
             }
             $(this).replaceWith(btn)
@@ -544,24 +594,30 @@ function HardwareManager(options) {
         })
 
         // Add options to control chain actuators select
-        var actuator, addressings, addressedToMe
+        var actuator, addressings, ccUri, cvUri
         var ccActuatorSelect = form.find('select[name=cc-actuator]')
+        var cvPortSelect = form.find('select[name=cv-port]')
+
         var ccActuators = []
+        var cvPorts = []
         for (var uri in actuators) {
-          if (! is_control_chain_uri(uri)) {
+          ccUri = is_control_chain_uri(uri)
+          cvUri = isCvUri(uri)
+          if (!(cvUri || ccUri)) {
             continue
           }
           actuator = actuators[uri]
           addressings = self.addressingsByActuator[uri]
-          addressedToMe = currentAddressing.uri && currentAddressing.uri === actuator.uri
-          ccActuators.push(actuator)
-          if (addressings.length < actuator.max_assigns || addressedToMe) {
-            $('<option>').attr('value', actuator.uri).text(actuator.name).appendTo(ccActuatorSelect)
-            if (addressedToMe) {
-              ccActuatorSelect.val(currentAddressing.uri)
-            }
+
+          if (ccUri) {
+            ccActuators.push(actuator)
+            self.addOption(addressings, actuator, currentAddressing, ccActuatorSelect)
+          } else { // cvUri
+            cvPorts.push(actuator)
+            self.addOption(addressings, actuator, currentAddressing, cvPortSelect)
           }
         }
+
         if (ccActuators.length === 0) {
           ccActuatorSelect.hide()
         }
@@ -632,12 +688,12 @@ function HardwareManager(options) {
 
             // Hide sensibility and tempo options for MIDI
             var act = typeInput.val()
-            if (act == kMidiLearnURI || act.lastIndexOf(kMidiCustomPrefixURI, 0) === 0) {
+            if (act === kMidiLearnURI || act.lastIndexOf(kMidiCustomPrefixURI, 0) === 0 || act === cvOption) {
                 form.find('.sensibility').css({visibility:"hidden"})
                 form.find('.tempo').css({display:"none"})
             }
-            // Hide tempo option for CC
-            if (act === ccOption) {
+            // Hide tempo option for CC or CV
+            if (act === ccOption || act === cvOption) {
               form.find('.tempo').css({display:"none"})
             }
         }
@@ -655,7 +711,25 @@ function HardwareManager(options) {
             if ($(this).hasClass('disabled')) {
               return
             }
-            self.saveAddressing(instance, port, actuators, typeInput, hmiPageInput, hmiUriInput, ccActuatorSelect, min, max, label, pname, sensibility, tempo, divider, dividerOptions, form)
+            self.saveAddressing(
+              instance,
+              port,
+              actuators,
+              typeInput,
+              hmiPageInput,
+              hmiUriInput,
+              ccActuatorSelect,
+              cvPortSelect,
+              min,
+              max,
+              label,
+              pname,
+              sensibility,
+              tempo,
+              divider,
+              dividerOptions,
+              form
+            );
         })
 
         form.find('.js-close').click(function () {
@@ -666,14 +740,14 @@ function HardwareManager(options) {
         form.find('.advanced-toggle').click(function() {
             if (!form.find('.advanced-container').is(':visible')) {
               $('.mod-pedal-settings-address').find('.mod-box').animate({
-                width: '640px'
+                width: '622px'
               }, 100, function() {
                 form.find('.advanced-container').toggle()
               });
             } else {
               form.find('.advanced-container').toggle(0, function() {
                 $('.mod-pedal-settings-address').find('.mod-box').animate({
-                  width: '450px'
+                  width: '472px'
                 }, 100)
               })
             }
@@ -688,7 +762,25 @@ function HardwareManager(options) {
         })
         form.keydown(function (e) {
             if (e.keyCode == 13) {
-                self.saveAddressing(instance, port, actuators, typeInput, hmiPageInput, hmiUriInput, ccActuatorSelect, min, max, label, pname, sensibility, tempo, divider, dividerOptions, form)
+                self.saveAddressing(
+                  instance,
+                  port,
+                  actuators,
+                  typeInput,
+                  hmiPageInput,
+                  hmiUriInput,
+                  ccActuatorSelect,
+                  cvPortSelect,
+                  min,
+                  max,
+                  label,
+                  pname,
+                  sensibility,
+                  tempo,
+                  divider,
+                  dividerOptions,
+                  form
+                );
                 return false
             }
         })
@@ -697,7 +789,20 @@ function HardwareManager(options) {
         form.focus()
     }
 
-    this.addressNow = function (instance, port, actuator, minv, maxv, labelValue, sensibilityValue, tempoValue, dividerValue, dividerOptions, page, form) {
+    this.addressNow = function (
+      instance,
+      port,
+      actuator,
+      minv,
+      maxv,
+      labelValue,
+      sensibilityValue,
+      tempoValue,
+      dividerValue,
+      dividerOptions,
+      page,
+      form
+      ) {
         var instanceAndSymbol = instance+"/"+port.symbol;
         var currentAddressing = self.addressingsData[instanceAndSymbol] || {}
 
@@ -707,7 +812,10 @@ function HardwareManager(options) {
           if (port.units.symbol === 'BPM') {
             port.value = getPortValue(self.beatsPerMinutePort.value, dividerValue, port.units.symbol) // no need for conversion
           } else {
-            port.value = convertSecondsToPortValueEquivalent(getPortValue(self.beatsPerMinutePort.value, dividerValue, port.units.symbol), port.units.symbol);
+            port.value = convertSecondsToPortValueEquivalent(
+              getPortValue(self.beatsPerMinutePort.value, dividerValue, port.units.symbol),
+              port.units.symbol
+            );
           }
         }
 
@@ -781,7 +889,25 @@ function HardwareManager(options) {
         })
     }
 
-    this.saveAddressing = function (instance, port, actuators, typeInput, hmiPageInput, hmiUriInput, ccActuatorSelect, min, max, label, pname, sensibility, tempo, divider, dividerOptions, form) {
+    this.saveAddressing = function (
+      instance,
+      port,
+      actuators,
+      typeInput,
+      hmiPageInput,
+      hmiUriInput,
+      ccActuatorSelect,
+      cvPortSelect,
+      min,
+      max,
+      label,
+      pname,
+      sensibility,
+      tempo,
+      divider,
+      dividerOptions,
+      form
+      ) {
         var instanceAndSymbol = instance+"/"+port.symbol
         var currentAddressing = self.addressingsData[instanceAndSymbol] || {}
 
@@ -792,6 +918,8 @@ function HardwareManager(options) {
           uri = hmiUriInput.val()
         } else if(typeInputVal === ccOption && ccActuatorSelect.val()) {
           uri = ccActuatorSelect.val()
+        } else if(typeInputVal === cvOption && cvPortSelect.val()) {
+          uri = cvPortSelect.val()
         } else if (typeInputVal === kMidiLearnURI) {
           uri = kMidiLearnURI
         }
@@ -863,7 +991,20 @@ function HardwareManager(options) {
 
                 // now we can address if needed
                 if (actuator.uri) {
-                    self.addressNow(instance, port, actuator, minv, maxv, labelValue, sensibilityValue, tempoValue, dividerValue, dividerOptions, page, form)
+                  self.addressNow(
+                    instance,
+                    port,
+                    actuator,
+                    minv,
+                    maxv,
+                    labelValue,
+                    sensibilityValue,
+                    tempoValue,
+                    dividerValue,
+                    dividerOptions,
+                    page,
+                    form
+                  );
                 // if not, just close the form
                 } else if (form !== undefined) {
                     form.remove()
@@ -873,7 +1014,20 @@ function HardwareManager(options) {
         }
         // otherwise just address it now
         else {
-            self.addressNow(instance, port, actuator, minv, maxv, labelValue, sensibilityValue, tempoValue, dividerValue, dividerOptions, page, form)
+          self.addressNow(
+            instance,
+            port,
+            actuator,
+            minv,
+            maxv,
+            labelValue,
+            sensibilityValue,
+            tempoValue,
+            dividerValue,
+            dividerOptions,
+            page,
+            form
+          );
         }
     }
 
@@ -1004,5 +1158,17 @@ function HardwareManager(options) {
         }
 
         return false
+    }
+
+    this.addCvOutputPort = function (instance, name) {
+      var uri = cvOption + '/' + instance
+      self.cvOutputPorts.push({
+        uri: uri,
+        name: name,
+        modes: ":float:",
+        steps: [],
+        max_assigns: 99
+      })
+      self.addressingsByActuator[uri] = []
     }
 }

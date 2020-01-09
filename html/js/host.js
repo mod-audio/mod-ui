@@ -337,10 +337,20 @@ $('document').ready(function() {
             var isOutput = parseInt(data[2]) == 0 // reversed
             var name     = data[3].replace(/_/g," ")
             var index    = parseInt(data[4])
+            var cvOutputPorts = []
 
             if (isOutput) {
                 var el = $('<div id="' + instance + '" class="hardware-output" mod-port-index=' + index + ' title="Hardware ' + name + '">')
                 desktop.pedalboard.pedalboard('addHardwareOutput', el, instance, type)
+                if (type === 'cv') {
+                  desktop.hardwareManager.addCvOutputPort(instance, name)
+                  cvOutputPorts.push(instance)
+                  if (cvOutputPorts.length === 2) {
+                    // 2 cv output ports allow for cv expression (virtual port,
+                    // represents either cv output 1 or 2 based on exp mode - signal on tip or on ring)
+                    desktop.hardwareManager.addCvOutputPort('/expression', 'Expression')
+                  }
+                }
             } else {
                 var el = $('<div id="' + instance + '" class="hardware-input" mod-port-index=' + index + ' title="Hardware ' + name + '">')
                 desktop.pedalboard.pedalboard('addHardwareInput', el, instance, type)

@@ -3906,6 +3906,8 @@ _:b%i
             self.addressings.remove(old_addressing)
             self.pedalboard_modified = True
 
+            # if old_actuator_type == Addressings.ADDRESSING_TYPE_CV:
+
             if old_actuator_type == Addressings.ADDRESSING_TYPE_HMI:
                 old_hw_ids = []
                 old_group_actuators = self.addressings.get_group_actuators(old_actuator_uri)

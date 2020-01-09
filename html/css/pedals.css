@@ -680,12 +680,12 @@ body > .mod-settings.mod-window-visible {
 
 .mod-pedal-settings-address .mod-box {
     background:white;
-    left:50%;
+    left:48%;
     margin:-150px -193px;
     padding: 18px 18px 0 18px;
     position:absolute;
     top:40%;
-    width:450px;
+    width:472px;
     max-height: 70%;
     overflow-y: auto;
     overflow-x: hidden;

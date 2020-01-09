@@ -47,6 +47,7 @@ class Addressings(object):
     ADDRESSING_TYPE_CC   = 2
     ADDRESSING_TYPE_MIDI = 3
     ADDRESSING_TYPE_BPM  = 4
+    ADDRESSING_TYPE_CV   = 5
 
     def __init__(self):
         self.init()
@@ -99,6 +100,7 @@ class Addressings(object):
         self.cc_metadata = {}
         self.midi_addressings = {}
         self.virtual_addressings = {kBpmURI: []}
+        self.cv_addressings = {}
 
         # Store all possible HMI hardcoded values
         self.hmi_hw2uri_map = {}
@@ -1038,6 +1040,8 @@ class Addressings(object):
             return self.ADDRESSING_TYPE_MIDI
         if actuator_uri == kBpmURI:
             return self.ADDRESSING_TYPE_BPM
+        if actuator_uri.startswith("/cv/"):
+            return self.ADDRESSING_TYPE_CV
         return self.ADDRESSING_TYPE_CC
 
     def get_group_actuators(self, actuator_uri):
