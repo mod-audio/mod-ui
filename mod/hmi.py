@@ -128,7 +128,7 @@ class HMI(object):
         self.checker()
 
     def checker(self, data=None):
-        if data is not None:
+        if data is not None and data != b'\0':
             self.last_write_time = 0
             logging.debug('[hmi] received <- %s', data)
             try:
