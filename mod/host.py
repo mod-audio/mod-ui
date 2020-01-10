@@ -254,6 +254,8 @@ class Host(object):
         self.transport_sync    = "none"
         self.last_data_finish_msg = 0.0
         self.last_data_finish_handle = None
+        self.last_true_bypass_left = None
+        self.last_true_bypass_right = None
         self.abort_progress_catcher = {}
         self.processing_pending_flag = False
         self.init_plugins_data()
@@ -411,6 +413,8 @@ class Host(object):
         Protocol.register_cmd_callback("ss", self.hmi_snapshot_save)
         Protocol.register_cmd_callback("lp", self.hmi_page_load)
 
+        Protocol.register_cmd_callback("am", self.hmi_amixer)
+
         # not used
         #Protocol.register_cmd_callback("get_pb_name", self.hmi_get_pb_name)
 
@@ -513,6 +517,15 @@ class Host(object):
 
     def true_bypass_changed(self, left, right):
         self.msg_callback("truebypass %i %i" % (left, right))
+
+        if self.hmi.initialized:
+            if self.last_true_bypass_left != left:
+                self.hmi.set_profile_value(Menu.BYPASS_1_ID, int(left), None)
+            if self.last_true_bypass_right != right:
+                self.hmi.set_profile_value(Menu.BYPASS_2_ID, int(right), None)
+
+        self.last_true_bypass_left = left
+        self.last_true_bypass_right = right
 
     def remove_port_from_connections(self, name):
         removed_conns = []
@@ -5181,6 +5194,13 @@ _:b%i
         except Exception as e:
             callback(False)
             logging.exception(e)
+
+    def hmi_amixer(self, arg1, arg2, arg3, arg4, callback):
+        if not os.path.exists("/usr/bin/mod-amixer"):
+            callback(False)
+            return
+        os.system("/usr/bin/mod-amixer {} {} {} {}".format(arg1, arg2, arg3, arg4))
+        callback(True)
 
     @gen.coroutine
     def hmi_set_pb_name(self, name):
