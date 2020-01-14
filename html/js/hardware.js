@@ -144,6 +144,9 @@ function HardwareManager(options) {
         self.addressingsByActuator[kMidiLearnURI] = []
         self.addressingsByActuator[kBpmURI] = []
 
+        //xxx
+        // self.addressingsByActuator['/cv/graph/cv_capture_1'] = []
+        // self.addressingsByActuator['/cv/graph/cv_capture_2'] = []
     }
 
     this.reset()
@@ -567,6 +570,8 @@ function HardwareManager(options) {
             typeInputVal = kMidiLearnURI
           } else if (startsWith(currentAddressing.uri, deviceOption)) {
             typeInputVal = deviceOption
+          } else if (startsWith(currentAddressing.uri, cvOption)) {
+            typeInputVal = cvOption
           } else if (currentAddressing.uri !== kBpmURI){
             typeInputVal = ccOption
           }
@@ -1161,7 +1166,7 @@ function HardwareManager(options) {
     }
 
     this.addCvOutputPort = function (instance, name) {
-      var uri = cvOption + '/' + instance
+      var uri = cvOption + instance
       self.cvOutputPorts.push({
         uri: uri,
         name: name,

@@ -605,6 +605,17 @@ class Host(object):
                 callback(True)
             return
 
+        if atype == Addressings.ADDRESSING_TYPE_CV:
+            actuator_uri = actuator
+            if actuator.startswith("/cv/graph/cv_"):
+                actuator_uri = "mod-spi2jack:" + actuator[len("/cv/graph/cv_"):]
+            return self.send_notmodified("cv_map %d %s %s %f %f" % (data['instance_id'],
+                                                                       data['port'],
+                                                                       actuator_uri,
+                                                                       data['minimum'],
+                                                                       data['maximum'],
+                                                                       ), callback, datatype='boolean')
+
         print("ERROR: Invalid addressing requested for", actuator)
         callback(False)
         return
@@ -624,6 +635,9 @@ class Host(object):
 
         if atype == Addressings.ADDRESSING_TYPE_MIDI:
             return self.send_modified("midi_unmap %d %s" % (instance_id, portsymbol), callback, datatype='boolean')
+
+        if atype == Addressings.ADDRESSING_TYPE_CV:
+            return self.send_modified("cv_unmap %d %s" % (instance_id, portsymbol), callback, datatype='boolean')
 
         if atype == Addressings.ADDRESSING_TYPE_BPM:
             if callback is not None:
@@ -834,6 +848,10 @@ class Host(object):
         self.cvportsIn  = []
         self.cvportsOut = []
 
+        # XXX
+        # self.addressings.cv_addressings["/cv/graph/cv_capture_1"] = []
+        # self.addressings.cv_addressings["/cv/graph/cv_capture_2"] = []
+
         if not init_jack():
             self.hasSerialMidiIn = False
             self.hasSerialMidiOut = False
@@ -842,7 +860,9 @@ class Host(object):
         for port in get_jack_hardware_ports(True, False):
             client_name, port_name = port.split(":",1)
             if client_name == "mod-spi2jack":
+                cv_port_name = "cv_" + port_name
                 self.cvportsIn.append("cv_"+port_name)
+                self.addressings.cv_addressings['/cv/graph/' + cv_port_name] = []
             else:
                 self.audioportsIn.append(port_name)
 
@@ -3907,6 +3927,7 @@ _:b%i
             self.pedalboard_modified = True
 
             # if old_actuator_type == Addressings.ADDRESSING_TYPE_CV:
+                # TODO unmap cv
 
             if old_actuator_type == Addressings.ADDRESSING_TYPE_HMI:
                 old_hw_ids = []
