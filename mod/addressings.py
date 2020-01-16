@@ -282,8 +282,8 @@ class Addressings(object):
                     logging.exception(e)
             elif actuator_type == self.ADDRESSING_TYPE_CC and cc_initialized:
                 self.cc_load_all(actuator_uri)
-            # elif actuator_type == self.ADDRESSING_TYPE_CV:
-                # TODO load cv
+            elif actuator_type == self.ADDRESSING_TYPE_CV:
+                self.cv_load_all(actuator_uri)
 
         # Load MIDI addressings
         # NOTE: MIDI addressings are not stored in addressings.json.
@@ -703,6 +703,7 @@ class Addressings(object):
             addressings.append(addressing_data)
 
         elif actuator_type == self.ADDRESSING_TYPE_CV:
+            print(self.cv_addressings)
             addressings = self.cv_addressings[actuator_uri]
             addressings.append(addressing_data)
 
@@ -1136,3 +1137,26 @@ class Addressings(object):
         return (value, maximum, options, pluginData['preset'])
 
     # -----------------------------------------------------------------------------------------------------------------
+
+    @gen.coroutine
+    def cv_load_all(self, actuator_uri):
+        addressings = self.cv_addressings[actuator_uri]
+        print("CV LOAD")
+        print(actuator_uri)
+        print(addressings)
+        for addressing in addressings:
+            data = {
+                'instance_id': addressing['instance_id'],
+                'port'       : addressing['port'],
+                'label'      : addressing['label'],
+                'value'      : addressing['value'],
+                'minimum'    : addressing['minimum'],
+                'maximum'    : addressing['maximum'],
+                'steps'      : addressing['steps'],
+                'unit'       : addressing['unit'],
+                'options'    : addressing['options'],
+            }
+            try:
+                yield gen.Task(self._task_addressing, self.ADDRESSING_TYPE_CV, actuator_uri, data)
+            except Exception as e:
+                logging.exception(e)

@@ -118,6 +118,13 @@ kBpmURI ="/bpm"
 # Limits
 kMaxAddressableScalepoints = 50
 
+# CV related constants
+CV_PREFIX = 'cv_'
+CV_OPTION = '/cv'
+CV_EXPRESSION = '/cv_expression'
+CV_EXPRESSION_URI = CV_OPTION + CV_EXPRESSION
+HW_CV_PREFIX = CV_OPTION + '/graph/' + CV_PREFIX
+
 # TODO: check pluginData['designations'] when doing addressing
 # TODO: hmi_save_current_pedalboard does not send browser msgs, needed?
 # TODO: finish presets, testing
@@ -232,6 +239,7 @@ class Host(object):
         self.audioportsOut = []
         self.cvportsIn = []
         self.cvportsOut = []
+        self.cv_expression_ports = []
         self.midiports = [] # [symbol, alias, pending-connections]
         self.midi_aggregated_mode = True
         self.hasSerialMidiIn = False
@@ -431,7 +439,7 @@ class Host(object):
             name = name.replace(self.jack_slave_prefix+":","")
             if name.startswith("midi_"):
                 ptype = "midi"
-            elif name.startswith("cv_"):
+            elif name.startswith(CV_PREFIX):
                 ptype = "cv"
             else:
                 ptype = "audio"
@@ -606,12 +614,20 @@ class Host(object):
             return
 
         if atype == Addressings.ADDRESSING_TYPE_CV:
-            actuator_uri = actuator
-            if actuator.startswith("/cv/graph/cv_"):
-                actuator_uri = "mod-spi2jack:" + actuator[len("/cv/graph/cv_"):]
+            # cv expression corresponds to either cv capture 1 or 2 based on exp mod
+            if actuator == CV_EXPRESSION_URI:
+                exp_mode = self.profile.get_exp_mode()
+                if exp_mode == self.profile.EXPRESSION_PEDAL_MODE_TIP: # signal on tip
+                    actuator = HW_CV_PREFIX + 'capture_1'
+                else: # signal on ring/sleeve
+                    actuator = HW_CV_PREFIX + 'capture_2'
+            source_port_name = actuator
+            hardware_cv = HW_CV_PREFIX
+            if actuator.startswith(hardware_cv):
+                source_port_name = "mod-spi2jack:" + actuator[len(hardware_cv):]
             return self.send_notmodified("cv_map %d %s %s %f %f" % (data['instance_id'],
                                                                        data['port'],
-                                                                       actuator_uri,
+                                                                       source_port_name,
                                                                        data['minimum'],
                                                                        data['maximum'],
                                                                        ), callback, datatype='boolean')
@@ -847,6 +863,7 @@ class Host(object):
         self.audioportsOut = []
         self.cvportsIn  = []
         self.cvportsOut = []
+        self.cv_expression_ports = []
 
         # XXX
         # self.addressings.cv_addressings["/cv/graph/cv_capture_1"] = []
@@ -860,16 +877,19 @@ class Host(object):
         for port in get_jack_hardware_ports(True, False):
             client_name, port_name = port.split(":",1)
             if client_name == "mod-spi2jack":
-                cv_port_name = "cv_" + port_name
-                self.cvportsIn.append("cv_"+port_name)
+                cv_port_name = CV_PREFIX + port_name
+                self.cvportsIn.append(cv_port_name)
                 self.addressings.cv_addressings['/cv/graph/' + cv_port_name] = []
+                if '/cv/graph/cv_capture_1' in self.addressings.cv_addressings and '/cv/graph/cv_capture_2' in self.addressings.cv_addressings:
+                    self.cv_expression_ports.append(CV_EXPRESSION)
+                    self.addressings.cv_addressings[CV_EXPRESSION_URI] = []
             else:
                 self.audioportsIn.append(port_name)
 
         for port in get_jack_hardware_ports(True, True):
             client_name, port_name = port.split(":",1)
             if client_name == "mod-jack2spi":
-                self.cvportsOut.append("cv_"+port_name)
+                self.cvportsOut.append(CV_PREFIX + port_name)
             else:
                 self.audioportsOut.append(port_name)
 
@@ -1567,6 +1587,11 @@ class Host(object):
             name  = self.cvportsIn[i]
             title = name.title().replace(" ","_")
             websocket.write_message("add_hw_port /graph/%s cv 0 %s %i" % (name, title, i+1))
+
+        for i in range(len(self.cv_expression_ports)):
+            name = self.cv_expression_ports[i]
+            title = 'Expression'
+            websocket.write_message("add_hw_port %s exp 0 %s %i" % (name, title, i+1))
 
         # Audio Out
         for i in range(len(self.audioportsOut)):
@@ -3925,9 +3950,6 @@ _:b%i
 
             self.addressings.remove(old_addressing)
             self.pedalboard_modified = True
-
-            # if old_actuator_type == Addressings.ADDRESSING_TYPE_CV:
-                # TODO unmap cv
 
             if old_actuator_type == Addressings.ADDRESSING_TYPE_HMI:
                 old_hw_ids = []

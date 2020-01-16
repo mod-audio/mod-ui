@@ -244,7 +244,7 @@ function HardwareManager(options) {
             }
         }
 
-        available = $.extend(self.availableActuatorsWithModes(self.cvOutputPorts, types), available)
+        available = $.extend(self.availableActuatorsWithModes(self.cvOutputPorts, defaultTypes), available)
 
         return available
     }
@@ -602,9 +602,8 @@ function HardwareManager(options) {
         var actuator, addressings, ccUri, cvUri
         var ccActuatorSelect = form.find('select[name=cc-actuator]')
         var cvPortSelect = form.find('select[name=cv-port]')
-
+        var cvActuators
         var ccActuators = []
-        var cvPorts = []
         for (var uri in actuators) {
           ccUri = is_control_chain_uri(uri)
           cvUri = isCvUri(uri)
@@ -618,7 +617,6 @@ function HardwareManager(options) {
             ccActuators.push(actuator)
             self.addOption(addressings, actuator, currentAddressing, ccActuatorSelect)
           } else { // cvUri
-            cvPorts.push(actuator)
             self.addOption(addressings, actuator, currentAddressing, cvPortSelect)
           }
         }
@@ -1166,6 +1164,7 @@ function HardwareManager(options) {
     }
 
     this.addCvOutputPort = function (instance, name) {
+      console.log("instance", instance)
       var uri = cvOption + instance
       self.cvOutputPorts.push({
         uri: uri,
