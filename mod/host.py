@@ -616,15 +616,8 @@ class Host(object):
         if atype == Addressings.ADDRESSING_TYPE_CV:
             # cv expression corresponds to either cv capture 1 or 2 based on exp mod
             if actuator == CV_EXPRESSION_URI:
-                exp_mode = self.profile.get_exp_mode()
-                if exp_mode == self.profile.EXPRESSION_PEDAL_MODE_TIP: # signal on tip
-                    actuator = HW_CV_PREFIX + 'capture_1'
-                else: # signal on ring/sleeve
-                    actuator = HW_CV_PREFIX + 'capture_2'
-            source_port_name = actuator
-            hardware_cv = HW_CV_PREFIX
-            if actuator.startswith(hardware_cv):
-                source_port_name = "mod-spi2jack:" + actuator[len(hardware_cv):]
+                actuator = self.get_hw_cv_port()
+            source_port_name = self.get_jack_source_port_name(actuator)
             return self.send_notmodified("cv_map %d %s %s %f %f" % (data['instance_id'],
                                                                        data['port'],
                                                                        source_port_name,
@@ -5169,6 +5162,8 @@ _:b%i
     def hmi_set_exp_mode(self, mode, callback):
         """Set the mode mode for the expression pedal input. That is, if the signal is on tip or sleeve."""
         result = self.profile.set_exp_mode(mode)
+        if result and CV_EXPRESSION_URI in self.addressings.cv_addressings and len(self.addressings.cv_addressings[CV_EXPRESSION_URI]) > 0:
+            self.reload_cv_exp()
         callback(result)
 
     def hmi_get_control_voltage_bias(self, callback):
@@ -5398,6 +5393,38 @@ _:b%i
                 add_port(port_symbol, title, False)
 
             self.midiports.append([port_symbol, title, []])
+
+    def get_hw_cv_port(self):
+        exp_mode = self.profile.get_exp_mode()
+        if exp_mode == self.profile.EXPRESSION_PEDAL_MODE_TIP: # signal on tip
+            return HW_CV_PREFIX + 'capture_1'
+        # signal on ring/sleeve
+        return HW_CV_PREFIX + 'capture_2'
+
+    def get_jack_source_port_name(self, actuator):
+        if actuator.startswith(HW_CV_PREFIX):
+            return "mod-spi2jack:" + actuator[len(HW_CV_PREFIX):]
+        return actuator
+
+    @gen.coroutine
+    def reload_cv_exp(self):
+        if CV_EXPRESSION_URI not in self.addressings.cv_addressings:
+            return
+
+        source_port_name = self.get_jack_source_port_name(self.get_hw_cv_port())
+        for addr in self.addressings.cv_addressings[CV_EXPRESSION_URI]:
+            try:
+                instance_id = addr['instance_id']
+                portsymbol = addr['port']
+                yield gen.Task(self.send_modified, "cv_unmap %d %s" % (instance_id, portsymbol), datatype='boolean')
+                yield gen.Task(self.send_modified, "cv_map %d %s %s %f %f" % (instance_id,
+                                                                           portsymbol,
+                                                                           source_port_name,
+                                                                           addr['minimum'],
+                                                                           addr['maximum'],
+                                                                           ), datatype='boolean')
+            except Exception as e:
+                logging.exception(e)
 
     # -----------------------------------------------------------------------------------------------------------------
     # Profile stuff

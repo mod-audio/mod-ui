@@ -196,6 +196,25 @@ $('document').ready(function() {
             return
         }
 
+        if (cmd == "cv_map") {
+          data         = data.substr(cmd.length+1).split(" ", 12)
+          var instance = data[0]
+          var symbol   = data[1]
+          var actuator = data[2]
+          var minimum  = parseFloat(data[3])
+          var maximum  = parseFloat(data[4])
+          var label    = data[5].replace(/_/g," ")
+          var feedback = parseInt(data[6]) == 1
+
+          desktop.hardwareManager.addCvMapping(instance,
+                                               symbol,
+                                               actuator,
+                                               label,
+                                               minimum,
+                                               maximum,
+                                               feedback)
+        }
+
         if (cmd == "midi_map") {
             data         = data.substr(cmd.length+1).split(" ",6)
             var instance = data[0]

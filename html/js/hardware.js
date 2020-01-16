@@ -31,6 +31,8 @@ var deviceOption = "/hmi"
 var ccOption = "/cc"
 var cvOption = "/cv"
 
+var cvExpression = '/cv_expression'
+
 // use pitchbend as midi cc, with an invalid MIDI controller number
 var MIDI_PITCHBEND_AS_CC = 131
 
@@ -65,6 +67,13 @@ function isCvUri (uri) {
   return false;
 }
 
+function isHwCvUri (uri) {
+  if (startsWith(uri, cvOption + '/graph/cv_') || uri === cvOption + cvExpression) {
+    return true;
+  }
+  return false;
+}
+
 // Units supported for tap tempo (lowercase)
 var kTapTempoUnits = ['bpm']
 
@@ -91,22 +100,7 @@ function HardwareManager(options) {
       value: null
     }
 
-    this.cvOutputPorts = [
-      // {
-      //   uri: '/cv/graph/cv_capture_1',
-      //   name: 'Cv Capture 1',
-      //   modes: ":float:",
-      //   steps: [],
-      //   max_assigns: 99
-      // },
-      // {
-      //   uri: '/cv/graph/cv_capture_2',
-      //   name: 'Cv Capture 2',
-      //   modes: ":float:",
-      //   steps: [],
-      //   max_assigns: 99
-      // }
-    ]
+    this.cvOutputPorts = []
 
     this.setBeatsPerMinuteValue = function (bpm) {
       if (self.beatsPerMinutePort.value === bpm) {
@@ -116,11 +110,23 @@ function HardwareManager(options) {
     }
 
     this.reset = function () {
-       /* All adressings indexed by actuator
-           key  : "/actuator-uri"
-           value: list("/instance/symbol")
-        */
-        self.addressingsByActuator = {}
+        var addressingsByActuator = $.extend({}, self.addressingsByActuator)
+
+        /* All adressings indexed by actuator
+            key  : "/actuator-uri"
+            value: list("/instance/symbol")
+         */
+         self.addressingsByActuator = {}
+
+        if (addressingsByActuator) {
+          for (var act in addressingsByActuator) {
+            // if hw cv port, keep it
+            if (isHwCvUri(act)) {
+              self.addressingsByActuator[act] = []
+            }
+          }
+        }
+
 
        /* All addressings indexed by instance + port symbol
            key  : "/instance/symbol"
@@ -143,10 +149,6 @@ function HardwareManager(options) {
         }
         self.addressingsByActuator[kMidiLearnURI] = []
         self.addressingsByActuator[kBpmURI] = []
-
-        //xxx
-        // self.addressingsByActuator['/cv/graph/cv_capture_1'] = []
-        // self.addressingsByActuator['/cv/graph/cv_capture_2'] = []
     }
 
     this.reset()
@@ -598,7 +600,7 @@ function HardwareManager(options) {
             i++
         })
 
-        // Add options to control chain actuators select
+        // Add options to control chain and cv actuators select
         var actuator, addressings, ccUri, cvUri
         var ccActuatorSelect = form.find('select[name=cc-actuator]')
         var cvPortSelect = form.find('select[name=cv-port]')
@@ -1056,6 +1058,23 @@ function HardwareManager(options) {
         options.setEnabled(instance, portSymbol, false, feedback, true)
     }
 
+    this.addCvMapping = function (instance, portSymbol, actuator_uri,
+                                        label, minimum, maximum, feedback) {
+        var instanceAndSymbol = instance+"/"+portSymbol
+        self.addressingsByActuator  [actuator_uri].push(instanceAndSymbol)
+        self.addressingsByPortSymbol[instanceAndSymbol] = actuator_uri
+        self.addressingsData        [instanceAndSymbol] = {
+            uri     : actuator_uri,
+            label   : label,
+            minimum : minimum,
+            maximum : maximum,
+            feedback: feedback,
+        }
+        // disable this control
+        options.setEnabled(instance, portSymbol, false, feedback, true)
+    }
+
+
     this.addMidiMapping = function (instance, portSymbol, channel, control, minimum, maximum) {
         var instanceAndSymbol = instance+"/"+portSymbol
         var actuator_uri = create_midi_cc_uri(channel, control)
@@ -1164,7 +1183,6 @@ function HardwareManager(options) {
     }
 
     this.addCvOutputPort = function (instance, name) {
-      console.log("instance", instance)
       var uri = cvOption + instance
       self.cvOutputPorts.push({
         uri: uri,

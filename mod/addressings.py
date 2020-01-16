@@ -41,6 +41,9 @@ kMidiCustomPrefixURI = "/midi-custom_" # to show current one
 # URI for BPM sync (for non-addressed control ports)
 kBpmURI ="/bpm"
 
+# CV related constants
+CV_OPTION = '/cv'
+
 class Addressings(object):
     ADDRESSING_TYPE_NONE = 0
     ADDRESSING_TYPE_HMI  = 1
@@ -546,12 +549,11 @@ class Addressings(object):
         # CV
         for uri, addrs in self.cv_addressings.items():
             for addr in addrs:
-                msg_callback("hw_map %s %s %s %f %f %d %s False null 0" % (instances[addr['instance_id']],
+                msg_callback("cv_map %s %s %s %f %f %s 0" % (instances[addr['instance_id']],
                                                                            addr['port'],
                                                                            uri,
                                                                            addr['minimum'],
                                                                            addr['maximum'],
-                                                                           addr['steps'],
                                                                            addr['label'].replace(" ","_")))
 
     # -----------------------------------------------------------------------------------------------------------------
@@ -1079,7 +1081,7 @@ class Addressings(object):
             return self.ADDRESSING_TYPE_MIDI
         if actuator_uri == kBpmURI:
             return self.ADDRESSING_TYPE_BPM
-        if actuator_uri.startswith("/cv/"):
+        if actuator_uri.startswith(CV_OPTION):
             return self.ADDRESSING_TYPE_CV
         return self.ADDRESSING_TYPE_CC
 
@@ -1138,12 +1140,11 @@ class Addressings(object):
 
     # -----------------------------------------------------------------------------------------------------------------
 
+    # CV specific functions
+
     @gen.coroutine
     def cv_load_all(self, actuator_uri):
         addressings = self.cv_addressings[actuator_uri]
-        print("CV LOAD")
-        print(actuator_uri)
-        print(addressings)
         for addressing in addressings:
             data = {
                 'instance_id': addressing['instance_id'],
