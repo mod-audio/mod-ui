@@ -705,7 +705,6 @@ class Addressings(object):
             addressings.append(addressing_data)
 
         elif actuator_type == self.ADDRESSING_TYPE_CV:
-            print(self.cv_addressings)
             addressings = self.cv_addressings[actuator_uri]
             addressings.append(addressing_data)
 
