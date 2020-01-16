@@ -41,12 +41,16 @@ kMidiCustomPrefixURI = "/midi-custom_" # to show current one
 # URI for BPM sync (for non-addressed control ports)
 kBpmURI ="/bpm"
 
+# CV related constants
+CV_OPTION = '/cv'
+
 class Addressings(object):
     ADDRESSING_TYPE_NONE = 0
     ADDRESSING_TYPE_HMI  = 1
     ADDRESSING_TYPE_CC   = 2
     ADDRESSING_TYPE_MIDI = 3
     ADDRESSING_TYPE_BPM  = 4
+    ADDRESSING_TYPE_CV   = 5
 
     def __init__(self):
         self.init()
@@ -99,6 +103,7 @@ class Addressings(object):
         self.cc_metadata = {}
         self.midi_addressings = {}
         self.virtual_addressings = {kBpmURI: []}
+        self.cv_addressings = {}
 
         # Store all possible HMI hardcoded values
         self.hmi_hw2uri_map = {}
@@ -118,6 +123,7 @@ class Addressings(object):
     def clear(self):
         self.hmi_addressings  = dict((key, {'addrs': [], 'idx': -1}) for key in self.hmi_addressings.keys())
         self.cc_addressings   = dict((key, []) for key in self.cc_addressings.keys())
+        self.cv_addressings   = dict((key, []) for key in self.cv_addressings.keys())
         self.virtual_addressings   = dict((key, []) for key in self.virtual_addressings.keys())
         self.midi_addressings = {}
         self.current_page = 0
@@ -210,14 +216,16 @@ class Addressings(object):
 
         # Load all addressings possible
         for actuator_uri, addrs in data.items():
-            is_cc = self.get_actuator_type(actuator_uri) == self.ADDRESSING_TYPE_CC
+            actuator_type = self.get_actuator_type(actuator_uri)
+            is_cc = actuator_type == self.ADDRESSING_TYPE_CC
             if is_cc:
                 has_cc_addrs = True
                 if not cc_initialized:
                     continue
 
-            # Continue if current actuator_uri is not part of the actual available actuators (hardware, virtual bpm or cc)
-            if actuator_uri not in self.hw_actuators_uris and not is_cc and actuator_uri != kBpmURI:
+            is_cv = actuator_type == self.ADDRESSING_TYPE_CV
+            # Continue if current actuator_uri is not part of the actual available actuators (hardware, virtual bpm, cc or cv)
+            if actuator_uri not in self.hw_actuators_uris and not is_cc and actuator_uri != kBpmURI and not is_cv:
                 continue
 
             i = 0
@@ -269,13 +277,16 @@ class Addressings(object):
             if abort_catcher is not None and abort_catcher.get('abort', False):
                 print("WARNING: Abort triggered during addressings.load actuator requests, caller:", abort_catcher['caller'])
                 return
-            if self.get_actuator_type(actuator_uri) == self.ADDRESSING_TYPE_HMI:
+            actuator_type = self.get_actuator_type(actuator_uri)
+            if actuator_type == self.ADDRESSING_TYPE_HMI:
                 try:
                     yield gen.Task(self.hmi_load_first, actuator_uri)
                 except Exception as e:
                     logging.exception(e)
-            elif self.get_actuator_type(actuator_uri) == self.ADDRESSING_TYPE_CC and cc_initialized:
+            elif actuator_type == self.ADDRESSING_TYPE_CC and cc_initialized:
                 self.cc_load_all(actuator_uri)
+            elif actuator_type == self.ADDRESSING_TYPE_CV:
+                self.cv_load_all(actuator_uri)
 
         # Load MIDI addressings
         # NOTE: MIDI addressings are not stored in addressings.json.
@@ -451,6 +462,20 @@ class Addressings(object):
                 })
             addressings[uri] = addrs2
 
+        # CV
+        for uri, addrs in self.cv_addressings.items():
+            addrs2 = []
+            for addr in addrs:
+                addrs2.append({
+                    'instance': instances[addr['instance_id']],
+                    'port'    : addr['port'],
+                    'label'   : addr['label'],
+                    'minimum' : addr['minimum'],
+                    'maximum' : addr['maximum'],
+                    'steps'   : addr['steps'],
+                })
+            addressings[uri] = addrs2
+
         # Write addressings to disk
         with TextFileFlusher(os.path.join(bundlepath, "addressings.json")) as fh:
             json.dump(addressings, fh, indent=4)
@@ -521,12 +546,21 @@ class Addressings(object):
                                                              addr['minimum'],
                                                              addr['maximum']))
 
+        # CV
+        for uri, addrs in self.cv_addressings.items():
+            for addr in addrs:
+                msg_callback("cv_map %s %s %s %f %f %s 0" % (instances[addr['instance_id']],
+                                                                           addr['port'],
+                                                                           uri,
+                                                                           addr['minimum'],
+                                                                           addr['maximum'],
+                                                                           addr['label'].replace(" ","_")))
+
     # -----------------------------------------------------------------------------------------------------------------
 
     def add(self, instance_id, plugin_uri, portsymbol, actuator_uri, label, minimum, maximum, steps, value, tempo=False, dividers=None, page=None, group=None):
         actuator_type = self.get_actuator_type(actuator_uri)
-
-        if actuator_type not in (self.ADDRESSING_TYPE_HMI, self.ADDRESSING_TYPE_CC, self.ADDRESSING_TYPE_BPM):
+        if actuator_type not in (self.ADDRESSING_TYPE_HMI, self.ADDRESSING_TYPE_CC, self.ADDRESSING_TYPE_BPM, self.ADDRESSING_TYPE_CV):
             print("ERROR: Trying to address the wrong way, stop!")
             return None
 
@@ -668,6 +702,10 @@ class Addressings(object):
                 return None
 
             addressings = self.cc_addressings[actuator_uri]
+            addressings.append(addressing_data)
+
+        elif actuator_type == self.ADDRESSING_TYPE_CV:
+            addressings = self.cv_addressings[actuator_uri]
             addressings.append(addressing_data)
 
         return addressing_data
@@ -818,6 +856,10 @@ class Addressings(object):
 
         elif actuator_type == self.ADDRESSING_TYPE_BPM:
             addressings = self.virtual_addressings[actuator_uri]
+            addressings.remove(addressing_data)
+
+        elif actuator_type == self.ADDRESSING_TYPE_CV:
+            addressings = self.cv_addressings[actuator_uri]
             addressings.remove(addressing_data)
 
     def is_page_assigned(self, addrs, page):
@@ -1038,6 +1080,8 @@ class Addressings(object):
             return self.ADDRESSING_TYPE_MIDI
         if actuator_uri == kBpmURI:
             return self.ADDRESSING_TYPE_BPM
+        if actuator_uri.startswith(CV_OPTION):
+            return self.ADDRESSING_TYPE_CV
         return self.ADDRESSING_TYPE_CC
 
     def get_group_actuators(self, actuator_uri):
@@ -1094,3 +1138,25 @@ class Addressings(object):
         return (value, maximum, options, pluginData['preset'])
 
     # -----------------------------------------------------------------------------------------------------------------
+
+    # CV specific functions
+
+    @gen.coroutine
+    def cv_load_all(self, actuator_uri):
+        addressings = self.cv_addressings[actuator_uri]
+        for addressing in addressings:
+            data = {
+                'instance_id': addressing['instance_id'],
+                'port'       : addressing['port'],
+                'label'      : addressing['label'],
+                'value'      : addressing['value'],
+                'minimum'    : addressing['minimum'],
+                'maximum'    : addressing['maximum'],
+                'steps'      : addressing['steps'],
+                'unit'       : addressing['unit'],
+                'options'    : addressing['options'],
+            }
+            try:
+                yield gen.Task(self._task_addressing, self.ADDRESSING_TYPE_CV, actuator_uri, data)
+            except Exception as e:
+                logging.exception(e)

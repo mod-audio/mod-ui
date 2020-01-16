@@ -420,7 +420,8 @@ JqueryClass('pedalboard', {
 
     fakeLoadFromServerData: function (data, callback, bypassApplication) {
         var self = $(this)
-
+        console.log("PEDALBOARD_DATA")
+        console.log(data)
         /*
          * Unserialization will first call all application callbacks and after everything is done,
          * build the pedalboard in screen.
