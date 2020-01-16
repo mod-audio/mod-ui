@@ -2004,7 +2004,7 @@ class Host(object):
                     else:
                         self.add_used_actuators(actuator_uri, used_hmi_actuators, used_hw_ids)
 
-            elif actuator_type == Addressings.ADDRESSING_TYPE_CC:
+            elif actuator_type == Addressings.ADDRESSING_TYPE_CC or actuator_type == Addressings.ADDRESSING_TYPE_CV:
                 try:
                     yield gen.Task(self.addr_task_unaddressing, actuator_type,
                                                                 addressing['instance_id'],
