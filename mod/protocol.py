@@ -156,8 +156,6 @@ class Protocol(object):
         "s_hp": [int],   # set_hp_cv
         "g_exp_m": [],    # get_exp_mode
         "s_exp_m": [int], # set_exp_mode
-        "g_cvb": [],     # get_cv_bias
-        "s_cvb": [int],  # set_cv_bias
 
         # Transport and tempo sync mode
         "g_cls": [],    # get_clk_src
