@@ -5440,10 +5440,23 @@ _:b%i
     @gen.coroutine
     def profile_apply(self, values, isIntermediate):
         try:
-            yield gen.Task(self.set_transport_bpb, values['transportBPB'], True, True, True, True)
-            yield gen.Task(self.set_transport_bpm, values['transportBPM'], True, True, True, True)
+            yield gen.Task(self.set_transport_bpb, values['transportBPB'], True, False, True, False)
+            yield gen.Task(self.set_transport_bpm, values['transportBPM'], True, False, True, False)
         except Exception as e:
             logging.exception(e)
+
+        if self.hmi.initialized:
+            try:
+                yield gen.Task(self.paramhmi_set, 'pedalboard', ":bpb", self.transport_bpb)
+                yield gen.Task(self.paramhmi_set, 'pedalboard', ":bpm", self.transport_bpm)
+            except Exception as e:
+                logging.exception(e)
+
+            try:
+                yield gen.Task(self.hmi.set_profile_value, Menu.TEMPO_BPB_ID, self.transport_bpb)
+                yield gen.Task(self.hmi.set_profile_value, Menu.TEMPO_BPM_ID, self.transport_bpm)
+            except Exception as e:
+                logging.exception(e)
 
         try:
             if values['midiClockSend']:
