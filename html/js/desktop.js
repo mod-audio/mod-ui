@@ -2180,8 +2180,10 @@ function enable_dev_mode(skipSaveConfig) {
     // buffer size button
     $('#mod-buffersize').show()
 
-    // CPU speed and temperature
-    $('#mod-cpu-stats').show()
+    // CPU speed and temperature, not available on the Duo
+    if (PLATFORM != "duo") {
+        $('#mod-cpu-stats').show()
+    }
 
     // transport parameters
     $('#mod-transport-window').css({

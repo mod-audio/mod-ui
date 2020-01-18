@@ -386,7 +386,7 @@ class SystemPreferences(JsonRequestHandler):
         self.make_pref("jack_256_frames", self.OPTION_FILE_EXISTS, "/data/using-256-frames")
 
         # Optional services
-        self.make_pref("service_peakmeter", self.OPTION_FILE_NOT_EXISTS, "/data/disable-mod-peakmeter")
+        self.make_pref("service_mod_peakmeter", self.OPTION_FILE_NOT_EXISTS, "/data/disable-mod-peakmeter")
         self.make_pref("service_mod_sdk", self.OPTION_FILE_EXISTS, "/data/enable-mod-sdk")
         self.make_pref("service_netmanager", self.OPTION_FILE_EXISTS, "/data/enable-netmanager")
 
@@ -1558,6 +1558,8 @@ class TemplateHandler(TimelessRequestHandler):
         if prname:
             fullpbname += " - " + prname
 
+        hwdesc = get_hardware_descriptor()
+
         context = {
             'default_icon_template': default_icon_template,
             'default_settings_template': default_settings_template,
@@ -1568,9 +1570,10 @@ class TemplateHandler(TimelessRequestHandler):
             'controlchain_url': CONTROLCHAIN_HTTP_ADDRESS,
             'hardware_profile': b64encode(json.dumps(SESSION.get_hardware_actuators()).encode("utf-8")),
             'version': self.get_argument('v'),
-            'bin_compat': get_hardware_descriptor().get('bin-compat', 'Unknown'),
-            'pages_nb': get_hardware_descriptor().get('pages_nb', 0),
-            'pages_cb': get_hardware_descriptor().get('pages_cb', 0),
+            'bin_compat': hwdesc.get('bin-compat', "Unknown"),
+            'platform': hwdesc.get('platform', "Unknown"),
+            'pages_nb': hwdesc.get('pages_nb', 0),
+            'pages_cb': hwdesc.get('pages_cb', 0),
             'lv2_plugin_dir': LV2_PLUGIN_DIR,
             'bundlepath': SESSION.host.pedalboard_path,
             'title':  squeeze(pbname.replace("'", "\\'")),

@@ -848,6 +848,11 @@ JqueryClass('pedalboard', {
             duration == 400
         }
 
+        // workaround some browsers that send a zero value at step start, which is an invalid scale
+        var usingInitialZero = false
+        var oldScale = self.data('scale')
+        var newScale = scale
+
         self.animate({
             scale: scale,
             top: offsetY,
@@ -858,6 +863,15 @@ JqueryClass('pedalboard', {
                 if (prop.prop != 'scale') {
                     return
                 }
+                // if we receive a value of 0, which is impossible for the scale variable, trigger workaround
+                if (value == 0) {
+                    usingInitialZero = true
+                }
+                if (usingInitialZero) {
+                    var per = value / newScale
+                    value = (oldScale * (1.0 - per)) + (newScale * per)
+                }
+
                 self.css({
                     webkitTransform: 'scale(' + value + ')',
                     MozTransform: 'scale(' + value + ')',
