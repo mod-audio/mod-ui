@@ -573,6 +573,7 @@ class SystemExeChange(JsonRequestHandler):
     @gen.coroutine
     def restart_services(self):
         yield gen.Task(run_command, ["systemctl", "restart", "jack2"], None)
+        reset_get_all_pedalboards_cache()
         lv2_cleanup()
         lv2_init()
 
