@@ -44,7 +44,6 @@ def apply_mixer_values(values, platform):
         os.system("/usr/bin/mod-amixer hp xvol %f" % values['headphoneVolume'])
         os.system("/usr/bin/mod-amixer cvhp %s" % Profile.value_to_string('outputMode', values['outputMode']))
         os.system("/usr/bin/mod-amixer cvexp %s" % Profile.value_to_string('inputMode', values['inputMode']))
-        os.system("/usr/bin/mod-amixer cvrange %s" % Profile.value_to_string('cvBias', values['cvBias']))
         os.system("/usr/bin/mod-amixer exppedal %s" % Profile.value_to_string('expPedalMode', values['expPedalMode']))
         return
     if platform is None:
@@ -74,7 +73,6 @@ def fill_in_mixer_values(data, platform):
         data['headphoneVolume'] = float(getoutput("/usr/bin/mod-amixer hp xvol").strip())
         data['outputMode']      = Profile.string_to_value('outputMode', getoutput("/usr/bin/mod-amixer cvhp").strip())
         data['inputMode']       = Profile.string_to_value('inputMode', getoutput("/usr/bin/mod-amixer cvexp").strip())
-        data['cvBias']          = Profile.string_to_value('cvBias', getoutput("/usr/bin/mod-amixer cvrange").strip())
         data['expPedalMode']    = Profile.string_to_value('expPedalMode',
                                                           getoutput("/usr/bin/mod-amixer exppedal").strip())
         return
@@ -92,9 +90,6 @@ def fill_in_mixer_values(data, platform):
 class Profile(object):
     NUM_PROFILES = 4
     INTERMEDIATE_PROFILE_PATH = index_to_filepath(NUM_PROFILES + 1)
-
-    CONTROL_VOLTAGE_BIAS_0_to_5      = 0 # 0 to 5 volts
-    CONTROL_VOLTAGE_BIAS_m2d5_to_2d5 = 1 # 2.5 to 2.5 volts
 
     EXPRESSION_PEDAL_MODE_TIP  = 0 # signal on tip
     EXPRESSION_PEDAL_MODE_RING = 1 # signal on ring/sleeve
@@ -117,7 +112,6 @@ class Profile(object):
     TRANSPORT_SOURCE_ABLETON_LINK = 2
 
     DEFAULTS = {
-        'cvBias': CONTROL_VOLTAGE_BIAS_m2d5_to_2d5,
         'expPedalMode': EXPRESSION_PEDAL_MODE_RING,
         'headphoneBypass': False,
         'headphoneVolume': -6.0, # 60%
@@ -169,11 +163,6 @@ class Profile(object):
                 return True
             if string == "off":
                 return False
-        if key == "cvBias":
-            if string == "0to5":
-                return cls.CONTROL_VOLTAGE_BIAS_0_to_5
-            if string == "m2d5":
-                return cls.CONTROL_VOLTAGE_BIAS_m2d5_to_2d5
         if key == "expPedalMode":
             if string == "ring":
                 return cls.EXPRESSION_PEDAL_MODE_RING
@@ -200,11 +189,6 @@ class Profile(object):
                 return "on"
             if value == False:
                 return "off"
-        if key == "cvBias":
-            if value == cls.CONTROL_VOLTAGE_BIAS_0_to_5:
-                return "0to5"
-            if value == cls.CONTROL_VOLTAGE_BIAS_m2d5_to_2d5:
-                return "m2d5"
         if key == "expPedalMode":
             if value == cls.EXPRESSION_PEDAL_MODE_RING:
                 return "ring"
@@ -280,9 +264,6 @@ class Profile(object):
     def get_configurable_output_mode(self):
         return self.values['outputMode']
 
-    def get_control_voltage_bias(self):
-        return self.values['cvBias']
-
     def get_exp_mode(self):
         return self.values['expPedalMode']
 
@@ -327,13 +308,6 @@ class Profile(object):
             return False
         os.system("/usr/bin/mod-amixer cvhp %s" % self.value_to_string('outputMode', value))
         return self._compare_and_set_value('outputMode', value)
-
-    def set_control_voltage_bias(self, value):
-        if value not in (self.CONTROL_VOLTAGE_BIAS_m2d5_to_2d5, self.CONTROL_VOLTAGE_BIAS_0_to_5):
-            logging.error("[profile] set_control_voltage_bias called with invalid value %s", value)
-            return False
-        os.system("/usr/bin/mod-amixer cvrange %s" % self.value_to_string('cvBias', value))
-        return self._compare_and_set_value('cvBias', value)
 
     def set_exp_mode(self, value):
         if value not in (self.EXPRESSION_PEDAL_MODE_RING, self.EXPRESSION_PEDAL_MODE_TIP):

@@ -370,9 +370,10 @@ class SystemInfo(JsonRequestHandler):
         self.write(info)
 
 class SystemPreferences(JsonRequestHandler):
-    OPTION_NULL          = 0
-    OPTION_FILE_EXISTS   = 1
-    OPTION_FILE_CONTENTS = 2
+    OPTION_NULL            = 0
+    OPTION_FILE_EXISTS     = 1
+    OPTION_FILE_NOT_EXISTS = 2
+    OPTION_FILE_CONTENTS   = 3
 
     def __init__(self, application, request, **kwargs):
         JsonRequestHandler.__init__(self, application, request, **kwargs)
@@ -382,16 +383,15 @@ class SystemPreferences(JsonRequestHandler):
         self.make_pref("bluetooth_name", self.OPTION_FILE_CONTENTS, "/data/bluetooth/name", str)
         self.make_pref("jack_mono_copy", self.OPTION_FILE_EXISTS, "/data/jack-mono-copy")
         self.make_pref("jack_sync_mode", self.OPTION_FILE_EXISTS, "/data/jack-sync-mode")
-        self.make_pref("jack_256_frames",  self.OPTION_FILE_EXISTS, "/data/using-256-frames")
+        self.make_pref("jack_256_frames", self.OPTION_FILE_EXISTS, "/data/using-256-frames")
 
         # Optional services
-        self.make_pref("service_mixserver",  self.OPTION_FILE_EXISTS, "/data/enable-mixserver")
-        self.make_pref("service_mod_sdk",    self.OPTION_FILE_EXISTS, "/data/enable-mod-sdk")
+        self.make_pref("service_peakmeter", self.OPTION_FILE_NOT_EXISTS, "/data/disable-mod-peakmeter")
+        self.make_pref("service_mod_sdk", self.OPTION_FILE_EXISTS, "/data/enable-mod-sdk")
         self.make_pref("service_netmanager", self.OPTION_FILE_EXISTS, "/data/enable-netmanager")
 
         # Workarounds
         self.make_pref("autorestart_hmi", self.OPTION_FILE_EXISTS, "/data/autorestart-hmi")
-        self.make_pref("disable_peakmeter", self.OPTION_FILE_EXISTS, "/data/disable-mod-peakmeter")
 
     def make_pref(self, label, otype, data, valtype=None, valdef=None):
         self.prefs.append({
@@ -408,6 +408,9 @@ class SystemPreferences(JsonRequestHandler):
         for pref in self.prefs:
             if pref['type'] == self.OPTION_FILE_EXISTS:
                 val = os.path.exists(pref['data'])
+
+            elif pref['type'] == self.OPTION_FILE_NOT_EXISTS:
+                val = not os.path.exists(pref['data'])
 
             elif pref['type'] == self.OPTION_FILE_CONTENTS:
                 if os.path.exists(pref['data']):
@@ -490,7 +493,6 @@ class SystemExeChange(JsonRequestHandler):
             create = bool(int(self.get_argument('create')))
 
             if path not in ("autorestart-hmi",
-                            "disable-peakmeter",
                             "jack-mono-copy",
                             "jack-sync-mode",
                             "using-256-frames"):
@@ -532,7 +534,7 @@ class SystemExeChange(JsonRequestHandler):
             enable   = bool(int(self.get_argument('enable')))
             inverted = bool(int(self.get_argument('inverted')))
 
-            if name not in ("mixserver", "mod-peakmeter", "netmanager", "mod-sdk"):
+            if name not in ("mod-peakmeter", "mod-sdk", "netmanager"):
                 self.write(False)
                 return
 
@@ -572,6 +574,7 @@ class SystemExeChange(JsonRequestHandler):
     @gen.coroutine
     def restart_services(self):
         yield gen.Task(run_command, ["systemctl", "restart", "jack2"], None)
+        reset_get_all_pedalboards_cache()
         lv2_cleanup()
         lv2_init()
 
