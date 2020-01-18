@@ -113,18 +113,32 @@ class HMI(object):
             return
 
         self.sp = SerialIOStream(sp)
+        self.ping_io = None
 
         def clear_callback(ok):
             callback()
 
         # calls ping until ok is received
         def ping_callback(ok):
+            if self.ping_io is not None:
+                self.ioloop.remove_timeout(self.ping_io)
+                self.ping_io = None
+
             if ok:
                 self.clear(clear_callback)
             else:
-                self.ioloop.add_timeout(1, lambda:self.ping(ping_callback))
+                self.ioloop.call_later(1, call_ping)
 
-        self.ping(ping_callback)
+        def call_ping():
+            sp.flushInput()
+            sp.flushOutput()
+            self.queue = []
+            self.queue_idle = True
+
+            self.ping(ping_callback)
+            self.ping_io = self.ioloop.call_later(1, call_ping)
+
+        call_ping()
         self.checker()
 
     def checker(self, data=None):
