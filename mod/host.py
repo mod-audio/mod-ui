@@ -767,6 +767,7 @@ class Host(object):
         print("WARNING: Trying to send available pages, HMI not initialized")
         callback(False)
         return
+
     # -----------------------------------------------------------------------------------------------------------------
     # Initialization
 

@@ -171,7 +171,7 @@ function refresh_sysprefs() {
             $("#prefs-audio-256-frames").prop("checked", resp.jack_256_frames)
             $("#prefs-audio-mono-copy").prop("checked", resp.jack_mono_copy)
             $("#prefs-audio-sync-mode").prop("checked", resp.jack_sync_mode)
-            $("#prefs-service-mod-peakmeter").prop("checked", resp.service_peakmeter)
+            $("#prefs-service-mod-peakmeter").prop("checked", resp.service_mod_peakmeter)
             $("#prefs-service-mod-sdk").prop("checked", resp.service_mod_sdk)
             $("#prefs-service-netmanager").prop("checked", resp.service_netmanager)
             $("#prefs-workarounds-autorestart-hmi").prop("checked", resp.autorestart_hmi)
@@ -643,7 +643,7 @@ $('document').ready(function() {
     // --- Services
 
     $("#prefs-service-mod-peakmeter").click(function () {
-        enable_service("mod-peakmeter", $(this).prop("checked"))
+        enable_service("mod-peakmeter", !$(this).prop("checked"), true)
     })
 
     $("#prefs-service-mod-sdk").click(function () {

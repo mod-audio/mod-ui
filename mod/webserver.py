@@ -385,7 +385,7 @@ class SystemPreferences(JsonRequestHandler):
         self.make_pref("jack_256_frames", self.OPTION_FILE_EXISTS, "/data/using-256-frames")
 
         # Optional services
-        self.make_pref("service_peakmeter", self.OPTION_FILE_NOT_EXISTS, "/data/disable-mod-peakmeter")
+        self.make_pref("service_mod_peakmeter", self.OPTION_FILE_NOT_EXISTS, "/data/disable-mod-peakmeter")
         self.make_pref("service_mod_sdk", self.OPTION_FILE_EXISTS, "/data/enable-mod-sdk")
         self.make_pref("service_netmanager", self.OPTION_FILE_EXISTS, "/data/enable-netmanager")
 
