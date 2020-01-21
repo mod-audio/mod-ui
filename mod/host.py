@@ -625,6 +625,8 @@ class Host(object):
 
         if atype == Addressings.ADDRESSING_TYPE_CV:
             source_port_name = self.get_jack_source_port_name(actuator)
+            print("CV PORT NAME")
+            print(source_port_name)
             return self.send_notmodified("cv_map %d %s %s %f %f" % (data['instance_id'],
                                                                        data['port'],
                                                                        source_port_name,
@@ -4110,6 +4112,46 @@ _:b%i
         pluginData['ports'][portsymbol] = port_value
         self.send_modified("param_set %d %s %f" % (instance_id, portsymbol, port_value), callback, datatype='boolean')
         self.msg_callback("param_set %s %s %f" % (instance, portsymbol, port_value))
+
+    def cv_addressing_port_add(self, uri, label):
+        # Port already added, just change the label for all addressings
+        if uri in self.addressings.cv_addressings.keys():
+            addressings = self.addressings.cv_addressings[uri]
+            for addressing in addressings:
+                addressing['label'] = label
+                instance_id = addressing['instance_id']
+                port = addressing['port']
+                pluginData  = self.plugins.get(instance_id, None)
+
+                if pluginData is None:
+                    print("ERROR: Trying to address non-existing plugin instance %i" % (instance_id))
+                    return False
+
+                pluginData['addressings'][port] = addressing
+                print(pluginData['addressings'])
+        self.addressings.cv_addressings[uri] = []
+        return True
+
+    @gen.coroutine
+    def cv_addressing_port_remove(self, uri, callback):
+        if uri not in self.addressings.cv_addressings.keys():
+            callback(False)
+            return
+        # Unadress everything that was assigned to this plugin cv port
+        addressings = self.addressings.cv_addressings[uri]
+        for addressing in addressings:
+            try:
+                instance_id = addressing['instance_id']
+                instance   = self.mapper.get_instance(instance_id)
+                port = addressing['port']
+                yield gen.Task(self.address, instance, port, kNullAddressURI,  "---", 0.0, 0.0, 0.0, 0, False, None, None)
+            except Exception as e:
+                callback(False)
+                logging.exception(e)
+                return
+        del self.addressings.cv_addressings[uri]
+        callback(True)
+
     # -----------------------------------------------------------------------------------------------------------------
     # HMI callbacks, called by HMI via serial
 
@@ -5396,7 +5438,8 @@ _:b%i
     def get_jack_source_port_name(self, actuator):
         if actuator.startswith(HW_CV_PREFIX):
             return "mod-spi2jack:" + actuator[len(HW_CV_PREFIX):]
-        return actuator
+        else:
+            return self._fix_host_connection_port(actuator.split("/cv")[1])
 
     # -----------------------------------------------------------------------------------------------------------------
     # Profile stuff

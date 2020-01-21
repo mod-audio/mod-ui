@@ -167,6 +167,16 @@ JqueryClass('pedalboard', {
                 callback()
             },
 
+            // Add new plugin cv output port to available addressable cv ports
+            // or update existing cv port's name
+            addCVAddressingPort: function (uri, label, callback) {
+              callback(true)
+            },
+
+            // Remove plugin cv output port from available addressable cv ports
+            removeCVAddressingPort: function (uri, callback) {
+              callback(true)
+            },
         }, options)
 
         self.pedalboard('wrapApplicationFunctions', options, [
@@ -1956,24 +1966,38 @@ JqueryClass('pedalboard', {
           }
           textInput.val(defaultText);
 
+          var cvPort = '/cv' + port;
           checkbox.change(function () {
             var label = textInput.val();
             if ($(this).prop('checked')) {
               // Register new addressable cv port
-              self.data('hardwareManager').addCvOutputPort(port, label);
-              // Show and highlight text input
-              textInput.show();
-              textInput.select();
+              self.data('addCVAddressingPort')(cvPort, label, function (resp) {
+                if (resp) {
+                  self.data('hardwareManager').addCvOutputPort(port, label);
+                  // Show and highlight text input
+                  textInput.show();
+                  textInput.select();
+                }
+              });
             } else {
               // Unregister cv port
-              self.data('hardwareManager').removeCvOutputPort(port);
-              // Hide text input again
-              textInput.hide();
+              self.data('removeCVAddressingPort')(cvPort, function (resp) {
+                if (resp) {
+                  self.data('hardwareManager').removeCvOutputPort(port);
+                  // Hide text input again
+                  textInput.hide();
+                }
+              });
             }
           })
 
           textInput.change(function () {
-            self.data('hardwareManager').addCvOutputPort(port, $(this).val());
+            var label = $(this).val();
+            self.data('addCVAddressingPort')(cvPort, label, function (resp) {
+              if (resp) {
+                self.data('hardwareManager').addCvOutputPort(port, label);
+              }
+            });
           })
         }
 

@@ -1322,6 +1322,23 @@ class PedalboardImageWait(JsonRequestHandler):
             'ctime': "%.1f" % ctime,
         })
 
+class PedalboardCvAddressingPortAdd(JsonRequestHandler):
+    @web.asynchronous
+    @gen.engine
+    def post(self):
+        uri = self.get_argument('uri')
+        label = self.get_argument('label')
+        resp = SESSION.web_cv_addressing_port_add(uri, label)
+        self.write(resp)
+
+class PedalboardCvAddressingPortRemove(JsonRequestHandler):
+    @web.asynchronous
+    @gen.engine
+    def post(self):
+        uri = self.get_argument('uri')
+        ok = yield gen.Task(SESSION.web_cv_addressing_port_remove, uri)
+        self.write(resp)
+
 class PedalboardTransportSetSyncMode(JsonRequestHandler):
     @web.asynchronous
     @gen.engine
@@ -1938,6 +1955,8 @@ application = web.Application(
             (r"/pedalboard/image/generate", PedalboardImageGenerate),
             (r"/pedalboard/image/check", PedalboardImageCheck),
             (r"/pedalboard/image/wait", PedalboardImageWait),
+            (r"/pedalboard/cv_addressing_port/add", PedalboardCvAddressingPortAdd),
+            (r"/pedalboard/cv_addressing_port/remove", PedalboardCvAddressingPortRemove),
             (r"/pedalboard/transport/set_sync_mode/*(/[A-Za-z0-9_:/]+[^/])/?", PedalboardTransportSetSyncMode),
 
             # Pedalboard Snapshot handling
