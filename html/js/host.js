@@ -359,9 +359,8 @@ $('document').ready(function() {
             var cvOutputPorts = []
 
             if (isOutput) {
-                // 2 cv output ports allow for cv expression (virtual port,
-                // represents either cv output 1 or 2 based on exp mode - signal on tip or on ring)
-                if (type === 'exp') {
+                // Do not add cv exp pedal as visible hw port for now, only add as available cv addressing port
+                if (instance === '/graph/cv_exp_pedal') {
                   desktop.hardwareManager.addCvOutputPort(instance, name)
                   return
                 }

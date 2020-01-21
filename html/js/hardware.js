@@ -31,8 +31,6 @@ var deviceOption = "/hmi"
 var ccOption = "/cc"
 var cvOption = "/cv"
 
-// var cvExpression = '/cv_expression'
-
 // use pitchbend as midi cc, with an invalid MIDI controller number
 var MIDI_PITCHBEND_AS_CC = 131
 

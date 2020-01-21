@@ -121,8 +121,6 @@ kMaxAddressableScalepoints = 50
 # CV related constants
 CV_PREFIX = 'cv_'
 CV_OPTION = '/cv'
-# CV_EXPRESSION = '/cv_expression'
-# CV_EXPRESSION_URI = CV_OPTION + CV_EXPRESSION
 HW_CV_PREFIX = CV_OPTION + '/graph/' + CV_PREFIX
 
 # TODO: check pluginData['designations'] when doing addressing
@@ -239,7 +237,6 @@ class Host(object):
         self.audioportsOut = []
         self.cvportsIn = []
         self.cvportsOut = []
-        # self.cv_expression_ports = []
         self.midiports = [] # [symbol, alias, pending-connections]
         self.midi_aggregated_mode = True
         self.hasSerialMidiIn = False
@@ -866,7 +863,6 @@ class Host(object):
         self.audioportsOut = []
         self.cvportsIn  = []
         self.cvportsOut = []
-        # self.cv_expression_ports = []
 
         if not init_jack():
             self.hasSerialMidiIn = False
