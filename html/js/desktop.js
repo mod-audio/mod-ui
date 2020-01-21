@@ -34,6 +34,7 @@ function Desktop(elements) {
         saveButton: $('<div>'),
         saveAsButton: $('<div>'),
         resetButton: $('<div>'),
+        cvAddressingButton: $('<div>'),
         pedalboardPresetsEnabler: $('<div>'),
         presetSaveButton: $('<div>'),
         presetSaveAsButton: $('<div>'),
@@ -938,6 +939,17 @@ function Desktop(elements) {
     })
     elements.saveAsButton.click(function () {
         self.saveCurrentPedalboard(true)
+    })
+
+    elements.cvAddressingButton.click(function () {
+      // Show/hide CV checkboxes
+      if ($(this).hasClass('selected')) {
+        $('body').find('.output-cv-checkbox').hide()
+      } else {
+        $('body').find('.output-cv-checkbox').show()
+      }
+      // Toggle button state
+      $(this).toggleClass('selected')
     })
     elements.resetButton.click(function () {
         self.reset(function () {

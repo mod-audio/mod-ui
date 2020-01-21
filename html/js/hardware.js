@@ -1184,13 +1184,28 @@ function HardwareManager(options) {
 
     this.addCvOutputPort = function (instance, name) {
       var uri = cvOption + instance
-      self.cvOutputPorts.push({
-        uri: uri,
-        name: name,
-        modes: ":float:",
-        steps: [],
-        max_assigns: 99
+      var existingPort = self.cvOutputPorts.find(function (port) {
+        return port.uri === uri;
       })
-      self.addressingsByActuator[uri] = []
+      if (existingPort) {
+        existingPort.name = name
+      } else {
+        self.cvOutputPorts.push({
+          uri: uri,
+          name: name,
+          modes: ":float:",
+          steps: [],
+          max_assigns: 99
+        })
+        self.addressingsByActuator[uri] = []
+      }
+    }
+
+    this.removeCvOutputPort = function (instance) {
+      var uri = cvOption + instance
+      self.cvOutputPorts = self.cvOutputPorts.filter(function (port) {
+        return port.uri !== uri;
+      });
+      delete self.addressingsByActuator[uri]
     }
 }

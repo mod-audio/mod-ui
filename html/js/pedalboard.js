@@ -1875,8 +1875,11 @@ JqueryClass('pedalboard', {
 
         self.pedalboard('spawnJack', element)
 
-        element.click(function () {
-            self.pedalboard('startConnection', element)
+        element.click(function (e) {
+            // Do not start connection if cv addressing checkbox or text input clicked
+            if (!$(e.target).is('input')) {
+              self.pedalboard('startConnection', element)
+            }
         })
     },
 
@@ -1911,6 +1914,68 @@ JqueryClass('pedalboard', {
             canvas.addClass("mod-midi");
         else if (output.attr("class").search("mod-cv-") >= 0)
             canvas.addClass("mod-cv");
+
+        // Add checkbox + text inputs next to output cv ports for addressings
+        if (output.attr('mod-role') === 'output-cv-port') {
+          var port = output.attr("mod-port");
+          var portSymbol = output.attr("mod-port-symbol");
+
+          var cvCheckboxInput = $('<div>');
+
+          // Append checkbox
+          var checkbox = $('<input type="checkbox"  />');
+          checkbox.appendTo(cvCheckboxInput);
+
+          // Append text input
+          var textInput = $('<input type="text" />');
+          textInput.appendTo(cvCheckboxInput);
+
+          cvCheckboxInput.addClass('output-cv-checkbox');
+          cvCheckboxInput.appendTo(output);
+          cvCheckboxInput.hide()
+
+          // Disable inputs for hardware cv ports
+          var defaultText = output.attr("title")
+          if (
+            portSymbol === "/graph/cv_capture_1" ||
+            portSymbol === "/graph/cv_capture_2"
+          ) {
+            checkbox.prop('disabled', true);
+            checkbox.prop('checked', true);
+            textInput.prop('disabled', true);
+          } else {
+            // Add default displayed name to plugins CV ports
+            var instance = port
+              .split("/graph/")[1]
+              .split("/")[0]
+              .replace(/^\w/, function(chr) {
+                return chr.toUpperCase();
+              });
+            defaultText = instance + " " + defaultText
+            textInput.hide();
+          }
+          textInput.val(defaultText);
+
+          checkbox.change(function () {
+            var label = textInput.val();
+            if ($(this).prop('checked')) {
+              // Register new addressable cv port
+              self.data('hardwareManager').addCvOutputPort(port, label);
+              // Show and highlight text input
+              textInput.show();
+              textInput.select();
+            } else {
+              // Unregister cv port
+              self.data('hardwareManager').removeCvOutputPort(port);
+              // Hide text input again
+              textInput.hide();
+            }
+          })
+
+          textInput.change(function () {
+            self.data('hardwareManager').addCvOutputPort(port, $(this).val());
+          })
+        }
 
         canvas.css({
             width: '100%',
@@ -2140,6 +2205,9 @@ JqueryClass('pedalboard', {
             self.pedalboard('finishConnection')
         })
         var moveHandler = function (e) {
+            if ($(e.target).is('input')) { // cv addressing input
+              return
+            }
             var scale = self.data('scale')
                 // In iPad a tap will first trigger a mousemove event and, if no modifications are made, a click
                 // event will be triggered. So, to capture a click we must schedule all actions in mousemove handler
@@ -2151,6 +2219,7 @@ JqueryClass('pedalboard', {
                 var yi = output.offset().top / scale - self.offset().top / scale + output.height() / 2
                 var xo = (e.pageX - self.offset().left) / scale
                 var yo = (e.pageY - self.offset().top) / scale
+
                 self.pedalboard('drawBezier', canvas, xi, yi, xo, yo, 'connecting-')
             }, 0)
         }
