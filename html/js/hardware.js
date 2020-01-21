@@ -31,7 +31,7 @@ var deviceOption = "/hmi"
 var ccOption = "/cc"
 var cvOption = "/cv"
 
-var cvExpression = '/cv_expression'
+// var cvExpression = '/cv_expression'
 
 // use pitchbend as midi cc, with an invalid MIDI controller number
 var MIDI_PITCHBEND_AS_CC = 131
@@ -68,7 +68,7 @@ function isCvUri (uri) {
 }
 
 function isHwCvUri (uri) {
-  if (startsWith(uri, cvOption + '/graph/cv_') || uri === cvOption + cvExpression) {
+  if (startsWith(uri, cvOption + '/graph/cv_')) {
     return true;
   }
   return false;
