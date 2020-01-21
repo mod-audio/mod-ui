@@ -743,14 +743,14 @@ function HardwareManager(options) {
         form.find('.advanced-toggle').click(function() {
             if (!form.find('.advanced-container').is(':visible')) {
               $('.mod-pedal-settings-address').find('.mod-box').animate({
-                width: '622px'
+                width: '666px'
               }, 100, function() {
                 form.find('.advanced-container').toggle()
               });
             } else {
               form.find('.advanced-container').toggle(0, function() {
                 $('.mod-pedal-settings-address').find('.mod-box').animate({
-                  width: '472px'
+                  width: '516px'
                 }, 100)
               })
             }
