@@ -705,6 +705,11 @@ class Addressings(object):
             addressings.append(addressing_data)
 
         elif actuator_type == self.ADDRESSING_TYPE_CV:
+            print("CV ADDRESSINGS")
+            print(self.cv_addressings)
+            if actuator_uri not in self.cv_addressings.keys():
+                print("ERROR: Can't load addressing for unavailable hardware '%s'" % actuator_uri)
+                return None
             addressings = self.cv_addressings[actuator_uri]
             addressings.append(addressing_data)
 

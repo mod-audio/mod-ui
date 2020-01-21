@@ -1546,6 +1546,49 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
                 }, 500)
             })
         },
+
+        addCVAddressingPort: function (uri, label, callback) {
+            $.ajax({
+                url: '/pedalboard/cv_addressing_port/add',
+                type: 'POST',
+                data: {
+                    uri: uri,
+                    label: label,
+                },
+                success: function (resp) {
+                    if (!resp) {
+                        return new Notification('error', "Couldn't add CV port")
+                    }
+                    callback(resp)
+                },
+                error: function () {
+                  new Bug("Couldn't add CV port")
+                },
+                cache: false,
+                dataType: 'json'
+            })
+        },
+
+        removeCVAddressingPort: function (uri, callback) {
+            $.ajax({
+                url: '/pedalboard/cv_addressing_port/remove',
+                type: 'POST',
+                data: {
+                    uri: uri,
+                },
+                success: function (resp) {
+                    if (!resp) {
+                        return new Notification('error', "Couldn't remove CV port")
+                    }
+                    callback(resp)
+                },
+                error: function () {
+                  new Bug("Couldn't remove CV port")
+                },
+                cache: false,
+                dataType: 'json'
+            })
+        },
     });
 
     // Bind events
