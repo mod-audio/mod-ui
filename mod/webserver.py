@@ -1336,7 +1336,7 @@ class PedalboardCvAddressingPortRemove(JsonRequestHandler):
     @gen.engine
     def post(self):
         uri = self.get_argument('uri')
-        ok = yield gen.Task(SESSION.web_cv_addressing_port_remove, uri)
+        resp = yield gen.Task(SESSION.web_cv_addressing_port_remove, uri)
         self.write(resp)
 
 class PedalboardTransportSetSyncMode(JsonRequestHandler):
