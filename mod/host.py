@@ -2995,7 +2995,12 @@ class Host(object):
                 symbol = port['symbol']
                 value  = port['value']
 
-                if pluginData['ports'][symbol] != value:
+                oldValue = pluginData['ports'].get(symbol, None)
+
+                if oldValue is None:
+                    continue
+
+                if oldValue != value:
                     pluginData['ports'][symbol] = value
                     self.send_notmodified("param_set %d %s %f" % (instance_id, symbol, value))
                     self.msg_callback("param_set %s %s %f" % (instance, symbol, value))
