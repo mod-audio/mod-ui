@@ -4117,7 +4117,6 @@ _:b%i
         else:
             self.addressings.cv_addressings[uri] = { 'name': name, 'addrs': [] }
 
-    @gen.coroutine
     def cv_addressing_plugin_port_remove(self, uri, callback):
         if uri not in self.addressings.cv_addressings.keys():
             callback(False)

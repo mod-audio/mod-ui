@@ -32,3 +32,13 @@ function formatNum(x) {
     parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
     return parts.join(".");
 }
+
+/**
+ * Get separate instance and port symbol from instanceAndSymbol
+ * @param  {string} instanceAndSymbol eg '/graph/env/decay'
+ * @return {array} arr[0] = instance, arr[1] = symbol, eg ['/graph/env', 'decay']
+ */
+function getInstanceSymbol(instanceAndSymbol) {
+  var split = instanceAndSymbol.split("/")
+  return [split.slice(0, -1).join("/")].concat(split.slice(-1))
+}

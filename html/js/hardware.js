@@ -135,7 +135,6 @@ function HardwareManager(options) {
           }
         }
 
-
        /* All addressings indexed by instance + port symbol
            key  : "/instance/symbol"
            value: "/actuator-uri"
@@ -1214,6 +1213,16 @@ function HardwareManager(options) {
       self.cvOutputPorts = self.cvOutputPorts.filter(function (port) {
         return port.uri !== uri;
       });
+
+      for (var i in self.addressingsByActuator[uri]) {
+        instanceAndSymbol = self.addressingsByActuator[uri][i]
+        delete self.addressingsData[instanceAndSymbol]
+        delete self.addressingsByPortSymbol[instanceAndSymbol]
+
+        var separatedInstanceAndSymbol = getInstanceSymbol(instanceAndSymbol)
+        options.setEnabled(separatedInstanceAndSymbol[0], separatedInstanceAndSymbol[1], true)
+      }
+
       delete self.addressingsByActuator[uri]
     }
 }
