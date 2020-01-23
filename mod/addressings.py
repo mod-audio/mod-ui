@@ -42,7 +42,9 @@ kMidiCustomPrefixURI = "/midi-custom_" # to show current one
 kBpmURI ="/bpm"
 
 # CV related constants
+CV_PREFIX = 'cv_'
 CV_OPTION = '/cv'
+HW_CV_PREFIX = CV_OPTION + '/graph/' + CV_PREFIX
 
 class Addressings(object):
     ADDRESSING_TYPE_NONE = 0
@@ -123,7 +125,7 @@ class Addressings(object):
     def clear(self):
         self.hmi_addressings  = dict((key, {'addrs': [], 'idx': -1}) for key in self.hmi_addressings.keys())
         self.cc_addressings   = dict((key, []) for key in self.cc_addressings.keys())
-        self.cv_addressings   = dict((key, []) for key in self.cv_addressings.keys())
+        self.cv_addressings   = dict((key, []) for key in self.cv_addressings.keys() if self.is_hw_cv_port(key))
         self.virtual_addressings   = dict((key, []) for key in self.virtual_addressings.keys())
         self.midi_addressings = {}
         self.current_page = 0
@@ -224,9 +226,19 @@ class Addressings(object):
                     continue
 
             is_cv = actuator_type == self.ADDRESSING_TYPE_CV
+
             # Continue if current actuator_uri is not part of the actual available actuators (hardware, virtual bpm, cc or cv)
             if actuator_uri not in self.hw_actuators_uris and not is_cc and actuator_uri != kBpmURI and not is_cv:
                 continue
+
+            # Add addressed plugin cv port since it's not a hardware but pedalboard setup
+            # plugin cv ports have the following structure:
+            # { "/cv/graph/env/out": { "name": "Env Out", "addrs": [...] }} (instead of { "hmi/...": [...] })
+            # because we need to save the port label even if nothing addressed to it
+            is_hw_cv = self.is_hw_cv_port(actuator_uri)
+            if is_cv and not is_hw_cv:
+                self.cv_addressings[actuator_uri] = { 'name': addrs['name'], 'addrs': [] }
+                addrs = addrs['addrs']
 
             i = 0
             for addr in addrs:
@@ -272,7 +284,7 @@ class Addressings(object):
                     retry_cc_addrs = True
                 i += 1
 
-        # Load HMI and Control Chain addressings
+        # Load HMI, Control Chain and CV addressings
         for actuator_uri in used_actuators:
             if abort_catcher is not None and abort_catcher.get('abort', False):
                 print("WARNING: Abort triggered during addressings.load actuator requests, caller:", abort_catcher['caller'])
@@ -464,16 +476,28 @@ class Addressings(object):
 
         # CV
         for uri, addrs in self.cv_addressings.items():
-            addrs2 = []
-            for addr in addrs:
-                addrs2.append({
-                    'instance': instances[addr['instance_id']],
-                    'port'    : addr['port'],
-                    'label'   : addr['label'],
-                    'minimum' : addr['minimum'],
-                    'maximum' : addr['maximum'],
-                    'steps'   : addr['steps'],
-                })
+            if self.is_hw_cv_port(uri):
+                addrs2 = []
+                for addr in addrs:
+                    addrs2.append({
+                        'instance': instances[addr['instance_id']],
+                        'port'    : addr['port'],
+                        'label'   : addr['label'],
+                        'minimum' : addr['minimum'],
+                        'maximum' : addr['maximum'],
+                        'steps'   : addr['steps'],
+                    })
+            else: # plugin cv ports, different structure to save name as well
+                addrs2 = { 'name': addrs['name'], 'addrs': [] }
+                for addr in addrs['addrs']:
+                    addrs2['addrs'].append({
+                        'instance': instances[addr['instance_id']],
+                        'port'    : addr['port'],
+                        'label'   : addr['label'],
+                        'minimum' : addr['minimum'],
+                        'maximum' : addr['maximum'],
+                        'steps'   : addr['steps'],
+                    })
             addressings[uri] = addrs2
 
         # Write addressings to disk
@@ -548,6 +572,8 @@ class Addressings(object):
 
         # CV
         for uri, addrs in self.cv_addressings.items():
+            if not self.is_hw_cv_port(uri):
+                addrs = addrs['addrs']
             for addr in addrs:
                 msg_callback("cv_map %s %s %s %f %f %s 0" % (instances[addr['instance_id']],
                                                                            addr['port'],
@@ -711,7 +737,12 @@ class Addressings(object):
                 print("ERROR: Can't load addressing for unavailable hardware '%s'" % actuator_uri)
                 return None
             addressings = self.cv_addressings[actuator_uri]
-            addressings.append(addressing_data)
+            if self.is_hw_cv_port(actuator_uri):
+                addressings.append(addressing_data)
+            else:
+                # plugin cv ports addressings have the following structure:
+                # { "name": "Env out", "addrs": [...] }
+                addressings['addrs'].append(addressing_data)
 
         return addressing_data
 
@@ -865,7 +896,10 @@ class Addressings(object):
 
         elif actuator_type == self.ADDRESSING_TYPE_CV:
             addressings = self.cv_addressings[actuator_uri]
-            addressings.remove(addressing_data)
+            if self.is_hw_cv_port(actuator_uri):
+                addressings.remove(addressing_data)
+            else:
+                addressings['addrs'].remove(addressing_data)
 
     def is_page_assigned(self, addrs, page):
         return any('page' in a and a['page'] == page for a in addrs)
@@ -1165,3 +1199,13 @@ class Addressings(object):
                 yield gen.Task(self._task_addressing, self.ADDRESSING_TYPE_CV, actuator_uri, data)
             except Exception as e:
                 logging.exception(e)
+
+    def is_hw_cv_port(self, actuator_uri):
+        if actuator_uri.startswith(HW_CV_PREFIX):
+            return True
+        return False
+
+    def add_cv_plugin_ports(self, msg_callback):
+        for actuator_uri, addrs in self.cv_addressings.items():
+            if not self.is_hw_cv_port(actuator_uri):
+                msg_callback("add_cv_port %s %s" % (actuator_uri, addrs['name'].replace(" ","_")))

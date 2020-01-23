@@ -212,11 +212,11 @@ class Session(object):
             callback(False)
         self.msg_callback("ping")
 
-    def web_cv_addressing_port_add(self, uri, label):
-        return self.host.cv_addressing_port_add(uri, label)
+    def web_cv_addressing_plugin_port_add(self, uri, name):
+        self.host.cv_addressing_plugin_port_add(uri, name)
 
-    def web_cv_addressing_port_remove(self, uri, callback):
-        self.host.cv_addressing_port_remove(uri, callback)
+    def web_cv_addressing_plugin_port_remove(self, uri, callback):
+        self.host.cv_addressing_plugin_port_remove(uri, callback)
 
     # A new webbrowser page has been open
     # We need to cache its socket address and send any msg callbacks to it

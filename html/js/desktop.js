@@ -1547,13 +1547,13 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
             })
         },
 
-        addCVAddressingPort: function (uri, label, callback) {
+        addCVAddressingPluginPort: function (uri, name, callback) {
             $.ajax({
-                url: '/pedalboard/cv_addressing_port/add',
+                url: '/pedalboard/cv_addressing_plugin_port/add',
                 type: 'POST',
                 data: {
                     uri: uri,
-                    label: label,
+                    name: name,
                 },
                 success: function (resp) {
                     if (!resp) {
@@ -1569,9 +1569,9 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
             })
         },
 
-        removeCVAddressingPort: function (uri, callback) {
+        removeCVAddressingPluginPort: function (uri, callback) {
             $.ajax({
-                url: '/pedalboard/cv_addressing_port/remove',
+                url: '/pedalboard/cv_addressing_plugin_port/remove',
                 type: 'POST',
                 data: {
                     uri: uri,

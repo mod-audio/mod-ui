@@ -109,17 +109,27 @@ function HardwareManager(options) {
 
     this.reset = function () {
         var addressingsByActuator = $.extend({}, self.addressingsByActuator)
+        var cvOutputPorts = self.cvOutputPorts.slice()
 
         /* All adressings indexed by actuator
             key  : "/actuator-uri"
             value: list("/instance/symbol")
          */
          self.addressingsByActuator = {}
+         self.cvOutputPorts = []
+
+         if (cvOutputPorts) {
+           for (var i = 0; i < cvOutputPorts.length; i++) {
+             // if hw cv port, keep it
+             if (isHwCvUri(cvOutputPorts[i].uri)) {
+               self.cvOutputPorts.push(cvOutputPorts[i])
+             }
+           }
+         }
 
         if (addressingsByActuator) {
           for (var act in addressingsByActuator) {
-            // if hw cv port, keep it
-            if (isHwCvUri(act)) {
+            if (isCvUri(act) && cvOutputPorts.find(function (port) { return port.uri === act})) {
               self.addressingsByActuator[act] = []
             }
           }
@@ -1059,6 +1069,7 @@ function HardwareManager(options) {
     this.addCvMapping = function (instance, portSymbol, actuator_uri,
                                         label, minimum, maximum, feedback) {
         var instanceAndSymbol = instance+"/"+portSymbol
+
         self.addressingsByActuator  [actuator_uri].push(instanceAndSymbol)
         self.addressingsByPortSymbol[instanceAndSymbol] = actuator_uri
         self.addressingsData        [instanceAndSymbol] = {
@@ -1180,8 +1191,7 @@ function HardwareManager(options) {
         return false
     }
 
-    this.addCvOutputPort = function (instance, name) {
-      var uri = cvOption + instance
+    this.addCvOutputPort = function (uri, name) {
       var existingPort = self.cvOutputPorts.find(function (port) {
         return port.uri === uri;
       })
@@ -1199,8 +1209,7 @@ function HardwareManager(options) {
       }
     }
 
-    this.removeCvOutputPort = function (instance) {
-      var uri = cvOption + instance
+    this.removeCvOutputPort = function (uri) {
       self.cvOutputPorts = self.cvOutputPorts.filter(function (port) {
         return port.uri !== uri;
       });

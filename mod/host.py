@@ -765,6 +765,7 @@ class Host(object):
         print("WARNING: Trying to send available pages, HMI not initialized")
         callback(False)
         return
+
     # -----------------------------------------------------------------------------------------------------------------
     # Initialization
 
@@ -1698,6 +1699,7 @@ class Host(object):
                 self.send_notmodified("connect %s %s" % (self._fix_host_connection_port(port_from),
                                                          self._fix_host_connection_port(port_to)))
 
+        self.addressings.add_cv_plugin_ports(lambda msg: websocket.write_message(msg))
         self.addressings.registerMappings(lambda msg: websocket.write_message(msg), rinstances)
 
         # TODO: restore HMI and CC addressings if crashed
@@ -2823,6 +2825,7 @@ class Host(object):
             print("WARNING: Abort triggered during PB load request 2, caller:", abort_catcher['caller'])
             return
 
+        self.addressings.add_cv_plugin_ports(self.msg_callback)
         self.addressings.registerMappings(self.msg_callback, rinstances)
 
         self.msg_callback("loading_end %d" % self.current_pedalboard_snapshot_id)
@@ -3999,22 +4002,6 @@ _:b%i
         needsValueChange = False
         has_strict_bounds = True
 
-        # Retrieve port infos
-        # if instance_id != PEDALBOARD_INSTANCE_ID:
-        #     pluginInfo = get_plugin_info(pluginData['uri'])
-        #     if pluginInfo:
-        #         controlPorts = pluginInfo['ports']['control']['input']
-        #         ports = [p for p in controlPorts if p['symbol'] == portsymbol]
-        #         if ports:
-        #             port = ports[0]
-        #             has_strict_bounds = "hasStrictBounds" in port['properties']
-        #             # Set min and max to min and max value among dividers
-        #             if tempo:
-        #                 divider_options = get_divider_options(port, 20.0, 280.0) # XXX min and max bpm hardcoded
-        #                 options_list = [opt['value'] for opt in divider_options]
-        #                 minimum = min(options_list)
-        #                 maximum = max(options_list)
-
         if not tempo and has_strict_bounds:
             if value < minimum:
                 value = minimum
@@ -4113,44 +4100,51 @@ _:b%i
         self.send_modified("param_set %d %s %f" % (instance_id, portsymbol, port_value), callback, datatype='boolean')
         self.msg_callback("param_set %s %s %f" % (instance, portsymbol, port_value))
 
-    def cv_addressing_port_add(self, uri, label):
-        # Port already added, just change the label for all addressings
+    def cv_addressing_plugin_port_add(self, uri, name):
+        # Port already added, just change its name
         if uri in self.addressings.cv_addressings.keys():
-            addressings = self.addressings.cv_addressings[uri]
-            for addressing in addressings:
-                addressing['label'] = label
-                instance_id = addressing['instance_id']
-                port = addressing['port']
-                pluginData  = self.plugins.get(instance_id, None)
-
-                if pluginData is None:
-                    print("ERROR: Trying to address non-existing plugin instance %i" % (instance_id))
-                    return False
-
-                pluginData['addressings'][port] = addressing
-                print(pluginData['addressings'])
-        self.addressings.cv_addressings[uri] = []
-        return True
+            self.addressings.cv_addressings[uri]['name'] = name
+            # addressings = self.addressings.cv_addressings[uri]
+            # for addressing in addressings:
+            #     addressing['label'] = label
+            #     instance_id = addressing['instance_id']
+            #     port = addressing['port']
+            #     pluginData  = self.plugins.get(instance_id, None)
+            #
+            #     if pluginData is None:
+            #         print("ERROR: Trying to address non-existing plugin instance %i" % (instance_id))
+            #         return False
+            #
+            #     pluginData['addressings'][port] = addressing
+        else:
+            self.addressings.cv_addressings[uri] = { 'name': name, 'addrs': [] }
 
     @gen.coroutine
-    def cv_addressing_port_remove(self, uri, callback):
+    def cv_addressing_plugin_port_remove(self, uri, callback):
         if uri not in self.addressings.cv_addressings.keys():
             callback(False)
             return
+
+        def remove_callback(ok):
+            if ok:
+                del self.addressings.cv_addressings[uri]
+                callback(True)
+            else:
+                callback(False)
+
         # Unadress everything that was assigned to this plugin cv port
         addressings = self.addressings.cv_addressings[uri]
-        for addressing in addressings:
+        for addressing in addressings['addrs']:
             try:
                 instance_id = addressing['instance_id']
                 instance   = self.mapper.get_instance(instance_id)
                 port = addressing['port']
-                yield gen.Task(self.address, instance, port, kNullAddressURI,  "---", 0.0, 0.0, 0.0, 0, False, None, None)
+                self.address(instance, port, kNullAddressURI,  "---", 0.0, 0.0, 0.0, 0, False, None, None, remove_callback)
             except Exception as e:
                 callback(False)
                 logging.exception(e)
                 return
-        del self.addressings.cv_addressings[uri]
-        callback(True)
+
 
     # -----------------------------------------------------------------------------------------------------------------
     # HMI callbacks, called by HMI via serial

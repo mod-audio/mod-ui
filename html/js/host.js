@@ -349,6 +349,14 @@ $('document').ready(function() {
             return
         }
 
+        if (cmd == "add_cv_port") {
+          data         = data.substr(cmd.length+1).split(" ", 2)
+          var instance = data[0]
+          var name     = data[1].replace(/_/g," ")
+          desktop.hardwareManager.addCvOutputPort(instance, name)
+          return
+        }
+
         if (cmd == "add_hw_port") {
             data         = data.substr(cmd.length+1).split(" ",5)
             var instance = data[0]
@@ -356,19 +364,17 @@ $('document').ready(function() {
             var isOutput = parseInt(data[2]) == 0 // reversed
             var name     = data[3].replace(/_/g," ")
             var index    = parseInt(data[4])
-            var cvOutputPorts = []
 
             if (isOutput) {
                 // Do not add cv exp pedal as visible hw port for now, only add as available cv addressing port
                 if (instance === '/graph/cv_exp_pedal') {
-                  desktop.hardwareManager.addCvOutputPort(instance, name)
+                  desktop.hardwareManager.addCvOutputPort('/cv' + instance, name)
                   return
                 }
                 var el = $('<div id="' + instance + '" class="hardware-output" mod-port-index=' + index + ' title="Hardware ' + name + '">')
                 desktop.pedalboard.pedalboard('addHardwareOutput', el, instance, type)
                 if (type === 'cv') {
-                  desktop.hardwareManager.addCvOutputPort(instance, name)
-                  cvOutputPorts.push(instance)
+                  desktop.hardwareManager.addCvOutputPort('/cv' + instance, name)
                 }
             } else {
                 var el = $('<div id="' + instance + '" class="hardware-input" mod-port-index=' + index + ' title="Hardware ' + name + '">')
@@ -506,7 +512,5 @@ $('document').ready(function() {
             $("#mod-buffersize").text(bufsize+" frames")
             return
         }
-
-        console.log(data)
     }
 })

@@ -169,12 +169,12 @@ JqueryClass('pedalboard', {
 
             // Add new plugin cv output port to available addressable cv ports
             // or update existing cv port's name
-            addCVAddressingPort: function (uri, label, callback) {
+            addCVAddressingPluginPort: function (uri, label, callback) {
               callback(true)
             },
 
             // Remove plugin cv output port from available addressable cv ports
-            removeCVAddressingPort: function (uri, callback) {
+            removeCVAddressingPluginPort: function (uri, callback) {
               callback(true)
             },
         }, options)
@@ -1929,6 +1929,10 @@ JqueryClass('pedalboard', {
         if (output.attr('mod-role') === 'output-cv-port') {
           var port = output.attr("mod-port");
           var portSymbol = output.attr("mod-port-symbol");
+          var cvPort = '/cv' + port;
+          var addedPort = self.data('hardwareManager').cvOutputPorts.find(function (port) {
+            return port.uri === cvPort;
+          });
 
           var cvCheckboxInput = $('<div>');
 
@@ -1962,18 +1966,22 @@ JqueryClass('pedalboard', {
                 return chr.toUpperCase();
               });
             defaultText = instance + " " + defaultText
-            textInput.hide();
+            if (addedPort) {
+              defaultText = addedPort.name;
+              checkbox.prop('checked', true);
+            } else {
+              textInput.hide();
+            }
           }
           textInput.val(defaultText);
 
-          var cvPort = '/cv' + port;
           checkbox.change(function () {
-            var label = textInput.val();
+            var name = textInput.val();
             if ($(this).prop('checked')) {
               // Register new addressable cv port
-              self.data('addCVAddressingPort')(cvPort, label, function (resp) {
+              self.data('addCVAddressingPluginPort')(cvPort, name, function (resp) {
                 if (resp) {
-                  self.data('hardwareManager').addCvOutputPort(port, label);
+                  self.data('hardwareManager').addCvOutputPort(cvPort, name);
                   // Show and highlight text input
                   textInput.show();
                   textInput.select();
@@ -1981,9 +1989,9 @@ JqueryClass('pedalboard', {
               });
             } else {
               // Unregister cv port
-              self.data('removeCVAddressingPort')(cvPort, function (resp) {
+              self.data('removeCVAddressingPluginPort')(cvPort, function (resp) {
                 if (resp) {
-                  self.data('hardwareManager').removeCvOutputPort(port);
+                  self.data('hardwareManager').removeCvOutputPort(cvPort);
                   // Hide text input again
                   textInput.hide();
                 }
@@ -1992,10 +2000,10 @@ JqueryClass('pedalboard', {
           })
 
           textInput.change(function () {
-            var label = $(this).val();
-            self.data('addCVAddressingPort')(cvPort, label, function (resp) {
+            var name = $(this).val();
+            self.data('addCVAddressingPluginPort')(cvPort, name, function (resp) {
               if (resp) {
-                self.data('hardwareManager').addCvOutputPort(port, label);
+                self.data('hardwareManager').addCvOutputPort(cvPort, name);
               }
             });
           })
