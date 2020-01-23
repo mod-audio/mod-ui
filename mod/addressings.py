@@ -731,8 +731,6 @@ class Addressings(object):
             addressings.append(addressing_data)
 
         elif actuator_type == self.ADDRESSING_TYPE_CV:
-            print("CV ADDRESSINGS")
-            print(self.cv_addressings)
             if actuator_uri not in self.cv_addressings.keys():
                 print("ERROR: Can't load addressing for unavailable hardware '%s'" % actuator_uri)
                 return None
@@ -1183,6 +1181,9 @@ class Addressings(object):
     @gen.coroutine
     def cv_load_all(self, actuator_uri):
         addressings = self.cv_addressings[actuator_uri]
+        if not self.is_hw_cv_port(actuator_uri):
+            addressings = addressings['addrs']
+
         for addressing in addressings:
             data = {
                 'instance_id': addressing['instance_id'],
