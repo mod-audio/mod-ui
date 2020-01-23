@@ -1201,9 +1201,10 @@ function HardwareManager(options) {
         self.cvOutputPorts.push({
           uri: uri,
           name: name,
-          modes: ":float:",
+          modes: ":float:integer:bypass:toggled:",
           steps: [],
-          max_assigns: 99
+          max_assigns: 99,
+          feedback: false,
         })
         self.addressingsByActuator[uri] = []
       }

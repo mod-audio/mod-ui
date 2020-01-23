@@ -625,8 +625,6 @@ class Host(object):
 
         if atype == Addressings.ADDRESSING_TYPE_CV:
             source_port_name = self.get_jack_source_port_name(actuator)
-            print("CV PORT NAME")
-            print(source_port_name)
             return self.send_notmodified("cv_map %d %s %s %f %f" % (data['instance_id'],
                                                                        data['port'],
                                                                        source_port_name,
