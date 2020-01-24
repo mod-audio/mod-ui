@@ -973,7 +973,7 @@ function Desktop(elements) {
             method: 'POST',
             success: function () {
                 $('#js-preset-enabler').hide()
-                $('#js-preset-menu').show()
+                $('#js-preset-menu').show().css('display', 'inline-block')
                 self.titleBox.text((self.title || 'Untitled') + " - Default")
                 self.pedalboardPresetId = 0
                 self.pedalboardModified = true

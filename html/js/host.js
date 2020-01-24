@@ -451,7 +451,7 @@ $('document').ready(function() {
 
                     if (presetId >= 0) {
                         $('#js-preset-enabler').hide()
-                        $('#js-preset-menu').show()
+                        $('#js-preset-menu').show().css('display', 'inline-block')
 
                         if (resp.ok) {
                             desktop.titleBox.text((desktop.title || 'Untitled') + " - " + resp.name)
