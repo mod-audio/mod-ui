@@ -121,8 +121,6 @@ kMaxAddressableScalepoints = 50
 # CV related constants
 CV_PREFIX = 'cv_'
 CV_OPTION = '/cv'
-CV_EXPRESSION = '/cv_expression'
-CV_EXPRESSION_URI = CV_OPTION + CV_EXPRESSION
 HW_CV_PREFIX = CV_OPTION + '/graph/' + CV_PREFIX
 
 # TODO: check pluginData['designations'] when doing addressing
@@ -239,7 +237,6 @@ class Host(object):
         self.audioportsOut = []
         self.cvportsIn = []
         self.cvportsOut = []
-        self.cv_expression_ports = []
         self.midiports = [] # [symbol, alias, pending-connections]
         self.midi_aggregated_mode = True
         self.hasSerialMidiIn = False
@@ -625,9 +622,6 @@ class Host(object):
             return
 
         if atype == Addressings.ADDRESSING_TYPE_CV:
-            # cv expression corresponds to either cv capture 1 or 2 based on exp mod
-            if actuator == CV_EXPRESSION_URI:
-                actuator = self.get_hw_cv_port()
             source_port_name = self.get_jack_source_port_name(actuator)
             return self.send_notmodified("cv_map %d %s %s %f %f" % (data['instance_id'],
                                                                        data['port'],
@@ -868,11 +862,6 @@ class Host(object):
         self.audioportsOut = []
         self.cvportsIn  = []
         self.cvportsOut = []
-        self.cv_expression_ports = []
-
-        # XXX
-        # self.addressings.cv_addressings["/cv/graph/cv_capture_1"] = []
-        # self.addressings.cv_addressings["/cv/graph/cv_capture_2"] = []
 
         if not init_jack():
             self.hasSerialMidiIn = False
@@ -885,9 +874,6 @@ class Host(object):
                 cv_port_name = CV_PREFIX + port_name
                 self.cvportsIn.append(cv_port_name)
                 self.addressings.cv_addressings['/cv/graph/' + cv_port_name] = []
-                if '/cv/graph/cv_capture_1' in self.addressings.cv_addressings and '/cv/graph/cv_capture_2' in self.addressings.cv_addressings:
-                    self.cv_expression_ports.append(CV_EXPRESSION)
-                    self.addressings.cv_addressings[CV_EXPRESSION_URI] = []
             else:
                 self.audioportsIn.append(port_name)
 
@@ -1593,11 +1579,6 @@ class Host(object):
             title = name.title().replace(" ","_")
             websocket.write_message("add_hw_port /graph/%s cv 0 %s %i" % (name, title, i+1))
 
-        for i in range(len(self.cv_expression_ports)):
-            name = self.cv_expression_ports[i]
-            title = 'Expression'
-            websocket.write_message("add_hw_port %s exp 0 %s %i" % (name, title, i+1))
-
         # Audio Out
         for i in range(len(self.audioportsOut)):
             name  = self.audioportsOut[i]
@@ -1714,6 +1695,7 @@ class Host(object):
                 self.send_notmodified("connect %s %s" % (self._fix_host_connection_port(port_from),
                                                          self._fix_host_connection_port(port_to)))
 
+        self.addressings.add_cv_plugin_ports(lambda msg: websocket.write_message(msg))
         self.addressings.registerMappings(lambda msg: websocket.write_message(msg), rinstances)
 
         # TODO: restore HMI and CC addressings if crashed
@@ -2861,6 +2843,7 @@ class Host(object):
             print("WARNING: Abort triggered during PB load request 2, caller:", abort_catcher['caller'])
             return
 
+        self.addressings.add_cv_plugin_ports(self.msg_callback)
         self.addressings.registerMappings(self.msg_callback, rinstances)
 
         self.msg_callback("loading_end %d" % self.current_pedalboard_snapshot_id)
@@ -3017,7 +3000,12 @@ class Host(object):
                 symbol = port['symbol']
                 value  = port['value']
 
-                if pluginData['ports'][symbol] != value:
+                oldValue = pluginData['ports'].get(symbol, None)
+
+                if oldValue is None:
+                    continue
+
+                if oldValue != value:
                     pluginData['ports'][symbol] = value
                     self.send_notmodified("param_set %d %s %f" % (instance_id, symbol, value))
                     self.msg_callback("param_set %s %s %f" % (instance, symbol, value))
@@ -4037,22 +4025,6 @@ _:b%i
         needsValueChange = False
         has_strict_bounds = True
 
-        # Retrieve port infos
-        # if instance_id != PEDALBOARD_INSTANCE_ID:
-        #     pluginInfo = get_plugin_info(pluginData['uri'])
-        #     if pluginInfo:
-        #         controlPorts = pluginInfo['ports']['control']['input']
-        #         ports = [p for p in controlPorts if p['symbol'] == portsymbol]
-        #         if ports:
-        #             port = ports[0]
-        #             has_strict_bounds = "hasStrictBounds" in port['properties']
-        #             # Set min and max to min and max value among dividers
-        #             if tempo:
-        #                 divider_options = get_divider_options(port, 20.0, 280.0) # XXX min and max bpm hardcoded
-        #                 options_list = [opt['value'] for opt in divider_options]
-        #                 minimum = min(options_list)
-        #                 maximum = max(options_list)
-
         if not tempo and has_strict_bounds:
             if value < minimum:
                 value = minimum
@@ -4150,6 +4122,52 @@ _:b%i
         pluginData['ports'][portsymbol] = port_value
         self.send_modified("param_set %d %s %f" % (instance_id, portsymbol, port_value), callback, datatype='boolean')
         self.msg_callback("param_set %s %s %f" % (instance, portsymbol, port_value))
+
+    def cv_addressing_plugin_port_add(self, uri, name):
+        # Port already added, just change its name
+        if uri in self.addressings.cv_addressings.keys():
+            self.addressings.cv_addressings[uri]['name'] = name
+            # addressings = self.addressings.cv_addressings[uri]
+            # for addressing in addressings:
+            #     addressing['label'] = label
+            #     instance_id = addressing['instance_id']
+            #     port = addressing['port']
+            #     pluginData  = self.plugins.get(instance_id, None)
+            #
+            #     if pluginData is None:
+            #         print("ERROR: Trying to address non-existing plugin instance %i" % (instance_id))
+            #         return False
+            #
+            #     pluginData['addressings'][port] = addressing
+        else:
+            self.addressings.cv_addressings[uri] = { 'name': name, 'addrs': [] }
+
+    def cv_addressing_plugin_port_remove(self, uri, callback):
+        if uri not in self.addressings.cv_addressings.keys():
+            callback(False)
+            return
+
+        def remove_callback(ok):
+            if ok:
+                del self.addressings.cv_addressings[uri]
+                callback(True)
+            else:
+                callback(False)
+
+        # Unadress everything that was assigned to this plugin cv port
+        addressings = self.addressings.cv_addressings[uri]
+        for addressing in addressings['addrs']:
+            try:
+                instance_id = addressing['instance_id']
+                instance   = self.mapper.get_instance(instance_id)
+                port = addressing['port']
+                self.address(instance, port, kNullAddressURI,  "---", 0.0, 0.0, 0.0, 0, False, None, None, remove_callback)
+            except Exception as e:
+                callback(False)
+                logging.exception(e)
+                return
+
+
     # -----------------------------------------------------------------------------------------------------------------
     # HMI callbacks, called by HMI via serial
 
@@ -5196,8 +5214,6 @@ _:b%i
     def hmi_set_exp_mode(self, mode, callback):
         """Set the mode mode for the expression pedal input. That is, if the signal is on tip or sleeve."""
         result = self.profile.set_exp_mode(mode)
-        if result and CV_EXPRESSION_URI in self.addressings.cv_addressings and len(self.addressings.cv_addressings[CV_EXPRESSION_URI]) > 0:
-            self.reload_cv_exp()
         callback(result)
 
     def hmi_snapshot_save(self, idx, callback):
@@ -5425,37 +5441,11 @@ _:b%i
 
             self.midiports.append([port_symbol, title, []])
 
-    def get_hw_cv_port(self):
-        exp_mode = self.profile.get_exp_mode()
-        if exp_mode == self.profile.EXPRESSION_PEDAL_MODE_TIP: # signal on tip
-            return HW_CV_PREFIX + 'capture_1'
-        # signal on ring/sleeve
-        return HW_CV_PREFIX + 'capture_2'
-
     def get_jack_source_port_name(self, actuator):
         if actuator.startswith(HW_CV_PREFIX):
             return "mod-spi2jack:" + actuator[len(HW_CV_PREFIX):]
-        return actuator
-
-    @gen.coroutine
-    def reload_cv_exp(self):
-        if CV_EXPRESSION_URI not in self.addressings.cv_addressings:
-            return
-
-        source_port_name = self.get_jack_source_port_name(self.get_hw_cv_port())
-        for addr in self.addressings.cv_addressings[CV_EXPRESSION_URI]:
-            try:
-                instance_id = addr['instance_id']
-                portsymbol = addr['port']
-                yield gen.Task(self.send_modified, "cv_unmap %d %s" % (instance_id, portsymbol), datatype='boolean')
-                yield gen.Task(self.send_modified, "cv_map %d %s %s %f %f" % (instance_id,
-                                                                           portsymbol,
-                                                                           source_port_name,
-                                                                           addr['minimum'],
-                                                                           addr['maximum'],
-                                                                           ), datatype='boolean')
-            except Exception as e:
-                logging.exception(e)
+        else:
+            return self._fix_host_connection_port(actuator.split("/cv")[1])
 
     # -----------------------------------------------------------------------------------------------------------------
     # Profile stuff

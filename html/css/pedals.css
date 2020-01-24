@@ -685,7 +685,7 @@ body > .mod-settings.mod-window-visible {
     padding: 18px 18px 0 18px;
     position:absolute;
     top:40%;
-    width:472px;
+    width:516px;
     max-height: 70%;
     overflow-y: auto;
     overflow-x: hidden;
@@ -719,6 +719,7 @@ body > .mod-settings.mod-window-visible {
 }
 
 .mod-pedal-settings-address .mod-range input[type="number"] {
+    padding-right: 4px;
     width: 41% !important;
     float: left;
 }
