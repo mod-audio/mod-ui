@@ -34,6 +34,7 @@ function Desktop(elements) {
         saveButton: $('<div>'),
         saveAsButton: $('<div>'),
         resetButton: $('<div>'),
+        cvAddressingButton: $('<div>'),
         pedalboardPresetsEnabler: $('<div>'),
         presetSaveButton: $('<div>'),
         presetSaveAsButton: $('<div>'),
@@ -939,6 +940,17 @@ function Desktop(elements) {
     elements.saveAsButton.click(function () {
         self.saveCurrentPedalboard(true)
     })
+
+    elements.cvAddressingButton.click(function () {
+      // Show/hide CV checkboxes
+      if ($(this).hasClass('selected')) {
+        $('body').find('.output-cv-checkbox').hide()
+      } else {
+        $('body').find('.output-cv-checkbox').show()
+      }
+      // Toggle button state
+      $(this).toggleClass('selected')
+    })
     elements.resetButton.click(function () {
         self.reset(function () {
             $.ajax({
@@ -1532,6 +1544,49 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
                 setTimeout(function () {
                     callback()
                 }, 500)
+            })
+        },
+
+        addCVAddressingPluginPort: function (uri, name, callback) {
+            $.ajax({
+                url: '/pedalboard/cv_addressing_plugin_port/add',
+                type: 'POST',
+                data: {
+                    uri: uri,
+                    name: name,
+                },
+                success: function (resp) {
+                    if (!resp) {
+                        return new Notification('error', "Couldn't add CV port")
+                    }
+                    callback(resp)
+                },
+                error: function () {
+                  new Bug("Couldn't add CV port")
+                },
+                cache: false,
+                dataType: 'json'
+            })
+        },
+
+        removeCVAddressingPluginPort: function (uri, callback) {
+            $.ajax({
+                url: '/pedalboard/cv_addressing_plugin_port/remove',
+                type: 'POST',
+                data: {
+                    uri: uri,
+                },
+                success: function (resp) {
+                    if (!resp) {
+                        return new Notification('error', "Couldn't remove CV port")
+                    }
+                    callback(resp)
+                },
+                error: function () {
+                  new Bug("Couldn't remove CV port")
+                },
+                cache: false,
+                dataType: 'json'
             })
         },
     });

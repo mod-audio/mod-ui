@@ -31,8 +31,6 @@ var deviceOption = "/hmi"
 var ccOption = "/cc"
 var cvOption = "/cv"
 
-var cvExpression = '/cv_expression'
-
 // use pitchbend as midi cc, with an invalid MIDI controller number
 var MIDI_PITCHBEND_AS_CC = 131
 
@@ -68,7 +66,7 @@ function isCvUri (uri) {
 }
 
 function isHwCvUri (uri) {
-  if (startsWith(uri, cvOption + '/graph/cv_') || uri === cvOption + cvExpression) {
+  if (startsWith(uri, cvOption + '/graph/cv_')) {
     return true;
   }
   return false;
@@ -111,22 +109,31 @@ function HardwareManager(options) {
 
     this.reset = function () {
         var addressingsByActuator = $.extend({}, self.addressingsByActuator)
+        var cvOutputPorts = self.cvOutputPorts.slice()
 
         /* All adressings indexed by actuator
             key  : "/actuator-uri"
             value: list("/instance/symbol")
          */
          self.addressingsByActuator = {}
+         self.cvOutputPorts = []
+
+         if (cvOutputPorts) {
+           for (var i = 0; i < cvOutputPorts.length; i++) {
+             // if hw cv port, keep it
+             if (isHwCvUri(cvOutputPorts[i].uri)) {
+               self.cvOutputPorts.push(cvOutputPorts[i])
+             }
+           }
+         }
 
         if (addressingsByActuator) {
           for (var act in addressingsByActuator) {
-            // if hw cv port, keep it
-            if (isHwCvUri(act)) {
+            if (isCvUri(act) && cvOutputPorts.find(function (port) { return port.uri === act})) {
               self.addressingsByActuator[act] = []
             }
           }
         }
-
 
        /* All addressings indexed by instance + port symbol
            key  : "/instance/symbol"
@@ -745,14 +752,14 @@ function HardwareManager(options) {
         form.find('.advanced-toggle').click(function() {
             if (!form.find('.advanced-container').is(':visible')) {
               $('.mod-pedal-settings-address').find('.mod-box').animate({
-                width: '622px'
+                width: '666px'
               }, 100, function() {
                 form.find('.advanced-container').toggle()
               });
             } else {
               form.find('.advanced-container').toggle(0, function() {
                 $('.mod-pedal-settings-address').find('.mod-box').animate({
-                  width: '472px'
+                  width: '516px'
                 }, 100)
               })
             }
@@ -1061,6 +1068,7 @@ function HardwareManager(options) {
     this.addCvMapping = function (instance, portSymbol, actuator_uri,
                                         label, minimum, maximum, feedback) {
         var instanceAndSymbol = instance+"/"+portSymbol
+
         self.addressingsByActuator  [actuator_uri].push(instanceAndSymbol)
         self.addressingsByPortSymbol[instanceAndSymbol] = actuator_uri
         self.addressingsData        [instanceAndSymbol] = {
@@ -1182,15 +1190,39 @@ function HardwareManager(options) {
         return false
     }
 
-    this.addCvOutputPort = function (instance, name) {
-      var uri = cvOption + instance
-      self.cvOutputPorts.push({
-        uri: uri,
-        name: name,
-        modes: ":float:",
-        steps: [],
-        max_assigns: 99
+    this.addCvOutputPort = function (uri, name) {
+      var existingPort = self.cvOutputPorts.find(function (port) {
+        return port.uri === uri;
       })
-      self.addressingsByActuator[uri] = []
+      if (existingPort) {
+        existingPort.name = name
+      } else {
+        self.cvOutputPorts.push({
+          uri: uri,
+          name: name,
+          modes: ":float:integer:bypass:toggled:",
+          steps: [],
+          max_assigns: 99,
+          feedback: false,
+        })
+        self.addressingsByActuator[uri] = []
+      }
+    }
+
+    this.removeCvOutputPort = function (uri) {
+      self.cvOutputPorts = self.cvOutputPorts.filter(function (port) {
+        return port.uri !== uri;
+      });
+
+      for (var i in self.addressingsByActuator[uri]) {
+        instanceAndSymbol = self.addressingsByActuator[uri][i]
+        delete self.addressingsData[instanceAndSymbol]
+        delete self.addressingsByPortSymbol[instanceAndSymbol]
+
+        var separatedInstanceAndSymbol = getInstanceSymbol(instanceAndSymbol)
+        options.setEnabled(separatedInstanceAndSymbol[0], separatedInstanceAndSymbol[1], true)
+      }
+
+      delete self.addressingsByActuator[uri]
     }
 }

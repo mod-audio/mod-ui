@@ -20,7 +20,7 @@
       }
 
       .main-form-container {
-        width: 438px;
+        width: 441px;
         padding-right: 3px;
 
         label {
@@ -112,6 +112,31 @@
         padding-left: 12px;
         margin-left: 12px;
       }
+    }
+  }
+}
+
+.mod-cv-output {
+
+  .output-cv-checkbox {
+    display: flex;
+    position: absolute;
+    top: 45px;
+    left: 15px;
+
+    input[type=checkbox] {
+      margin: 5px;
+      width: 30px;
+      height: 30px;
+    }
+
+    input[type=text] {
+      font-size: 20px;
+    }
+
+    ::selection {
+      background: @brand-primary !important;
+      color: white !important;
     }
   }
 }
