@@ -92,6 +92,8 @@ JqueryClass('pedalboard', {
             // hardware ports positioning
             bottomMargin: 0,
 
+            cvAddressing: false,
+
             // Below are functions that application uses to integrate functionality to pedalboard.
             // They all receive a callback as last parameter, which must be called with a true value
             // to indicate that operation was successfully executed.
@@ -359,6 +361,11 @@ JqueryClass('pedalboard', {
         self.disableSelection()
 
         return self
+    },
+
+    setCvAddressing: function (cvAddressing) {
+      var self = $(this);
+      self.data('cvAddressing', cvAddressing);
     },
 
     initGestures: function () {
@@ -1459,7 +1466,7 @@ JqueryClass('pedalboard', {
             }).appendTo(actions)
             $('<div>').addClass('mod-remove').click(function () {
                 self.pedalboard('finishConnection')
-                self.pedalboard('removePlugin', instance)
+                self.pedalboard('removePlugin', instance, pluginData.ports)
                 return false
             }).appendTo(actions)
 
@@ -1674,10 +1681,17 @@ JqueryClass('pedalboard', {
 
     // Removes a plugin from pedalboard. (from the system?)
     // Calls application removal function with proper removal callback
-    removePlugin: function (instance) {
+    removePlugin: function (instance, ports) {
         var self = $(this)
         var pluginRemove = self.data('pluginRemove')
-        pluginRemove(instance, function () {})
+        pluginRemove(instance, function () {
+          // Remove plugin's cv output ports from harware manager
+          if (ports && ports.cv && ports.cv.output) {
+            for (var i = 0; i < ports.cv.output.length; i++) {
+              self.data('hardwareManager').removeCvOutputPort('/cv' + instance + '/' + ports.cv.output[i].symbol)
+            }
+          }
+        })
     },
 
     removeItemFromCanvas: function (instance) {
@@ -1988,8 +2002,10 @@ JqueryClass('pedalboard', {
 
           cvCheckboxInput.addClass('output-cv-checkbox');
           cvCheckboxInput.appendTo(output);
-          cvCheckboxInput.hide()
-
+          if (!self.data('cvAddressing')) {
+            cvCheckboxInput.hide()
+          }
+          
           // Disable inputs for hardware cv ports
           var defaultText = output.attr("title")
           if (

@@ -461,18 +461,20 @@ $('document').ready(function() {
                 <div class="actions">
                     <button class="js-cv-addressing" id="js-cv-addressing-toggle">Manage CV Ports</button>
                     <button class="js-preset" id="js-preset-enabler">Snapshots</button>
-                    <button class="js-preset menu-trigger mod-hidden" id="js-preset-menu">Snapshots</button>
-                    <ul class="drop-menu clearfix js-pedalboard-presets-menu" style="cursor:pointer;">
-                        <li class="js-preset-save">Save</li>
-                        <li class="js-preset-save-as">Save as</li>
-                        <!--
-                        <li class="sub-menu-trigger">Load <span class="pull-right">&rsaquo;</span>
-                            <ul class="menu-preset-list sub-menu"></ul>
-                        </li>
-                        -->
-                        <li class="js-preset-manage">Load / Manage</li>
-                        <li class="js-preset-disable">Disable</li>
-                    </ul>
+                    <div class="mod-hidden" id="js-preset-menu">
+                        <button class="js-preset menu-trigger">Snapshots</button>
+                        <ul class="drop-menu clearfix js-pedalboard-presets-menu" style="cursor:pointer;">
+                            <li class="js-preset-save">Save</li>
+                            <li class="js-preset-save-as">Save as</li>
+                            <!--
+                            <li class="sub-menu-trigger">Load <span class="pull-right">&rsaquo;</span>
+                                <ul class="menu-preset-list sub-menu"></ul>
+                            </li>
+                            -->
+                            <li class="js-preset-manage">Load / Manage</li>
+                            <li class="js-preset-disable">Disable</li>
+                        </ul>
+                    </div>
                     <button class="js-reset">New Pedalboard</button>
                     <button class="js-save">Save</button>
                     <button class="js-save-as">Save as</button>

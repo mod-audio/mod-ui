@@ -873,7 +873,7 @@ class Host(object):
             if client_name == "mod-spi2jack":
                 cv_port_name = CV_PREFIX + port_name
                 self.cvportsIn.append(cv_port_name)
-                self.addressings.cv_addressings['/cv/graph/' + cv_port_name] = []
+                self.addressings.add_hw_cv_port('/cv/graph/' + cv_port_name)
             else:
                 self.audioportsIn.append(port_name)
 
@@ -1688,6 +1688,14 @@ class Host(object):
                         self.send_notmodified("midi_map %d %s %i %i %f %f" % (instance_id, symbol,
                                                                               mchnnl, mctrl, minimum, maximum))
 
+                for portsymbol, addressing in pluginData['addressings'].items():
+                    if self.addressings.get_actuator_type(addressing['actuator_uri']) == Addressings.ADDRESSING_TYPE_CV:
+                        source_port_name = self.get_jack_source_port_name(addressing['actuator_uri'])
+                        self.send_notmodified("cv_map %d %s %s %f %f" % (instance_id, portsymbol,
+                                                                                   source_port_name,
+                                                                                   addressing['minimum'],
+                                                                                   addressing['maximum']))
+
         for port_from, port_to in self.connections:
             websocket.write_message("connect %s %s" % (port_from, port_to))
 
@@ -1968,6 +1976,16 @@ class Host(object):
         except KeyError:
             callback(False)
             return
+
+        # Remove any addressing made to plugin's cv ports
+        info = get_plugin_info(pluginData['uri'])
+        if 'cv' in info['ports']:
+            for port in info['ports']['cv']['output']:
+                cv_port_uri = CV_OPTION + instance + '/' + port['symbol']
+                try:
+                    yield gen.Task(self.cv_addressing_plugin_port_remove, cv_port_uri)
+                except Exception as e:
+                    logging.exception(e)
 
         if len(self.pedalboard_snapshots) > 0:
             self.plugins_removed.append(instance)
@@ -2329,7 +2347,7 @@ class Host(object):
     def snapshot_disable(self, callback):
         self.snapshot_clear()
         self.pedalboard_modified = True
-        self.address(PEDALBOARD_INSTANCE, ":presets", None, "", 0, 0, 0, 0, None, callback)
+        self.address(PEDALBOARD_INSTANCE, ":presets", kNullAddressURI, "---", 0, 0, 0, 0, False, None, None, callback)
 
     def snapshot_save(self):
         idx = self.current_pedalboard_snapshot_id
@@ -2537,7 +2555,6 @@ class Host(object):
 
     def _fix_host_connection_port(self, port):
         """Map URL style port names to Jack port names."""
-
         data = port.split("/")
         # For example, "/graph/capture_2" becomes ['', 'graph',
         # 'capture_2']. Plugin paths can be longer, e.g.  ['', 'graph',
@@ -2577,6 +2594,8 @@ class Host(object):
             if data[2].startswith("cv_playback_"):
                 num = data[2].replace("cv_playback_", "", 1)
                 return "mod-jack2spi:playback_{0}".format(num)
+            if data[2] == "cv_exp_pedal":
+                return "mod-spi2jack:exp_pedal"
 
             # Default guess
             return "system:%s" % data[2]
@@ -3681,7 +3700,7 @@ _:b%i
 
         # First, unadress BPM port if switching to Link or MIDI sync mode
         if mode in (Profile.TRANSPORT_SOURCE_MIDI_SLAVE, Profile.TRANSPORT_SOURCE_ABLETON_LINK):
-            self.address("/pedalboard", ":bpm", kNullAddressURI, "---", 0.0, 0.0, 0.0, 0, False, None, None, unaddress_bpm_callback)
+            self.address(PEDALBOARD_INSTANCE, ":bpm", kNullAddressURI, "---", 0.0, 0.0, 0.0, 0, False, None, None, unaddress_bpm_callback)
         else:
             unaddress_bpm_callback(True)
 
@@ -4127,23 +4146,11 @@ _:b%i
         # Port already added, just change its name
         if uri in self.addressings.cv_addressings.keys():
             self.addressings.cv_addressings[uri]['name'] = name
-            # addressings = self.addressings.cv_addressings[uri]
-            # for addressing in addressings:
-            #     addressing['label'] = label
-            #     instance_id = addressing['instance_id']
-            #     port = addressing['port']
-            #     pluginData  = self.plugins.get(instance_id, None)
-            #
-            #     if pluginData is None:
-            #         print("ERROR: Trying to address non-existing plugin instance %i" % (instance_id))
-            #         return False
-            #
-            #     pluginData['addressings'][port] = addressing
         else:
             self.addressings.cv_addressings[uri] = { 'name': name, 'addrs': [] }
 
     def cv_addressing_plugin_port_remove(self, uri, callback):
-        if uri not in self.addressings.cv_addressings.keys():
+        if uri not in self.addressings.cv_addressings:
             callback(False)
             return
 
@@ -4153,20 +4160,24 @@ _:b%i
                 callback(True)
             else:
                 callback(False)
+                return
 
         # Unadress everything that was assigned to this plugin cv port
         addressings = self.addressings.cv_addressings[uri]
+
+        if len(addressings['addrs']) == 0:
+            remove_callback(True)
+
         for addressing in addressings['addrs']:
             try:
                 instance_id = addressing['instance_id']
-                instance   = self.mapper.get_instance(instance_id)
+                instance = self.mapper.get_instance(instance_id)
                 port = addressing['port']
-                self.address(instance, port, kNullAddressURI,  "---", 0.0, 0.0, 0.0, 0, False, None, None, remove_callback)
+                self.address(instance, port, kNullAddressURI, "---", 0.0, 0.0, 0.0, 0, False, None, None, remove_callback)
             except Exception as e:
                 callback(False)
                 logging.exception(e)
                 return
-
 
     # -----------------------------------------------------------------------------------------------------------------
     # HMI callbacks, called by HMI via serial

@@ -366,11 +366,6 @@ $('document').ready(function() {
             var index    = parseInt(data[4])
 
             if (isOutput) {
-                // Do not add cv exp pedal as visible hw port for now, only add as available cv addressing port
-                if (instance === '/graph/cv_exp_pedal') {
-                  desktop.hardwareManager.addCvOutputPort('/cv' + instance, name)
-                  return
-                }
                 var el = $('<div id="' + instance + '" class="hardware-output" mod-port-index=' + index + ' title="Hardware ' + name + '">')
                 desktop.pedalboard.pedalboard('addHardwareOutput', el, instance, type)
                 if (type === 'cv') {
@@ -451,7 +446,7 @@ $('document').ready(function() {
 
                     if (presetId >= 0) {
                         $('#js-preset-enabler').hide()
-                        $('#js-preset-menu').show()
+                        $('#js-preset-menu').show().css('display', 'inline-block')
 
                         if (resp.ok) {
                             desktop.titleBox.text((desktop.title || 'Untitled') + " - " + resp.name)
