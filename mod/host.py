@@ -2533,7 +2533,6 @@ class Host(object):
 
     def _fix_host_connection_port(self, port):
         """Map URL style port names to Jack port names."""
-
         data = port.split("/")
         # For example, "/graph/capture_2" becomes ['', 'graph',
         # 'capture_2']. Plugin paths can be longer, e.g.  ['', 'graph',
@@ -2573,6 +2572,8 @@ class Host(object):
             if data[2].startswith("cv_playback_"):
                 num = data[2].replace("cv_playback_", "", 1)
                 return "mod-jack2spi:playback_{0}".format(num)
+            if data[2] == "cv_exp_pedal":
+                return "mod-spi2jack:exp_pedal"
 
             # Default guess
             return "system:%s" % data[2]

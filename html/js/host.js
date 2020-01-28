@@ -366,11 +366,6 @@ $('document').ready(function() {
             var index    = parseInt(data[4])
 
             if (isOutput) {
-                // Do not add cv exp pedal as visible hw port for now, only add as available cv addressing port
-                if (instance === '/graph/cv_exp_pedal') {
-                  desktop.hardwareManager.addCvOutputPort('/cv' + instance, name)
-                  return
-                }
                 var el = $('<div id="' + instance + '" class="hardware-output" mod-port-index=' + index + ' title="Hardware ' + name + '">')
                 desktop.pedalboard.pedalboard('addHardwareOutput', el, instance, type)
                 if (type === 'cv') {
