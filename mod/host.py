@@ -1971,6 +1971,16 @@ class Host(object):
             callback(False)
             return
 
+        # Remove any addressing made to plugin's cv ports
+        info = get_plugin_info(pluginData['uri'])
+        if 'cv' in info['ports']:
+            for port in info['ports']['cv']['output']:
+                cv_port_uri = CV_OPTION + instance + '/' + port['symbol']
+                try:
+                    yield gen.Task(self.cv_addressing_plugin_port_remove, cv_port_uri)
+                except Exception as e:
+                    logging.exception(e)
+
         if len(self.pedalboard_snapshots) > 0:
             self.plugins_removed.append(instance)
             if instance_id in self.plugins_added:
@@ -4102,18 +4112,6 @@ _:b%i
         # Port already added, just change its name
         if uri in self.addressings.cv_addressings.keys():
             self.addressings.cv_addressings[uri]['name'] = name
-            # addressings = self.addressings.cv_addressings[uri]
-            # for addressing in addressings:
-            #     addressing['label'] = label
-            #     instance_id = addressing['instance_id']
-            #     port = addressing['port']
-            #     pluginData  = self.plugins.get(instance_id, None)
-            #
-            #     if pluginData is None:
-            #         print("ERROR: Trying to address non-existing plugin instance %i" % (instance_id))
-            #         return False
-            #
-            #     pluginData['addressings'][port] = addressing
         else:
             self.addressings.cv_addressings[uri] = { 'name': name, 'addrs': [] }
 
@@ -4134,14 +4132,13 @@ _:b%i
         for addressing in addressings['addrs']:
             try:
                 instance_id = addressing['instance_id']
-                instance   = self.mapper.get_instance(instance_id)
+                instance = self.mapper.get_instance(instance_id)
                 port = addressing['port']
-                self.address(instance, port, kNullAddressURI,  "---", 0.0, 0.0, 0.0, 0, False, None, None, remove_callback)
+                self.address(instance, port, kNullAddressURI, "---", 0.0, 0.0, 0.0, 0, False, None, None, remove_callback)
             except Exception as e:
                 callback(False)
                 logging.exception(e)
                 return
-
 
     # -----------------------------------------------------------------------------------------------------------------
     # HMI callbacks, called by HMI via serial

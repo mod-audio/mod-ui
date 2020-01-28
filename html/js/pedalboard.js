@@ -1437,7 +1437,7 @@ JqueryClass('pedalboard', {
             }).appendTo(actions)
             $('<div>').addClass('mod-remove').click(function () {
                 self.pedalboard('finishConnection')
-                self.pedalboard('removePlugin', instance)
+                self.pedalboard('removePlugin', instance, pluginData.ports)
                 return false
             }).appendTo(actions)
 
@@ -1637,10 +1637,17 @@ JqueryClass('pedalboard', {
 
     // Removes a plugin from pedalboard. (from the system?)
     // Calls application removal function with proper removal callback
-    removePlugin: function (instance) {
+    removePlugin: function (instance, ports) {
         var self = $(this)
         var pluginRemove = self.data('pluginRemove')
-        pluginRemove(instance, function () {})
+        pluginRemove(instance, function () {
+          // Remove plugin's cv output ports from harware manager
+          if (ports && ports.cv && ports.cv.output) {
+            for (var i = 0; i < ports.cv.output.length; i++) {
+              self.data('hardwareManager').removeCvOutputPort('/cv' + instance + '/' + ports.cv.output[i].symbol)
+            }
+          }
+        })
     },
 
     removeItemFromCanvas: function (instance) {
