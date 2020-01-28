@@ -92,6 +92,7 @@ function Desktop(elements) {
     this.pluginIndexerData = {}
     this.pedalboardIndexerData = {}
     this.previousPedalboardList = null
+    this.cvAddressing = false
 
     this.resetPluginIndexer = function (plugins) {
         self.pluginIndexer = lunr(function () {
@@ -948,7 +949,9 @@ function Desktop(elements) {
       } else {
         $('body').find('.output-cv-checkbox').show()
       }
-      // Toggle button state
+      // Toggle cvAddressing and button state
+      self.cvAddressing = !self.cvAddressing
+      self.pedalboard.pedalboard('setCvAddressing', self.cvAddressing)
       $(this).toggleClass('selected')
     })
     elements.resetButton.click(function () {
@@ -1340,6 +1343,7 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
         windowManager: self.windowManager,
         hardwareManager: self.hardwareManager,
         bottomMargin: effectBox.height(),
+        cvAddressing: self.cvAddressing,
         pluginLoad: function (uri, instance, x, y, callback, errorCallback) {
             var firstTry = true
             var add = function () {

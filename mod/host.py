@@ -4127,7 +4127,7 @@ _:b%i
             self.addressings.cv_addressings[uri] = { 'name': name, 'addrs': [] }
 
     def cv_addressing_plugin_port_remove(self, uri, callback):
-        if uri not in self.addressings.cv_addressings.keys():
+        if uri not in self.addressings.cv_addressings:
             callback(False)
             return
 
@@ -4137,9 +4137,14 @@ _:b%i
                 callback(True)
             else:
                 callback(False)
+                return
 
         # Unadress everything that was assigned to this plugin cv port
         addressings = self.addressings.cv_addressings[uri]
+
+        if len(addressings['addrs']) == 0:
+            remove_callback(True)
+
         for addressing in addressings['addrs']:
             try:
                 instance_id = addressing['instance_id']

@@ -90,6 +90,8 @@ JqueryClass('pedalboard', {
             // hardware ports positioning
             bottomMargin: 0,
 
+            cvAddressing: false,
+
             // Below are functions that application uses to integrate functionality to pedalboard.
             // They all receive a callback as last parameter, which must be called with a true value
             // to indicate that operation was successfully executed.
@@ -357,6 +359,11 @@ JqueryClass('pedalboard', {
         self.disableSelection()
 
         return self
+    },
+
+    setCvAddressing: function (cvAddressing) {
+      var self = $(this);
+      self.data('cvAddressing', cvAddressing);
     },
 
     initGestures: function () {
@@ -1967,8 +1974,10 @@ JqueryClass('pedalboard', {
 
           cvCheckboxInput.addClass('output-cv-checkbox');
           cvCheckboxInput.appendTo(output);
-          cvCheckboxInput.hide()
-
+          if (!self.data('cvAddressing')) {
+            cvCheckboxInput.hide()
+          }
+          
           // Disable inputs for hardware cv ports
           var defaultText = output.attr("title")
           if (
