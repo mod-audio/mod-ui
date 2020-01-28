@@ -1210,3 +1210,9 @@ class Addressings(object):
         for actuator_uri, addrs in self.cv_addressings.items():
             if not self.is_hw_cv_port(actuator_uri):
                 msg_callback("add_cv_port %s %s" % (actuator_uri, addrs['name'].replace(" ","_")))
+
+    def add_hw_cv_port(self, actuator_uri):
+        if not self.is_hw_cv_port(actuator_uri):
+            return
+        if actuator_uri not in self.cv_addressings:
+            self.cv_addressings[actuator_uri] = []

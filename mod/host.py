@@ -873,7 +873,7 @@ class Host(object):
             if client_name == "mod-spi2jack":
                 cv_port_name = CV_PREFIX + port_name
                 self.cvportsIn.append(cv_port_name)
-                self.addressings.cv_addressings['/cv/graph/' + cv_port_name] = []
+                self.addressings.add_hw_cv_port('/cv/graph/' + cv_port_name)
             else:
                 self.audioportsIn.append(port_name)
 
@@ -1688,6 +1688,14 @@ class Host(object):
                         self.send_notmodified("midi_map %d %s %i %i %f %f" % (instance_id, symbol,
                                                                               mchnnl, mctrl, minimum, maximum))
 
+                for portsymbol, addressing in pluginData['addressings'].items():
+                    if self.addressings.get_actuator_type(addressing['actuator_uri']) == Addressings.ADDRESSING_TYPE_CV:
+                        source_port_name = self.get_jack_source_port_name(addressing['actuator_uri'])
+                        self.send_notmodified("cv_map %d %s %s %f %f" % (instance_id, portsymbol,
+                                                                                   source_port_name,
+                                                                                   addressing['minimum'],
+                                                                                   addressing['maximum']))
+
         for port_from, port_to in self.connections:
             websocket.write_message("connect %s %s" % (port_from, port_to))
 
@@ -1968,6 +1976,16 @@ class Host(object):
         except KeyError:
             callback(False)
             return
+
+        # Remove any addressing made to plugin's cv ports
+        info = get_plugin_info(pluginData['uri'])
+        if 'cv' in info['ports']:
+            for port in info['ports']['cv']['output']:
+                cv_port_uri = CV_OPTION + instance + '/' + port['symbol']
+                try:
+                    yield gen.Task(self.cv_addressing_plugin_port_remove, cv_port_uri)
+                except Exception as e:
+                    logging.exception(e)
 
         if len(self.pedalboard_snapshots) > 0:
             self.plugins_removed.append(instance)
@@ -4105,18 +4123,6 @@ _:b%i
         # Port already added, just change its name
         if uri in self.addressings.cv_addressings.keys():
             self.addressings.cv_addressings[uri]['name'] = name
-            # addressings = self.addressings.cv_addressings[uri]
-            # for addressing in addressings:
-            #     addressing['label'] = label
-            #     instance_id = addressing['instance_id']
-            #     port = addressing['port']
-            #     pluginData  = self.plugins.get(instance_id, None)
-            #
-            #     if pluginData is None:
-            #         print("ERROR: Trying to address non-existing plugin instance %i" % (instance_id))
-            #         return False
-            #
-            #     pluginData['addressings'][port] = addressing
         else:
             self.addressings.cv_addressings[uri] = { 'name': name, 'addrs': [] }
 
@@ -4137,14 +4143,13 @@ _:b%i
         for addressing in addressings['addrs']:
             try:
                 instance_id = addressing['instance_id']
-                instance   = self.mapper.get_instance(instance_id)
+                instance = self.mapper.get_instance(instance_id)
                 port = addressing['port']
-                self.address(instance, port, kNullAddressURI,  "---", 0.0, 0.0, 0.0, 0, False, None, None, remove_callback)
+                self.address(instance, port, kNullAddressURI, "---", 0.0, 0.0, 0.0, 0, False, None, None, remove_callback)
             except Exception as e:
                 callback(False)
                 logging.exception(e)
                 return
-
 
     # -----------------------------------------------------------------------------------------------------------------
     # HMI callbacks, called by HMI via serial

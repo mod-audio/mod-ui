@@ -1210,9 +1210,17 @@ function HardwareManager(options) {
     }
 
     this.removeCvOutputPort = function (uri) {
+      var isAddressable = false
       self.cvOutputPorts = self.cvOutputPorts.filter(function (port) {
-        return port.uri !== uri;
+        if (port.uri === uri) {
+          isAddressable = true
+        }
+        return port.uri !== uri
       });
+
+      if (!isAddressable) {
+        return
+      }
 
       for (var i in self.addressingsByActuator[uri]) {
         instanceAndSymbol = self.addressingsByActuator[uri][i]
