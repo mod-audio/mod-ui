@@ -40,7 +40,7 @@ from mod.settings import (APP, LOG, DEV_API,
                           UPDATE_CC_FIRMWARE_FILE, UPDATE_MOD_OS_FILE, USING_256_FRAMES_FILE,
                           DEFAULT_ICON_TEMPLATE, DEFAULT_SETTINGS_TEMPLATE, DEFAULT_ICON_IMAGE,
                           DEFAULT_PEDALBOARD, DATA_DIR, FAVORITES_JSON_FILE, PREFERENCES_JSON_FILE, USER_ID_JSON_FILE,
-                          DEV_HOST, UNTITLED_PEDALBOARD_NAME)
+                          DEV_HOST, UNTITLED_PEDALBOARD_NAME, MODEL_CPU, MODEL_TYPE)
 
 from mod import check_environment, jsoncall, safe_json_load, TextFileFlusher, get_hardware_descriptor
 from mod.bank import list_banks, save_banks, remove_pedalboard_from_banks
@@ -350,10 +350,10 @@ class SystemInfo(JsonRequestHandler):
         info = {
             "hwname": hwdesc.get('name', "Unknown"),
             "architecture": hwdesc.get('architecture', "Unknown"),
-            "cpu": hwdesc.get('cpu', "Unknown"),
+            "cpu": MODEL_CPU or hwdesc.get('cpu', "Unknown"),
             "platform": hwdesc.get('platform', "Unknown"),
             "bin_compat": hwdesc.get('bin-compat', "Unknown"),
-            "model": hwdesc.get('model', "Unknown"),
+            "model": MODEL_TYPE or hwdesc.get('model', "Unknown"),
             "sysdate": sysdate,
             "python": {
                 "version" : sys.version

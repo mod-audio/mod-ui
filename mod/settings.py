@@ -62,6 +62,9 @@ HMI_BAUD_RATE = os.environ.get('MOD_HMI_BAUD_RATE', 10000000)
 HMI_SERIAL_PORT = os.environ.get('MOD_HMI_SERIAL_PORT', "/dev/ttyUSB0")
 HMI_TIMEOUT = int(os.environ.get('MOD_HMI_TIMEOUT', 0))
 
+MODEL_CPU = os.environ.get('MOD_MODEL_CPU', None)
+MODEL_TYPE = os.environ.get('MOD_MODEL_TYPE', None)
+
 DEVICE_WEBSERVER_PORT = int(os.environ.get('MOD_DEVICE_WEBSERVER_PORT', 80))
 
 HTML_DIR = os.environ.get('MOD_HTML_DIR', join(sys.prefix, 'share/mod/html/'))
