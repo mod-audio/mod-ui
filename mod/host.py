@@ -875,7 +875,7 @@ class Host(object):
             if client_name == "mod-spi2jack":
                 cv_port_name = CV_PREFIX + port_name
                 self.cvportsIn.append(cv_port_name)
-                self.addressings.cv_addressings['/cv/graph/' + cv_port_name] = []
+                self.addressings.add_hw_cv_port('/cv/graph/' + cv_port_name)
             else:
                 self.audioportsIn.append(port_name)
 
@@ -1689,6 +1689,14 @@ class Host(object):
                     if -1 not in (mchnnl, mctrl):
                         self.send_notmodified("midi_map %d %s %i %i %f %f" % (instance_id, symbol,
                                                                               mchnnl, mctrl, minimum, maximum))
+
+                for portsymbol, addressing in pluginData['addressings'].items():
+                    if self.addressings.get_actuator_type(addressing['actuator_uri']) == Addressings.ADDRESSING_TYPE_CV:
+                        source_port_name = self.get_jack_source_port_name(addressing['actuator_uri'])
+                        self.send_notmodified("cv_map %d %s %s %f %f" % (instance_id, portsymbol,
+                                                                                   source_port_name,
+                                                                                   addressing['minimum'],
+                                                                                   addressing['maximum']))
 
         for port_from, port_to in self.connections:
             websocket.write_message("connect %s %s" % (port_from, port_to))
