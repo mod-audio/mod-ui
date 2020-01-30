@@ -1915,7 +1915,7 @@ JqueryClass('pedalboard', {
 
         element.click(function (e) {
             // Do not start connection if cv addressing checkbox or text input clicked
-            if (!$(e.target).is('input')) {
+            if (!$(e.target).is('input') && !$(e.target).hasClass('checkmark') && !$(e.target).hasClass('checkbox-container')) {
               self.pedalboard('startConnection', element)
             }
         })
@@ -1965,8 +1965,11 @@ JqueryClass('pedalboard', {
           var cvCheckboxInput = $('<div>');
 
           // Append checkbox
-          var checkbox = $('<input type="checkbox"  />');
-          checkbox.appendTo(cvCheckboxInput);
+          var checkbox = $('<input type="checkbox">');
+          var checkboxContainer = $('<span class="checkbox-container"></span>');
+          checkbox.appendTo(checkboxContainer);
+          $('<span class="checkmark" />').appendTo(checkboxContainer);
+          checkboxContainer.appendTo(cvCheckboxInput);
 
           // Append text input
           var textInput = $('<input type="text" />');
