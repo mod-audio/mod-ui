@@ -373,7 +373,7 @@ class Profile(object):
         return self._compare_and_set_value('transportBPB', value)
 
     def set_tempo_bpm(self, value):
-        if value < 20 or value > 240:
+        if value < 20 or value > 280:
             logging.error("[profile] set_tempo_bpm called with invalid value %s", value)
             return False
         return self._compare_and_set_value('transportBPM', value)
