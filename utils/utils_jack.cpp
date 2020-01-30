@@ -1,6 +1,6 @@
 /*
  * MOD-UI utilities
- * Copyright (C) 2015-2016 Filipe Coelho <falktx@falktx.com>
+ * Copyright (C) 2015-2019 Filipe Coelho <falktx@falktx.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -28,10 +28,12 @@
 #include <string>
 #include <vector>
 
-#define ALSA_SOUNDCARD_ID         "hw:MODDUO"
-#define ALSA_CONTROL_BYPASS_LEFT  "Left True-Bypass"
-#define ALSA_CONTROL_BYPASS_RIGHT "Right True-Bypass"
-#define ALSA_CONTROL_LOOPBACK     "LOOPBACK"
+#define ALSA_SOUNDCARD_DEFAULT_ID  "MODDUO"
+#define ALSA_CONTROL_BYPASS_LEFT   "Left True-Bypass"
+#define ALSA_CONTROL_BYPASS_RIGHT  "Right True-Bypass"
+#define ALSA_CONTROL_LOOPBACK1     "LOOPBACK"
+#define ALSA_CONTROL_LOOPBACK2     "Loopback Switch"
+#define ALSA_CONTROL_MASTER_VOLUME "DAC"
 
 #define JACK_SLAVE_PREFIX     "mod-slave"
 #define JACK_SLAVE_PREFIX_LEN 9
@@ -152,7 +154,16 @@ bool init_jack(void)
         {
             snd_mixer_selem_id_t* sid;
 
-            if (snd_mixer_attach(gAlsaMixer, ALSA_SOUNDCARD_ID) == 0 &&
+            char soundcard[32] = "hw:";
+
+            if (const char* const cardname = getenv("MOD_SOUNDCARD"))
+                strncat(soundcard, cardname, 28);
+            else
+                strncat(soundcard, ALSA_SOUNDCARD_DEFAULT_ID, 28);
+
+            soundcard[31] = '\0';
+
+            if (snd_mixer_attach(gAlsaMixer, soundcard) == 0 &&
                 snd_mixer_selem_register(gAlsaMixer, nullptr, nullptr) == 0 &&
                 snd_mixer_load(gAlsaMixer) == 0 &&
                 snd_mixer_selem_id_malloc(&sid) == 0)
@@ -387,7 +398,7 @@ float get_jack_sample_rate(void)
 
 const char* get_jack_port_alias(const char* portname)
 {
-    static char  aliases[0xff][2];
+    static char  aliases[2][0xff];
     static char* aliasesptr[2] = {
         aliases[0],
         aliases[1]
@@ -426,6 +437,15 @@ const char* const* get_jack_hardware_ports(const bool isAudio, bool isOutput)
 
 // --------------------------------------------------------------------------------------------------------
 
+bool has_midi_beat_clock_sender_port(void)
+{
+    if (gClient == nullptr)
+        return false;
+
+    // TODO: This must be the same as in `settings.py`!
+    return (jack_port_by_name(gClient, "effect_9993:mclk") != nullptr);
+}
+
 bool has_serial_midi_input_port(void)
 {
     if (gClient == nullptr)
@@ -450,8 +470,7 @@ bool has_midi_merger_output_port(void)
     if (gClient == nullptr)
         return false;
 
-    return (jack_port_by_name(gClient, "mod-midi-merger:out") != nullptr) ||
-      (jack_port_by_name(gClient, "midi-merger:out") != nullptr);
+    return (jack_port_by_name(gClient, "mod-midi-merger:out") != nullptr);
 }
 
 /**
@@ -462,8 +481,7 @@ bool has_midi_broadcaster_input_port(void)
     if (gClient == nullptr)
         return false;
 
-    return (jack_port_by_name(gClient, "mod-midi-broadcaster:in") != nullptr) ||
-      (jack_port_by_name(gClient, "midi-broadcaster:in") != nullptr);
+    return (jack_port_by_name(gClient, "mod-midi-broadcaster:in") != nullptr);
 }
 
 
@@ -483,6 +501,33 @@ bool connect_jack_ports(const char* port1, const char* port2)
     ret = jack_connect(gClient, port2, port1);
     if (ret == 0 || ret == EEXIST)
         return true;
+
+    return false;
+}
+
+bool connect_jack_midi_output_ports(const char* port)
+{
+    if (gClient == nullptr)
+        return false;
+
+    int ret;
+
+    if (jack_port_by_name(gClient, "mod-midi-broadcaster:in") != nullptr)
+    {
+        ret = jack_connect(gClient, port, "mod-midi-broadcaster:in");
+        return (ret == 0 || ret == EEXIST);
+    }
+
+    if (const char** const ports = jack_get_ports(gClient, "",
+                                                  JACK_DEFAULT_MIDI_TYPE,
+                                                  JackPortIsPhysical | JackPortIsInput))
+    {
+        for (int i=0; ports[i] != nullptr; ++i)
+            jack_connect(gClient, port, ports[i]);
+
+        jack_free(ports);
+        return true;
+    }
 
     return false;
 }
@@ -528,7 +573,13 @@ void init_bypass(void)
     if (snd_mixer_selem_id_malloc(&sid) == 0)
     {
         snd_mixer_selem_id_set_index(sid, 0);
-        snd_mixer_selem_id_set_name(sid, ALSA_CONTROL_LOOPBACK);
+        snd_mixer_selem_id_set_name(sid, ALSA_CONTROL_LOOPBACK1);
+
+        if (snd_mixer_elem_t* const elem = snd_mixer_find_selem(gAlsaMixer, sid))
+            snd_mixer_selem_set_playback_switch_all(elem, 0);
+
+        snd_mixer_selem_id_set_index(sid, 0);
+        snd_mixer_selem_id_set_name(sid, ALSA_CONTROL_LOOPBACK2);
 
         if (snd_mixer_elem_t* const elem = snd_mixer_find_selem(gAlsaMixer, sid))
             snd_mixer_selem_set_playback_switch_all(elem, 0);
@@ -559,6 +610,37 @@ bool set_truebypass_value(bool right, bool bypassed)
     }
 
     return false;
+}
+
+float get_master_volume(bool right)
+{
+    if (gAlsaMixer == nullptr)
+        return -127.5f;
+
+    snd_mixer_selem_id_t* sid;
+
+    if (snd_mixer_selem_id_malloc(&sid) != 0)
+        return -127.5f;
+
+    snd_mixer_selem_id_set_index(sid, 0);
+    snd_mixer_selem_id_set_name(sid, ALSA_CONTROL_MASTER_VOLUME);
+
+    float val = -127.5f;
+
+    if (snd_mixer_elem_t* const elem = snd_mixer_find_selem(gAlsaMixer, sid))
+    {
+        long aval = 0;
+        snd_mixer_selem_get_playback_volume(elem,
+                                            right ? SND_MIXER_SCHN_FRONT_RIGHT : SND_MIXER_SCHN_FRONT_LEFT,
+                                            &aval);
+
+        const float a = 127.5f / 255.f;
+        const float b = - a * 255.f;
+        val = a * aval + b;
+    }
+
+    snd_mixer_selem_id_free(sid);
+    return val;
 }
 
 // --------------------------------------------------------------------------------------------------------

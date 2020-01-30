@@ -141,6 +141,10 @@ function refresh_sysinfo() {
             $("#info-kernel-machine").text(INFO.uname.machine)
             $("#info-kernel-release").text(INFO.uname.release)
             $("#info-kernel-version").text(INFO.uname.version)
+            if (info.platform != "duox") {
+                $("#prefs-service-mod-peakmeter-label").hide()
+                $("#prefs-service-mod-peakmeter-br").hide()
+            }
         },
         cache: false,
         global: false,
@@ -167,9 +171,10 @@ function refresh_sysprefs() {
             $("#prefs-audio-256-frames").prop("checked", resp.jack_256_frames)
             $("#prefs-audio-mono-copy").prop("checked", resp.jack_mono_copy)
             $("#prefs-audio-sync-mode").prop("checked", resp.jack_sync_mode)
-            $("#prefs-service-mixserver").prop("checked", resp.service_mixserver)
+            $("#prefs-service-mod-peakmeter").prop("checked", resp.service_mod_peakmeter)
             $("#prefs-service-mod-sdk").prop("checked", resp.service_mod_sdk)
             $("#prefs-service-netmanager").prop("checked", resp.service_netmanager)
+            $("#prefs-workarounds-autorestart-hmi").prop("checked", resp.autorestart_hmi)
         },
         cache: false,
         global: false,
@@ -292,11 +297,12 @@ function system_exechange(data, callback) {
     })
 }
 
-function enable_service(name, enable) {
+function enable_service(name, enable, inverted) {
     system_exechange({
-        'type'  : 'service',
-        'name'  : name,
-        'enable': enable ? 1 : 0,
+        'type'    : 'service',
+        'name'    : name,
+        'enable'  : enable ? 1 : 0,
+        'inverted': inverted ? 1 : 0,
     })
 }
 
@@ -451,22 +457,6 @@ $('document').ready(function() {
     refresh_sysinfo()
     refresh_sysprefs()
 
-    if (PREFERENCES['transport-rolling-at-boot'] == "true") {
-        $("#prefs-prefs-autostart-playback").prop("checked", true)
-    }
-    if (PREFERENCES['prefs-prefs-autostart-link'] == "true") {
-        $("#prefs-prefs-autostart-link").prop("checked", true)
-    }
-    if (PREFERENCES['tuner-mutes-outputs'] != "false") {
-        $("#prefs-prefs-muted-tuner").prop("checked", true)
-    }
-    if ("navigate-bank-midi-channel" in PREFERENCES) {
-        $("#js-navigate-bank-midi-channel").val(PREFERENCES['navigate-bank-midi-channel'])
-    }
-    if ("navigate-snapshot-midi-channel" in PREFERENCES) {
-	$("#js-navigate-snapshot-midi-channel").val(PREFERENCES['navigate-snapshot-midi-channel'])
-    }
-    
     if (PREFERENCES['dev-mode'] == "on") {
         $("#prefs-ui-developer-mode").prop("checked", true)
     }
@@ -486,7 +476,7 @@ $('document').ready(function() {
         }
 
         var name
-        if ($("#prefs-bluetooth-name").prop("checked")) {
+        if ($("#prefs-bluetooth-custom").prop("checked")) {
             name = $("#prefs-bluetooth-name").val()
         } else {
             name = ""
@@ -543,34 +533,6 @@ $('document').ready(function() {
         }, 400)
     })
 
-    // ----------------------------------------------------------------------------------------------------------------
-    // --- Preferences
-
-    $("#prefs-prefs-autostart-playback").click(function () {
-        config_set("transport-rolling-at-boot", bool2str($(this).prop("checked")))
-    })
-
-    $("#prefs-prefs-autostart-link").click(function () {
-        config_set("link-enabled-at-boot", bool2str($(this).prop("checked")))
-    })
-
-    $("#prefs-prefs-muted-tuner").click(function () {
-        config_set("tuner-mutes-outputs", bool2str($(this).prop("checked")))
-    })
-
-    $("#js-navigate-bank-midi-channel").click(function () {
-	var channel = $(this).val() - 1 // Range [0,15]
-        config_set("navigate-bank-midi-channel", channel)
-	ws.send("set_midi_program_change_pedalboard_bank_channel 1 " + channel)
-    })
-
-    $("#js-navigate-snapshot-midi-channel").click(function () {
-	var channel = $(this).val() - 1 // Range [0,15]
-        config_set("navigate-snapshot-midi-channel", channel)
-	ws.send("set_midi_program_change_pedalboard_snapshot_channel 1 " + channel)
-    })
-
-    
     // ----------------------------------------------------------------------------------------------------------------
     // --- Backup & Restore
 
@@ -680,8 +642,8 @@ $('document').ready(function() {
     // ----------------------------------------------------------------------------------------------------------------
     // --- Services
 
-    $("#prefs-service-mixserver").click(function () {
-        enable_service("mixserver", $(this).prop("checked"))
+    $("#prefs-service-mod-peakmeter").click(function () {
+        enable_service("mod-peakmeter", !$(this).prop("checked"), true)
     })
 
     $("#prefs-service-mod-sdk").click(function () {
@@ -690,6 +652,13 @@ $('document').ready(function() {
 
     $("#prefs-service-netmanager").click(function () {
         enable_service("netmanager", $(this).prop("checked"))
+    })
+
+    // ----------------------------------------------------------------------------------------------------------------
+    // --- Workarounds
+
+    $("#prefs-workarounds-autorestart-hmi").click(function () {
+        create_or_delete_file("autorestart-hmi", $(this).prop("checked"), true)
     })
 
     // ----------------------------------------------------------------------------------------------------------------
@@ -804,35 +773,6 @@ $('document').ready(function() {
                     </label>
                 </form>
 
-                <h1>Preferences</h1>
-                <form class="form">
-                    <label>
-                        <input type="checkbox" autocomplete="off" id="prefs-prefs-autostart-playback">
-                            Always start with playback/transport rolling
-                        </input>
-                    </label>
-                    <br/>
-                    <label>
-                        <input type="checkbox" autocomplete="off" id="prefs-prefs-autostart-link">
-                            Always start with Link support enabled
-                        </input>
-                    </label>
-                    <br/>
-                    <label>
-                        <input type="checkbox" autocomplete="off" id="prefs-prefs-muted-tuner">
-                            Mute audio outputs when Tuner is enabled
-                        </input>
-                    </label>
-                    <label>
-		      Navigate pedalboard banks using MIDI program change on channel: &nbsp;
-		      <input type="number" id="js-navigate-bank-midi-channel" value="1" min="1" max="16" step="1" />
-                    </label>
-		    <label>
-		      Navigate pedalboard presets using MIDI program change on channel: &nbsp;
-		      <input type="number" id="js-navigate-snapshot-midi-channel" value="1" min="1" max="16" step="1" />
-                    </label>
-                </form>
-
                 <h1>Backup &amp; Restore</h1>
                 <form class="form">
                     <p>
@@ -921,6 +861,7 @@ $('document').ready(function() {
                         With this enabled, the 2 outputs will receive the same data if one of them is unconnected.<br/>
                         Note that changing this option requires a reboot for changes to take effect.
                     </p>
+
                     <label>
                         <input type="checkbox" autocomplete="off" id="prefs-audio-256-frames">
                             Use 256 frames as Buffer Size
@@ -939,10 +880,10 @@ $('document').ready(function() {
                         Note: Each additional service you enable consumes a small amount of CPU.<br/>
                         Only enable services that you absolutely need.
                     </p>
-                    <label>
-                        <input type="checkbox" autocomplete="off" id="prefs-service-netmanager"> JACK Net Manager (EXPERIMENTAL)</input>
+                    <label id="prefs-service-mod-peakmeter-label">
+                        <input type="checkbox" autocomplete="off" id="prefs-service-mod-peakmeter"> Audio peak meters</input>
                     </label>
-                    <br/>
+                    <br id="prefs-service-mod-peakmeter-br"/>
                     <!--
                     <label>
                         <input type="checkbox" autocomplete="off" id="prefs-service-mod-sdk"> MOD SDK</input>
@@ -950,8 +891,9 @@ $('document').ready(function() {
                     <br/>
                     -->
                     <label>
-                        <input type="checkbox" autocomplete="off" id="prefs-service-mixserver"> Remote Mix Server</input>
+                        <input type="checkbox" autocomplete="off" id="prefs-service-netmanager"> JACK Net Manager (EXPERIMENTAL)</input>
                     </label>
+                    <br/>
                 </form>
 
                 <h1>User Interface</h1>
@@ -971,10 +913,26 @@ $('document').ready(function() {
                     </label>
                     <p>
                         Show option to list 'beta' plugins in the Plugin Store.<br/>
-                        Note that beta plugins can be unstable and cause crashes. If you share a pedalboard containing beta plugins, it will only
-						be available to users that explicitly accept pedalboards with beta plugins.<br/>
+                        Note that beta plugins can be unstable and cause crashes.
+                        If you share a pedalboard containing beta plugins, it will only be available to users that explicitly accept pedalboards with beta plugins.<br/>
                         Just remember: things can break!
                     </p>
+                </form>
+
+                <h1>Workarounds</h1>
+                <form class="form">
+                    <div id="workarounds-autorestart-hmi">
+                        <label>
+                            <input type="checkbox" autocomplete="off" id="prefs-workarounds-autorestart-hmi">
+                                Automatically restart controller screen
+                            </input>
+                        </label>
+                        <p>
+                            If the controller displays locks up or stops working correctly, we can try to detect this and automatically trigger a restart.<br/>
+                            This is not completely safe though, false positives can happen and the controller screen might be restarted by mistake.<br/>
+                            A reboot is required in order for this option to take place.
+                        </p>
+                    </div>
                 </form>
             </div>
         </div>

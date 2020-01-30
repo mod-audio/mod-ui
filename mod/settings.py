@@ -19,9 +19,11 @@ import os, sys
 from os.path import join
 
 DEV_ENVIRONMENT = bool(int(os.environ.get('MOD_DEV_ENVIRONMENT', False)))
-#DEV_HMI = bool(int(os.environ.get('MOD_DEV_HMI', DEV_ENVIRONMENT)))
-DEV_HMI = False
+DEV_HMI = bool(int(os.environ.get('MOD_DEV_HMI', DEV_ENVIRONMENT)))
 DEV_HOST = bool(int(os.environ.get('MOD_DEV_HOST', DEV_ENVIRONMENT)))
+
+# If on, use dev cloud API environment
+DEV_API = bool(int(os.environ.get('MOD_DEV_API', False)))
 
 APP = bool(int(os.environ.get('MOD_APP', False)))
 LOG = bool(int(os.environ.get('MOD_LOG', False)))
@@ -34,6 +36,7 @@ DEVICE_KEY = os.environ.pop('MOD_DEVICE_KEY', None)
 DEVICE_TAG = os.environ.pop('MOD_DEVICE_TAG', None)
 DEVICE_UID = os.environ.pop('MOD_DEVICE_UID', None)
 IMAGE_VERSION_PATH = os.environ.pop('MOD_IMAGE_VERSION_PATH', '/etc/mod-release/release')
+HARDWARE_DESC_FILE = os.environ.pop('MOD_HARDWARE_DESC_FILE', '/etc/mod-hardware-descriptor.json')
 
 if os.path.isfile(IMAGE_VERSION_PATH):
     with open(IMAGE_VERSION_PATH, 'r') as fh:
@@ -57,6 +60,10 @@ LV2_PEDALBOARDS_DIR = os.path.expanduser("~/.pedalboards/")
 
 HMI_BAUD_RATE = os.environ.get('MOD_HMI_BAUD_RATE', 10000000)
 HMI_SERIAL_PORT = os.environ.get('MOD_HMI_SERIAL_PORT', "/dev/ttyUSB0")
+HMI_TIMEOUT = int(os.environ.get('MOD_HMI_TIMEOUT', 0))
+
+MODEL_CPU = os.environ.get('MOD_MODEL_CPU', None)
+MODEL_TYPE = os.environ.get('MOD_MODEL_TYPE', None)
 
 DEVICE_WEBSERVER_PORT = int(os.environ.get('MOD_DEVICE_WEBSERVER_PORT', 80))
 
@@ -71,13 +78,16 @@ DEFAULT_ICON_IMAGE = {
     'screenshot': join(HTML_DIR, 'resources/pedals/default-screenshot.png')
 }
 
-
 # Cloud API addresses
 CLOUD_HTTP_ADDRESS = os.environ.pop('MOD_CLOUD_HTTP_ADDRESS', "https://api-dev.moddevices.com/v2")
 PLUGINS_HTTP_ADDRESS = os.environ.pop('MOD_PLUGINS_HTTP_ADDRESS', "https://pedalboards.moddevices.com/plugins")
 PEDALBOARDS_HTTP_ADDRESS = os.environ.pop('MOD_PEDALBOARDS_HTTP_ADDRESS', "https://pedalboards-dev.moddevices.com")
 CONTROLCHAIN_HTTP_ADDRESS = os.environ.pop('MOD_CONTROLCHAIN_HTTP_ADDRESS',
                                            "http://download.moddevices.com/releases/cc-firmware/v1")
+
+MIDI_BEAT_CLOCK_SENDER_URI = "urn:mod:mclk"
+MIDI_BEAT_CLOCK_SENDER_INSTANCE_ID = 9993
+MIDI_BEAT_CLOCK_SENDER_OUTPUT_PORT = "mclk" # This is the LV2 symbol of the plug-ins OutputPort
 
 TUNER = os.environ.get('MOD_TUNER_PLUGIN', "gxtuner")
 TUNER_INSTANCE_ID = 9994
@@ -95,12 +105,11 @@ PEDALBOARD_INSTANCE = "/pedalboard"
 PEDALBOARD_INSTANCE_ID = 9995
 PEDALBOARD_URI = "urn:mod:pedalboard"
 
+UNTITLED_PEDALBOARD_NAME="Untitled Pedalboard"
+
 CAPTURE_PATH='/tmp/capture.ogg'
 PLAYBACK_PATH='/tmp/playback.ogg'
 
-UPDATE_MOD_OS_FILE='/data/modduo.tar'
+UPDATE_MOD_OS_FILE='/data/{}'.format(os.environ.get('MOD_UPDATE_MOD_OS_FILE', 'modduo.tar').replace('*','cloud'))
 UPDATE_CC_FIRMWARE_FILE='/tmp/cc-firmware.bin'
 USING_256_FRAMES_FILE='/data/using-256-frames'
-
-# 'aggregate' or not set. No effect if set to another string.
-MIDI_PORT_MODE = os.environ.pop('MOD_MIDI_PORT_MODE', "aggregate")

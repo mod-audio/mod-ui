@@ -21,10 +21,16 @@ from mod.hmi import HMI
 from mod.host import Host
 
 class FakeHMI(HMI):
-    def init(self, callback):
-        pass
+    def __init__(self, init_cb):
+        HMI.__init__(self, 0, 0, 0, init_cb, None)
 
-    def send(self, msg, callback=None, datatype=None):
+    def isFake(self):
+        return True
+
+    def init(self, callback):
+        ioloop.IOLoop.instance().add_callback(callback)
+
+    def send(self, msg, callback=None, datatype='int'):
         logging.info(msg)
         if callback is None:
             return

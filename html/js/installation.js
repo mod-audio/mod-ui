@@ -15,8 +15,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-var kTargetArchitecture = "duo"
-
 function InstallationQueue() {
     var self = this
 
@@ -40,14 +38,15 @@ function InstallationQueue() {
         $.ajax({
             url: SITEURL + '/lv2/bundles/' + bundleId,
             success: function (data) {
-                var targetfiles = null
+                var bincompat, targetfiles = null
                 for (var i in data.files) {
-                    if (data.files[i].arch == kTargetArchitecture) {
+                    bin_compat = data.files[i].bin_compat
+                    if (bin_compat !== undefined && bin_compat.toUpperCase() == BIN_COMPAT.toUpperCase()) {
                         targetfiles = data.files[i];
                         break;
                     }
                 }
-                if (targetfiles == null) {
+                if (targetfiles == null || targetfiles.file_href === undefined) {
                     new Notification('error', "Can't find bundle to install", 5000)
                     if (queue.length == 0) {
                         notification.closeAfter(3000)

@@ -32,8 +32,9 @@ JqueryClass('bankBox', {
 
         self.data(options)
 
-        options.pedalboardCanvasMode.pedalboardsModeSelector(options.pedalboardCanvas)
-        options.resultCanvasMode.pedalboardsModeSelector(options.resultCanvas)
+        // Not used anymore
+        // options.pedalboardCanvasMode.pedalboardsModeSelector(options.pedalboardCanvas)
+        // options.resultCanvasMode.pedalboardsModeSelector(options.resultCanvas)
 
         options.pedalboardCanvas.hide()
         options.pedalboardCanvasMode.hide()
@@ -379,11 +380,11 @@ JqueryClass('bankBox', {
 
         rendered.data('pedalboardBundle', pedalboard.bundle)
 
-        wait_for_pedalboard_screenshot(pedalboard.bundle, function (resp) {
+        wait_for_pedalboard_screenshot(pedalboard.bundle, pedalboard.version, function (resp) {
             var img = rendered.find('.img img');
 
             if (resp.ok) {
-                img.attr("src", "/pedalboard/image/thumbnail.png?bundlepath="+escape(pedalboard.bundle)+"&tstamp="+resp.ctime)
+                img.attr("src", "/pedalboard/image/thumbnail.png?bundlepath="+escape(pedalboard.bundle)+"&tstamp="+resp.ctime+"&v="+pedalboard.version)
                 img.css({ top: (img.parent().height() - img.height()) / 2 })
             } else {
                 img.attr("src", "/img/icons/broken_image.svg")

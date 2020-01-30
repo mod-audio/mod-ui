@@ -4,27 +4,79 @@
         <div class="clearfix"></div>
         <hr style="margin-top:0px" />
         <form class="bottom form">
-            <div class="mod form-group clearfix">
-                <label>Actuator</label>
-                <div class="mod-controls">
-                    <select class="form-control" name="actuator"></select>
-                </div>
-            </div>
-            <label class="label-toggle" for="toggle-address"><a>Extended</a></label>
-            <div>
-                <br /><br />
-                <input class="checkbox-toggle" type="checkbox" id="toggle-address" />
-                <div class="form-group clearfix">
-                    <label>Label</label>
-                    <div class="mod-controls">
-                        <input class="form-control" name="label" type="text"/>
+            <div class="form-container">
+              <div>
+                <div class="main-form-container">
+                  <div class="tempo form-group clearfix">
+                    <label>Tempo</label>
+                    <div>
+                      <input type="checkbox" name="tempo"> Translate value to musical tempo
                     </div>
+                    <div>
+                      <select class="form-control" name="divider">
+                      </select>
+                    </div>
+                  </div>
+                  <div class="mod form-group clearfix">
+                      <label>Assign to</label>
+                      <select name="type">
+                         <option>None</option>
+                         <option>Device</option>
+                         <option>MIDI</option>
+                         <option>Control Chain</option>
+                         <option>CV</option>
+                      </select>
+                      <input type="hidden" name="type">
+                  </div>
+                  <div class="dynamic-field device-table form-group clearfix" style="display: none;">
+                    <input type="hidden" name="hmi-page" type="number">
+                    <input type="hidden" name="hmi-uri">
+                  </div>
+                  <span class="dynamic-field midi-learn-hint" style="display: none;">To map this parameter to your MIDI controller, press "save" and move the desired control on your MIDI device.</span>
+                  <span class="dynamic-field midi-learn-custom" style="display: none;">
+                    This parameter is currently mapped to <span class="midi-custom-uri"></span>.
+                    In order to map this parameter to a different MIDI control, press "save" and move the desired control on your MIDI device.
+                    Press "cancel" to retain the current mapping.
+                  </span>
+                  <span class="dynamic-field no-cc" style="display: none;">
+                    No Control Chain device detected,
+                    please make sure that the cable is firmly seated and connected to the "MAIN" port on the Control Chain device.
+                  </span>
+                  <span class="dynamic-field cc-in-use" style="display: none;">
+                    No Control Chain actuators available,
+                    either your Control Chain devices cannot handle this control or all their actuators are already in use.
+                  </span>
+                  <div class="dynamic-field cc-select form-group clearfix" style="display: none;">
+                    <div class="mod-controls" style="width: 100%">
+                        <select class="form-control" name="cc-actuator"></select>
+                    </div>
+                  </div>
+                  <span class="dynamic-field no-cv" style="display: none;">
+                    To add a Control Voltage addressing source,
+                    press the "Manage CV Ports" button in the top-bar of the Pedalboard Constructor and check the box that appears next to the Control Voltage output jack of a plugin.
+                  </span>
+                  <div class="dynamic-field cv-select form-group clearfix" style="display: none;">
+                    <div class="mod-controls" style="width: 100%">
+                        <select class="form-control" name="cv-port"></select>
+                    </div>
+                  </div>
                 </div>
-            </div>
-            <hr class="col-xs-12" style="padding:0" />
-            <div class="textright clearfix">
-              <span class="btn btn-danger js-close">Cancel</span>
-              <span class="btn btn-success js-save">Save</span>
+                <hr class="col-xs-12" style="padding:0;margin:0 0 10px;" />
+                <div class="buttons-container textright clearfix">
+                    <span class="btn btn-danger js-close">Cancel</span>
+                    <span class="btn btn-success js-save">Save</span>
+                    <span class="btn advanced-toggle">Advanced</span>
+                </div>
+              </div>
+
+              <div class="advanced-container" style="display: none;">
+                  <div class="form-group clearfix">
+                      <label>Label</label>
+                      <div class="mod-controls">
+                          <input class="form-control" name="label" type="text"/>
+                      </div>
+                  </div>
+              </div>
             </div>
         </form>
     </div>

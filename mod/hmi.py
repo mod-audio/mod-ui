@@ -17,13 +17,35 @@
 
 
 from datetime import timedelta
-from tornado.iostream import BaseIOStream
+from tornado.iostream import BaseIOStream, StreamClosedError
 from tornado import ioloop
 
-from mod.protocol import Protocol, ProtocolError
+from mod import get_hardware_actuators, get_hardware_descriptor, get_nearest_valid_scalepoint_value
+from mod.protocol import Protocol, ProtocolError, process_resp
 
-import serial, logging
+import logging
+import serial
 import time
+
+HMI_ADDRESSING_FLAG_PAGINATED   = 0x1
+HMI_ADDRESSING_FLAG_WRAP_AROUND = 0x2
+HMI_ADDRESSING_FLAG_PAGE_END    = 0x4
+
+class Menu(object):
+    # implemented
+    STEREOLINK_INP_ID     = 13
+    STEREOLINK_OUTP_ID    = 23
+    MASTER_VOL_PORT_ID    = 24
+    FOOTSWITCH_NAVEG_ID   = 150
+    BYPASS_1_ID           = 171
+    BYPASS_2_ID           = 172
+    PLAY_STATUS_ID        = 180
+    TEMPO_BPM_ID          = 181
+    TEMPO_BPB_ID          = 182
+    SYS_CLK_SOURCE_ID     = 202
+    MIDI_CLK_SEND_ID      = 203
+    SNAPSHOT_PRGCHGE_ID   = 204
+    PB_PRGCHNGE_ID        = 205
 
 class SerialIOStream(BaseIOStream):
     def __init__(self, sp):
@@ -53,22 +75,37 @@ class SerialIOStream(BaseIOStream):
         return r
 
 class HMI(object):
-    def __init__(self, port, baud_rate, callback):
-        logging.basicConfig(level=logging.DEBUG)
+    def __init__(self, port, baud_rate, timeout, init_cb, reinit_cb):
         self.sp = None
         self.port = port
         self.baud_rate = baud_rate
         self.queue = []
         self.queue_idle = True
         self.initialized = False
+        self.handling_response = False
+        self.need_flush = 0 # 0 means False, otherwise use it as counter
+        self.flush_io = None
+        self.last_write_time = 0
+        self.timeout = timeout # in seconds
         self.ioloop = ioloop.IOLoop.instance()
-        self.init(callback)
+        self.reinit_cb = reinit_cb
+        self.hw_desc = get_hardware_descriptor()
+        hw_actuators = self.hw_desc.get('actuators', [])
+        self.hw_ids = [actuator['id'] for actuator in hw_actuators]
+        self.bpm = None
+        self.init(init_cb)
+
+    def isFake(self):
+        return False
 
     # this can be overriden by subclasses to avoid any connection in DEV mode
     def init(self, callback):
         try:
-            print("{0}, {1}".format(self.port, self.baud_rate))
-            sp = serial.Serial(self.port, self.baud_rate, timeout=0, write_timeout=0)
+            sp = None
+            try:
+                sp = serial.Serial(self.port, self.baud_rate, timeout=0, write_timeout=0)
+            except:
+                sp = serial.Serial(self.port, self.baud_rate, timeout=0, writeTimeout=0)
             sp.flushInput()
             sp.flushOutput()
         except Exception as e:
@@ -76,55 +113,120 @@ class HMI(object):
             return
 
         self.sp = SerialIOStream(sp)
+        self.ping_io = None
 
         def clear_callback(ok):
             callback()
 
         # calls ping until ok is received
         def ping_callback(ok):
+            if self.ping_io is not None:
+                self.ioloop.remove_timeout(self.ping_io)
+                self.ping_io = None
+
             if ok:
                 self.clear(clear_callback)
             else:
-                self.ioloop.add_timeout(timedelta(seconds=1), lambda:self.ping(ping_callback))
+                self.ioloop.call_later(1, call_ping)
 
-        self.ping(ping_callback)
+        def call_ping():
+            sp.flushInput()
+            sp.flushOutput()
+            self.queue = []
+            self.queue_idle = True
+
+            self.ping(ping_callback)
+            self.ping_io = self.ioloop.call_later(1, call_ping)
+
+        call_ping()
         self.checker()
 
     def checker(self, data=None):
-        if data is not None:
-            logging.info('[hmi] received <- %s' % repr(data))
+        if data is not None and data != b'\0':
+            self.last_write_time = 0
+            logging.debug('[hmi] received <- %s', data)
             try:
                 msg = Protocol(data.decode("utf-8", errors="ignore"))
             except ProtocolError as e:
-                logging.error('[hmi] error parsing msg %s' % repr(data))
-                logging.error('[hmi]   error code %s' % e.error_code())
+                logging.error('[hmi] error parsing msg %s', data)
+                logging.error('[hmi]   error code %s', e.error_code())
                 self.reply_protocol_error(e.error_code())
             else:
+                # reset timeout checks when a message is received
+                self.need_flush = 0
+                if self.flush_io is not None:
+                    self.ioloop.remove_timeout(self.flush_io)
+                    self.flush_io = None
+
                 if msg.is_resp():
                     try:
                         original_msg, callback, datatype = self.queue.pop(0)
+                        logging.debug("[hmi] popped from queue: %s", original_msg)
                     except IndexError:
                         # something is wrong / not synced!!
                         logging.error("[hmi] NOT SYNCED")
                     else:
                         if callback is not None:
-                            logging.info("[hmi] calling callback for %s" % original_msg)
+                            logging.debug("[hmi] calling callback for %s", original_msg)
                             callback(msg.process_resp(datatype))
                         self.process_queue()
                 else:
                     def _callback(resp, resp_args=None):
+                        resp = 0 if resp else -1
                         if resp_args is None:
-                            logging.info('[hmi]     sent "resp {0}"'.format(resp))
-                            self.send("resp %d" % (0 if resp else -1))
-                        else:
-                            logging.info('[hmi]     sent "resp {0} {1}"'.format(resp, resp_args))
-                            self.send("resp %d %s" % (0 if resp else -1, resp_args))
+                            self.send_reply("resp %d" % resp)
+                            logging.debug('[hmi]     sent "resp %s"', resp)
 
+                        else:
+                            self.send_reply("resp %d %s" % (resp, resp_args))
+                            logging.debug('[hmi]     sent "resp %s %s"', resp, resp_args)
+
+                        self.handling_response = False
+                        if self.queue_idle:
+                            self.process_queue()
+
+                    self.handling_response = True
                     msg.run_cmd(_callback)
+
+        if self.need_flush != 0:
+            if self.flush_io is not None:
+                self.ioloop.remove_timeout(self.flush_io)
+            self.flush_io = self.ioloop.call_later(self.timeout/2, self.flush)
+
         try:
             self.sp.read_until(b'\0', self.checker)
         except serial.SerialException as e:
-            logging.error("[hmi] error while reading %s" % e)
+            logging.error("[hmi] error while reading %s", e)
+
+    def flush(self, forced = False):
+        prev_queue = self.need_flush
+        self.need_flush = 0
+
+        if len(self.queue) < max(5, prev_queue) and not forced:
+            logging.debug("[hmi] flushing ignored")
+            return
+
+        # FUCK!
+        logging.warn("[hmi] flushing queue as workaround now: %d in queue", len(self.queue))
+        self.sp.sp.flush()
+        self.sp.sp.flushInput()
+        self.sp.sp.flushOutput()
+        self.sp.close()
+        self.sp = None
+
+        while len(self.queue) > 1:
+            msg, callback, datatype = self.queue.pop(0)
+
+            if any(msg.startswith(resp) for resp in Protocol.RESPONSES):
+                if callback is not None:
+                    callback(process_resp(None, datatype))
+            else:
+                if callback is not None:
+                    callback("-1003")
+
+        self.reinit_cb()
+
+        #os.system("touch /tmp/reset-hmi; kill -9 {}".format(os.getpid()))
 
     def process_queue(self):
         if self.sp is None:
@@ -132,147 +234,211 @@ class HMI(object):
 
         try:
             msg, callback, datatype = self.queue[0] # fist msg on the queue
-            logging.info("[hmi] popped from queue: %s" % msg)
-            self.sp.write(bytes(msg, 'utf-8') + b"\0")
-            logging.info("[hmi] sending -> %s" % msg)
-            self.queue_idle = False
         except IndexError:
-            logging.info("[hmi] queue is empty, nothing to do")
+            logging.debug("[hmi] queue is empty, nothing to do")
             self.queue_idle = True
+            self.last_write_time = 0
+        else:
+            logging.debug("[hmi] sending -> %s", msg)
+            try:
+                self.sp.write(msg.encode('utf-8') + b'\0')
+            except StreamClosedError as e:
+                logging.exception(e)
+                self.sp = None
+
+            self.queue_idle = False
+            self.last_write_time = time.time()
 
     def reply_protocol_error(self, error):
         #self.send(error) # TODO: proper error handling, needs to be implemented by HMI
-        self.send("resp -1")
+        self.send("resp -1", None)
 
-    def send(self, msg, callback=None, datatype='int'):
+    def send(self, msg, callback, datatype='int'):
         if self.sp is None:
             return
 
+        if self.timeout > 0:
+            if len(self.queue) > 30:
+                self.need_flush = len(self.queue)
+
+            elif self.last_write_time != 0 and time.time() - self.last_write_time > self.timeout:
+                logging.warn("[hmi] no response for %ds, giving up", self.timeout)
+                if self.flush_io is not None:
+                    self.ioloop.remove_timeout(self.flush_io)
+                    self.flush_io = None
+                self.flush(True)
+
         if not any([ msg.startswith(resp) for resp in Protocol.RESPONSES ]):
+            # make an exception for control_set, calling callback right away without waiting
+            #if msg.startswith("s "):
+                #self.queue.append((msg, None, datatype))
+                #if callback is not None:
+                    #callback(True)
+            #else:
             self.queue.append((msg, callback, datatype))
-            logging.info("[hmi] scheduling -> %s" % str(msg))
-            if self.queue_idle:
+            logging.debug("[hmi] scheduling -> %s", msg)
+            if self.queue_idle and not self.handling_response:
                 self.process_queue()
             return
 
         # is resp, just send
         self.sp.write(msg.encode('utf-8') + b'\0')
 
+    def send_reply(self, msg):
+        if self.sp is None:
+            return
+
+        self.sp.write(msg.encode('utf-8') + b'\0')
+
     def initial_state(self, bank_id, pedalboard_id, pedalboards, callback):
-        numBytesFree = 1024-64
-        pedalboardsData = None
+        numPedals = len(pedalboards)
 
-        num = 0
-        for pb in pedalboards:
-            if num > 50:
-                break
+        if numPedals <= 9 or pedalboard_id < 4:
+            startIndex = 0
+        elif pedalboard_id+4 >= numPedals:
+            startIndex = numPedals - 9
+        else:
+            startIndex = pedalboard_id - 4
 
-            title   = pb['title'].replace('"', '').upper()[:31]
-            data    = '"%s" %i' % (title, num)
-            dataLen = len(data)
+        endIndex = min(startIndex+9, numPedals)
 
-            if numBytesFree-dataLen-2 < 0:
-                print("ERROR: Controller out of memory when sending initial state (stopped at %i)" % num)
-                if pedalboard_id >= num:
-                    pedalboard_id = 0
-                break
+        data = 'is %d %d %d %d %d' % (numPedals, startIndex, endIndex, bank_id, pedalboard_id)
 
-            num += 1
+        for i in range(startIndex, endIndex):
+            data += ' "%s" %d' % (pedalboards[i]['title'].replace('"', '')[:31].upper(), i+1)
 
-            if pedalboardsData is None:
-                pedalboardsData = ""
-            else:
-                pedalboardsData += " "
-
-            numBytesFree -= dataLen+1
-            pedalboardsData += data
-
-        if pedalboardsData is None:
-            pedalboardsData = ""
-
-        self.send("initial_state %d %d %s" % (bank_id, pedalboard_id, pedalboardsData), callback)
+        self.send(data, callback)
 
     def ui_con(self, callback):
-        self.send("ui_con", callback, datatype='boolean')
+        self.send("ui_con", callback, 'boolean')
 
     def ui_dis(self, callback):
-        self.send("ui_dis", callback, datatype='boolean')
+        self.send("ui_dis", callback, 'boolean')
 
-    def control_add(self, instance_id, port, label, var_type, unit, value, min, max, steps,
-                    hw_type, hw_id, actuator_type, actuator_id, n_controllers, index, options, callback):
-        label = '"%s"' % label.upper().replace('"', "")
-        unit = '"%s"' % unit.replace('"', '')
-        optionsData = []
+    def control_add(self, data, hw_id, actuator_uri, callback):
+        # instance_id = data['instance_id']
+        # port = data['port']
+        hasTempo = data.get('tempo', False)
+        label = data['label']
+        var_type = data['hmitype']
+        unit = data['unit']
+        value = data['dividers'] if hasTempo else data['value']
+        xmin = data['minimum']
+        xmax = data['maximum']
+        steps = data['steps']
+        options = data['options']
+        hmi_set_index = self.hw_desc.get('hmi_set_index', False)
 
-        rmax = max
+        if data.get('group', None) is not None:
+            if var_type & 0x100: # HMI_ADDRESSING_TYPE_REVERSE_ENUM
+                prefix = "- "
+            else:
+                prefix = "+ "
+            label = prefix + label
+
+        label = '"%s"' % label.replace('"', "")[:31].upper()
+        unit = '"%s"' % unit.replace('"', '')[:7]
+
+        if value < xmin:
+            logging.error('[hmi] control_add received value < min for %s', label)
+            value = xmin
+        elif value > xmax:
+            logging.error('[hmi] control_add received value > max for %s', label)
+            value = xmax
 
         if options:
-            currentNum = 0
-            numBytesFree = 1024-128
+            numOpts = len(options)
+            optionsData = []
 
-            for o in options:
-                if currentNum > 50:
-                    if value >= currentNum:
-                        value = 0
-                    rmax = currentNum
-                    break
+            ivalue, value = get_nearest_valid_scalepoint_value(value, options)
 
-                data    = '"%s" %f' % (o[1].replace('"', '').upper(), float(o[0]))
-                dataLen = len(data)
+            if hasTempo:
+                unit = '""'
+                startIndex = 0
+                endIndex = numOpts
+            else:
+                if numOpts <= 5 or ivalue <= 2:
+                    startIndex = 0
+                elif ivalue+2 >= numOpts:
+                    startIndex = numOpts-5
+                else:
+                    startIndex = ivalue - 2
+                endIndex = min(startIndex+5, numOpts)
 
-                if numBytesFree-dataLen-2 < 0:
-                    print("ERROR: Controller out of memory when sending options (stopped at %i)" % currentNum)
-                    if value >= currentNum:
-                        value = 0.0
-                    rmax = currentNum
-                    break
+            flags = 0x0
+            if startIndex != 0 or endIndex != numOpts:
+                flags |= HMI_ADDRESSING_FLAG_PAGINATED
+            if data.get('group', None) is None:
+                flags |= HMI_ADDRESSING_FLAG_WRAP_AROUND
+            if endIndex == numOpts:
+                flags |= HMI_ADDRESSING_FLAG_PAGE_END
 
-                currentNum += 1
-                numBytesFree -= dataLen+1
-                optionsData.append(data)
+            for i in range(startIndex, endIndex):
+                option = options[i]
+                xdata  = '"%s" %f' % (option[1].replace('"', '')[:31].upper(), float(option[0]))
+                optionsData.append(xdata)
 
-        options = "%d %s" % (len(optionsData), " ".join(optionsData))
-        options = options.strip()
+            options = "%d %d %s" % (len(optionsData), flags, " ".join(optionsData))
+            options = options.strip()
 
-        self.send('control_add %d %s %s %d %s %f %f %f %d %d %d %d %d %d %d %s' %
-                  ( instance_id,
-                    port,
+        else:
+            options = "0"
+
+        def control_add_callback(ok):
+            if not ok:
+                callback(False)
+                return
+            n_controllers = data['addrs_max']
+            index = data['addrs_idx']
+            self.control_set_index(hw_id, index, n_controllers, callback)
+
+        cb = callback
+
+        if not actuator_uri.startswith("/hmi/footswitch") and hmi_set_index:
+            cb = control_add_callback
+
+        self.send('a %d %s %d %s %f %f %f %d %s' %
+                  ( hw_id,
                     label,
                     var_type,
                     unit,
                     value,
-                    rmax,
-                    min,
+                    xmax,
+                    xmin,
                     steps,
-                    hw_type,
-                    hw_id,
-                    actuator_type,
-                    actuator_id,
-                    n_controllers,
-                    index,
                     options,
                   ),
-                  callback, datatype='boolean')
+                  cb, 'boolean')
 
-    def control_rm(self, instance_id, port, callback):
+    def control_set_index(self, hw_id, index, n_controllers, callback):
+        self.send('si %d %d %d' % (hw_id, index, n_controllers), callback, 'boolean')
+
+    def control_set(self, hw_id, value, callback):
+        """Set a plug-in's control port value on the HMI."""
+        # control_set <hw_id> <value>"""
+        self.send('s %d %f' % (hw_id, value), callback, 'boolean')
+
+    def control_rm(self, hw_ids, callback):
         """
         removes an addressing
-
-        if instance_id is -1 will remove all addressings
-        if symbol == ":all" will remove every addressing for the instance_id
         """
-        self.send('control_rm %d %s' % (instance_id, port), callback, datatype='boolean')
+
+        idsStr = tuple(str(i) for i in hw_ids)
+
+        ids = "%s" % (" ".join(idsStr))
+        ids = ids.strip()
+        self.send('rm %s' % (ids), callback, 'boolean')
 
     def ping(self, callback):
-        self.send('ping', callback, datatype='boolean')
+        self.send('ping', callback, 'boolean')
 
     def tuner(self, freq, note, cents, callback):
-        self.send('tuner %f %s %f' % (freq, note, cents), callback)
+        self.send('tu_v %f %s %f' % (freq, note, cents), callback)
 
     def xrun(self, callback):
         self.send('xrun', callback)
 
-    def bank_config(self, hw_type, hw_id, actuator_type, actuator_id, action, callback):
+    def bank_config(self, hw_id, action, callback):
         """
         configures bank addressings
 
@@ -282,9 +448,43 @@ class HMI(object):
             2: Pedalboard UP
             3: Pedalboard DOWN
         """
-        self.send('bank_config %d %d %d %d %d' % (hw_type, hw_id, actuator_type, actuator_id, action), callback, datatype='boolean')
+        self.send('bank_config %d %d' % (hw_id, action), callback, 'boolean')
+
+    def set_bpm(self, bpm):
+        if round(bpm) != self.bpm:
+            self.bpm = round(bpm)
+            return True
+        return False
 
     # new messages
 
     def clear(self, callback):
-        self.send("control_rm -1 :all", callback)
+        self.send("pb_cl", callback)
+
+    def set_profile_value(self, key, value, callback):
+        # Do not send new bpm value to HMI if its int value is the same
+        if key == Menu.TEMPO_BPM_ID and not self.set_bpm(value):
+            callback(True)
+        else:
+            if key == Menu.TEMPO_BPM_ID:
+                value = self.bpm # set rounded value for bpm
+            self.send("mc %i %i" % (key, int(value)), callback, 'boolean')
+
+    def set_profile_values(self, playback_rolling, values, callback):
+        msg  = "mc"
+        msg += " %i %i" % (Menu.PLAY_STATUS_ID, int(playback_rolling))
+        msg += " %i %i" % (Menu.STEREOLINK_INP_ID, int(values['inputStereoLink']))
+        msg += " %i %i" % (Menu.STEREOLINK_OUTP_ID, int(values['outputStereoLink']))
+        msg += " %i %i" % (Menu.MASTER_VOL_PORT_ID, int(values['masterVolumeChannelMode']))
+        msg += " %i %i" % (Menu.SYS_CLK_SOURCE_ID, values['transportSource'])
+        msg += " %i %i" % (Menu.MIDI_CLK_SEND_ID, int(values['midiClockSend']))
+        msg += " %i %i" % (Menu.SNAPSHOT_PRGCHGE_ID, values['midiChannelForSnapshotsNavigation'])
+        msg += " %i %i" % (Menu.PB_PRGCHNGE_ID, values['midiChannelForPedalboardsNavigation'])
+        self.send(msg, callback)
+
+    # pages is a list of int (1 if page available else 0)
+    def set_available_pages(self, pages, callback):
+        msg = "pa"
+        for page in pages:
+            msg += " %i" % page
+        self.send(msg, callback)

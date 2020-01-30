@@ -20,18 +20,19 @@ import os, time, logging, json
 from datetime import timedelta
 from tornado import iostream, ioloop, gen
 
-from mod import safe_json_load
+from mod import safe_json_load, TextFileFlusher
 from mod.bank import get_last_bank_and_pedalboard
 from mod.development import FakeHost, FakeHMI
 from mod.hmi import HMI
 from mod.recorder import Recorder, Player
 from mod.screenshot import ScreenshotGenerator
-from mod.settings import (DEV_ENVIRONMENT, DEV_HMI, DEV_HOST,
-                          HMI_SERIAL_PORT, HMI_BAUD_RATE, HOST_CARLA,
-                          PREFERENCES_JSON_FILE)
+from mod.settings import (LOG,
+                          DEV_ENVIRONMENT, DEV_HMI, DEV_HOST,
+                          HMI_SERIAL_PORT, HMI_BAUD_RATE, HMI_TIMEOUT,
+                          HOST_CARLA, PREFERENCES_JSON_FILE, UNTITLED_PEDALBOARD_NAME)
 
 if DEV_HOST:
-    from mod.development import FakeHost as Host
+    Host = FakeHost
 elif HOST_CARLA:
     from mod.host_carla import CarlaHost as Host
 else:
@@ -41,19 +42,31 @@ class UserPreferences(object):
     def __init__(self):
         self.prefs = safe_json_load(PREFERENCES_JSON_FILE, dict)
 
-    def get(self, key, default):
-        return self.prefs.get(key, default)
+    def get(self, key, default, type_ = None, values = None):
+        value = self.prefs.get(key, default)
+
+        if type_ is not None and not isinstance(value, type_):
+            try:
+                value = type_(value)
+            except:
+                return default
+
+        if values is not None and value not in values:
+            return default
+
+        return value
 
     def setAndSave(self, key, value):
         self.prefs[key] = value
         self.save()
 
     def save(self):
-        with open(PREFERENCES_JSON_FILE, 'w') as fh:
-            json.dump(self.prefs, fh)
+        with TextFileFlusher(PREFERENCES_JSON_FILE) as fh:
+            json.dump(self.prefs, fh, indent=4)
 
 class Session(object):
     def __init__(self):
+        logging.basicConfig(level=(logging.DEBUG if LOG else logging.WARNING))
         self.ioloop = ioloop.IOLoop.instance()
 
         self.prefs = UserPreferences()
@@ -71,13 +84,13 @@ class Session(object):
         hmiOpened = False
 
         if not DEV_HMI:
-            self.hmi  = HMI(HMI_SERIAL_PORT, HMI_BAUD_RATE, self.hmi_initialized_cb)
+            self.hmi  = HMI(HMI_SERIAL_PORT, HMI_BAUD_RATE, HMI_TIMEOUT, self.hmi_initialized_cb, self.hmi_reinit_cb)
             hmiOpened = self.hmi.sp is not None
 
         #print("Using HMI =>", hmiOpened)
 
         if not hmiOpened:
-            self.hmi = FakeHMI(HMI_SERIAL_PORT, HMI_BAUD_RATE, self.hmi_initialized_cb)
+            self.hmi = FakeHMI(self.hmi_initialized_cb)
             print("Using FakeHMI =>", self.hmi)
 
         self.host = Host(self.hmi, self.prefs, self.msg_callback)
@@ -123,10 +136,22 @@ class Session(object):
 
     @gen.coroutine
     def hmi_initialized_cb(self):
-        logging.info("hmi initialized")
-        self.hmi.initialized = True
+        self.hmi.initialized = not self.hmi.isFake()
         uiConnected = bool(len(self.websockets) > 0)
         yield gen.Task(self.host.initialize_hmi, uiConnected)
+
+    # This is very nasty, sorry
+    def hmi_reinit_cb(self):
+        if not os.path.exists("/usr/bin/hmi-reset"):
+            return
+        # stop websockets
+        self.hmi.initialized = False
+        self.signal_disconnect()
+        # restart hmi
+        os.system("/usr/bin/hmi-reset; /usr/bin/sleep 3")
+        # reconnect to newly started hmi
+        self.hmi = HMI(HMI_SERIAL_PORT, HMI_BAUD_RATE, HMI_TIMEOUT, self.hmi_initialized_cb, self.hmi_reinit_cb)
+        self.host.reconnect_hmi(self.hmi)
 
     # -----------------------------------------------------------------------------------------------------------------
     # Webserver callbacks, called from the browser (see webserver.py)
@@ -142,9 +167,12 @@ class Session(object):
         self.host.remove_plugin(instance, callback)
 
     # Address a plugin parameter
-    def web_parameter_address(self, port, actuator_uri, label, minimum, maximum, value, steps, callback):
+    def web_parameter_address(self, port, actuator_uri, label, minimum, maximum, value, steps, tempo, dividers, page, callback):
         instance, portsymbol = port.rsplit("/",1)
-        self.host.address(instance, portsymbol, actuator_uri, label, minimum, maximum, value, steps, callback)
+        self.host.address(instance, portsymbol, actuator_uri, label, minimum, maximum, value, steps, tempo, dividers, page, callback)
+
+    def web_set_sync_mode(self, mode, callback):
+        self.host.set_sync_mode(mode, True, False, True, callback)
 
     # Connect 2 ports
     def web_connect(self, port_from, port_to, callback):
@@ -157,20 +185,24 @@ class Session(object):
     # Save the current pedalboard
     # returns saved bundle path
     def web_save_pedalboard(self, title, asNew):
-        bundlepath = self.host.save(title, asNew)
+        bundlepath, newPB = self.host.save(title, asNew)
         self.pedalboard_changed_callback(True, bundlepath, title)
+
+        if self.hmi.initialized:
+            self.host.hmi_set_pb_name(title)
+
         self.screenshot_generator.schedule_screenshot(bundlepath)
-        return bundlepath
+        return bundlepath, newPB
 
     # Get list of Hardware MIDI devices
-    # returns (devsInUse, devList)
+    # returns (devsInUse, devList, names, midi_aggregated_mode)
     def web_get_midi_device_list(self):
         return self.host.get_midi_ports()
 
     # Set the selected MIDI devices to @a newDevs
     # Will remove or add new JACK ports as needed
-    def web_set_midi_devices(self, newDevs):
-        return self.host.set_midi_devices(newDevs)
+    def web_set_midi_devices(self, newDevs, midi_aggregated_mode):
+        return self.host.set_midi_devices(newDevs, midi_aggregated_mode)
 
     # Send a ping to HMI and Websockets
     def web_ping(self, callback):
@@ -180,10 +212,16 @@ class Session(object):
             callback(False)
         self.msg_callback("ping")
 
+    def web_cv_addressing_plugin_port_add(self, uri, name):
+        self.host.cv_addressing_plugin_port_add(uri, name)
+
+    def web_cv_addressing_plugin_port_remove(self, uri, callback):
+        self.host.cv_addressing_plugin_port_remove(uri, callback)
+
     # A new webbrowser page has been open
     # We need to cache its socket address and send any msg callbacks to it
     def websocket_opened(self, ws, callback):
-        def ready(ok):
+        def ready(_):
             self.websockets.append(ws)
             self.host.open_connection_if_needed(ws)
             callback(True)
@@ -300,26 +338,34 @@ class Session(object):
         if isDefault:
             bundlepath = ""
             title = ""
+
+        if self.hmi.initialized:
+            self.host.hmi_set_pb_name(title or UNTITLED_PEDALBOARD_NAME)
+
         self.pedalboard_changed_callback(True, bundlepath, title)
         return title
 
     def reset(self, callback):
+        logging.debug("SESSION RESET")
         self.host.send_notmodified("feature_enable processing 0")
 
         def host_callback(resp):
             self.host.send_notmodified("feature_enable processing 1")
             callback(resp)
 
-        def reset_host(ok):
+        def reset_host(_):
             self.host.reset(host_callback)
 
         if self.hmi.initialized:
-            def clear_hmi(ok):
-                self.hmi.clear(reset_host)
+            def set_pb_title(_):
+                self.hmi.send("s_pbn {}".format(UNTITLED_PEDALBOARD_NAME), reset_host)
+            def clear_hmi(_):
+                self.hmi.clear(set_pb_title)
             self.host.setNavigateWithFootswitches(False, clear_hmi)
         else:
             reset_host(True)
 
+        # Update the title in HMI
         self.pedalboard_changed_callback(True, "", "")
 
     # host commands

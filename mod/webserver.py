@@ -22,6 +22,7 @@ import shutil
 import subprocess
 import sys
 import time
+
 from base64 import b64decode, b64encode
 from signal import signal, SIGUSR1, SIGUSR2
 from tornado import gen, iostream, web, websocket
@@ -31,21 +32,23 @@ from tornado.template import Loader
 from tornado.util import unicode_type
 from uuid import uuid4
 
-from mod.settings import (APP, LOG,
+from mod.profile import Profile
+from mod.settings import (APP, LOG, DEV_API,
                           HTML_DIR, DOWNLOAD_TMP_DIR, DEVICE_KEY, DEVICE_WEBSERVER_PORT,
                           CLOUD_HTTP_ADDRESS, PLUGINS_HTTP_ADDRESS, PEDALBOARDS_HTTP_ADDRESS, CONTROLCHAIN_HTTP_ADDRESS,
                           LV2_PLUGIN_DIR, LV2_PEDALBOARDS_DIR, IMAGE_VERSION,
                           UPDATE_CC_FIRMWARE_FILE, UPDATE_MOD_OS_FILE, USING_256_FRAMES_FILE,
                           DEFAULT_ICON_TEMPLATE, DEFAULT_SETTINGS_TEMPLATE, DEFAULT_ICON_IMAGE,
                           DEFAULT_PEDALBOARD, DATA_DIR, FAVORITES_JSON_FILE, PREFERENCES_JSON_FILE, USER_ID_JSON_FILE,
-                          DEV_HOST)
+                          DEV_HOST, UNTITLED_PEDALBOARD_NAME, MODEL_CPU, MODEL_TYPE)
 
-from mod import check_environment, jsoncall, safe_json_load, TextFileFlusher
+from mod import check_environment, jsoncall, safe_json_load, TextFileFlusher, get_hardware_descriptor
 from mod.bank import list_banks, save_banks, remove_pedalboard_from_banks
 from mod.session import SESSION
 from modtools.utils import (
-    init as lv2_init, cleanup as lv2_cleanup, get_plugin_list, get_all_plugins, get_plugin_info, get_plugin_gui,
+    init as lv2_init, cleanup as lv2_cleanup, get_plugin_list, get_all_plugins, get_plugin_info, get_non_cached_plugin_info, get_plugin_gui,
     get_plugin_gui_mini, get_all_pedalboards, get_broken_pedalboards, get_pedalboard_info, get_jack_buffer_size,
+    reset_get_all_pedalboards_cache, update_cached_pedalboard_version,
     set_jack_buffer_size, get_jack_sample_rate, set_truebypass_value, set_process_name, reset_xruns
 )
 
@@ -185,20 +188,22 @@ class TimelessRequestHandler(web.RequestHandler):
         return False
 
 class TimelessStaticFileHandler(web.StaticFileHandler):
+    def compute_etag(self):
+        return None
+
+    def set_default_headers(self):
+        self._headers.pop("Date")
+        self.set_header("Cache-Control", "public, max-age=31536000")
+        self.set_header("Expires", "Mon, 31 Dec 2035 12:00:00 gmt")
+
+    def should_return_304(self):
+        return False
+
     def get_cache_time(self, path, modified, mime_type):
         return 0
 
     def get_modified_time(self):
         return None
-
-    def set_default_headers(self):
-        self._headers.pop("Date")
-
-    def set_extra_headers(self, path):
-        self.set_header("Cache-Control", "public, max-age=31536000")
-
-    def should_return_304(self):
-        return self.check_etag_header()
 
 class JsonRequestHandler(TimelessRequestHandler):
     def write(self, data):
@@ -232,6 +237,12 @@ class JsonRequestHandler(TimelessRequestHandler):
         TimelessRequestHandler.write(self, data)
         self.finish()
 
+class CachedJsonRequestHandler(JsonRequestHandler):
+    def set_default_headers(self):
+        TimelessStaticFileHandler.set_default_headers(self)
+        self.set_header("Cache-Control", "public, max-age=31536000")
+        self.set_header("Expires", "Mon, 31 Dec 2035 12:00:00 gmt")
+
 class RemoteRequestHandler(JsonRequestHandler):
     def set_default_headers(self):
         if 'Origin' not in self.request.headers.keys():
@@ -243,7 +254,7 @@ class RemoteRequestHandler(JsonRequestHandler):
         protocol, domain = match.groups()
         if protocol not in ("http", "https"):
             return
-        if not domain.endswith("moddevices.com"):
+        if domain != "moddevices.com" and not domain.endswith(".moddevices.com"):
             return
         self.set_header("Access-Control-Allow-Origin", origin)
 
@@ -327,7 +338,7 @@ class MultiPartFileReceiver(JsonRequestHandler):
 
 class SystemInfo(JsonRequestHandler):
     def get(self):
-        hwdesc = safe_json_load("/etc/mod-hardware-descriptor.json", dict)
+        hwdesc = get_hardware_descriptor()
         uname  = os.uname()
 
         if os.path.exists("/etc/mod-release/system"):
@@ -337,7 +348,12 @@ class SystemInfo(JsonRequestHandler):
             sysdate = "Unknown"
 
         info = {
-            "hwname": hwdesc.get('name',"Unknown"),
+            "hwname": hwdesc.get('name', "Unknown"),
+            "architecture": hwdesc.get('architecture', "Unknown"),
+            "cpu": MODEL_CPU or hwdesc.get('cpu', "Unknown"),
+            "platform": hwdesc.get('platform', "Unknown"),
+            "bin_compat": hwdesc.get('bin-compat', "Unknown"),
+            "model": MODEL_TYPE or hwdesc.get('model', "Unknown"),
             "sysdate": sysdate,
             "python": {
                 "version" : sys.version
@@ -353,9 +369,10 @@ class SystemInfo(JsonRequestHandler):
         self.write(info)
 
 class SystemPreferences(JsonRequestHandler):
-    OPTION_NULL          = 0
-    OPTION_FILE_EXISTS   = 1
-    OPTION_FILE_CONTENTS = 2
+    OPTION_NULL            = 0
+    OPTION_FILE_EXISTS     = 1
+    OPTION_FILE_NOT_EXISTS = 2
+    OPTION_FILE_CONTENTS   = 3
 
     def __init__(self, application, request, **kwargs):
         JsonRequestHandler.__init__(self, application, request, **kwargs)
@@ -363,14 +380,17 @@ class SystemPreferences(JsonRequestHandler):
         self.prefs = []
 
         self.make_pref("bluetooth_name", self.OPTION_FILE_CONTENTS, "/data/bluetooth/name", str)
-        self.make_pref("jack_mono_copy",  self.OPTION_FILE_EXISTS, "/data/jack-mono-copy")
-        self.make_pref("jack_sync_mode",  self.OPTION_FILE_EXISTS, "/data/jack-sync-mode")
-        self.make_pref("jack_256_frames",  self.OPTION_FILE_EXISTS, "/data/using-256-frames")
+        self.make_pref("jack_mono_copy", self.OPTION_FILE_EXISTS, "/data/jack-mono-copy")
+        self.make_pref("jack_sync_mode", self.OPTION_FILE_EXISTS, "/data/jack-sync-mode")
+        self.make_pref("jack_256_frames", self.OPTION_FILE_EXISTS, "/data/using-256-frames")
 
         # Optional services
-        self.make_pref("service_mixserver",  self.OPTION_FILE_EXISTS, "/data/enable-mixserver")
-        self.make_pref("service_mod_sdk",    self.OPTION_FILE_EXISTS, "/data/enable-mod-sdk")
+        self.make_pref("service_mod_peakmeter", self.OPTION_FILE_NOT_EXISTS, "/data/disable-mod-peakmeter")
+        self.make_pref("service_mod_sdk", self.OPTION_FILE_EXISTS, "/data/enable-mod-sdk")
         self.make_pref("service_netmanager", self.OPTION_FILE_EXISTS, "/data/enable-netmanager")
+
+        # Workarounds
+        self.make_pref("autorestart_hmi", self.OPTION_FILE_EXISTS, "/data/autorestart-hmi")
 
     def make_pref(self, label, otype, data, valtype=None, valdef=None):
         self.prefs.append({
@@ -387,6 +407,9 @@ class SystemPreferences(JsonRequestHandler):
         for pref in self.prefs:
             if pref['type'] == self.OPTION_FILE_EXISTS:
                 val = os.path.exists(pref['data'])
+
+            elif pref['type'] == self.OPTION_FILE_NOT_EXISTS:
+                val = not os.path.exists(pref['data'])
 
             elif pref['type'] == self.OPTION_FILE_CONTENTS:
                 if os.path.exists(pref['data']):
@@ -468,7 +491,10 @@ class SystemExeChange(JsonRequestHandler):
             path   = self.get_argument('path')
             create = bool(int(self.get_argument('create')))
 
-            if path not in ("jack-mono-copy", "jack-sync-mode", "using-256-frames"):
+            if path not in ("autorestart-hmi",
+                            "jack-mono-copy",
+                            "jack-sync-mode",
+                            "using-256-frames"):
                 self.write(False)
                 return
 
@@ -503,27 +529,37 @@ class SystemExeChange(JsonRequestHandler):
                 os.remove(filename)
 
         elif etype == "service":
-            name   = self.get_argument('name')
-            enable = bool(int(self.get_argument('enable')))
+            name     = self.get_argument('name')
+            enable   = bool(int(self.get_argument('enable')))
+            inverted = bool(int(self.get_argument('inverted')))
 
-            if name not in ("mixserver", "netmanager", "mod-sdk"):
+            if name not in ("mod-peakmeter", "mod-sdk", "netmanager"):
                 self.write(False)
                 return
 
-            checkname   = "/data/enable-" + name
-            servicename = name
+            if inverted:
+                checkname = "/data/disable-" + name
+            else:
+                checkname = "/data/enable-" + name
 
-            if servicename == "netmanager":
+            if name == "netmanager":
                 servicename = "jack-netmanager"
+            else:
+                servicename = name
 
             if enable:
                 with open(checkname, 'wb') as fh:
                     fh.write(b"")
-                yield gen.Task(run_command, ["systemctl", "start", servicename], None)
-
             else:
                 if os.path.exists(checkname):
                     os.remove(checkname)
+
+            if inverted:
+                enable = not enable
+
+            if enable:
+                yield gen.Task(run_command, ["systemctl", "start", servicename], None)
+            else:
                 yield gen.Task(run_command, ["systemctl", "stop", servicename], None)
 
         os.sync()
@@ -537,6 +573,7 @@ class SystemExeChange(JsonRequestHandler):
     @gen.coroutine
     def restart_services(self):
         yield gen.Task(run_command, ["systemctl", "restart", "jack2"], None)
+        reset_get_all_pedalboards_cache()
         lv2_cleanup()
         lv2_init()
 
@@ -808,7 +845,7 @@ class EffectRemove(JsonRequestHandler):
         ok = yield gen.Task(SESSION.web_remove, instance)
         self.write(ok)
 
-class EffectGet(JsonRequestHandler):
+class EffectGet(CachedJsonRequestHandler):
     def get(self):
         uri = self.get_argument('uri')
 
@@ -816,6 +853,18 @@ class EffectGet(JsonRequestHandler):
             data = get_plugin_info(uri)
         except:
             print("ERROR in webserver.py: get_plugin_info for '%s' failed" % uri)
+            raise web.HTTPError(404)
+
+        self.write(data)
+
+class EffectGetNonCached(JsonRequestHandler):
+    def get(self):
+        uri = self.get_argument('uri')
+
+        try:
+            data = get_non_cached_plugin_info(uri)
+        except:
+            print("ERROR in webserver.py: get_non_cached_plugin_info for '%s' failed" % uri)
             raise web.HTTPError(404)
 
         self.write(data)
@@ -850,8 +899,15 @@ class EffectParameterAddress(JsonRequestHandler):
         maximum = float(data['maximum'])
         value   = float(data['value'])
         steps   = int(data.get('steps', 33))
+        tempo   = data.get('tempo', False)
+        dividers = data.get('dividers', None)
+        page = data.get('page', None)
 
-        ok = yield gen.Task(SESSION.web_parameter_address, port, uri, label, minimum, maximum, value, steps)
+        if page is not None:
+            page = int(page)
+
+        ok = yield gen.Task(SESSION.web_parameter_address, port, uri, label, minimum, maximum, value, steps, tempo, dividers, page)
+
         self.write(ok)
 
 class EffectPresetLoad(JsonRequestHandler):
@@ -859,8 +915,32 @@ class EffectPresetLoad(JsonRequestHandler):
     @gen.engine
     def get(self, instance):
         uri = self.get_argument('uri')
-        ok  = yield gen.Task(SESSION.host.preset_load, instance, uri)
+
+        abort_catcher = SESSION.host.abort_previous_loading_progress("web EffectPresetLoad")
+        ok = yield gen.Task(SESSION.host.preset_load, instance, uri, abort_catcher)
+
+        if not ok:
+            self.write(False)
+            return
+
+        instance_id = SESSION.host.mapper.get_id_without_creating(instance)
+        data = SESSION.host.addressings.get_presets_as_options(instance_id)
+        value, maximum, options, spreset = data
+
+        ok = yield gen.Task(SESSION.host.paramhmi_set, instance, ":presets", value)
         self.write(ok)
+
+class EffectParameterSet(JsonRequestHandler):
+    @web.asynchronous
+    @gen.engine
+    def post(self):
+        if not SESSION.hmi.initialized:
+            self.write(True)
+            return
+        data = json.loads(self.request.body.decode("utf-8", errors="ignore"))
+        symbol, instance, portsymbol, value = data.rsplit("/",3)
+        ok = yield gen.Task(SESSION.host.paramhmi_set, instance, portsymbol, value)
+        self.write(True)
 
 class EffectPresetSaveNew(JsonRequestHandler):
     @web.asynchronous
@@ -869,6 +949,23 @@ class EffectPresetSaveNew(JsonRequestHandler):
         name = self.get_argument('name')
         resp = yield gen.Task(SESSION.host.preset_save_new, instance, name)
         self.write(resp)
+        instance_id = SESSION.host.mapper.get_id_without_creating(instance)
+        addressings = SESSION.host.plugins[instance_id]['addressings']
+        if ':presets' in addressings:
+            presets = addressings[':presets']
+            data = SESSION.host.addressings.get_presets_as_options(instance_id)
+            if data:
+                value, maximum, options, spreset = data
+                port = instance + '/' + presets['port']
+                minimum = presets['minimum']
+                label = presets['label']
+                steps = presets['steps']
+                actuator_uri = presets['actuator_uri']
+                tempo = presets.get('tempo', False)
+                dividers = presets.get('dividers', None)
+                page = presets.get('page', None)
+                ok = yield gen.Task(SESSION.web_parameter_address, port, actuator_uri, label, minimum, maximum, value, steps, tempo, dividers, page)
+
 
 class EffectPresetSaveReplace(JsonRequestHandler):
     @web.asynchronous
@@ -879,6 +976,23 @@ class EffectPresetSaveReplace(JsonRequestHandler):
         name   = self.get_argument('name')
         resp   = yield gen.Task(SESSION.host.preset_save_replace, instance, uri, bundle, name)
         self.write(resp)
+        instance_id = SESSION.host.mapper.get_id_without_creating(instance)
+        addressings = SESSION.host.plugins[instance_id]['addressings']
+        if ':presets' in addressings:
+            presets = addressings[':presets']
+            data = SESSION.host.addressings.get_presets_as_options(instance_id)
+            if data:
+                value, maximum, options, spreset = data
+                port = instance + '/' + presets['port']
+                minimum = presets['minimum']
+                label = presets['label']
+                steps = presets['steps']
+                actuator_uri = presets['actuator_uri']
+                tempo = presets.get('tempo', False)
+                dividers = presets.get('dividers', None)
+                page = presets.get('page', None)
+                ok = yield gen.Task(SESSION.web_parameter_address, port, actuator_uri, label, minimum, maximum, value, steps, tempo, dividers, page)
+
 
 class EffectPresetDelete(JsonRequestHandler):
     @web.asynchronous
@@ -925,32 +1039,37 @@ class ServerWebSocket(websocket.WebSocketHandler):
             SESSION.ws_pedalboard_size(width, height)
 
         elif cmd == "link_enable":
-            on = bool(int(data[1]))
-            SESSION.host.set_link_enabled(on, True)
+            SESSION.host.set_link_enabled()
+
+        elif cmd == "midi_clock_slave_enable":
+            SESSION.host.set_midi_clock_slave_enabled()
+
+        elif cmd == "set_internal_transport_source":
+            SESSION.host.set_internal_transport_source()
 
         elif cmd == "transport-bpb":
             bpb = float(data[1])
-            SESSION.host.set_transport_bpb(bpb, True)
+            SESSION.host.set_transport_bpb(bpb, True, True, False, False)
 
         elif cmd == "transport-bpm":
             bpm = float(data[1])
-            SESSION.host.set_transport_bpm(bpm, True)
+            SESSION.host.set_transport_bpm(bpm, True, True, False, False)
 
         elif cmd == "transport-rolling":
             rolling = bool(int(data[1]))
-            SESSION.host.set_transport_rolling(rolling, True)
+            SESSION.host.set_transport_rolling(rolling, True, True, False)
 
-        elif cmd == "set_midi_program_change_pedalboard_bank_channel":
-            channel = int(data[2])
-            SESSION.host.set_midi_program_change_pedalboard_bank_channel(channel)
+        #elif cmd == "set_midi_program_change_pedalboard_bank_channel":
+            #channel = int(data[2])
+            #SESSION.host.set_midi_program_change_pedalboard_bank_channel(channel)
 
-        elif cmd == "set_midi_program_change_pedalboard_snapshot_channel":
-            channel = int(data[2])
-            SESSION.host.set_midi_program_change_pedalboard_snapshot_channel(channel)
-            
+        #elif cmd == "set_midi_program_change_pedalboard_snapshot_channel":
+            #channel = int(data[2])
+            #SESSION.host.set_midi_program_change_pedalboard_snapshot_channel(channel)
+
         else:
             print("Unexpected command received over websocket")
-            
+
 class PackageUninstall(JsonRequestHandler):
     @web.asynchronous
     @gen.engine
@@ -1009,7 +1128,12 @@ class PedalboardSave(JsonRequestHandler):
         title = self.get_argument('title')
         asNew = bool(int(self.get_argument('asNew')))
 
-        bundlepath = SESSION.web_save_pedalboard(title, asNew)
+        bundlepath, newPB = SESSION.web_save_pedalboard(title, asNew)
+
+        if newPB:
+            reset_get_all_pedalboards_cache()
+        else:
+            update_cached_pedalboard_version(bundlepath)
 
         self.write({
             'ok': bundlepath is not None,
@@ -1159,6 +1283,7 @@ class PedalboardRemove(JsonRequestHandler):
 
         shutil.rmtree(bundlepath)
         remove_pedalboard_from_banks(bundlepath)
+        reset_get_all_pedalboards_cache()
         self.write(True)
 
 class PedalboardImage(TimelessStaticFileHandler):
@@ -1180,7 +1305,7 @@ class PedalboardImageGenerate(JsonRequestHandler):
             'ctime': "%.1f" % ctime,
         })
 
-class PedalboardImageCheck(JsonRequestHandler):
+class PedalboardImageCheck(CachedJsonRequestHandler):
     def get(self):
         bundlepath = os.path.abspath(self.get_argument('bundlepath'))
         ret, ctime = SESSION.screenshot_generator.check_screenshot(bundlepath)
@@ -1199,6 +1324,39 @@ class PedalboardImageWait(JsonRequestHandler):
             'ok'   : ok,
             'ctime': "%.1f" % ctime,
         })
+
+class PedalboardCvAddressingPluginPortAdd(JsonRequestHandler):
+    @web.asynchronous
+    @gen.engine
+    def post(self):
+        uri = self.get_argument('uri')
+        name = self.get_argument('name')
+        SESSION.web_cv_addressing_plugin_port_add(uri, name)
+        self.write(True)
+
+class PedalboardCvAddressingPluginPortRemove(JsonRequestHandler):
+    @web.asynchronous
+    @gen.engine
+    def post(self):
+        uri = self.get_argument('uri')
+        resp = yield gen.Task(SESSION.web_cv_addressing_plugin_port_remove, uri)
+        self.write(resp)
+
+class PedalboardTransportSetSyncMode(JsonRequestHandler):
+    @web.asynchronous
+    @gen.engine
+    def post(self, mode):
+        if mode == "/none":
+            transport_sync = Profile.TRANSPORT_SOURCE_INTERNAL
+        elif mode == "/midi_clock_slave":
+            transport_sync = Profile.TRANSPORT_SOURCE_MIDI_SLAVE
+        elif mode == "/link":
+            transport_sync = Profile.TRANSPORT_SOURCE_ABLETON_LINK
+        else:
+            self.write(False)
+            return
+        ok = yield gen.Task(SESSION.web_set_sync_mode, transport_sync)
+        self.write(ok)
 
 class SnapshotEnable(JsonRequestHandler):
     def post(self):
@@ -1260,8 +1418,8 @@ class SnapshotLoad(JsonRequestHandler):
     @gen.engine
     def get(self):
         idx = int(self.get_argument('id'))
-        # FIXME: callback invalid?
-        ok  = yield gen.Task(SESSION.host.snapshot_load, idx)
+        abort_catcher = SESSION.host.abort_previous_loading_progress("web SnapshotLoad")
+        ok = yield gen.Task(SESSION.host.snapshot_load_gen_helper, idx, False, abort_catcher)
         self.write(ok)
 
 class DashboardClean(JsonRequestHandler):
@@ -1380,9 +1538,11 @@ class TemplateHandler(TimelessRequestHandler):
         pbname = SESSION.host.pedalboard_name
         prname = SESSION.host.snapshot_name()
 
-        fullpbname = pbname or "Untitled"
+        fullpbname = pbname or UNTITLED_PEDALBOARD_NAME
         if prname:
             fullpbname += " - " + prname
+
+        hwdesc = get_hardware_descriptor()
 
         context = {
             'default_icon_template': default_icon_template,
@@ -1394,12 +1554,17 @@ class TemplateHandler(TimelessRequestHandler):
             'controlchain_url': CONTROLCHAIN_HTTP_ADDRESS,
             'hardware_profile': b64encode(json.dumps(SESSION.get_hardware_actuators()).encode("utf-8")),
             'version': self.get_argument('v'),
+            'bin_compat': hwdesc.get('bin-compat', "Unknown"),
+            'platform': hwdesc.get('platform', "Unknown"),
+            'pages_nb': hwdesc.get('pages_nb', 0),
+            'pages_cb': hwdesc.get('pages_cb', 0),
             'lv2_plugin_dir': LV2_PLUGIN_DIR,
             'bundlepath': SESSION.host.pedalboard_path,
             'title':  squeeze(pbname.replace("'", "\\'")),
             'size': json.dumps(SESSION.host.pedalboard_size),
             'fulltitle':  xhtml_escape(fullpbname),
             'titleblend': '' if SESSION.host.pedalboard_name else 'blend',
+            'dev_api_class': 'dev_api' if DEV_API else '',
             'using_app': 'true' if APP else 'false',
             'using_mod': 'true' if DEVICE_KEY or DEV_HOST else 'false',
             'user_name': squeeze(user_id.get("name", "").replace("'", "\\'")),
@@ -1463,7 +1628,7 @@ class TemplateLoader(TimelessRequestHandler):
 
 class BulkTemplateLoader(TimelessRequestHandler):
     def get(self):
-        self.set_header("Content-Type", "text/plain; charset=UTF-8")
+        self.set_header("Content-Type", "text/javascript; charset=UTF-8")
         basedir = os.path.join(HTML_DIR, 'include')
         for template in os.listdir(basedir):
             if not re.match('^[a-z_]+\.html$', template):
@@ -1536,6 +1701,24 @@ class ResetXruns(JsonRequestHandler):
         reset_xruns()
         self.write(True)
 
+class SwitchCpuFreq(JsonRequestHandler):
+    def post(self):
+        with open("/sys/devices/system/cpu/cpu0/cpufreq/scaling_available_frequencies", 'r') as fh:
+            freqs = fh.read().strip().split(" ")
+        with open("/sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq", 'r') as fh:
+            cur_freq = fh.read().strip()
+        if len(freqs) == 0 or cur_freq not in freqs:
+            return self.write(False)
+        index = freqs.index(cur_freq) + 1
+        if index >= len(freqs):
+            index = 0
+        with open("/sys/devices/system/cpu/online", 'r') as fh:
+            num_start, num_end = tuple(int(i) for i in fh.read().strip().split("-"))
+        for num in range(num_start, num_end+1):
+            with open("/sys/devices/system/cpu/cpu%d/cpufreq/scaling_setspeed" % num, 'w') as fh:
+                fh.write(freqs[index])
+        self.write(True)
+
 class SaveSingleConfigValue(JsonRequestHandler):
     def post(self):
         key   = self.get_argument("key")
@@ -1552,22 +1735,27 @@ class SaveUserId(JsonRequestHandler):
             json.dump({
                 "name" : name,
                 "email": email,
-            }, fh)
+            }, fh, indent=4)
         self.write(True)
 
 class JackGetMidiDevices(JsonRequestHandler):
     def get(self):
-        devsInUse, devList, names = SESSION.web_get_midi_device_list()
+        devsInUse, devList, names, midi_aggregated_mode = SESSION.web_get_midi_device_list()
         self.write({
             "devsInUse": devsInUse,
             "devList"  : devList,
             "names"    : names,
+            "midiAggregatedMode": midi_aggregated_mode
         })
 
 class JackSetMidiDevices(JsonRequestHandler):
+    @web.asynchronous
+    @gen.engine
     def post(self):
-        devs = json.loads(self.request.body.decode("utf-8", errors="ignore"))
-        SESSION.web_set_midi_devices(devs)
+        data = json.loads(self.request.body.decode("utf-8", errors="ignore"))
+        devs = data['devs']
+        mode = data['midiAggregatedMode']
+        SESSION.web_set_midi_devices(devs, mode)
         self.write(True)
 
 class FavoritesAdd(JsonRequestHandler):
@@ -1661,11 +1849,11 @@ class RecordingPlay(JsonRequestHandler):
         raise web.HTTPError(404)
 
     @classmethod
-    def stop_callback(kls):
-        if kls.waiting_request is None:
+    def stop_callback(cls):
+        if cls.waiting_request is None:
             return
-        kls.waiting_request.write(True)
-        kls.waiting_request = None
+        cls.waiting_request.write(True)
+        cls.waiting_request = None
 
 class RecordingDownload(JsonRequestHandler):
     def get(self):
@@ -1736,11 +1924,13 @@ application = web.Application(
             (r"/effect/add/*(/[A-Za-z0-9_/]+[^/])/?", EffectAdd),
             (r"/effect/remove/*(/[A-Za-z0-9_/]+[^/])/?", EffectRemove),
             (r"/effect/get", EffectGet),
+            (r"/effect/get_non_cached", EffectGetNonCached),
             (r"/effect/bulk/?", EffectBulk),
             (r"/effect/list", EffectList),
 
             # plugin parameters
             (r"/effect/parameter/address/*(/[A-Za-z0-9_:/]+[^/])/?", EffectParameterAddress),
+            (r"/effect/parameter/set/?", EffectParameterSet),
 
             # plugin presets
             (r"/effect/preset/load/*(/[A-Za-z0-9_/]+[^/])/?", EffectPresetLoad),
@@ -1771,6 +1961,9 @@ application = web.Application(
             (r"/pedalboard/image/generate", PedalboardImageGenerate),
             (r"/pedalboard/image/check", PedalboardImageCheck),
             (r"/pedalboard/image/wait", PedalboardImageWait),
+            (r"/pedalboard/cv_addressing_plugin_port/add", PedalboardCvAddressingPluginPortAdd),
+            (r"/pedalboard/cv_addressing_plugin_port/remove", PedalboardCvAddressingPluginPortRemove),
+            (r"/pedalboard/transport/set_sync_mode/*(/[A-Za-z0-9_:/]+[^/])/?", PedalboardTransportSetSyncMode),
 
             # Pedalboard Snapshot handling
             (r"/snapshot/enable", SnapshotEnable),
@@ -1819,6 +2012,7 @@ application = web.Application(
             (r"/truebypass/(Left|Right)/(true|false)", TrueBypass),
             (r"/set_buffersize/(128|256)", SetBufferSize),
             (r"/reset_xruns/", ResetXruns),
+            (r"/switch_cpu_freq/", SwitchCpuFreq),
 
             (r"/save_user_id/", SaveUserId),
 
@@ -1848,7 +2042,7 @@ def signal_upgrade_check():
 
     SESSION.hmi.send("restore")
 
-def signal_recv(sig, frame=0):
+def signal_recv(sig, _=0):
     if sig == SIGUSR1:
         if os.path.exists(UPDATE_CC_FIRMWARE_FILE):
             func = signal_device_firmware_updated
@@ -1888,22 +2082,20 @@ def prepare(isModApp = False):
         set_process_name("mod-ui")
 
     application.listen(DEVICE_WEBSERVER_PORT, address="0.0.0.0")
-    if LOG:
-        from tornado.log import enable_pretty_logging
-        enable_pretty_logging()
 
     def checkhost():
         if SESSION.host.readsock is None or SESSION.host.writesock is None:
 
             if SESSION.host.readsock is None:
                 print("Readsock none")
-                
+
             if SESSION.host.writesock is None:
                 print("Writesock none")
-                
+
             print("Host failed to initialize, is the backend running?")
             SESSION.host.close_jack()
-            sys.exit(1)
+            if not isModApp:
+                sys.exit(1)
 
         elif not SESSION.host.connected:
             ioinstance.call_later(0.2, checkhost)

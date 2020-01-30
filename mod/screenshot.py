@@ -38,7 +38,7 @@ def generate_screenshot(bundle_path, callback):
     proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, cwd=cwd)
     loop = ioloop.IOLoop.instance()
 
-    def proc_callback(fileno, event):
+    def proc_callback(fileno, _):
         if proc.poll() is None:
             return
         loop.remove_handler(fileno)

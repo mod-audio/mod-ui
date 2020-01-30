@@ -24,7 +24,7 @@ from modtools.utils import init as lv2_init, get_pedalboard_info, get_plugin_inf
 
 MAX_THUMB_HEIGHT = 640
 MAX_THUMB_WIDTH = 640
-__version__ = '1.0.0'
+__version__ = '1.0.1'
 
 
 def resize_image(img):
@@ -61,24 +61,36 @@ def rgbtoi(r, g, b):
     return (r << 16) + (g << 8) + b
 
 
-def detect_first_column(img, scan=20, rtol=False):
-    was_zero = True
+def detect_first_column(img, scan, num_ports, rtol=False):
+    if num_ports == 0:
+        return []
+
+    was_transparent = True
     found = False
+    ret = []
+
     for _i in range(0, scan):
         i = img.size[0] - _i - 1 if rtol else _i
         for j in range(0, img.size[1]):
             pixel = img.getpixel((i, j))
-            is_zero = rgbtoi(*pixel[0:3]) == 0
-            if was_zero != is_zero:
-                yield i, j
-                was_zero = is_zero
+            is_transparent = pixel[3] < 255
+            if was_transparent != is_transparent:
+                ret.append((i, j))
+                was_transparent = is_transparent
                 found = True
         if found:
-            return
+            break
+    else:
+        return []
 
+    # in case pixel detection failed and we need more ports, add them at the top
+    for i in range(len(ret), num_ports*2):
+        ret.insert(0, (ret[0][0], 0))
+
+    return ret
 
 def chunks(l, n):
-    o = list(l) if type(l) is not list else l
+    o = l if isinstance(l, tuple) else tuple(l)
     for i in range(0, len(o), n):
         yield o[i:i + n]
 
@@ -107,6 +119,10 @@ def take_screenshot(bundle_path, html_dir, cache_dir, size):
     midi_output_img = Image.open(os.path.join(img_dir, 'midi-output.png'))
     midi_input_connected = Image.open(os.path.join(img_dir, 'midi-input-connected.png'))
     midi_output_connected = Image.open(os.path.join(img_dir, 'midi-output-connected.png'))
+    cv_input_img = Image.open(os.path.join(img_dir, 'cv-input.png'))
+    cv_output_img = Image.open(os.path.join(img_dir, 'cv-output.png'))
+    cv_input_connected = Image.open(os.path.join(img_dir, 'cv-input-connected.png'))
+    cv_output_connected = Image.open(os.path.join(img_dir, 'cv-output-connected.png'))
     default_screenshot = Image.open(os.path.join(html_dir, 'resources', 'pedals', 'default.png'))
 
     right_padding = audio_input_connected.size[0] * 2
@@ -121,7 +137,14 @@ def take_screenshot(bundle_path, html_dir, cache_dir, size):
             'connected_img': audio_output_connected,
             'type': 'audio',
         })
-    if pb['hardware'].get('serial_midi_in', False):
+    if not pb.get('midi_separated_mode', False):
+        device_capture.append({
+            'symbol': 'midi_merger_out',
+            'img': midi_output_img,
+            'connected_img': midi_output_connected,
+            'type': 'midi',
+        })
+    elif pb['hardware'].get('serial_midi_in', False):
         device_capture.append({
             'symbol': 'serial_midi_in',
             'img': midi_output_img,
@@ -135,6 +158,13 @@ def take_screenshot(bundle_path, html_dir, cache_dir, size):
             'connected_img': midi_output_connected,
             'type': 'midi',
         })
+    for ix in range(0, pb['hardware']['cv_ins']):
+        device_capture.append({
+            'symbol': 'cv_capture_{0}'.format(ix + 1),
+            'img': cv_output_img,
+            'connected_img': cv_output_connected,
+            'type': 'cv',
+        })
 
     device_playback = []
     for ix in range(0, pb['hardware']['audio_outs']):
@@ -144,7 +174,14 @@ def take_screenshot(bundle_path, html_dir, cache_dir, size):
             'connected_img': audio_input_connected,
             'type': 'audio',
         })
-    if pb['hardware'].get('serial_midi_out', False):
+    if not pb.get('midi_separated_mode', False):
+        device_playback.append({
+            'symbol': 'midi_broadcaster_in',
+            'img': midi_input_img,
+            'connected_img': midi_input_connected,
+            'type': 'midi',
+        })
+    elif pb['hardware'].get('serial_midi_out', False):
         device_playback.append({
             'symbol': 'serial_midi_out',
             'img': midi_input_img,
@@ -157,6 +194,13 @@ def take_screenshot(bundle_path, html_dir, cache_dir, size):
             'img': midi_input_img,
             'connected_img': midi_input_connected,
             'type': 'midi',
+        })
+    for ix in range(0, pb['hardware']['cv_outs']):
+        device_playback.append({
+            'symbol': 'cv_playback_{0}'.format(ix + 1),
+            'img': cv_input_img,
+            'connected_img': cv_input_connected,
+            'type': 'cv',
         })
 
     # create plugins
@@ -173,6 +217,9 @@ def take_screenshot(bundle_path, html_dir, cache_dir, size):
         pimg = Image.open(screenshot_path).convert('RGBA') if screenshot_path else default_screenshot
         p['img'] = pimg
 
+        in_ports = data['ports']['audio']['input'] + data['ports']['midi']['input'] + data['ports']['cv']['input']
+        out_ports = data['ports']['audio']['output'] + data['ports']['midi']['output'] + data['ports']['cv']['output']
+
         if screenshot_path:
             # detect ports and save/read
             version = '{0}.{1}'.format(data['version'], data.get('release', 0)).replace('.', '_')
@@ -183,42 +230,53 @@ def take_screenshot(bundle_path, html_dir, cache_dir, size):
                     columns = json.loads(fh.read())
             else:
                 columns = {
-                    'in_ports': [list(c) for c in detect_first_column(pimg, pimg.size[0])],
-                    'out_ports': [list(c) for c in detect_first_column(pimg, pimg.size[0], rtol=True)],
+                    'in_ports': tuple(tuple(c) for c in detect_first_column(pimg, pimg.size[0], len(in_ports))),
+                    'out_ports': tuple(tuple(c) for c in detect_first_column(pimg, pimg.size[0], len(out_ports), rtol=True)),
                 }
                 with open(filename, 'w') as fh:
                     fh.write(json.dumps(columns))
         else:  # tuna can, we have to guess the position of the connectors
             columns = {
-                'in_ports': [[-9, 121], [-9, 146], [-9, 190], [-9, 215], [-9, 259], [-9, -284], [-9, 328], [-9, 353]],
-                'out_ports': [[259, 121], [259, 146], [259, 190], [259, 215], [259, 259], [259, 284], [259, 328], [259, 353]]
+                'in_ports': ((-9, 121), (-9, 146), (-9, 190), (-9, 215), (-9, 259), (-9, -284), (-9, 328), (-9, 353)),
+                'out_ports': ((259, 121), (259, 146), (259, 190), (259, 215), (259, 259), (259, 284), (259, 328), (259, 353))
             }
 
         # detect connectors
-        in_ports = data['ports']['audio']['input'] + data['ports']['midi']['input']
         if len(in_ports) > 0:
+            audio_in_ix = len(data['ports']['audio']['input'])
+            cv_in_ix = len(data['ports']['cv']['input']) + audio_in_ix
             for ix, conn in enumerate(chunks(columns['in_ports'], 2)):
                 if ix < len(in_ports):
                     in_ports[ix]['connector'] = conn
-                    if ix < len(data['ports']['audio']['input']):
+                    if ix < audio_in_ix:
                         in_ports[ix]['connected_img'] = audio_input_connected
                         in_ports[ix]['offset'] = (79, 15)
                         in_ports[ix]['type'] = 'audio'
+                    elif ix < cv_in_ix:
+                        in_ports[ix]['connected_img'] = cv_input_connected
+                        in_ports[ix]['offset'] = (67, 15)
+                        in_ports[ix]['type'] = 'cv'
                     else:
                         in_ports[ix]['connected_img'] = midi_input_connected
                         in_ports[ix]['offset'] = (67, 9)
                         in_ports[ix]['type'] = 'midi'
             if not all('connector' in p for p in in_ports):
                 raise Exception('Connector detection for input ports of plugin {0} failed'.format(p['uri']))
-        out_ports = data['ports']['audio']['output'] + data['ports']['midi']['output']
+
         if len(out_ports) > 0:
+            audio_out_ix = len(data['ports']['audio']['output'])
+            cv_out_ix = len(data['ports']['cv']['output']) + audio_out_ix
             for ix, conn in enumerate(chunks(columns['out_ports'], 2)):
                 if ix < len(out_ports):
                     out_ports[ix]['connector'] = conn
-                    if ix < len(data['ports']['audio']['output']):
+                    if ix < audio_out_ix:
                         out_ports[ix]['connected_img'] = audio_output_connected
                         out_ports[ix]['offset'] = (8, 15)
                         out_ports[ix]['type'] = 'audio'
+                    elif ix < cv_out_ix:
+                        out_ports[ix]['connected_img'] = cv_output_connected
+                        out_ports[ix]['offset'] = (11, 22)
+                        out_ports[ix]['type'] = 'cv'
                     else:
                         out_ports[ix]['connected_img'] = midi_output_connected
                         out_ports[ix]['offset'] = (8, 9)
@@ -239,15 +297,16 @@ def take_screenshot(bundle_path, html_dir, cache_dir, size):
     height = rint(height) or rint(1112)
 
     # calculate device connectors positions
-    used_symbols = [c['source'] for c in pb['connections']] + [c['target'] for c in pb['connections']]
-    device_capture = [
+    used_symbols = tuple(c['source'] for c in pb['connections']) + tuple(c['target'] for c in pb['connections'])
+    used_types = ('audio', 'cv')
+    device_capture = tuple(
         d for d in device_capture
-        if d['type'] == 'audio' or d['symbol'] == 'serial_midi_in' or d['symbol'] in used_symbols
-    ]
-    device_playback = [
+        if d['type'] in used_types or d['symbol'] in ('serial_midi_in', 'midi_merger_out') or d['symbol'] in used_symbols
+    )
+    device_playback = tuple(
         d for d in device_playback
-        if d['type'] == 'audio' or d['symbol'] == 'serial_midi_out' or d['symbol'] in used_symbols
-    ]
+        if d['type'] in used_types or d['symbol'] in ('serial_midi_out', 'midi_broadcaster_in') or d['symbol'] in used_symbols
+    )
     step = rint(height / (len(device_capture) + 1))
     h = step
     for d in device_capture:
@@ -275,7 +334,7 @@ def take_screenshot(bundle_path, html_dir, cache_dir, size):
                 continue
             source_i, source_s = c['source'].split('/')
             source = plugin_map[source_i]
-            all_ports = source['data']['ports']['audio']['output'] + source['data']['ports']['midi']['output']
+            all_ports = source['data']['ports']['audio']['output'] + source['data']['ports']['midi']['output'] + source['data']['ports']['cv']['output']
             port = next(p for p in all_ports if p['symbol'] == source_s)
             conn = port['connector']
             source_connected_img = port['connected_img']
@@ -296,7 +355,7 @@ def take_screenshot(bundle_path, html_dir, cache_dir, size):
                 continue
             target_i, target_s = c['target'].split('/')
             target = plugin_map[target_i]
-            all_ports = target['data']['ports']['audio']['input'] + target['data']['ports']['midi']['input']
+            all_ports = target['data']['ports']['audio']['input'] + target['data']['ports']['midi']['input'] + target['data']['ports']['cv']['input']
             port = next(p for p in all_ports if p['symbol'] == target_s)
             conn = port['connector']
             target_connected_img = port['connected_img']
@@ -340,9 +399,15 @@ def take_screenshot(bundle_path, html_dir, cache_dir, size):
         draw = aggdraw.Draw(img)
         audio_pen = aggdraw.Pen('#81009A', 7)
         midi_pen = aggdraw.Pen('#00546C', 7)
+        cv_pen = aggdraw.Pen('#BB6736', 7)
         for path, source_type, target_type in paths:
             symbol = aggdraw.Symbol(path)
-            draw.symbol((0, 0), symbol, midi_pen if source_type == 'midi' or target_type == 'midi' else audio_pen)
+            pen = audio_pen
+            if source_type == 'midi' or target_type == 'midi':
+                pen = midi_pen
+            elif source_type == 'cv' or target_type == 'cv':
+                pen = cv_pen
+            draw.symbol((0, 0), symbol, pen)
         draw.flush()
     except:
         print('Aggdraw failed')

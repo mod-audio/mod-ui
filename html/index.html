@@ -65,6 +65,8 @@
     CONTROLCHAIN_URL = '{{controlchain_url}}'
     LV2_PLUGIN_DIR   = '{{lv2_plugin_dir}}'
     VERSION          = '{{version}}'
+    BIN_COMPAT       = '{{bin_compat}}'
+    PLATFORM         = '{{platform}}'
     var SAMPLERATE   = {{sampleRate}}
     var NOTIFICATIONS_ENABLED = true
     var HARDWARE_PROFILE = JSON.parse(atob('{{hardware_profile}}'))
@@ -73,6 +75,8 @@
     var DEFAULT_PEDALBOARD = '{{default_pedalboard}}'
     var FAVORITES = {{favorites}}
     var PREFERENCES = {{preferences}}
+    var PAGES_NB = {{pages_nb}}
+    var PAGES_CB = {{pages_cb}}
     var DEBUG = true;
     if (!DEBUG) {
         console = console || {}
@@ -108,6 +112,7 @@ $('document').ready(function() {
         saveButton: $('#pedalboard-info .js-save'),
         saveAsButton: $('#pedalboard-info .js-save-as'),
         resetButton:  $('#pedalboard-info .js-reset'),
+        cvAddressingButton:  $('#pedalboard-info .js-cv-addressing'),
         pedalboardPresetsEnabler: $('#pedalboard-info #js-preset-enabler'),
         presetSaveButton: $('#pedalboard-info .js-preset-save'),
         presetSaveAsButton: $('#pedalboard-info .js-preset-save-as'),
@@ -141,6 +146,7 @@ $('document').ready(function() {
         bypassRightButton: $("#mod-bypassRight"),
         bufferSizeButton: $('#mod-buffersize'),
         xrunsButton: $('#mod-xruns'),
+        cpuStatsButton: $('#mod-cpu-stats'),
     })
 
     if ('{{bundlepath}}' && '{{title}}') {
@@ -158,6 +164,7 @@ $('document').ready(function() {
         desktop.authenticateDevice(function (ok) {
             if (ok) {
                 console.log("MOD authentication succeeded")
+                desktop.resetPedalboardStats();
             } else {
                 console.log("MOD authentication failed")
                 desktop.upgradeWindow.upgradeWindow('setErrored')
@@ -187,6 +194,7 @@ $('document').ready(function() {
     if (PREFERENCES['show-unstable-plugins'] == "true") {
         $("#cloud-plugins-stable").parent().show()
     }
+    desktop.pedalboardBox.pedalboardBox('initViewMode', PREFERENCES['pb-view-mode'])
 
     // start code for ajax loading bar
 
@@ -215,8 +223,6 @@ $('document').ready(function() {
         dataType: 'json'
     });
     */
-
-    desktop.resetPedalboardStats();
 })
 </script>
 
@@ -244,6 +250,8 @@ $('document').ready(function() {
 <script type="text/javascript" src="js/cc-manager.js?v={{version}}"></script>
 <script type="text/javascript" src="js/transport.js?v={{version}}"></script>
 <script type="text/javascript" src="js/nprogress.js?v={{version}}"></script>
+<script type="text/javascript" src="js/utils/tempo.js?v={{version}}"></script>
+<script type="text/javascript" src="js/utils/plugins.js?v={{version}}"></script>
 
 </head>
 <!-- END HEAD -->
@@ -449,19 +457,22 @@ $('document').ready(function() {
             <div id="pedalboard-info">
                 <h1 class="top bottom {{titleblend}}">{{fulltitle}}</h1>
                 <div class="actions">
+                    <button class="js-cv-addressing" id="js-cv-addressing-toggle">Manage CV Ports</button>
                     <button class="js-preset" id="js-preset-enabler">Snapshots</button>
-                    <button class="js-preset menu-trigger mod-hidden" id="js-preset-menu">Snapshots</button>
-                    <ul class="drop-menu clearfix js-pedalboard-presets-menu" style="cursor:pointer;">
-                        <li class="js-preset-save">Save</li>
-                        <li class="js-preset-save-as">Save as</li>
-                        <!--
-                        <li class="sub-menu-trigger">Load <span class="pull-right">&rsaquo;</span>
-                            <ul class="menu-preset-list sub-menu"></ul>
-                        </li>
-                        -->
-                        <li class="js-preset-manage">Load / Manage</li>
-                        <li class="js-preset-disable">Disable</li>
-                    </ul>
+                    <div class="mod-hidden" id="js-preset-menu">
+                        <button class="js-preset menu-trigger">Snapshots</button>
+                        <ul class="drop-menu clearfix js-pedalboard-presets-menu" style="cursor:pointer;">
+                            <li class="js-preset-save">Save</li>
+                            <li class="js-preset-save-as">Save as</li>
+                            <!--
+                            <li class="sub-menu-trigger">Load <span class="pull-right">&rsaquo;</span>
+                                <ul class="menu-preset-list sub-menu"></ul>
+                            </li>
+                            -->
+                            <li class="js-preset-manage">Load / Manage</li>
+                            <li class="js-preset-disable">Disable</li>
+                        </ul>
+                    </div>
                     <button class="js-reset">New Pedalboard</button>
                     <button class="js-save">Save</button>
                     <button class="js-save-as">Save as</button>
@@ -481,19 +492,35 @@ $('document').ready(function() {
         <!-- END PEDALBOARD-ACTIONS -->
 
         <!-- PEDALBOARD-DASHBOARD -->
-        <div id="pedalboard-dashboard"></div>
+        <div id="pedalboard-dashboard" class="{{dev_api_class}}"></div>
         <!-- END PEDALBOARD-DASHBOARD -->
 
         <!-- MIDI DEVICE LIST WINDOW -->
         <div id="midi-ports-window" class="save-popup mod-hidden">
-            <div class="mod-box">
+            <div class="mod-box" id="midi-ports-box">
                 <h1>MIDI Ports List</h1>
                 <form class="bottom">
+                  <fieldset>
+                    <div>
+                      <label>
+                        <input type="radio" autocomplete="off" name="midi-mode" value="aggregated" id="midi-mode-aggregate">
+                            Aggregated mode
+                        </input>
+                      </label>
+                    </div>
+                    <div>
+                      <label>
+                          <input type="radio" autocomplete="off" name="midi-mode" value="separated" id="midi-mode-separated">
+                              Separated mode
+                          </input>
+                      </label>
+                    </div>
                     <div class="controls clearfix" id="midi-ports-list"></div>
                     <div class="controls actions">
                         <button class="js-cancel btn btn-danger">Cancel</button>
                         <button class="js-submit btn btn-success">Save</button>
                     </div>
+                    </fieldset>
                 </form>
             </div>
         </div>
@@ -575,6 +602,7 @@ $('document').ready(function() {
             </div>
             <p class="progress-title" id="cpu-bar-text">cpu</p>
         </div>
+        <div id="mod-cpu-stats" class="icon mod-hidden">0 GHz / 0 &deg;C</div>
         <div id="mod-xruns" class="icon mod-hidden">0 Xruns</div>
         <div id="mod-buffersize" class="icon mod-hidden">{{bufferSize}} frames</div>
         <div id="mod-bypassRight" class="icon mod-bypass">Bypass 2</div>
@@ -593,6 +621,7 @@ $('document').ready(function() {
         <ul class="clearfix js-category-tabs">
             <li id="effect-tab-Favorites">Favorites</li>
             <li id="effect-tab-All">All</li>
+            <li id="effect-tab-ControlVoltage">Control&nbsp;Voltage</li>
             <li id="effect-tab-Delay">Delay</li>
             <li id="effect-tab-Distortion">Distortion</li>
             <li id="effect-tab-Dynamics">Dynamics</li>
@@ -607,7 +636,6 @@ $('document').ready(function() {
             <li id="effect-tab-Utility">Utility</li>
             <li id="effect-tab-MaxGen" style="display:none;">Max&nbsp;gen~</li>
             <li id="effect-tab-Camomile" style="display:none;">Camomile</li>
-	    <li id="effect-tab-ControlVoltage">Control&nbsp;Voltage</li>
         </ul>
         <span class="js-settings-trigger settings selected"></span>
         <span class="js-effects-fold fold"></span>
@@ -630,6 +658,7 @@ $('document').ready(function() {
                 <div id="plugin-results-wrapper">
                     <div id="effect-content-Favorites" class="plugins-wrapper"></div>
                     <div id="effect-content-All" class="plugins-wrapper"></div>
+                    <div id="effect-content-ControlVoltage" class="plugins-wrapper"></div>
                     <div id="effect-content-Delay" class="plugins-wrapper"></div>
                     <div id="effect-content-Distortion" class="plugins-wrapper"></div>
                     <div id="effect-content-Dynamics" class="plugins-wrapper"></div>
@@ -644,7 +673,6 @@ $('document').ready(function() {
                     <div id="effect-content-Utility" class="plugins-wrapper"></div>
                     <div id="effect-content-MaxGen" class="plugins-wrapper"></div>
                     <div id="effect-content-Camomile" class="plugins-wrapper"></div>
-                    <div id="effect-content-ControlVoltage" class="plugins-wrapper"></div>
                 </div>
             </div>
             <div class="nav nav-right"></div>
@@ -675,6 +703,7 @@ $('document').ready(function() {
                 </div>
                 <ul class="categories list list-unstyled">
                     <li id="cloud-plugin-tab-All">All</li>
+                    <li id="cloud-plugin-tab-ControlVoltage">Control&nbsp;Voltage</li>
                     <li id="cloud-plugin-tab-Delay">Delay</li>
                     <li id="cloud-plugin-tab-Distortion">Distortion</li>
                     <li id="cloud-plugin-tab-Dynamics">Dynamics</li>
@@ -689,7 +718,6 @@ $('document').ready(function() {
                     <li id="cloud-plugin-tab-Utility">Utility</li>
                     <!-- <li id="cloud-plugin-tab-MaxGen">Max&nbsp;gen~</li> -->
                     <!-- <li id="cloud-plugin-tab-Camomile">Camomile</li> -->
-                    <!-- <li id="cloud-plugin-tab-ControlVoltage">Control&nbsp;Voltage</li> -->
                 </ul>
                 <div class="form-group">
                     <input class="form-control" placeholder="Filter by keyword(s)" type="search"/>
@@ -704,6 +732,7 @@ $('document').ready(function() {
 					</div>
 					<h2>Filtered results</h2>
                     <div id="cloud-plugin-content-All" class="plugins-wrapper"></div>
+                    <div id="cloud-plugin-content-ControlVoltage" class="plugins-wrapper"></div>
                     <div id="cloud-plugin-content-Delay" class="plugins-wrapper"></div>
                     <div id="cloud-plugin-content-Distortion" class="plugins-wrapper"></div>
                     <div id="cloud-plugin-content-Dynamics" class="plugins-wrapper"></div>
@@ -718,7 +747,6 @@ $('document').ready(function() {
                     <div id="cloud-plugin-content-Utility" class="plugins-wrapper"></div>
                     <!-- <div id="cloud-plugin-content-MaxGen" class="plugins-wrapper"></div> -->
                     <!-- <div id="cloud-plugin-content-Camomile" class="plugins-wrapper"></div> -->
-                    <!-- <div id="cloud-plugin-content-ControlVoltage" class="plugins-wrapper"></div> -->
                 </div>
             </div>
 
@@ -741,6 +769,11 @@ $('document').ready(function() {
                     <img style="width: 1.2em; height: 1.2em; opacity: 0.6; vertical-align: middle;" src="img/icons/25/language.png" alt=""/>
                     <span style="vertical-align: middle;">Browse Online Pedalboards</span>
                 </a>
+                <span class="view-modes">
+                  <i id="view-mode-grid" class="view-mode icon-th-1"></i>
+                  <i id="view-mode-list" class="view-mode icon-th-list"></i>
+                </span>
+
             </header>
             <div class="pedalboards clearfix js-pedalboards"></div>
         </div>
@@ -842,10 +875,15 @@ $('document').ready(function() {
     <div id="mod-transport-window" class="mod-pedal-settings mod-hidden">
         <div class="mod-controls clearfix">
             <div class="mod-control-group clearfix">
-                <div class="mod-switch" id="mod-switch-transport-play">
-                    <span class="mod-switch-title">Playing</span>
-                    <div class="mod-switch-image" mod-widget="switch"></div>
-                    <div class="mod-address"></div>
+                <div class="mod-enumerated" id="mod-enum-transport-sync-mode">
+                    <span class="mod-enumerated-title">Sync Mode</span>
+                    <div class="mod-enumerated-list">
+                        <div mod-sync-mode="none">Internal</div>
+                        <div class="mod-midi-icon" mod-sync-mode="midi_clock_slave">
+                          MIDI
+                        </div>
+                        <div mod-sync-mode="link">Ableton&trade; Link</div>
+                    </div>
                 </div>
 
                 <div class="mod-knob" id="mod-knob-transport-bpm">
@@ -866,13 +904,13 @@ $('document').ready(function() {
                     <div class="mod-address"></div>
                 </div>
 
-                <div class="mod-enumerated" id="mod-enum-transport-sync-mode">
-                    <span class="mod-enumerated-title">Sync Mode</span>
-                    <div class="mod-enumerated-list">
-                        <div mod-sync-mode="none">None / Addressings</div>
-                        <div mod-sync-mode="link">Ableton&trade; Link</div>
-                    </div>
+                <div class="mod-switch" id="mod-switch-transport-play">
+                    <span class="mod-switch-title">Transport</span>
+                    <div class="mod-switch-image stop" mod-widget="switch"></div>
+                    <div class="mod-switch-image play" mod-widget="switch"></div>
+                    <div class="mod-address"></div>
                 </div>
+
             </div>
         </div>
     </div>

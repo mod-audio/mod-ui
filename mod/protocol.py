@@ -20,16 +20,27 @@ class ProtocolError(Exception):
         "-1"  : "ERR_INSTANCE_INVALID",
         "-2"  : "ERR_INSTANCE_ALREADY_EXISTS",
         "-3"  : "ERR_INSTANCE_NON_EXISTS",
+        "-4"  : "ERR_INSTANCE_UNLICENSED",
         "-101": "ERR_LV2_INVALID_URI",
-        "-102": "ERR_LILV_INSTANTIATION",
+        "-102": "ERR_LV2_INSTANTIATION",
         "-103": "ERR_LV2_INVALID_PARAM_SYMBOL",
+        "-104": "ERR_LV2_INVALID_PRESET_URI",
+        "-105": "ERR_LV2_CANT_LOAD_STATE",
         "-201": "ERR_JACK_CLIENT_CREATION",
         "-202": "ERR_JACK_CLIENT_ACTIVATION",
         "-203": "ERR_JACK_CLIENT_DEACTIVATION",
         "-204": "ERR_JACK_PORT_REGISTER",
         "-205": "ERR_JACK_PORT_CONNECTION",
         "-206": "ERR_JACK_PORT_DISCONNECTION",
-        "-301": "ERR_MEMORY_ALLOCATION",
+        "-207": "ERR_JACK_VALUE_OUT_OF_RANGE",
+        "-301": "ERR_ASSIGNMENT_ALREADY_EXISTS",
+        "-302": "ERR_ASSIGNMENT_INVALID_OP",
+        "-303": "ERR_ASSIGNMENT_LIST_FULL",
+        "-304": "ERR_ASSIGNMENT_FAILED",
+        "-401": "ERR_CONTROL_CHAIN_UNAVAILABLE",
+        "-402": "ERR_LINK_UNAVAILABLE",
+        "-901": "ERR_MEMORY_ALLOCATION",
+        "-902": "ERR_INVALID_OPERATION",
         "not found": "ERR_CMD_NOT_FOUND",
         "wrong arg type": "ERR_INVALID_ARGUMENTS",
         "few arguments": "ERR_FEW_ARGUMENTS",
@@ -84,86 +95,108 @@ def process_resp(resp, datatype):
     return resp
 
 class Protocol(object):
+    # Make sure this is free of duplicates!
     COMMANDS = {
-        "banks": [],
-        "pedalboards": [int],
-        "pedalboard": [int, str],
+        "banks": [int, int],
+        "pedalboards": [int, int, int],
+        "pb": [int, str],
+
         "hw_con": [int, int],
         "hw_dis": [int, int],
-        "control_set": [int, str, float],
-        "control_get": [int, str],
-        "control_next": [int, int, int, int],
-        "tuner": [str],
-        "tuner_input": [int],
-        "pedalboard_save": [],
-        "pedalboard_reset": [],
-        "jack_cpu_load": [],
-        
-        "get_truebypass_value": [int],
-        "set_truebypass_value": [int, int],
+
+        "s": [int, float], # control_set
+        "g": [int], # control_get
+        "n": [int], # control_next
+        "ncp": [int, int], # next_control_page
+
+        "pbs": [], # pedalboard_save
+        "pbr": [], # pedalboard_reset
+
+        "g_bp": [int],      # get_truebypass_value
+        "s_bp": [int, int], # set_truebypass_value
+
+        # Quick Bypass Mode
+        "g_qbp": [],    # get_q_bypass
+        "s_qbp": [int], # set_q_bypass
 
         # Beats per minute
-        "get_tempo_bpm": [],
-        "set_tempo_bpm": [float],
+        "g_bpm": [],    # get_tempo_bpm
+        "s_bpm": [int], # set_tempo_bpm
+
         # Beats per bar
-        "get_tempo_bpb": [],
-        "set_tempo_bpb": [float],
+        "g_bpb": [],    # get_tempo_bpb
+        "s_bpb": [int], # set_tempo_bpb
 
-        # MIDI program change channel for switching snapshots
-        "get_snapshot_prgch": [],
-        "set_snapshot_prgch": [int],
-        # MIDI program change channel for switching pedalboard banks
-        "get_bank_prgch": [],
-        "set_bank_prgch": [int],
+        "tu": [str],    # tuner
+        "tu_i": [int],  # tuner_input
+        "g_tum": [],    # get_tuner_mute
+        "s_tum": [int], # set_tuner_mute
 
-        # Transport and tempo sync mode
-        "get_clk_src": [],
-        "set_clk_src": [int],
+        "fn": [int], # footswitch_navigation
 
-        # MIDI Beat Clock sending
-        "get_send_midi_clk": [],
-        "set_send_midi_clk": [int],
-        
         # User Profile handling
-        "retrieve_profile": [int],
-        "store_profile": [int],
-
-        # Configurable in- and output
-        "get_exp_cv": [],
-        "set_exp_cv": [int],
-        "get_hp_cv": [],
-        "set_hp_cv": [int],
-
-        # Stereo Link for inputs and outputs
-        "get_in_chan_link": [int],
-        "set_in_chan_link": [int, int],
-        "get_out_chan_link": [int],
-        "set_out_chan_link": [int, int],
-
-        # Display brightness
-        "get_display_brightness": [],
-        "set_display_brightness": [int],
+        "g_p": [],    # get_current_profile
+        "r_p": [int], # retrieve_profile
+        "s_p": [int], # store_profile
 
         # Master volume channel mode
-        "get_master_volume_channel_mode": [],
-        "set_master_volume_channel_mode": [int],
+        "g_mv_c": [],    # get_mv_channel
+        "s_mv_c": [int], # set_mv_channel
 
-        "get_play_status": [],
-        "set_play_status": [int],
+        # Stereo Link for inputs and outputs
+        "g_il": [],    # get_in_chan_link
+        "s_il": [int], # set_in_chan_link
+        "g_ol": [],    # get_out_chan_link
+        "s_ol": [int], # set_out_chan_link
 
-        "get_master_volume_channel": [],
-        "set_master_volume_channel": [int],
+        # Configurable in- and output
+        "g_ex": [],      # get_exp_cv
+        "s_ex": [int],   # set_exp_cv
+        "g_hp": [],      # get_hp_cv
+        "s_hp": [int],   # set_hp_cv
+        "g_exp_m": [],    # get_exp_mode
+        "s_exp_m": [int], # set_exp_mode
 
-        "get_tuner_mute": [],
-        "set_tuner_mute": [int],
+        # Transport and tempo sync mode
+        "g_cls": [],    # get_clk_src
+        "s_cls": [int], # set_clk_src
 
+        # MIDI program change channel for switching snapshots
+        "g_ssc": [],    # get_snapshot_prgch
+        "s_ssc": [int], # set_snapshot_prgch
+
+        # MIDI Beat Clock sending
+        "g_mclk": [],    # get_send_midi_clk
+        "s_mclk": [int], # set_send_midi_clk
+
+        # MIDI program change channel for switching pedalboards in a bank
+        "g_pbc": [],    # get_pb_prgch
+        "s_pbc": [int], # set_pb_prgch
+
+        # Transport play status
+        "g_ps": [],    # get_play_status
+        "s_ps": [int], # set_play_status
+
+        # Display brightness
+        "g_br": [],    # get_display_brightness
+        "s_br": [int], # set_display_brightness
+
+        "sl": [int], # snapshot_load
+        "ss": [int], # snapshot_save
+
+        "lp": [int], # page_load
+
+        "am": [str, str, str, str], # alsamixer
+
+        # unused
         "get_pb_name": [],
+        "encoder_clicked": [int],
     }
 
     COMMANDS_FUNC = {}
 
     RESPONSES = [
-        "resp", "few aguments", "many arguments", "not found"
+        "resp", "few arguments", "many arguments", "not found"
     ]
 
     @classmethod

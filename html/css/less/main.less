@@ -73,6 +73,7 @@
 @import 'banks.less';
 @import 'pedalboards.less';
 @import 'nprogress.less';
+@import 'addressings.less';
 
 
 /**
@@ -343,7 +344,7 @@ hr.dotted {
     display: none;
   }
   #mod-show-midi-port, #mod-transport-icon, .mod-bypass,
-  #mod-cpu, #mod-ram, #mod-xruns, #mod-buffersize {
+  #mod-cpu, #mod-ram, #mod-xruns, #mod-buffersize, #mod-cpu-stats {
     background-position: 8px 50%;
     background-repeat: no-repeat;
     padding-left: 40px;
@@ -367,12 +368,12 @@ hr.dotted {
     background-image: url(../img/icons/25/midi.png);
   }
   #mod-transport-icon {
-    background-image: url(../img/icons/25/transport.png);
+    background-image: url(../img/icons/25/stop.png);
     font-family: monospace;
     width: 10.5em !important;
     text-align: right;
     &.playing {
-      background-color: @brand-primary;
+      background-image: url(../img/icons/25/transport.png);
     }
   }
   .mod-bypass {
@@ -404,6 +405,11 @@ hr.dotted {
   #mod-xruns {
     background-image: url(../img/icons/25/cpu.png);
     width: 115px !important;
+  }
+  #mod-cpu-stats {
+    background-image: url(../img/icons/25/cpu.png);
+    width: 155px !important;
+    text-transform: none;
   }
   #mod-buffersize {
     background-image: url(../img/icons/25/cpu.png);
@@ -454,7 +460,7 @@ hr.dotted {
 	  cursor: pointer;
       transition: all 0.33s;
 	  &:after {
-		  content: '\e800';
+		  content: '\e802';
 	  }
 	  &:hover {
 		  opacity: 1;
@@ -611,6 +617,12 @@ header#pedalboard-actions,
             background-color: @brand-primary;
         }
     }
+    &.js-cv-addressing {
+        background-image: url(../img/icons/25/cv.png);
+        &:hover, &.selected {
+            background-color: @brand-primary;
+        }
+    }
     &.js-cloud {
       background-image: url(../img/icn-share.png);
       background-size: 32px;
@@ -696,6 +708,15 @@ header#pedalboard-actions {
   left: initial;
   background: rgba(17, 17, 17, 0.9);
   padding: 50px 40px 15px 40px;
+  z-index: 999;
+  .mod-midi-icon {
+    width: auto !important;
+    padding-left: 25px;
+    background-position: 5% 45% !important;
+    background-image: url(../img/icons/25/midi.png);
+    background-size: 15px;
+    background-repeat: no-repeat;
+  }
 }
 
 #plugins-library {
@@ -1135,6 +1156,12 @@ header#pedalboard-actions {
       }
       td {
         border-color: #333;
+        &:first-child {
+          width: 40%;
+        }
+        &:not(first-child) {
+          width: 20%;
+        }
       }
     }
     .comments-reviews {
@@ -1354,11 +1381,13 @@ header#pedalboard-actions {
   position: absolute;
   top: 50%;
   width: 300px;
-  label {
-    display: inline-block;
-    float: left;
-    line-height: 2;
-    width: 96px;
+  &:not(#midi-ports-box) {
+    label {
+      display: inline-block;
+      float: left;
+      line-height: 2;
+      width: 96px;
+    }
   }
   .mod-controls {
     float: left;
@@ -1485,7 +1514,7 @@ header#pedalboard-actions {
 	color: #fff !important;
 	span {
 		&:before {
-			content: '\e803';
+			content: '\e804';
 		}
 		font-family: fontello !important;
 	}

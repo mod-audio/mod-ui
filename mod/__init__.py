@@ -22,6 +22,8 @@ import shutil
 from datetime import datetime
 from functools import wraps
 
+from mod.settings import HARDWARE_DESC_FILE
+
 
 def jsoncall(method):
     @wraps(method)
@@ -103,6 +105,31 @@ def check_environment():
     return True
 
 
+def get_nearest_valid_scalepoint_value(value, options):
+    # find a value that matches
+    for i, (ovalue, olabel) in enumerate(options):
+        if ovalue == value:
+            ivalue = i
+            return (i, ovalue)
+
+    # find a value within a small range
+    for i, (ovalue, olabel) in enumerate(options):
+        if abs(ovalue - value) <= 0.0001:
+            ivalue = i
+            return (i, ovalue)
+
+    # find a value by comparing previous and next, nasty but used as last resort
+    for i in range(len(options)-1):
+        ovalue, olabel = options[i]
+        nvalue, nlabel = options[i+1]
+
+        if abs(ovalue-value) < abs(nvalue-value):
+            return (i, ovalue)
+
+    else:
+        return (i+1, nvalue)
+
+
 def safe_json_load(path, objtype):
     if not os.path.exists(path):
         return objtype()
@@ -128,10 +155,28 @@ def symbolify(name):
     return name
 
 
-def get_hardware_actuators():
-    mod_hw = safe_json_load("/etc/mod-hardware-descriptor.json", dict)
+def get_hardware_descriptor():
+    return safe_json_load(HARDWARE_DESC_FILE, dict)
 
-    return mod_hw.get('actuators', [])
+
+def get_hardware_actuators():
+    return get_hardware_descriptor().get('actuators', [])
+
+
+def read_file_contents(fh, fallback):
+    if fh is None:
+        return fallback
+    fh.seek(0)
+    return fh.read().strip() or fallback
+
+
+class DummyFile(object):
+    def write(self, _):
+        return
+    def flush(self):
+        return
+    def close(self):
+        return
 
 
 class TextFileFlusher(object):
@@ -140,11 +185,16 @@ class TextFileFlusher(object):
         self.filehandle = None
 
     def __enter__(self):
-        self.filehandle = open(self.filename+".tmp", 'w', 1)
+        try:
+            self.filehandle = open(self.filename+".tmp", 'w', 1)
+        except OSError:
+            print("ERROR: failed to open", self.filename)
+            self.filehandle = DummyFile()
+
         return self.filehandle
 
     def __exit__(self, typ, val, tb):
-        if self.filehandle is None:
+        if self.filehandle is None or isinstance(self.filehandle, DummyFile):
             return
         self.filehandle.flush()
         os.fsync(self.filehandle)

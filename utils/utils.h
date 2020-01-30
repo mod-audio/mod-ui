@@ -142,6 +142,11 @@ typedef struct {
 } PluginInfo;
 
 typedef struct {
+    int licensed;
+    const PluginPreset* presets;
+} NonCachedPluginInfo;
+
+typedef struct {
     bool valid;
     const char* uri;
     const char* name;
@@ -235,10 +240,12 @@ typedef struct {
 typedef struct {
     const char* title;
     int width, height;
+    bool midi_separated_mode;
     const PedalboardPlugin* plugins;
     const PedalboardConnection* connections;
     PedalboardHardware hardware;
     PedalboardTimeInfo timeInfo;
+    unsigned int version;
 } PedalboardInfo;
 
 typedef struct {
@@ -247,6 +254,7 @@ typedef struct {
     const char* uri;
     const char* bundle;
     const char* title;
+    unsigned int version;
 } PedalboardInfo_Mini;
 
 typedef struct {
@@ -304,6 +312,10 @@ MOD_API const PluginInfo_Mini* const* get_all_plugins(void);
 // NOTE: may return null
 MOD_API const PluginInfo* get_plugin_info(const char* uri);
 
+// get a specific plugin (non-cached specific info)
+// NOTE: may return null
+MOD_API const NonCachedPluginInfo* get_non_cached_plugin_info(const char* uri);
+
 // get a specific plugin's modgui
 // NOTE: may return null
 MOD_API const PluginGUI* get_plugin_gui(const char* uri);
@@ -355,11 +367,13 @@ MOD_API unsigned set_jack_buffer_size(unsigned size);
 MOD_API float get_jack_sample_rate(void);
 MOD_API const char* get_jack_port_alias(const char* portname);
 MOD_API const char* const* get_jack_hardware_ports(const bool isAudio, bool isOutput);
+MOD_API bool has_midi_beat_clock_sender_port(void);
 MOD_API bool has_serial_midi_input_port(void);
 MOD_API bool has_serial_midi_output_port(void);
 MOD_API bool has_midi_merger_output_port(void);
 MOD_API bool has_midi_broadcaster_input_port(void);
 MOD_API bool connect_jack_ports(const char* port1, const char* port2);
+MOD_API bool connect_jack_midi_output_ports(const char* port);
 MOD_API bool disconnect_jack_ports(const char* port1, const char* port2);
 MOD_API void reset_xruns(void);
 
@@ -367,6 +381,7 @@ MOD_API void reset_xruns(void);
 MOD_API void init_bypass(void);
 MOD_API bool get_truebypass_value(bool right);
 MOD_API bool set_truebypass_value(bool right, bool bypassed);
+MOD_API float get_master_volume(bool right);
 
 // callbacks
 MOD_API void set_util_callbacks(JackBufSizeChanged bufSizeChanged,

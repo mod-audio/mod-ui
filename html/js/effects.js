@@ -253,6 +253,7 @@ JqueryClass('effectBox', {
         var categories = {
             'Favorites': 0,
             'All': 0,
+            'ControlVoltage': 0,
             'Delay': 0,
             'Distortion': 0,
             'Dynamics': 0,
@@ -266,8 +267,7 @@ JqueryClass('effectBox', {
             'Spectral': 0,
             'Utility': 0,
             'MaxGen': 0,
-	    'Camomile': 0,
-	    'ControlVoltage': 0,
+            'Camomile': 0,
         }
         var category
         for (i in plugins) {
@@ -393,13 +393,6 @@ JqueryClass('effectBox', {
     },
 
     showPluginInfo: function (plugin) {
-
-        function formatNum(x) {
-            var parts = x.toString().split(".");
-            parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-            return parts.join(".");
-        }
-
         var self = $(this)
         var uri  = escape(plugin.uri)
 
@@ -407,11 +400,19 @@ JqueryClass('effectBox', {
 
             // formating numbers and flooring ranges up to two decimal cases
             for (var i = 0; i < plugin.ports.control.input.length; i++) {
-                plugin.ports.control.input[i].formatted = {
-                    "default": formatNum(Math.floor(plugin.ports.control.input[i].ranges.default * 100) / 100),
-                    "maximum": formatNum(Math.floor(plugin.ports.control.input[i].ranges.maximum * 100) / 100),
-                    "minimum": formatNum(Math.floor(plugin.ports.control.input[i].ranges.minimum * 100) / 100)
-                }
+                plugin.ports.control.input[i].formatted = format(plugin.ports.control.input[i])
+            }
+
+            if (plugin.ports.cv && plugin.ports.cv.input) {
+              for (var i = 0; i < plugin.ports.cv.input.length; i++) {
+                plugin.ports.cv.input[i].formatted = format(plugin.ports.cv.input[i])
+              }
+            }
+
+            if (plugin.ports.cv && plugin.ports.cv.output) {
+              for (var i = 0; i < plugin.ports.cv.output.length; i++) {
+                plugin.ports.cv.output[i].formatted = format(plugin.ports.cv.output[i])
+              }
             }
 
             var ver = [plugin.builder, plugin.microVersion, plugin.minorVersion, plugin.release].join('_')
@@ -452,6 +453,16 @@ JqueryClass('effectBox', {
             // hide control ports table if none available
             if (plugin.ports.control.input.length == 0) {
                 info.find('.plugin-controlports').hide()
+            }
+
+            // hide cv inputs table if none available
+            if (!plugin.ports.cv || (plugin.ports.cv && plugin.ports.cv.input && plugin.ports.cv.input.length == 0)) {
+                info.find('.plugin-cvinputs').hide()
+            }
+
+            // hide cv ouputs ports table if none available
+            if (!plugin.ports.cv || (plugin.ports.cv && plugin.ports.cv.output && plugin.ports.cv.output.length == 0)) {
+                info.find('.plugin-cvoutputs').hide()
             }
 
             info.find('.favorite-button').on('click', function () {
@@ -518,7 +529,7 @@ JqueryClass('effectBox', {
                     desktop.pluginIndexerData[plugin.uri] = plugin
                     showInfo()
                 },
-                cache: false,
+                cache: true,
                 dataType: 'json'
             })
         }

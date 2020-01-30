@@ -27,9 +27,13 @@ function TransportControls(options) {
         transportSyncMode: $('<div>'),
         openAddressingDialog: function (port, label) {
         },
-        unaddressPort: function (portSymbol, callback) {
+        unaddressPort: function (portSymbol, syncMode, callback) {
             callback()
         },
+        setSyncMode: function (syncMode, callback) {
+          callback()
+        },
+        removeBPMHardwareMapping: function (syncMode) {}
     }, options)
 
     this.rollingPort = {
@@ -57,7 +61,7 @@ function TransportControls(options) {
         change: function (e, value) {
             var rolling = (value > 0.5)
             ws.send("transport-rolling " + (rolling ? "1" : "0"))
-            self.setPlaybackState(rolling, false)
+            self.setPlaybackState(rolling, false, true)
         }
     })
     options.transportPlay.find(".mod-address").click(function (e) {
@@ -88,7 +92,7 @@ function TransportControls(options) {
         port: self.beatsPerBarPort,
         change: function (e, value) {
             ws.send("transport-bpb " + value)
-            self.setBeatsPerBarValue(value, false)
+            self.setBeatsPerBarValue(value, false, true)
         }
     })
     options.transportBPB.find(".mod-address").click(function (e) {
@@ -97,7 +101,7 @@ function TransportControls(options) {
     options.transportBPB.find(".mod-knob-current-value")
     .attr('contenteditable', true)
     .focus(function () {
-        self.setBeatsPerBarValue(self.beatsPerBarPort.value, false)
+        self.setBeatsPerBarValue(self.beatsPerBarPort.value, false, false)
     })
     .keydown(function (e) {
         // enter
@@ -134,7 +138,7 @@ function TransportControls(options) {
             value = self.beatsPerBarPort.ranges.maximum
         }
         ws.send("transport-bpb " + value)
-        self.setBeatsPerBarValue(value, true)
+        self.setBeatsPerBarValue(value, true, true)
     })
 
     this.beatsPerMinutePort = {
@@ -163,11 +167,11 @@ function TransportControls(options) {
         port: self.beatsPerMinutePort,
         change: function (e, value) {
             ws.send("transport-bpm " + value)
-            self.setBeatsPerMinuteValue(value, false)
+            self.setBeatsPerMinuteValue(value, false, true)
         }
     })
     options.transportBPM.find(".mod-address").click(function (e) {
-        if ($(this).hasClass('link-enabled')) {
+        if ($(this).hasClass('link-enabled') || $(this).hasClass('midi-clock-slave-enabled')) {
             var img = $('<img>').attr('src', 'img/icn-blocked.png')
             $('body').append(img)
             img.css({
@@ -179,7 +183,13 @@ function TransportControls(options) {
             setTimeout(function () {
                 img.remove()
             }, 500)
-            new Notification("warn", "Cannot address BPM parameter with Link enabled", 5000)
+            var message
+            if ($(this).hasClass('link-enabled')) {
+              message = "Cannot address BPM parameter with Link enabled"
+            } else if ($(this).hasClass('midi-clock-slave-enabled')) {
+              message = "Cannot address BPM parameter with MIDI Clock Slave enabled"
+            }
+            new Notification("warn", message, 5000)
             return false
         }
         options.openAddressingDialog(self.beatsPerMinutePort, "Global-BPM")
@@ -187,7 +197,7 @@ function TransportControls(options) {
     options.transportBPM.find(".mod-knob-current-value")
     .attr('contenteditable', true)
     .focus(function () {
-        self.setBeatsPerMinuteValue(self.beatsPerMinutePort.value, false)
+        self.setBeatsPerMinuteValue(self.beatsPerMinutePort.value, false, false)
     })
     .keydown(function (e) {
         // enter
@@ -224,7 +234,7 @@ function TransportControls(options) {
             value = self.beatsPerMinutePort.ranges.maximum
         }
         ws.send("transport-bpm " + value)
-        self.setBeatsPerMinuteValue(value, true)
+        self.setBeatsPerMinuteValue(value, true, true)
     })
 
     var syncMode,
@@ -233,19 +243,12 @@ function TransportControls(options) {
         var opt = $(this)
         opt.click(function (e) {
             var newSyncMode = opt.attr('mod-sync-mode')
-            if (newSyncMode == "link") {
-                options.unaddressPort(":bpm", function (ok) {
-                    if (! ok) {
-                        return
-                    }
-                    ws.send("link_enable 1")
-                    self.setControlEnabled(":bpm", true)
-                    self.setSyncMode(newSyncMode)
-                })
-            } else {
-                ws.send("link_enable 0")
-                self.setSyncMode(newSyncMode)
-            }
+            options.setSyncMode(newSyncMode, function (ok) {
+              if (!ok) {
+                return
+              }
+              self.setSyncMode(newSyncMode)
+            })
         })
     })
 
@@ -257,15 +260,38 @@ function TransportControls(options) {
         }
     })
 
-    this.setControlEnabled = function (portSymbol, enabled) {
+    this.address = function (el, enabled, feedback, forceAddress) {
+      var alreadyAddressed = false
+      var addressEl = el.find('.mod-address')
+      if (enabled) {
+        addressEl.removeClass('addressed')
+      } else {
+        if (feedback) {
+          addressEl.addClass('addressed')
+          alreadyAddressed = true
+        } else {
+          addressEl.removeClass('addressed')
+        }
+      }
+
+      if (!alreadyAddressed && forceAddress) {
+        addressEl.addClass('addressed')
+      }
+    }
+
+    this.setControlEnabled = function (portSymbol, enabled, feedback, forceAddress) {
+        var controlWidget = (enabled || feedback) ? 'enable' : 'disable'
         if (portSymbol == ":bpb") {
-            self.beatsPerBarPort.widget.controlWidget(enabled ? 'enable' : 'disable')
-            options.transportBPB.find(".mod-knob-current-value").attr('contenteditable', enabled)
+            self.address(options.transportBPB, enabled, feedback, forceAddress)
+            self.beatsPerBarPort.widget.controlWidget(controlWidget)
+            options.transportBPB.find(".mod-knob-current-value").attr('contenteditable', enabled || feedback)
         } else if (portSymbol == ":bpm") {
-            self.beatsPerMinutePort.widget.controlWidget(enabled ? 'enable' : 'disable')
-            options.transportBPM.find(".mod-knob-current-value").attr('contenteditable', enabled)
+            self.address(options.transportBPM, enabled, feedback, forceAddress)
+            self.beatsPerMinutePort.widget.controlWidget(controlWidget)
+            options.transportBPM.find(".mod-knob-current-value").attr('contenteditable', enabled || feedback)
         } else if (portSymbol == ":rolling") {
-            self.rollingPort.widget.controlWidget(enabled ? 'enable' : 'disable')
+            self.address(options.transportPlay, enabled, feedback, forceAddress)
+            self.rollingPort.widget.controlWidget(controlWidget)
         }
     }
 
@@ -275,7 +301,7 @@ function TransportControls(options) {
         self.setControlEnabled(":rolling", true)
     }
 
-    this.setPlaybackState = function (playing, set_control) {
+    this.setPlaybackState = function (playing, set_control, set_hmi) {
         var value = playing ? 1.0 : 0.0
         if (self.rollingPort.value == value) {
             return
@@ -285,6 +311,13 @@ function TransportControls(options) {
         if (set_control) {
             self.rollingPort.widget.controlWidget('setValue', value, true)
         }
+        if (set_hmi) {
+          portSymbol = '/pedalboard/:rolling'
+          if (desktop.hardwareManager.addressingsByPortSymbol[portSymbol]) {
+              paramchange = (portSymbol + '/' + value)
+              desktop.ParameterSet(paramchange)
+          }
+        }
 
         if (playing) {
             options.transportButton.addClass("playing")
@@ -293,7 +326,7 @@ function TransportControls(options) {
         }
     }
 
-    this.setBeatsPerBarValue = function (bpb, set_control) {
+    this.setBeatsPerBarValue = function (bpb, set_control, set_hmi) {
         if (self.beatsPerBarPort.value == bpb) {
             return
         }
@@ -308,11 +341,18 @@ function TransportControls(options) {
         if (set_control) {
             self.beatsPerBarPort.widget.controlWidget('setValue', bpb, true)
         }
+        if (set_hmi) {
+          portSymbol = '/pedalboard/:bpb'
+          if (desktop.hardwareManager.addressingsByPortSymbol[portSymbol]) {
+              paramchange = (portSymbol + '/' + bpb)
+              desktop.ParameterSet(paramchange)
+          }
+        }
 
-        options.transportBPB.find(".mod-knob-current-value").html(text)
+      options.transportBPB.find(".mod-knob-current-value").html(text)
     }
 
-    this.setBeatsPerMinuteValue = function (bpm, set_control) {
+    this.setBeatsPerMinuteValue = function (bpm, set_control, set_hmi) {
         if (self.beatsPerMinutePort.value == bpm) {
             return
         }
@@ -321,9 +361,17 @@ function TransportControls(options) {
             text = "&nbsp;" + text
         }
         self.beatsPerMinutePort.value = bpm
+        options.setNewBeatsPerMinuteValue(bpm)
 
         if (set_control) {
             self.beatsPerMinutePort.widget.controlWidget('setValue', bpm, true)
+        }
+        if (set_hmi) {
+          portSymbol = '/pedalboard/:bpm'
+          if (desktop.hardwareManager.addressingsByPortSymbol[portSymbol]) {
+              paramchange = (portSymbol + '/' + bpm)
+              desktop.ParameterSet(paramchange)
+          }
         }
 
         options.transportButton.find('span').html(text)
@@ -340,17 +388,31 @@ function TransportControls(options) {
         options.transportSyncMode.find('[mod-sync-mode="'+newSyncMode+'"]').addClass('selected')
 
         if (newSyncMode == "link") {
-            // TODO: remove addressings
+            options.removeBPMHardwareMapping(newSyncMode)
+            self.setControlEnabled(":bpm", true)
             options.transportBPM.find(".mod-address").addClass('link-enabled')
         } else {
             options.transportBPM.find(".mod-address").removeClass('link-enabled')
         }
+
+        if (newSyncMode == "midi_clock_slave") {
+          // Disable BPM control from mod-ui (resulting in BPM knob being greyed out and unresponsive)
+          options.removeBPMHardwareMapping(newSyncMode)
+          self.setControlEnabled(":bpm", false, false)
+          options.transportBPM.find(".mod-address").addClass('midi-clock-slave-enabled')
+        } else {
+          options.transportBPM.find(".mod-address").removeClass('midi-clock-slave-enabled')
+        }
+
+        if (newSyncMode !== "link" && newSyncMode !== "midi_clock_slave") {
+          self.setControlEnabled(":bpm", true)
+        }
     }
 
     this.setValues = function (playing, bpb, bpm, newSyncMode) {
-        self.setPlaybackState(playing, true)
-        self.setBeatsPerBarValue(bpb, true)
-        self.setBeatsPerMinuteValue(bpm, true)
+        self.setPlaybackState(playing, true, false)
+        self.setBeatsPerBarValue(bpb, true, false)
+        self.setBeatsPerMinuteValue(bpm, true, false)
         self.setSyncMode(newSyncMode)
     }
 }

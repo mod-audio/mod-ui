@@ -18,6 +18,15 @@
     right: 0;
 }
 
+#pedalboard-dashboard.dev_api:after {
+    content: "DEV API enabled";
+    color: #555;
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    font-size: 50px;
+}
+
 #zoom-controllers {
     position:absolute;
     right:0px;
@@ -243,6 +252,7 @@
     width: 128px !important;
     height: 56px;
     cursor: pointer;
+    top: 0;
 }
 .mod-audio-output.output-connected .mod-output-jack {
     background-image: url(../img/audio-jack.png);
@@ -295,7 +305,7 @@
 .mod-audio-input.input-connecting-highlight {
     background-image: url(../img/audio-input-connecting-highlight.png);
 }
-.mod-audio-input.input-connected {
+.mod-audio-input.input-connected:not(.expanded) {
     background-image: url(../img/audio-input-connected.png);
 }
 .mod-audio-input.input-connected.input-connecting-highlight {
@@ -368,7 +378,7 @@
 .mod-midi-input.input-connecting-highlight {
     background-image: url(../img/midi-input-connecting-highlight.png);
 }
-.mod-midi-input.input-connected {
+.mod-midi-input.input-connected:not(.expanded) {
     background-image: url(../img/midi-input-connected.png);
 }
 .mod-midi-input.input-connected.input-connecting-highlight {
@@ -390,6 +400,7 @@
     width: 80px !important;
     height: 56px;
     cursor: pointer;
+    top: 0;
 }
 .mod-cv-output.output-connected .mod-output-jack {
     background-image: url(../img/cv-jack.png);
@@ -442,7 +453,7 @@
 .mod-cv-input.input-connecting-highlight {
     background-image: url(../img/cv-input-connecting-highlight.png);
 }
-.mod-cv-input.input-connected {
+.mod-cv-input.input-connected:not(.expanded) {
     background-image: url(../img/cv-input-connected.png);
 }
 .mod-cv-input.input-connected.input-connecting-highlight {
@@ -708,6 +719,7 @@ svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1000
     text-transform:uppercase;
 }
 
+
 .save-popup .actions {
     border-color:#ddd;
     border-style:solid;
@@ -717,7 +729,7 @@ svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1000
     text-align:right;
 }
 
-.save-popup label {
+.save-popup:not(#midi-ports-window) label {
     display:inline-block;
     float:left;
     line-height:2;
@@ -851,7 +863,7 @@ svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1000
 	width: 100%;
 }
 
-#share-window label {
+.save-popup#share-window label {
 	width: 585px;
 }
 
@@ -866,7 +878,7 @@ svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1000
 	margin: auto;
 }
 #share-window-wrapper {
-	height: 400px;
+	height: 415px;
 }
 #share-window-bottom {
 	border-top: 1px solid #ddd;

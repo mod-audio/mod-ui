@@ -58,6 +58,9 @@ JqueryClass('cloudPluginBox', {
         self.data('searchbox', searchbox)
         searchbox.cleanableInput()
 
+        self.data('category', null)
+        self.cloudPluginBox('setCategory', "All")
+
         searchbox.keydown(function (e) {
             if (e.keyCode == 13) { //detect enter
                 self.cloudPluginBox('search')
@@ -107,14 +110,12 @@ JqueryClass('cloudPluginBox', {
 
         var results = {}
         self.data('results', results)
-        self.data('category', null)
+
         self.data('firstLoad', true)
         self.find('ul.categories li').click(function () {
             var category = $(this).attr('id').replace(/^cloud-plugin-tab-/, '')
             self.cloudPluginBox('setCategory', category)
         })
-
-        self.cloudPluginBox('setCategory', "All")
 
         options.open = function () {
             self.data('firstLoad', true)
@@ -135,11 +136,15 @@ JqueryClass('cloudPluginBox', {
 
     setCategory: function (category) {
         var self = $(this)
+
         self.find('ul.categories li').removeClass('selected')
         self.find('.plugins-wrapper').hide()
         self.find('#cloud-plugin-tab-' + category).addClass('selected')
         self.find('#cloud-plugin-content-' + category).show().css('display', 'inline-block')
         self.data('category', category)
+
+        // hide/show featured plugins if specific category/All
+        self.cloudPluginBox('toggleFeaturedPlugins')
     },
     cleanResults: function () {
         var self = $(this)
@@ -174,6 +179,21 @@ JqueryClass('cloudPluginBox', {
         }
     },
 
+    toggleFeaturedPlugins: function () {
+      var self  = $(this)
+      var featuredPlugins = self.find('.featured-plugins')
+      var queryText = self.data('searchbox').val()
+      var category = self.data('category')
+
+      if (queryText === '' && category === 'All') {
+        if (featuredPlugins.is(':hidden')) {
+          featuredPlugins.show()
+        }
+      } else if (featuredPlugins.is(':visible')) {
+        featuredPlugins.hide()
+      }
+    },
+
     // search all or installed, depending on selected option
     search: function (customRenderCallback) {
         var self  = $(this)
@@ -182,6 +202,10 @@ JqueryClass('cloudPluginBox', {
             summary: "true",
             image_version: VERSION,
         }
+
+        // hide/show featured plugins if searching/not searching
+        self.cloudPluginBox('toggleFeaturedPlugins')
+
         if (self.find('input:checkbox[name=unstable]:checked').length == 0) {
             query.stable = "true"
         }
@@ -510,6 +534,7 @@ JqueryClass('cloudPluginBox', {
         var category   = {}
         var categories = {
             'All': plugins.length,
+            'ControlVoltage': 0,
             'Delay': 0,
             'Distortion': 0,
             'Dynamics': 0,
@@ -788,19 +813,21 @@ JqueryClass('cloudPluginBox', {
             if (!cloudChecked || !localChecked)
                 return
 
-            function formatNum(x) {
-                var parts = x.toString().split(".");
-                parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-                return parts.join(".");
-            }
-
             // formating numbers and flooring ranges up to two decimal cases
             for (var i = 0; i < plugin.ports.control.input.length; i++) {
-                plugin.ports.control.input[i].formatted = {
-                    "default": formatNum(Math.floor(plugin.ports.control.input[i].ranges.default * 100) / 100),
-                    "maximum": formatNum(Math.floor(plugin.ports.control.input[i].ranges.maximum * 100) / 100),
-                    "minimum": formatNum(Math.floor(plugin.ports.control.input[i].ranges.minimum * 100) / 100)
-                }
+                plugin.ports.control.input[i].formatted = format(plugin.ports.control.input[i])
+            }
+
+            if (plugin.ports.cv && plugin.ports.cv.input) {
+              for (var i = 0; i < plugin.ports.cv.input.length; i++) {
+                plugin.ports.cv.input[i].formatted = format(plugin.ports.cv.input[i])
+              }
+            }
+
+            if (plugin.ports.cv && plugin.ports.cv.output) {
+              for (var i = 0; i < plugin.ports.cv.output.length; i++) {
+                plugin.ports.cv.output[i].formatted = format(plugin.ports.cv.output[i])
+              }
             }
 
             var category = plugin.category[0]
@@ -839,6 +866,16 @@ JqueryClass('cloudPluginBox', {
             // hide control ports table if none available
             if (plugin.ports.control.input.length == 0) {
                 info.find('.plugin-controlports').hide()
+            }
+
+            // hide cv inputs table if none available
+            if (!plugin.ports.cv || (plugin.ports.cv && plugin.ports.cv.input && plugin.ports.cv.input.length == 0)) {
+                info.find('.plugin-cvinputs').hide()
+            }
+
+            // hide cv ouputs ports table if none available
+            if (!plugin.ports.cv || (plugin.ports.cv && plugin.ports.cv.output && plugin.ports.cv.output.length == 0)) {
+                info.find('.plugin-cvoutputs').hide()
             }
 
             var canInstall = false,
@@ -920,7 +957,7 @@ JqueryClass('cloudPluginBox', {
                     localChecked = true
                     showInfo()
                 },
-                cache: false,
+                cache: true,
                 dataType: 'json'
             })
         }

@@ -1,5 +1,6 @@
 .DS_Store
 .kdev_include_paths
+package-lock.json
 *~
 *.o
 *.so

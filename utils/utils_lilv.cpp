@@ -127,6 +127,7 @@ static size_t HOMElen = strlen(HOME);
 
 // Blacklisted plugins, which don't work properly on MOD for various reasons
 static const std::vector<std::string> BLACKLIST = {
+    "urn:mod:mclk",
     "urn:mod:gxtuner",
     "urn:mod:tuna",
     "http://calf.sourceforge.net/plugins/Analyzer",
@@ -537,39 +538,23 @@ char* lilv_file_abspath(const char* const path)
     return nullptr;
 }
 
-// refresh everything
-// plugins are not truly scanned here, only later per request
-void _refresh()
+// fill in `bundles` vector with all known data bundles (main bundle + local presets)
+void _fill_bundles_for_plugin(std::list<std::string>& bundles, const LilvPlugin* const p, LilvNode* const pset_Preset)
 {
-    BUNDLES.clear();
-    PLUGNFO.clear();
-    PLUGNFO_Mini.clear();
-    PLUGINS = lilv_world_get_all_plugins(W);
+    char* lilvparsed;
+    const char* bundlepath;
+    size_t bundlepathsize;
 
-    // Make a list of all installed bundles
-    LILV_FOREACH(plugins, itpls, PLUGINS)
+    if (const LilvNodes* const datanodes = lilv_plugin_get_data_uris(p))
     {
-        const LilvPlugin* const p = lilv_plugins_get(PLUGINS, itpls);
-
-        const LilvNodes* const bundles = lilv_plugin_get_data_uris(p);
-
-        const std::string uri = lilv_node_as_uri(lilv_plugin_get_uri(p));
-
-        // store empty dict for later
-        PLUGNFO[uri] = PluginInfo_Init;
-        PLUGNFO_Mini[uri] = PluginInfo_Mini_Init;
-
-        LILV_FOREACH(nodes, itbnds, bundles)
+        LILV_FOREACH(nodes, itbnds, datanodes)
         {
-            const LilvNode* const bundlenode = lilv_nodes_get(bundles, itbnds);
+            const LilvNode* const bundlenode = lilv_nodes_get(datanodes, itbnds);
 
             if (bundlenode == nullptr)
                 continue;
             if (! lilv_node_is_uri(bundlenode))
                 continue;
-
-            char* lilvparsed;
-            const char* bundlepath;
 
             lilvparsed = lilv_file_uri_parse(lilv_node_as_uri(bundlenode), nullptr);
             if (lilvparsed == nullptr)
@@ -582,7 +567,6 @@ void _refresh()
                 continue;
             }
 
-            size_t bundlepathsize;
             bundlepath = _get_safe_bundlepath(bundlepath, bundlepathsize);
             lilv_free(lilvparsed);
 
@@ -591,10 +575,72 @@ void _refresh()
 
             const std::string bundlestr = bundlepath;
 
-            if (std::find(BUNDLES.begin(), BUNDLES.end(), bundlestr) == BUNDLES.end())
-                BUNDLES.push_back(bundlestr);
+            if (std::find(bundles.begin(), bundles.end(), bundlestr) == bundles.end())
+                bundles.push_back(bundlestr);
         }
     }
+
+    if (LilvNodes* const presetnodes = lilv_plugin_get_related(p, pset_Preset))
+    {
+        LILV_FOREACH(nodes, itprs, presetnodes)
+        {
+            const LilvNode* const presetnode = lilv_nodes_get(presetnodes, itprs);
+
+            if (presetnode == nullptr)
+                continue;
+            if (! lilv_node_is_uri(presetnode))
+                continue;
+
+            lilvparsed = lilv_file_uri_parse(lilv_node_as_uri(presetnode), nullptr);
+            if (lilvparsed == nullptr)
+                continue;
+
+            bundlepath = dirname(lilvparsed);
+            if (bundlepath == nullptr)
+            {
+                lilv_free(lilvparsed);
+                continue;
+            }
+
+            bundlepath = _get_safe_bundlepath(bundlepath, bundlepathsize);
+            lilv_free(lilvparsed);
+
+            if (bundlepath == nullptr)
+                continue;
+
+            const std::string bundlestr = bundlepath;
+
+            if (std::find(bundles.begin(), bundles.end(), bundlestr) == bundles.end())
+                bundles.push_back(bundlestr);
+        }
+    }
+}
+
+// refresh everything
+// plugins are not truly scanned here, only later per request
+void _refresh()
+{
+    BUNDLES.clear();
+    PLUGNFO.clear();
+    PLUGNFO_Mini.clear();
+    PLUGINS = lilv_world_get_all_plugins(W);
+
+    LilvNode* const pset_Preset = lilv_new_uri(W, LV2_PRESETS__Preset);
+
+    // Make a list of all installed bundles
+    LILV_FOREACH(plugins, itpls, PLUGINS)
+    {
+        const LilvPlugin* const p = lilv_plugins_get(PLUGINS, itpls);
+        const std::string uri = lilv_node_as_uri(lilv_plugin_get_uri(p));
+
+        // store empty dict for later
+        PLUGNFO[uri] = PluginInfo_Init;
+        PLUGNFO_Mini[uri] = PluginInfo_Mini_Init;
+
+        _fill_bundles_for_plugin(BUNDLES, p, pset_Preset);
+    }
+
+    lilv_node_free(pset_Preset);
 }
 
 // common function used in 2 places
@@ -1424,8 +1470,9 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
     // bundles
 
     {
-        std::vector<std::string> bundles;
+        std::list<std::string> bundles;
 
+        // make sure the main bundle is the first in the list
         size_t bundlepathsize;
         const char* bundlepath = _get_safe_bundlepath(bundle, bundlepathsize);
 
@@ -1435,41 +1482,8 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
             bundles.push_back(bundlestr);
         }
 
-        if (const LilvNodes* const bundlenodes = lilv_plugin_get_data_uris(p))
-        {
-            LILV_FOREACH(nodes, itbnds, bundlenodes)
-            {
-                const LilvNode* const bundlenode = lilv_nodes_get(bundlenodes, itbnds);
-
-                if (bundlenode == nullptr)
-                    continue;
-                if (! lilv_node_is_uri(bundlenode))
-                    continue;
-
-                char* lilvparsed;
-                lilvparsed = lilv_file_uri_parse(lilv_node_as_uri(bundlenode), nullptr);
-                if (lilvparsed == nullptr)
-                    continue;
-
-                bundlepath = dirname(lilvparsed);
-                if (bundlepath == nullptr)
-                {
-                    lilv_free(lilvparsed);
-                    continue;
-                }
-
-                bundlepath = _get_safe_bundlepath(bundlepath, bundlepathsize);
-                lilv_free(lilvparsed);
-
-                if (bundlepath == nullptr)
-                    continue;
-
-                const std::string bundlestr = bundlepath;
-
-                if (std::find(bundles.begin(), bundles.end(), bundlestr) == bundles.end())
-                    bundles.push_back(bundlestr);
-            }
-        }
+        // now add everything else
+        _fill_bundles_for_plugin(bundles, p, ns.pset_Preset);
 
         size_t count = bundles.size();
         const char** const cbundles = new const char*[count+1];
@@ -2258,6 +2272,7 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
 
 const PedalboardInfo_Mini& _get_pedalboard_info_mini(const LilvPlugin* const p,
                                                      LilvWorld* const w,
+                                                     const LilvNode* const versiontypenode,
                                                      const LilvNode* const rdftypenode,
                                                      const LilvNode* const ingenblocknode,
                                                      const LilvNode* const lv2protonode)
@@ -2350,6 +2365,16 @@ const PedalboardInfo_Mini& _get_pedalboard_info_mini(const LilvPlugin* const p,
         }
 
         lilv_nodes_free(blocks);
+    }
+
+    // --------------------------------------------------------------------------------------------------------
+    // version
+
+    if (LilvNodes* const nodes = lilv_plugin_get_value(p, versiontypenode))
+    {
+        info.version = lilv_node_as_int(lilv_nodes_get_first(nodes));
+
+        lilv_nodes_free(nodes);
     }
 
     info.valid = true;
@@ -3093,13 +3118,12 @@ const char* const* remove_bundle_from_lilv_world(const char* const bundle)
     LILV_FOREACH(plugins, itpls, PLUGINS)
     {
         const LilvPlugin* const p = lilv_plugins_get(PLUGINS, itpls);
-
-        const LilvNodes* const bundles = lilv_plugin_get_data_uris(p);
-
         const std::string uri = lilv_node_as_uri(lilv_plugin_get_uri(p));
 
         if (PLUGNFO.count(uri) == 0)
             continue;
+
+        const LilvNodes* const bundles = lilv_plugin_get_data_uris(p);
 
         LILV_FOREACH(nodes, itbnds, bundles)
         {
@@ -3356,6 +3380,19 @@ const PluginInfo* get_plugin_info(const char* const uri_)
     return nullptr;
 }
 
+const NonCachedPluginInfo* get_non_cached_plugin_info(const char* uri)
+{
+    const PluginInfo* const info = get_plugin_info(uri);
+
+    if (info == nullptr || ! info->valid)
+        return nullptr;
+
+    static NonCachedPluginInfo ncInfo;
+    ncInfo.licensed = info->licensed;
+    ncInfo.presets = info->presets;
+    return &ncInfo;
+}
+
 const PluginGUI* get_plugin_gui(const char* uri_)
 {
     const std::string uri = uri_;
@@ -3501,6 +3538,7 @@ const PedalboardInfo_Mini* const* get_all_pedalboards(void)
     else
         unsetenv("LV2_PATH");
 
+    LilvNode* const versiontypenode = lilv_new_uri(w, LILV_NS_MODPEDAL "version");
     LilvNode* const rdftypenode = lilv_new_uri(w, LILV_NS_RDF "type");
     LilvNode* const ingenblocknode = lilv_new_uri(w, LILV_NS_INGEN "block");
     LilvNode* const lv2protonode = lilv_new_uri(w, LILV_NS_LV2 "prototype");
@@ -3511,7 +3549,7 @@ const PedalboardInfo_Mini* const* get_all_pedalboards(void)
         const LilvPlugin* const p = lilv_plugins_get(plugins, itpls);
 
         // get new info
-        const PedalboardInfo_Mini& info = _get_pedalboard_info_mini(p, w, rdftypenode, ingenblocknode, lv2protonode);
+        const PedalboardInfo_Mini& info = _get_pedalboard_info_mini(p, w, versiontypenode, rdftypenode, ingenblocknode, lv2protonode);
 
         if (! info.valid)
             continue;
@@ -3522,6 +3560,7 @@ const PedalboardInfo_Mini* const* get_all_pedalboards(void)
         allpedals.push_back(infop);
     }
 
+    lilv_free(versiontypenode);
     lilv_free(rdftypenode);
     lilv_free(ingenblocknode);
     lilv_free(lv2protonode);
@@ -3679,6 +3718,7 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
     }
 
     memset(&info, 0, sizeof(PedalboardInfo));
+    info.midi_separated_mode = true;
 
     // define the needed stuff
     LilvNode* const ingen_arc       = lilv_new_uri(w, LILV_NS_INGEN "arc");
@@ -3700,6 +3740,7 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
     LilvNode* const modpedal_preset = lilv_new_uri(w, LILV_NS_MODPEDAL "preset");
     LilvNode* const modpedal_width  = lilv_new_uri(w, LILV_NS_MODPEDAL "width");
     LilvNode* const modpedal_height = lilv_new_uri(w, LILV_NS_MODPEDAL "height");
+    LilvNode* const modpedal_version = lilv_new_uri(w, LILV_NS_MODPEDAL "version");
 
     // --------------------------------------------------------------------------------------------------------
     // uri node (ie, "this")
@@ -3979,6 +4020,17 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
                 handled_port_uris.push_back(portsym_s);
             }
 #endif
+            // we began calling it legacy first, but separated makes more sense
+            if (strcmp(portsym, "midi_legacy_mode") == 0 || strcmp(portsym, "midi_separated_mode") == 0)
+            {
+                if (LilvNode* const separated = lilv_world_get(w, hwport, ingen_value, nullptr))
+                {
+                    info.midi_separated_mode = lilv_node_as_int(separated) != 0;
+                    lilv_node_free(separated);
+                }
+                lilv_free(portsym);
+                continue;
+            }
 
             int isTimePort = 0;
             /**/ if (strcmp(portsym, ":bpb") == 0)
@@ -3995,6 +4047,8 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
                     float value;
                     int8_t mchan = -1;
                     uint8_t mctrl = 0;
+                    float minimum = 0.0f, maximum = 0.0f;
+                    bool hasRanges = false;
 
                     if (LilvNode* const bind = lilv_world_get(w, hwport, midi_binding, nullptr))
                     {
@@ -4010,6 +4064,19 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
                             {
                                 mchan = (int8_t)mchantest;
                                 mctrl = (uint8_t)mctrltest;
+
+                                LilvNode* const bindMin = lilv_world_get(w, bind, lv2_minimum, nullptr);
+                                LilvNode* const bindMax = lilv_world_get(w, bind, lv2_maximum, nullptr);
+
+                                if (bindMin != nullptr && bindMax != nullptr)
+                                {
+                                    hasRanges = true;
+                                    minimum = lilv_node_as_float(bindMin);
+                                    maximum = lilv_node_as_float(bindMax);
+                                }
+
+                                lilv_node_free(bindMin);
+                                lilv_node_free(bindMax);
                             }
                         }
 
@@ -4025,7 +4092,7 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
                         if (value >= 1.0f && value <= 16.0f)
                         {
                             info.timeInfo.bpb = value;
-                            info.timeInfo.bpbCC = { mchan, mctrl, false, 0.0f, 0.0f };
+                            info.timeInfo.bpbCC = { mchan, mctrl, hasRanges, minimum, maximum };
                             info.timeInfo.available |= kPedalboardTimeAvailableBPB;
                         }
                         break;
@@ -4035,14 +4102,14 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
                         if (value >= 20.0f && value <= 280.0f)
                         {
                             info.timeInfo.bpm = value;
-                            info.timeInfo.bpmCC = { mchan, mctrl, false, 0.0f, 0.0f };
+                            info.timeInfo.bpmCC = { mchan, mctrl, hasRanges, minimum, maximum };
                             info.timeInfo.available |= kPedalboardTimeAvailableBPM;
                         }
                         break;
 
                     case 3:
                         info.timeInfo.rolling = lilv_node_as_int(portvalue) != 0;
-                        info.timeInfo.rollingCC = { mchan, mctrl, false, 0.0f, 0.0f };
+                        info.timeInfo.rollingCC = { mchan, mctrl, hasRanges, minimum, maximum };
                         info.timeInfo.available |= kPedalboardTimeAvailableRolling;
                         break;
                     }
@@ -4188,6 +4255,16 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
     }
 
     // --------------------------------------------------------------------------------------------------------
+    // version
+
+    if (LilvNodes* const nodes = lilv_plugin_get_value(p, modpedal_version))
+    {
+        info.version = lilv_node_as_int(lilv_nodes_get_first(nodes));
+
+        lilv_nodes_free(nodes);
+    }
+
+    // --------------------------------------------------------------------------------------------------------
 
     lilv_node_free(ingen_arc);
     lilv_node_free(ingen_block);
@@ -4208,6 +4285,7 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
     lilv_node_free(modpedal_preset);
     lilv_node_free(modpedal_width);
     lilv_node_free(modpedal_height);
+    lilv_node_free(modpedal_version);
     lilv_node_free(rdftypenode);
     lilv_world_free(w);
 

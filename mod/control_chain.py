@@ -110,7 +110,7 @@ class ControlChainDeviceListener(object):
 
     # -----------------------------------------------------------------------------------------------------------------
 
-    def process_read_queue(self, ignored=None):
+    def process_read_queue(self, _=None):
         self.socket.read_until(b"\0", self.check_read_response)
 
     @gen.coroutine
@@ -257,7 +257,8 @@ class ControlChainDeviceListener(object):
                     'name' : "%s%s:%s" % (dev['label'], dev_label_suffix, actuator['name']),
                     'modes': modes_str,
                     'steps': [],
-                    'max_assigns': actuator['max_assignments']
+                    'feedback': False,
+                    'max_assigns': actuator['max_assignments'],
                 }
                 self.act_added_cb(dev_id, actuator['id'], metadata)
 

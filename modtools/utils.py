@@ -259,6 +259,13 @@ class PluginInfo(Structure):
         ("presets", POINTER(PluginPreset)),
     ]
 
+# a subset of PluginInfo
+class NonCachedPluginInfo(Structure):
+    _fields_ = [
+        ("licensed", c_int),
+        ("presets", POINTER(PluginPreset)),
+    ]
+
 class PluginInfo_Mini(Structure):
     _fields_ = [
         ("valid", c_bool),
@@ -361,10 +368,12 @@ class PedalboardInfo(Structure):
         ("title", c_char_p),
         ("width", c_int),
         ("height", c_int),
+        ("midi_separated_mode", c_bool),
         ("plugins", POINTER(PedalboardPlugin)),
         ("connections", POINTER(PedalboardConnection)),
         ("hardware", PedalboardHardware),
         ("timeInfo", PedalboardTimeInfo),
+        ("version", c_uint),
     ]
 
 class PedalboardInfo_Mini(Structure):
@@ -374,6 +383,7 @@ class PedalboardInfo_Mini(Structure):
         ("uri", c_char_p),
         ("bundle", c_char_p),
         ("title", c_char_p),
+        ("version", c_uint),
     ]
 
 class StatePortValue(Structure):
@@ -454,6 +464,9 @@ utils.get_all_plugins.restype  = POINTER(POINTER(PluginInfo_Mini))
 utils.get_plugin_info.argtypes = [c_char_p]
 utils.get_plugin_info.restype  = POINTER(PluginInfo)
 
+utils.get_non_cached_plugin_info.argtypes = [c_char_p]
+utils.get_non_cached_plugin_info.restype  = POINTER(NonCachedPluginInfo)
+
 utils.get_plugin_gui.argtypes = [c_char_p]
 utils.get_plugin_gui.restype  = POINTER(PluginGUI)
 
@@ -511,6 +524,9 @@ utils.get_jack_sample_rate.restype  = c_float
 utils.get_jack_port_alias.argtypes = [c_char_p]
 utils.get_jack_port_alias.restype  = c_char_p
 
+utils.has_midi_beat_clock_sender_port.argtypes = None
+utils.has_midi_beat_clock_sender_port.restype  = c_bool
+
 utils.has_serial_midi_input_port.argtypes = None
 utils.has_serial_midi_input_port.restype  = c_bool
 
@@ -529,6 +545,9 @@ utils.get_jack_hardware_ports.restype  = POINTER(c_char_p)
 utils.connect_jack_ports.argtypes = [c_char_p, c_char_p]
 utils.connect_jack_ports.restype  = c_bool
 
+utils.connect_jack_midi_output_ports.argtypes = [c_char_p]
+utils.connect_jack_midi_output_ports.restype  = c_bool
+
 utils.disconnect_jack_ports.argtypes = [c_char_p, c_char_p]
 utils.disconnect_jack_ports.restype  = c_bool
 
@@ -543,6 +562,9 @@ utils.get_truebypass_value.restype  = c_bool
 
 utils.set_truebypass_value.argtypes = [c_bool, c_bool]
 utils.set_truebypass_value.restype  = c_bool
+
+utils.get_master_volume.argtypes = [c_bool]
+utils.get_master_volume.restype  = c_float
 
 utils.set_util_callbacks.argtypes = [JackBufSizeChanged, JackPortAppeared, JackPortDeleted, TrueBypassStateChanged]
 utils.set_util_callbacks.restype  = None
@@ -593,6 +615,14 @@ def get_plugin_info(uri):
         raise Exception
     return structToDict(info.contents)
 
+# get a specific plugin (non-cached specific info)
+# NOTE: may throw
+def get_non_cached_plugin_info(uri):
+    info = utils.get_non_cached_plugin_info(uri.encode("utf-8"))
+    if not info:
+        raise Exception
+    return structToDict(info.contents)
+
 # get a specific plugin's modgui
 # NOTE: may throw
 def get_plugin_gui(uri):
@@ -622,9 +652,30 @@ def rescan_plugin_presets(uri):
 
 # ------------------------------------------------------------------------------------------------------------
 
+_allpedalboards = None
+
 # get all available pedalboards (ie, plugins with pedalboard type)
 def get_all_pedalboards():
-    return structPtrPtrToList(utils.get_all_pedalboards())
+    global _allpedalboards
+    if _allpedalboards is None:
+        _allpedalboards = structPtrPtrToList(utils.get_all_pedalboards())
+    return _allpedalboards
+
+# handy function to reset our last call value
+def reset_get_all_pedalboards_cache():
+    global _allpedalboards
+    _allpedalboards = None
+
+# handy function to update cached pedalboard version
+def update_cached_pedalboard_version(bundle):
+    global _allpedalboards
+    if _allpedalboards is None:
+        return
+    for pedalboard in _allpedalboards:
+        if pedalboard['bundle'] == bundle:
+            pedalboard['version'] += 1
+            return
+    print("ERROR: update_cached_pedalboard_version() failed", bundle)
 
 # get all currently "broken" pedalboards (ie, pedalboards which contain unavailable plugins)
 def get_broken_pedalboards():
@@ -710,6 +761,9 @@ def get_jack_sample_rate():
 def get_jack_port_alias(portname):
     return charPtrToString(utils.get_jack_port_alias(portname.encode("utf-8")))
 
+def has_midi_beat_clock_sender_port():
+    return bool(utils.has_midi_beat_clock_sender_port())
+
 def has_serial_midi_input_port():
     return bool(utils.has_serial_midi_input_port())
 
@@ -728,6 +782,9 @@ def get_jack_hardware_ports(isAudio, isOutput):
 def connect_jack_ports(port1, port2):
     return bool(utils.connect_jack_ports(port1.encode("utf-8"), port2.encode("utf-8")))
 
+def connect_jack_midi_output_ports(port):
+    return bool(utils.connect_jack_midi_output_ports(port.encode("utf-8")))
+
 def disconnect_jack_ports(port1, port2):
     return bool(utils.disconnect_jack_ports(port1.encode("utf-8"), port2.encode("utf-8")))
 
@@ -745,6 +802,9 @@ def get_truebypass_value(right):
 
 def set_truebypass_value(right, bypassed):
     return bool(utils.set_truebypass_value(right, bypassed))
+
+def get_master_volume(right):
+    return float(utils.get_master_volume(right))
 
 # ------------------------------------------------------------------------------------------------------------
 # callbacks
