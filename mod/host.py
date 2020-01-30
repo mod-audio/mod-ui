@@ -622,6 +622,7 @@ class Host(object):
             return
 
         if atype == Addressings.ADDRESSING_TYPE_CV:
+            # TODO send data['operational_mode'] to host
             source_port_name = self.get_jack_source_port_name(actuator)
             return self.send_notmodified("cv_map %d %s %s %f %f" % (data['instance_id'],
                                                                        data['port'],
@@ -2325,7 +2326,7 @@ class Host(object):
     def snapshot_disable(self, callback):
         self.snapshot_clear()
         self.pedalboard_modified = True
-        self.address(PEDALBOARD_INSTANCE, ":presets", kNullAddressURI, "---", 0, 0, 0, 0, False, None, None, callback)
+        self.address(PEDALBOARD_INSTANCE, ":presets", kNullAddressURI, "---", 0, 0, 0, 0, False, None, None, None, callback)
 
     def snapshot_save(self):
         idx = self.current_pedalboard_snapshot_id
@@ -3678,7 +3679,7 @@ _:b%i
 
         # First, unadress BPM port if switching to Link or MIDI sync mode
         if mode in (Profile.TRANSPORT_SOURCE_MIDI_SLAVE, Profile.TRANSPORT_SOURCE_ABLETON_LINK):
-            self.address(PEDALBOARD_INSTANCE, ":bpm", kNullAddressURI, "---", 0.0, 0.0, 0.0, 0, False, None, None, unaddress_bpm_callback)
+            self.address(PEDALBOARD_INSTANCE, ":bpm", kNullAddressURI, "---", 0.0, 0.0, 0.0, 0, False, None, None, None, unaddress_bpm_callback)
         else:
             unaddress_bpm_callback(True)
 
@@ -3902,10 +3903,12 @@ _:b%i
     # Addressing (public stuff)
 
     @gen.coroutine
-    def address(self, instance, portsymbol, actuator_uri, label, minimum, maximum, value, steps, tempo, dividers, page, callback, not_param_set=False, send_hmi=True):
+    def address(self, instance, portsymbol, actuator_uri, label, minimum, maximum, value, steps, tempo, dividers, page, operational_mode, callback, not_param_set=False, send_hmi=True):
         instance_id = self.mapper.get_id(instance)
         pluginData  = self.plugins.get(instance_id, None)
 
+        print("address")
+        print(operational_mode)
         if pluginData is None:
             print("ERROR: Trying to address non-existing plugin instance %i: '%s'" % (instance_id, instance))
             callback(False)
@@ -4058,7 +4061,7 @@ _:b%i
             addressing['actuator_uri'] = actuator_uri
         else:
             addressing = self.addressings.add(instance_id, pluginData['uri'], portsymbol, actuator_uri,
-                                              label, minimum, maximum, steps, value, tempo, dividers, page)
+                                              label, minimum, maximum, steps, value, tempo, dividers, page, None, operational_mode)
 
             if addressing is None:
                 callback(False)
@@ -4151,7 +4154,7 @@ _:b%i
                 instance_id = addressing['instance_id']
                 instance = self.mapper.get_instance(instance_id)
                 port = addressing['port']
-                self.address(instance, port, kNullAddressURI, "---", 0.0, 0.0, 0.0, 0, False, None, None, remove_callback)
+                self.address(instance, port, kNullAddressURI, "---", 0.0, 0.0, 0.0, 0, False, None, None, None, remove_callback)
             except Exception as e:
                 callback(False)
                 logging.exception(e)
@@ -4533,10 +4536,11 @@ _:b%i
                     tempo = port_addressing['tempo']
                     dividers = value
                     page = port_addressing['page']
+                    operational_mode = port_addressing['operational_mode']
 
                     cb = address_callback if group_actuators else param_set_callback
                     self.address(instance, portsymbol, actuator_uri, label, minimum, maximum, port_value, steps,
-                                 tempo, dividers, page, cb, not_param_set=True, send_hmi=False)
+                                 tempo, dividers, page, operational_mode, cb, not_param_set=True, send_hmi=False)
                     return
 
                 if group_actuators is not None:

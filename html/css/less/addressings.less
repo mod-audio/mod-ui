@@ -111,6 +111,17 @@
         border-left: 1px solid @gray-lighter;
         padding-left: 12px;
         margin-left: 12px;
+
+        .cv-op-mode {
+
+          label {
+            width: 100% !important;
+          }
+
+          .mod-controls {
+            width: 155px !important;
+          }
+        }
       }
     }
   }
@@ -169,7 +180,7 @@
         &:disabled {
           cursor: not-allowed;
         }
-        
+
         &:checked ~ .checkmark {
            background-color: @brand-primary;
 
