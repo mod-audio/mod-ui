@@ -2005,10 +2005,11 @@ JqueryClass('pedalboard', {
           if (!self.data('cvAddressing')) {
             cvCheckboxInput.hide()
           }
-          
+
           // Disable inputs for hardware cv ports
           var defaultText = output.attr("title")
           if (
+            portSymbol === "/graph/cv_exp_pedal" ||
             portSymbol === "/graph/cv_capture_1" ||
             portSymbol === "/graph/cv_capture_2"
           ) {
@@ -2064,7 +2065,13 @@ JqueryClass('pedalboard', {
                 self.data('hardwareManager').addCvOutputPort(cvPort, name);
               }
             });
-          })
+          });
+
+          textInput.keydown(function (e) {
+            if (e.keyCode === 13) {
+              $(this).blur();
+            }
+          });
         }
 
         canvas.css({

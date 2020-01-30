@@ -31,6 +31,9 @@ var deviceOption = "/hmi"
 var ccOption = "/cc"
 var cvOption = "/cv"
 
+// Port types supported by cv addressing
+var cvModes = ":float:integer:bypass:toggled:"
+
 // use pitchbend as midi cc, with an invalid MIDI controller number
 var MIDI_PITCHBEND_AS_CC = 131
 
@@ -233,6 +236,12 @@ function HardwareManager(options) {
       return available
     }
 
+    this.isCvAvailable = function (port) {
+      var defaultTypes = self.availableAddressingTypes(port, false)
+      var available = self.availableActuatorsWithModes([{ uri: cvOption, modes: cvModes }], defaultTypes)
+      return available.hasOwnProperty(cvOption)
+    }
+
     // Gets a list of available actuators for a port
     this.availableActuators = function (instance, port, tempo) {
         var key   = instance+"/"+port.symbol
@@ -359,7 +368,11 @@ function HardwareManager(options) {
           form.find('.no-cc').show()
         }
       } else if (typeInputVal === cvOption) {
-        form.find('.cv-select').show()
+        if (self.cvOutputPorts.length) {
+          form.find('.cv-select').show()
+        } else {
+          form.find('.no-cv').show()
+        }
       }
 
       // Disabled/Enable save button
@@ -600,7 +613,7 @@ function HardwareManager(options) {
               $(btn).hide()
             }
             // Hide CV tab if not available
-            if ($(btn).attr('data-value') === cvOption && self.cvOutputPorts.length < 1) {
+            if ($(btn).attr('data-value') === cvOption && !self.isCvAvailable(port)) {
               $(btn).hide()
             }
             $(this).replaceWith(btn)
@@ -1200,7 +1213,7 @@ function HardwareManager(options) {
         self.cvOutputPorts.push({
           uri: uri,
           name: name,
-          modes: ":float:integer:bypass:toggled:",
+          modes: cvModes,
           steps: [],
           max_assigns: 99,
           feedback: false,
