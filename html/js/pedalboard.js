@@ -1981,6 +1981,7 @@ JqueryClass('pedalboard', {
           // Disable inputs for hardware cv ports
           var defaultText = output.attr("title")
           if (
+            portSymbol === "/graph/cv_exp_pedal" ||
             portSymbol === "/graph/cv_capture_1" ||
             portSymbol === "/graph/cv_capture_2"
           ) {
