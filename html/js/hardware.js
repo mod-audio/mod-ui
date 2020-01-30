@@ -368,7 +368,11 @@ function HardwareManager(options) {
           form.find('.no-cc').show()
         }
       } else if (typeInputVal === cvOption) {
-        form.find('.cv-select').show()
+        if (self.cvOutputPorts.length) {
+          form.find('.cv-select').show()
+        } else {
+          form.find('.no-cv').show()
+        }
       }
 
       // Disabled/Enable save button
