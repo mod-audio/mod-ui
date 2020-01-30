@@ -392,19 +392,26 @@ function HardwareManager(options) {
 
       // Hide/show extended specific content
       if (typeInputVal === kMidiLearnURI || typeInputVal.lastIndexOf(kMidiCustomPrefixURI, 0) === 0 || typeInputVal === cvOption) {
-        form.find('.sensibility').css({visibility:"hidden"})
+        form.find('.sensibility').css({ display: "none" })
         self.disableMinMaxSteps(form, false)
       } else {
-        form.find('.sensibility').css({visibility:"visible"})
+        form.find('.sensibility').css({ display: "block" })
       }
 
       if (typeInputVal === kMidiLearnURI || typeInputVal.lastIndexOf(kMidiCustomPrefixURI, 0) === 0 || typeInputVal === ccOption || typeInputVal === cvOption) {
-        form.find('.tempo').css({display:"none"})
+        form.find('.tempo').css({ display: "none" })
       } else if (hasTempoRelatedDynamicScalePoints(port)) {
-        form.find('.tempo').css({display:"block"})
+        form.find('.tempo').css({ display: "block" })
         if (form.find('input[name=tempo]').prop("checked")) {
           self.disableMinMaxSteps(form, true)
         }
+      }
+
+      // Hide cv operational mode for everything except CV
+      if (typeInputVal !== cvOption) {
+        form.find('.cv-op-mode').css({ display: "none" })
+      } else {
+        form.find('.cv-op-mode').css({ display: "block" })
       }
     }
 
@@ -584,6 +591,7 @@ function HardwareManager(options) {
         var hmiUriInput = form.find('input[name=hmi-uri]')
         var deviceTable = form.find('.device-table')
         var sensibility = form.find('select[name=steps]')
+        var operationalMode = form.find('select[name=cv-op-mode]')
 
         // Create selectable buttons to choose addressings type and show relevant dynamic content
         var typeInputVal = kNullAddressURI
@@ -714,12 +722,17 @@ function HardwareManager(options) {
             // Hide sensibility and tempo options for MIDI
             var act = typeInput.val()
             if (act === kMidiLearnURI || act.lastIndexOf(kMidiCustomPrefixURI, 0) === 0 || act === cvOption) {
-                form.find('.sensibility').css({visibility:"hidden"})
-                form.find('.tempo').css({display:"none"})
+                form.find('.sensibility').css({ display: "none" })
+                form.find('.tempo').css({ display: "none" })
             }
             // Hide tempo option for CC or CV
             if (act === ccOption || act === cvOption) {
-              form.find('.tempo').css({display:"none"})
+              form.find('.tempo').css({ display: "none" })
+            }
+
+            // Hide cv operational mode for everything except CV
+            if (act !== cvOption) {
+              form.find('.cv-op-mode').css({ display: "none" })
             }
         }
 
@@ -753,6 +766,7 @@ function HardwareManager(options) {
               tempo,
               divider,
               dividerOptions,
+              operationalMode,
               form
             );
         })
@@ -804,6 +818,7 @@ function HardwareManager(options) {
                   tempo,
                   divider,
                   dividerOptions,
+                  operationalMode,
                   form
                 );
                 return false
@@ -826,6 +841,7 @@ function HardwareManager(options) {
       dividerValue,
       dividerOptions,
       page,
+      operationalModeValue,
       form
       ) {
         var instanceAndSymbol = instance+"/"+port.symbol;
@@ -855,6 +871,7 @@ function HardwareManager(options) {
             dividers: dividerValue,
             feedback: actuator.feedback === false ? false : true, // backwards compatible, true by default
             page: page || null,
+            operationalMode: operationalModeValue,
         }
 
         options.address(instanceAndSymbol, addressing, function (ok) {
@@ -931,6 +948,7 @@ function HardwareManager(options) {
       tempo,
       divider,
       dividerOptions,
+      operationalMode,
       form
       ) {
         var instanceAndSymbol = instance+"/"+port.symbol
@@ -988,6 +1006,7 @@ function HardwareManager(options) {
         var labelValue = label.val() || pname
         var sensibilityValue = sensibility.val()
         var dividerValue = divider.val() ? parseFloat(divider.val()): divider.val()
+        var operationalModeValue = operationalMode.val()
 
         // if changing from midi-learn, unlearn first
         if (currentAddressing.uri == kMidiLearnURI) {
@@ -1028,6 +1047,7 @@ function HardwareManager(options) {
                     dividerValue,
                     dividerOptions,
                     page,
+                    operationalModeValue,
                     form
                   );
                 // if not, just close the form
@@ -1051,6 +1071,7 @@ function HardwareManager(options) {
             dividerValue,
             dividerOptions,
             page,
+            operationalModeValue,
             form
           );
         }

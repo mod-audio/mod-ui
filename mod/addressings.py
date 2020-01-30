@@ -267,7 +267,7 @@ class Addressings(object):
                 group = addr.get('group', None)
                 addrdata = self.add(instance_id, plugin_uri, portsymbol, actuator_uri,
                                     addr['label'], addr['minimum'], addr['maximum'], addr['steps'], curvalue,
-                                    addr.get('tempo'), addr.get('dividers'), page, group)
+                                    addr.get('tempo'), addr.get('dividers'), page, group, addr.get('operational_mode'))
 
                 if addrdata is not None:
                     stored_addrdata = addrdata.copy()
@@ -486,6 +486,7 @@ class Addressings(object):
                         'minimum' : addr['minimum'],
                         'maximum' : addr['maximum'],
                         'steps'   : addr['steps'],
+                        'operational_mode'    : addr.get('operational_mode'),
                     })
             else: # plugin cv ports, different structure to save name as well
                 addrs2 = { 'name': addrs['name'], 'addrs': [] }
@@ -497,6 +498,7 @@ class Addressings(object):
                         'minimum' : addr['minimum'],
                         'maximum' : addr['maximum'],
                         'steps'   : addr['steps'],
+                        'operational_mode'    : addr.get('operational_mode'),
                     })
             addressings[uri] = addrs2
 
@@ -584,7 +586,7 @@ class Addressings(object):
 
     # -----------------------------------------------------------------------------------------------------------------
 
-    def add(self, instance_id, plugin_uri, portsymbol, actuator_uri, label, minimum, maximum, steps, value, tempo=False, dividers=None, page=None, group=None):
+    def add(self, instance_id, plugin_uri, portsymbol, actuator_uri, label, minimum, maximum, steps, value, tempo=False, dividers=None, page=None, group=None, operational_mode=None):
         actuator_type = self.get_actuator_type(actuator_uri)
         if actuator_type not in (self.ADDRESSING_TYPE_HMI, self.ADDRESSING_TYPE_CC, self.ADDRESSING_TYPE_BPM, self.ADDRESSING_TYPE_CV):
             print("ERROR: Trying to address the wrong way, stop!")
@@ -592,7 +594,8 @@ class Addressings(object):
 
         unit = "none"
         options = []
-
+        print("add")
+        print(operational_mode)
         if portsymbol == ":presets":
             data = self.get_presets_as_options(instance_id)
 
@@ -663,7 +666,8 @@ class Addressings(object):
             'tempo'       : tempo,
             'dividers'    : dividers,
             'page'        : page,
-            'group'       : group
+            'group'       : group,
+            'operational_mode': operational_mode,
         }
 
         # -------------------------------------------------------------------------------------------------------------
