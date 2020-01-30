@@ -169,7 +169,13 @@ class Session(object):
     # Address a plugin parameter
     def web_parameter_address(self, port, actuator_uri, label, minimum, maximum, value, steps, tempo, dividers, page, operational_mode, callback):
         instance, portsymbol = port.rsplit("/",1)
-        self.host.address(instance, portsymbol, actuator_uri, label, minimum, maximum, value, steps, tempo, dividers, page, operational_mode, callback)
+        extras = {
+            'tempo': tempo,
+            'dividers': dividers,
+            'page': page,
+            'operational_mode': operational_mode,
+        }
+        self.host.address(instance, portsymbol, actuator_uri, label, minimum, maximum, value, steps, extras, callback)
 
     def web_set_sync_mode(self, mode, callback):
         self.host.set_sync_mode(mode, True, False, True, callback)

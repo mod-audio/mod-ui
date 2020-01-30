@@ -622,13 +622,13 @@ class Host(object):
             return
 
         if atype == Addressings.ADDRESSING_TYPE_CV:
-            # TODO send data['operational_mode'] to host
             source_port_name = self.get_jack_source_port_name(actuator)
-            return self.send_notmodified("cv_map %d %s %s %f %f" % (data['instance_id'],
+            return self.send_notmodified("cv_map %d %s %s %f %f %s" % (data['instance_id'],
                                                                        data['port'],
                                                                        source_port_name,
                                                                        data['minimum'],
                                                                        data['maximum'],
+                                                                       data['operational_mode']
                                                                        ), callback, datatype='boolean')
 
         print("ERROR: Invalid addressing requested for", actuator)
@@ -1692,10 +1692,12 @@ class Host(object):
                 for portsymbol, addressing in pluginData['addressings'].items():
                     if self.addressings.get_actuator_type(addressing['actuator_uri']) == Addressings.ADDRESSING_TYPE_CV:
                         source_port_name = self.get_jack_source_port_name(addressing['actuator_uri'])
-                        self.send_notmodified("cv_map %d %s %s %f %f" % (instance_id, portsymbol,
-                                                                                   source_port_name,
-                                                                                   addressing['minimum'],
-                                                                                   addressing['maximum']))
+                        self.send_notmodified("cv_map %d %s %s %f %f %s" % (instance_id,
+                                                                            portsymbol,
+                                                                            source_port_name,
+                                                                            addressing['minimum'],
+                                                                            addressing['maximum'],
+                                                                            addressing['operational_mode']))
 
         for port_from, port_to in self.connections:
             websocket.write_message("connect %s %s" % (port_from, port_to))
@@ -2326,7 +2328,7 @@ class Host(object):
     def snapshot_disable(self, callback):
         self.snapshot_clear()
         self.pedalboard_modified = True
-        self.address(PEDALBOARD_INSTANCE, ":presets", kNullAddressURI, "---", 0, 0, 0, 0, False, None, None, None, callback)
+        self.address(PEDALBOARD_INSTANCE, ":presets", kNullAddressURI, "---", 0, 0, 0, 0, {}, callback)
 
     def snapshot_save(self):
         idx = self.current_pedalboard_snapshot_id
@@ -3679,7 +3681,7 @@ _:b%i
 
         # First, unadress BPM port if switching to Link or MIDI sync mode
         if mode in (Profile.TRANSPORT_SOURCE_MIDI_SLAVE, Profile.TRANSPORT_SOURCE_ABLETON_LINK):
-            self.address(PEDALBOARD_INSTANCE, ":bpm", kNullAddressURI, "---", 0.0, 0.0, 0.0, 0, False, None, None, None, unaddress_bpm_callback)
+            self.address(PEDALBOARD_INSTANCE, ":bpm", kNullAddressURI, "---", 0.0, 0.0, 0.0, 0, {}, unaddress_bpm_callback)
         else:
             unaddress_bpm_callback(True)
 
@@ -3903,9 +3905,14 @@ _:b%i
     # Addressing (public stuff)
 
     @gen.coroutine
-    def address(self, instance, portsymbol, actuator_uri, label, minimum, maximum, value, steps, tempo, dividers, page, operational_mode, callback, not_param_set=False, send_hmi=True):
+    def address(self, instance, portsymbol, actuator_uri, label, minimum, maximum, value, steps, extras, callback, not_param_set=False, send_hmi=True):
         instance_id = self.mapper.get_id(instance)
         pluginData  = self.plugins.get(instance_id, None)
+
+        tempo = extras.get('tempo', False)
+        dividers = extras.get('dividers', None)
+        page = extras.get('page', None)
+        operational_mode = extras.get('operational_mode', '=')
 
         print("address")
         print(operational_mode)
@@ -4154,7 +4161,7 @@ _:b%i
                 instance_id = addressing['instance_id']
                 instance = self.mapper.get_instance(instance_id)
                 port = addressing['port']
-                self.address(instance, port, kNullAddressURI, "---", 0.0, 0.0, 0.0, 0, False, None, None, None, remove_callback)
+                self.address(instance, port, kNullAddressURI, "---", 0.0, 0.0, 0.0, 0, {}, remove_callback)
             except Exception as e:
                 callback(False)
                 logging.exception(e)
@@ -4533,14 +4540,17 @@ _:b%i
                     minimum = port_addressing['minimum']
                     maximum = port_addressing['maximum']
                     steps = port_addressing['steps']
-                    tempo = port_addressing['tempo']
-                    dividers = value
-                    page = port_addressing['page']
-                    operational_mode = port_addressing['operational_mode']
+
+                    extras = {
+                        'tempo': port_addressing['tempo'],
+                        'dividers': value,
+                        'page': port_addressing['page'],
+                        'operational_mode': port_addressing['operational_mode'],
+                    }
 
                     cb = address_callback if group_actuators else param_set_callback
                     self.address(instance, portsymbol, actuator_uri, label, minimum, maximum, port_value, steps,
-                                 tempo, dividers, page, operational_mode, cb, not_param_set=True, send_hmi=False)
+                                 extras, cb, not_param_set=True, send_hmi=False)
                     return
 
                 if group_actuators is not None:
