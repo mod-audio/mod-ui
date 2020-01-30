@@ -263,11 +263,13 @@ class Addressings(object):
                     else: # cannot address more because we've reached the max nb of pages for current actuator
                         break
 
+                operational_mode = addr.get('operational_mode', '=')
+
                 curvalue = self._task_get_port_value(instance_id, portsymbol)
                 group = addr.get('group', None)
                 addrdata = self.add(instance_id, plugin_uri, portsymbol, actuator_uri,
                                     addr['label'], addr['minimum'], addr['maximum'], addr['steps'], curvalue,
-                                    addr.get('tempo'), addr.get('dividers'), page, group, addr.get('operational_mode'))
+                                    addr.get('tempo'), addr.get('dividers'), page, group, operational_mode)
 
                 if addrdata is not None:
                     stored_addrdata = addrdata.copy()
@@ -480,25 +482,25 @@ class Addressings(object):
                 addrs2 = []
                 for addr in addrs:
                     addrs2.append({
-                        'instance': instances[addr['instance_id']],
-                        'port'    : addr['port'],
-                        'label'   : addr['label'],
-                        'minimum' : addr['minimum'],
-                        'maximum' : addr['maximum'],
-                        'steps'   : addr['steps'],
-                        'operational_mode'    : addr.get('operational_mode'),
+                        'instance'        : instances[addr['instance_id']],
+                        'port'            : addr['port'],
+                        'label'           : addr['label'],
+                        'minimum'         : addr['minimum'],
+                        'maximum'         : addr['maximum'],
+                        'steps'           : addr['steps'],
+                        'operational_mode': addr['operational_mode'],
                     })
             else: # plugin cv ports, different structure to save name as well
                 addrs2 = { 'name': addrs['name'], 'addrs': [] }
                 for addr in addrs['addrs']:
                     addrs2['addrs'].append({
-                        'instance': instances[addr['instance_id']],
-                        'port'    : addr['port'],
-                        'label'   : addr['label'],
-                        'minimum' : addr['minimum'],
-                        'maximum' : addr['maximum'],
-                        'steps'   : addr['steps'],
-                        'operational_mode'    : addr.get('operational_mode'),
+                        'instance'        : instances[addr['instance_id']],
+                        'port'            : addr['port'],
+                        'label'           : addr['label'],
+                        'minimum'         : addr['minimum'],
+                        'maximum'         : addr['maximum'],
+                        'steps'           : addr['steps'],
+                        'operational_mode': addr['operational_mode'],
                     })
             addressings[uri] = addrs2
 
@@ -1190,15 +1192,16 @@ class Addressings(object):
 
         for addressing in addressings:
             data = {
-                'instance_id': addressing['instance_id'],
-                'port'       : addressing['port'],
-                'label'      : addressing['label'],
-                'value'      : addressing['value'],
-                'minimum'    : addressing['minimum'],
-                'maximum'    : addressing['maximum'],
-                'steps'      : addressing['steps'],
-                'unit'       : addressing['unit'],
-                'options'    : addressing['options'],
+                'instance_id'     : addressing['instance_id'],
+                'port'            : addressing['port'],
+                'label'           : addressing['label'],
+                'value'           : addressing['value'],
+                'minimum'         : addressing['minimum'],
+                'maximum'         : addressing['maximum'],
+                'steps'           : addressing['steps'],
+                'unit'            : addressing['unit'],
+                'options'         : addressing['options'],
+                'operational_mode': addressing['operational_mode'],
             }
             try:
                 yield gen.Task(self._task_addressing, self.ADDRESSING_TYPE_CV, actuator_uri, data)
