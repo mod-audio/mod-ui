@@ -2363,7 +2363,6 @@ class Host(object):
         snapshot_to_remove = self.pedalboard_snapshots[idx]
         self.pedalboard_modified = True
         self.pedalboard_snapshots.remove(snapshot_to_remove)
-        logging.info(self.pedalboard_snapshots)
         return True
 
     # helper function for gen.Task, which has troubles calling into a coroutine directly

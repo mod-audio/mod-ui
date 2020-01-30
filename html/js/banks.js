@@ -356,7 +356,7 @@ JqueryClass('bankBox', {
         var self = $(this)
 
         var metadata = {
-            index: index ? index + ". " : index,
+            index: index ? (index + ". ") : "",
             title: pedalboard.title,
             image: "/img/loading-pedalboard.gif",
         }
