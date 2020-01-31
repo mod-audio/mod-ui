@@ -93,6 +93,9 @@ static const size_t KEYS_PATHlen = (KEYS_PATH != NULL && *KEYS_PATH != '\0') ? s
 static const char* const HOME = getenv("HOME");
 static size_t HOMElen = strlen(HOME);
 
+// configuration
+static const bool kAllowRegularCV = getenv("MOD_UI_ALLOW_REGULAR_CV") != nullptr;
+
 #define PluginInfo_Mini_Init {                   \
     false,                                       \
     nullptr, nullptr, nullptr, nullptr, nullptr, \
@@ -165,6 +168,8 @@ inline std::string sha1(const char* const cstring)
 #define LILV_NS_MOD      "http://moddevices.com/ns/mod#"
 #define LILV_NS_MODGUI   "http://moddevices.com/ns/modgui#"
 #define LILV_NS_MODPEDAL "http://moddevices.com/ns/modpedal#"
+
+#define MOD__CVPort LILV_NS_MOD "CVPort"
 
 struct NamespaceDefinitions_Mini {
     LilvNode* const rdf_type;
@@ -374,6 +379,27 @@ struct NamespaceDefinitions {
         lilv_node_free(units_symbol);
         lilv_node_free(units_unit);
     }
+};
+
+enum PortDirection {
+    kPortDirectionNull,
+    kPortDirectionInput,
+    kPortDirectionOutput,
+};
+
+enum PortType {
+    kPortTypeNull,
+    kPortTypeAudio,
+    kPortTypeControl,
+    kPortTypeCV,
+    kPortTypeMIDI,
+};
+
+enum TimePortType {
+    kTimePortTypeNull,
+    kTimePortTypeBeatsPerBar,
+    kTimePortTypeBeatsPerMinute,
+    kTimePortTypeRolling,
 };
 
 static const char* const kCategoryDelayPlugin[] = { "Delay", nullptr };
@@ -973,6 +999,10 @@ const PluginInfo_Mini& _get_plugin_info_mini(const LilvPlugin* const p, const Na
                     continue;
                 }
                 if (strcmp(typestr, LV2_ATOM__AtomPort) == 0) {
+                    isGood = true;
+                    continue;
+                }
+                if (strcmp(typestr, MOD__CVPort) == 0) {
                     isGood = true;
                     continue;
                 }
@@ -1752,8 +1782,8 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
         {
             const LilvPort* const port = lilv_plugin_get_port_by_index(p, i);
 
-            int direction = 0; // using -1 = input, +1 = output
-            int type      = 0; // using by order1-4: audio, control, cv, midi
+            PortDirection direction = kPortDirectionNull;
+            PortType type = kPortTypeNull;
 
             if (LilvNodes* const nodes = lilv_port_get_value(p, port, ns.rdf_type))
             {
@@ -1766,21 +1796,21 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
                         continue;
 
                     else if (strcmp(nodestr, LV2_CORE__InputPort) == 0)
-                        direction = -1;
+                        direction = kPortDirectionInput;
                     else if (strcmp(nodestr, LV2_CORE__OutputPort) == 0)
-                        direction = +1;
+                        direction = kPortDirectionOutput;
                     else if (strcmp(nodestr, LV2_CORE__AudioPort) == 0)
-                        type = 1;
+                        type = kPortTypeAudio;
                     else if (strcmp(nodestr, LV2_CORE__ControlPort) == 0)
-                        type = 2;
-                    else if (strcmp(nodestr, LV2_CORE__CVPort) == 0)
-                        type = 3;
+                        type = kPortTypeControl;
+                    else if (strcmp(nodestr, MOD__CVPort) == 0 || (kAllowRegularCV && strcmp(nodestr, LV2_CORE__CVPort) == 0))
+                        type = kPortTypeCV;
                     else if (strcmp(nodestr, LV2_ATOM__AtomPort) == 0 && lilv_port_supports_event(p, port, ns.midi_MidiEvent))
                     {
                         if (LilvNodes* const nodes2 = lilv_port_get_value(p, port, ns.atom_bufferType))
                         {
                             if (lilv_node_equals(lilv_nodes_get_first(nodes2), ns.atom_Sequence))
-                                type = 4;
+                                type = kPortTypeMIDI;
                             lilv_nodes_free(nodes2);
                         }
                     }
@@ -1788,31 +1818,33 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
                 lilv_nodes_free(nodes);
             }
 
-            if (direction == 0 || type == 0)
+            if (direction == kPortDirectionNull || type == kPortTypeNull)
                 continue;
 
             switch (type)
             {
-            case 1: // audio
-                if (direction == 1)
+            case kPortTypeNull:
+                break;
+            case kPortTypeAudio:
+                if (direction == kPortDirectionOutput)
                     ++countAudioOutput;
                 else
                     ++countAudioInput;
                 break;
-            case 2: // control
-                if (direction == 1)
+            case kPortTypeControl:
+                if (direction == kPortDirectionOutput)
                     ++countControlOutput;
                 else
                     ++countControlInput;
                 break;
-            case 3: // cv
-                if (direction == 1)
+            case kPortTypeCV:
+                if (direction == kPortDirectionOutput)
                     ++countCvOutput;
                 else
                     ++countCvInput;
                 break;
-            case 4: // midi
-                if (direction == 1)
+            case kPortTypeMIDI:
+                if (direction == kPortDirectionOutput)
                     ++countMidiOutput;
                 else
                     ++countMidiInput;
@@ -1863,8 +1895,8 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
         }
 
         // use counters as indexes now
-        countAudioInput=countAudioOutput=countControlInput=countControlOutput=0;
-        countCvInput=countCvOutput=countMidiInput=countMidiOutput=0;
+        countAudioInput = countAudioOutput = countControlInput = countControlOutput = 0;
+        countCvInput = countCvOutput = countMidiInput = countMidiOutput = 0;
 
         // now fill info
         for (uint32_t i=0; i<count; ++i)
@@ -1873,8 +1905,8 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
 
             // ----------------------------------------------------------------------------------------------------
 
-            int direction = 0; // using -1 = input, +1 = output
-            int type      = 0; // using by order1-4: audio, control, cv, midi
+            PortDirection direction = kPortDirectionNull;
+            PortType type = kPortTypeNull;
 
             if (LilvNodes* const nodes = lilv_port_get_value(p, port, ns.rdf_type))
             {
@@ -1887,21 +1919,21 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
                         continue;
 
                     else if (strcmp(nodestr, LV2_CORE__InputPort) == 0)
-                        direction = -1;
+                        direction = kPortDirectionInput;
                     else if (strcmp(nodestr, LV2_CORE__OutputPort) == 0)
-                        direction = +1;
+                        direction = kPortDirectionOutput;
                     else if (strcmp(nodestr, LV2_CORE__AudioPort) == 0)
-                        type = 1;
+                        type = kPortTypeAudio;
                     else if (strcmp(nodestr, LV2_CORE__ControlPort) == 0)
-                        type = 2;
-                    else if (strcmp(nodestr, LV2_CORE__CVPort) == 0)
-                        type = 3;
+                        type = kPortTypeControl;
+                    else if (strcmp(nodestr, MOD__CVPort) == 0)
+                        type = kPortTypeCV;
                     else if (strcmp(nodestr, LV2_ATOM__AtomPort) == 0 && lilv_port_supports_event(p, port, ns.midi_MidiEvent))
                     {
                         if (LilvNodes* const nodes2 = lilv_port_get_value(p, port, ns.atom_bufferType))
                         {
                             if (lilv_node_equals(lilv_nodes_get_first(nodes2), ns.atom_Sequence))
-                                type = 4;
+                                type = kPortTypeMIDI;
                             lilv_nodes_free(nodes2);
                         }
                     }
@@ -1909,7 +1941,7 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
                 lilv_nodes_free(nodes);
             }
 
-            if (direction == 0 || type == 0)
+            if (direction == kPortDirectionNull || type == kPortTypeNull)
                 continue;
 
             // ----------------------------------------------------------------------------------------------------
@@ -2026,7 +2058,7 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
 
             // ----------------------------------------------------------------------------------------------------
 
-            if (type == 2 || type == 3)
+            if (type == kPortTypeControl || type == kPortTypeCV)
             {
                 LilvNodes* xminimum = lilv_port_get_value(p, port, ns.mod_minimum);
                 if (xminimum == nullptr)
@@ -2053,8 +2085,16 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
                 }
                 else
                 {
-                    portinfo.ranges.min = (type == 3) ? -1.0f : 0.0f;
-                    portinfo.ranges.max = 1.0f;
+                    if (type == kPortTypeCV)
+                    {
+                        portinfo.ranges.min = -5.0f;
+                        portinfo.ranges.max = 5.0f;
+                    }
+                    else
+                    {
+                        portinfo.ranges.min = 0.0f;
+                        portinfo.ranges.max = 1.0f;
+                    }
                     portinfo.ranges.def = 0.0f;
                 }
 
@@ -2225,26 +2265,28 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
 
             switch (type)
             {
-            case 1: // audio
-                if (direction == 1)
+            case kPortTypeNull:
+                break;
+            case kPortTypeAudio:
+                if (direction == kPortDirectionOutput)
                     info.ports.audio.output[countAudioOutput++] = portinfo;
                 else
                     info.ports.audio.input[countAudioInput++] = portinfo;
                 break;
-            case 2: // control
-                if (direction == 1)
+            case kPortTypeControl:
+                if (direction == kPortDirectionOutput)
                     info.ports.control.output[countControlOutput++] = portinfo;
                 else
                     info.ports.control.input[countControlInput++] = portinfo;
                 break;
-            case 3: // cv
-                if (direction == 1)
+            case kPortTypeCV:
+                if (direction == kPortDirectionOutput)
                     info.ports.cv.output[countCvOutput++] = portinfo;
                 else
                     info.ports.cv.input[countCvInput++] = portinfo;
                 break;
-            case 4: // midi
-                if (direction == 1)
+            case kPortTypeMIDI:
+                if (direction == kPortDirectionOutput)
                     info.ports.midi.output[countMidiOutput++] = portinfo;
                 else
                     info.ports.midi.input[countMidiInput++] = portinfo;
@@ -4032,15 +4074,17 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
                 continue;
             }
 
-            int isTimePort = 0;
+            TimePortType timePortType;
             /**/ if (strcmp(portsym, ":bpb") == 0)
-                isTimePort = 1;
+                timePortType = kTimePortTypeBeatsPerBar;
             else if (strcmp(portsym, ":bpm") == 0)
-                isTimePort = 2;
+                timePortType = kTimePortTypeBeatsPerMinute;
             else if (strcmp(portsym, ":rolling") == 0)
-                isTimePort = 3;
+                timePortType = kTimePortTypeRolling;
+            else
+                timePortType = kTimePortTypeNull;
 
-            if (isTimePort)
+            if (timePortType != kTimePortTypeNull)
             {
                 if (LilvNode* const portvalue = lilv_world_get(w, hwport, ingen_value, nullptr))
                 {
@@ -4085,9 +4129,12 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
                         lilv_node_free(bind);
                     }
 
-                    switch (isTimePort)
+                    switch (timePortType)
                     {
-                    case 1:
+                    case kTimePortTypeNull:
+                        break;
+
+                    case kTimePortTypeBeatsPerBar:
                         value = lilv_node_as_float(portvalue);
                         if (value >= 1.0f && value <= 16.0f)
                         {
@@ -4097,7 +4144,7 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
                         }
                         break;
 
-                    case 2:
+                    case kTimePortTypeBeatsPerMinute:
                         value = lilv_node_as_float(portvalue);
                         if (value >= 20.0f && value <= 280.0f)
                         {
@@ -4107,7 +4154,7 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
                         }
                         break;
 
-                    case 3:
+                    case kTimePortTypeRolling:
                         info.timeInfo.rolling = lilv_node_as_int(portvalue) != 0;
                         info.timeInfo.rollingCC = { mchan, mctrl, hasRanges, minimum, maximum };
                         info.timeInfo.available |= kPedalboardTimeAvailableRolling;
@@ -4124,8 +4171,8 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
             // get types
             if (LilvNodes* const port_types = lilv_world_find_nodes(w, hwport, rdftypenode, NULL))
             {
-                int portDir  = -1; // input or output
-                int portType = -1; // atom, audio or cv
+                PortDirection direction = kPortDirectionNull;
+                PortType portType = kPortTypeNull;
 
                 LILV_FOREACH(nodes, itptyp, port_types)
                 {
@@ -4133,37 +4180,49 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
 
                     if (const char* port_type_uri = lilv_node_as_uri(ptyp))
                     {
-                        port_type_uri += 21; // http://lv2plug.in/ns/
+                        if (strcmp(port_type_uri, MOD__CVPort) == 0)
+                        {
+                            portType = kPortTypeCV;
+                        }
+                        else if (strncmp(port_type_uri, "http://lv2plug.in/ns/", 21) == 0)
+                        {
+                            port_type_uri += 21; // http://lv2plug.in/ns/
 
-                        if (strcmp(port_type_uri, "lv2core#InputPort") == 0)
-                            portDir = 'i';
-                        else if (strcmp(port_type_uri, "lv2core#OutputPort") == 0)
-                            portDir = 'o';
-                        else if (strcmp(port_type_uri, "lv2core#AudioPort") == 0)
-                            portType = 'a';
-                        else if (strcmp(port_type_uri, "lv2core#CVPort") == 0)
-                            portType = 'c';
-                        else if (strcmp(port_type_uri, "ext/atom#AtomPort") == 0)
-                            portType = 't';
+                            /**/ if (strcmp(port_type_uri, "lv2core#InputPort") == 0)
+                                direction = kPortDirectionInput;
+                            else if (strcmp(port_type_uri, "lv2core#OutputPort") == 0)
+                                direction = kPortDirectionOutput;
+                            else if (strcmp(port_type_uri, "lv2core#AudioPort") == 0)
+                                portType = kPortTypeAudio;
+                            else if (strcmp(port_type_uri, "lv2core#CVPort") == 0)
+                                portType = kPortTypeCV;
+                            else if (strcmp(port_type_uri, "ext/atom#AtomPort") == 0)
+                                portType = kPortTypeMIDI;
+                        }
                     }
                 }
 
-                if (portDir == -1 || portType == -1)
+                if (direction == kPortDirectionNull || portType == kPortTypeNull)
                 {
                     lilv_free(portsym);
                     continue;
                 }
 
-                if (portType == 'a')
+                switch (portType)
                 {
-                    if (portDir == 'i')
-                        info.hardware.audio_ins += 1;
+                case kPortTypeNull:
+                case kPortTypeControl:
+                    break;
+
+                case kPortTypeAudio:
+                    if (direction == kPortDirectionInput)
+                        ++info.hardware.audio_ins;
                     else
-                        info.hardware.audio_outs += 1;
-                }
-                else if (portType == 't')
-                {
-                    if (portDir == 'i')
+                        ++info.hardware.audio_outs;
+                    break;
+
+                case kPortTypeMIDI:
+                    if (direction == kPortDirectionInput)
                     {
                         if (strcmp(portsym, "serial_midi_in") == 0)
                         {
@@ -4213,13 +4272,14 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
                             midi_outs.push_back(mport);
                         }
                     }
-                }
-                else if (portType == 'c')
-                {
-                    if (portDir == 'i')
-                        info.hardware.cv_ins += 1;
+                    break;
+
+                case kPortTypeCV:
+                    if (direction == kPortDirectionInput)
+                        ++info.hardware.cv_ins;
                     else
-                        info.hardware.cv_outs += 1;
+                        ++info.hardware.cv_outs;
+                    break;
                 }
 
                 lilv_free(portsym);
