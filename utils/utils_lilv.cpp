@@ -93,6 +93,9 @@ static const size_t KEYS_PATHlen = (KEYS_PATH != NULL && *KEYS_PATH != '\0') ? s
 static const char* const HOME = getenv("HOME");
 static size_t HOMElen = strlen(HOME);
 
+// configuration
+static const bool kAllowRegularCV = getenv("MOD_UI_ALLOW_REGULAR_CV") != nullptr;
+
 #define PluginInfo_Mini_Init {                   \
     false,                                       \
     nullptr, nullptr, nullptr, nullptr, nullptr, \
@@ -1800,7 +1803,7 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
                         type = kPortTypeAudio;
                     else if (strcmp(nodestr, LV2_CORE__ControlPort) == 0)
                         type = kPortTypeControl;
-                    else if (strcmp(nodestr, MOD__CVPort) == 0)
+                    else if (strcmp(nodestr, MOD__CVPort) == 0 || (kAllowRegularCV && strcmp(nodestr, LV2_CORE__CVPort) == 0))
                         type = kPortTypeCV;
                     else if (strcmp(nodestr, LV2_ATOM__AtomPort) == 0 && lilv_port_supports_event(p, port, ns.midi_MidiEvent))
                     {
