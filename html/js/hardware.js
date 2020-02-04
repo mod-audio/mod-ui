@@ -345,7 +345,7 @@ function HardwareManager(options) {
     }
 
     // Show dynamic field content based on selected type of addressing
-    this.showDynamicField = function (form, typeInputVal, currentAddressing, port, cvUri) {
+    this.showDynamicField = function (form, typeInputVal, currentAddressing, port, cvUri, firstOpen) {
       // Hide all then show the relevant content
       form.find('.dynamic-field').hide()
       if (typeInputVal === kMidiLearnURI) {
@@ -418,7 +418,7 @@ function HardwareManager(options) {
       if (typeInputVal === cvOption) {
         var cvPort = self.cvOutputPorts.find(function (port) { return port.uri === cvUri })
         var operationalMode = cvPort.defaultOperationalMode
-        if (currentAddressing && currentAddressing.uri && isCvUri(currentAddressing.uri) && currentAddressing.operationalMode) {
+        if (firstOpen && currentAddressing && currentAddressing.uri && isCvUri(currentAddressing.uri) && currentAddressing.operationalMode) {
           operationalMode = currentAddressing.operationalMode
         }
         form.find('select[name=cv-op-mode]').val(operationalMode)
@@ -669,14 +669,14 @@ function HardwareManager(options) {
           form.find('.js-type').removeClass('selected')
           $(this).addClass('selected')
           typeInput.val($(this).attr('data-value'))
-          self.showDynamicField(form, typeInput.val(), currentAddressing, port, cvPortSelect.val())
+          self.showDynamicField(form, typeInput.val(), currentAddressing, port, cvPortSelect.val(), false)
         })
 
         cvPortSelect.change(function () {
-          self.showDynamicField(form, typeInput.val(), currentAddressing, port, $(this).val())
+          self.showDynamicField(form, typeInput.val(), currentAddressing, port, $(this).val(), false)
         })
 
-        self.showDynamicField(form, typeInputVal, currentAddressing, port, cvPortSelect.val())
+        self.showDynamicField(form, typeInputVal, currentAddressing, port, cvPortSelect.val(), true)
 
         var pname = (port.symbol == ":bypass" || port.symbol == ":presets") ? pluginLabel : port.shortName
         var minv  = currentAddressing.minimum != null ? currentAddressing.minimum : port.ranges.minimum
