@@ -179,6 +179,7 @@ JqueryClass('bankBox', {
         self.data('save')(serialized, function (ok) {
             if (ok)
                 self.data('saving').html('Auto saving banks... Done!').show()
+
             else {
                 self.data('saving').html('Auto saving banks... Error!').show()
                 new Notification('error', 'Error saving banks!')
@@ -191,6 +192,12 @@ JqueryClass('bankBox', {
                 self.data('saving').hide()
             }, 500)
             self.data('savingTimeout', timeout)
+        })
+        // Update displayed indexes
+        self.data('pedalboardCanvas').children().each(function (i) {
+          var pedalboard = $(this)
+          var index = pedalboard.find(".js-index")
+          index.html(i + ".")
         })
     },
 
@@ -223,7 +230,7 @@ JqueryClass('bankBox', {
 
         var i, pedalboardData, rendered
         for (i = 0; i < bankData.pedalboards.length; i++) {
-            rendered = self.bankBox('renderPedalboard', bankData.pedalboards[i])
+            rendered = self.bankBox('renderPedalboard', bankData.pedalboards[i], i.toString())
             rendered.find('.js-remove').show()
             rendered.appendTo(bank.data('pedalboards'))
         }
@@ -345,10 +352,11 @@ JqueryClass('bankBox', {
         })
     },
 
-    renderPedalboard: function (pedalboard) {
+    renderPedalboard: function (pedalboard, index = "") {
         var self = $(this)
 
         var metadata = {
+            index: index ? (index + ". ") : "",
             title: pedalboard.title,
             image: "/img/loading-pedalboard.gif",
         }

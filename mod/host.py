@@ -2381,8 +2381,9 @@ class Host(object):
         if idx < 0 or idx >= len(self.pedalboard_snapshots) or self.pedalboard_snapshots[idx] is None:
             return False
 
+        snapshot_to_remove = self.pedalboard_snapshots[idx]
         self.pedalboard_modified = True
-        self.pedalboard_snapshots[idx] = None
+        self.pedalboard_snapshots.remove(snapshot_to_remove)
         return True
 
     # helper function for gen.Task, which has troubles calling into a coroutine directly
