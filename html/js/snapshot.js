@@ -66,6 +66,8 @@ function SnapshotsManager(options) {
         }
 
         var selected = options.editingElem = options.pedalPresetsList.find('option:selected')
+        var selectedHtml = selected.html()
+        var name = selectedHtml.substring(selectedHtml.indexOf(".") + 1);
 
         options.pedalPresetsOverlay.css({
             position: "absolute",
@@ -73,7 +75,7 @@ function SnapshotsManager(options) {
             height: selected.height()+2,
             top: selected.position().top,
             left: selected.position().left
-        }).prop("value", selected.html()).show().focus()
+        }).prop("value", name).show().focus()
 
         return false
     })
@@ -105,6 +107,16 @@ function SnapshotsManager(options) {
                     options.pedalPresetsWindow.find('.js-assign-all').addClass('disabled')
                     options.pedalPresetsWindow.find('.js-delete').addClass('disabled')
                 }
+
+                // Replace options value and text so we can a sequential list 0, 1, 2, etc.
+                var i = 0
+                options.pedalPresetsList.children().each(function(option) {
+                  var optionHtml = $(this).html()
+                  var prtitle = optionHtml.substring(optionHtml.indexOf(".") + 1)
+                  $(this).html(i + "." + prtitle)
+                  $(this).val(i)
+                  i++
+                })
             },
             error: function () {},
             cache: false,
@@ -183,7 +195,7 @@ function SnapshotsManager(options) {
 
             // add new ones
             for (var i in presets) {
-                var elem = $('<option value="'+i+'">'+presets[i]+'</option>')
+                var elem = $('<option value="'+i+'">'+i + "."+ presets[i]+'</option>')
 
                 if (currentId == i && ! options.currentlyAddressed) {
                     elem.prop('selected', 'selected')
@@ -220,7 +232,9 @@ function SnapshotsManager(options) {
         self.hideRenameOverlay()
 
         var selectId = $(this).val()
-        var prtitle  = $(this).html()
+
+        var selectedHtml = $(this).html()
+        var prtitle = selectedHtml.substring(selectedHtml.indexOf(".") + 1)
 
         if (options.currentlyAddressed && !options.canFeedback) {
             options.pedalPresetsList.find('option:selected').removeProp('selected')
@@ -255,7 +269,6 @@ function SnapshotsManager(options) {
         var text = options.pedalPresetsOverlay.hide().val()
         var elem = options.editingElem
         var prId = elem.val()
-
         options.editingElem = null
 
         if (text == "") {
@@ -270,7 +283,7 @@ function SnapshotsManager(options) {
                 title: text,
             },
             success: function () {
-                elem.html(text)
+                elem.html(prId + "." + text)
                 options.renamedCallback(text)
             },
             error: function () {},

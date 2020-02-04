@@ -132,7 +132,7 @@ function HardwareManager(options) {
 
         if (addressingsByActuator) {
           for (var act in addressingsByActuator) {
-            if (isCvUri(act) && cvOutputPorts.find(function (port) { return port.uri === act})) {
+            if (isCvUri(act) && cvOutputPorts.find(function (port) { return port.uri === act })) {
               self.addressingsByActuator[act] = []
             }
           }
@@ -345,7 +345,7 @@ function HardwareManager(options) {
     }
 
     // Show dynamic field content based on selected type of addressing
-    this.showDynamicField = function (form, typeInputVal, currentAddressing, port) {
+    this.showDynamicField = function (form, typeInputVal, currentAddressing, port, cvUri, firstOpen) {
       // Hide all then show the relevant content
       form.find('.dynamic-field').hide()
       if (typeInputVal === kMidiLearnURI) {
@@ -407,11 +407,21 @@ function HardwareManager(options) {
         }
       }
 
-      // Hide cv operational mode for everything except CV
-      if (typeInputVal !== cvOption) {
+      // Hide/show cv operational mode for everything except CV plugin ports
+      if (typeInputVal !== cvOption || isHwCvUri(cvUri)) {
         form.find('.cv-op-mode').css({ display: "none" })
       } else {
         form.find('.cv-op-mode').css({ display: "block" })
+      }
+
+      // Set unipolar mode based on default cv port ranges or current addressing
+      if (typeInputVal === cvOption) {
+        var cvPort = self.cvOutputPorts.find(function (port) { return port.uri === cvUri })
+        var operationalMode = cvPort.defaultOperationalMode
+        if (firstOpen && currentAddressing && currentAddressing.uri && isCvUri(currentAddressing.uri) && currentAddressing.operationalMode) {
+          operationalMode = currentAddressing.operationalMode
+        }
+        form.find('select[name=cv-op-mode]').val(operationalMode)
       }
     }
 
@@ -659,10 +669,14 @@ function HardwareManager(options) {
           form.find('.js-type').removeClass('selected')
           $(this).addClass('selected')
           typeInput.val($(this).attr('data-value'))
-          self.showDynamicField(form, typeInput.val(), currentAddressing, port)
+          self.showDynamicField(form, typeInput.val(), currentAddressing, port, cvPortSelect.val(), false)
         })
 
-        self.showDynamicField(form, typeInputVal, currentAddressing, port)
+        cvPortSelect.change(function () {
+          self.showDynamicField(form, typeInput.val(), currentAddressing, port, $(this).val(), false)
+        })
+
+        self.showDynamicField(form, typeInputVal, currentAddressing, port, cvPortSelect.val(), true)
 
         var pname = (port.symbol == ":bypass" || port.symbol == ":presets") ? pluginLabel : port.shortName
         var minv  = currentAddressing.minimum != null ? currentAddressing.minimum : port.ranges.minimum
@@ -1100,7 +1114,7 @@ function HardwareManager(options) {
     }
 
     this.addCvMapping = function (instance, portSymbol, actuator_uri,
-                                        label, minimum, maximum, feedback) {
+                                        label, minimum, maximum, operationalMode, feedback) {
         var instanceAndSymbol = instance+"/"+portSymbol
 
         self.addressingsByActuator  [actuator_uri].push(instanceAndSymbol)
@@ -1111,6 +1125,7 @@ function HardwareManager(options) {
             minimum : minimum,
             maximum : maximum,
             feedback: feedback,
+            operationalMode: operationalMode,
         }
         // disable this control
         options.setEnabled(instance, portSymbol, false, feedback, true)
@@ -1224,7 +1239,7 @@ function HardwareManager(options) {
         return false
     }
 
-    this.addCvOutputPort = function (uri, name) {
+    this.addCvOutputPort = function (uri, name, operationalMode) {
       var existingPort = self.cvOutputPorts.find(function (port) {
         return port.uri === uri;
       })
@@ -1238,6 +1253,7 @@ function HardwareManager(options) {
           steps: [],
           max_assigns: 99,
           feedback: false,
+          defaultOperationalMode: operationalMode,
         })
         self.addressingsByActuator[uri] = []
       }
