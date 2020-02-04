@@ -1926,7 +1926,7 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
                         type = kPortTypeAudio;
                     else if (strcmp(nodestr, LV2_CORE__ControlPort) == 0)
                         type = kPortTypeControl;
-                    else if (strcmp(nodestr, MOD__CVPort) == 0)
+                    else if (strcmp(nodestr, MOD__CVPort) == 0 || (kAllowRegularCV && strcmp(nodestr, LV2_CORE__CVPort) == 0))
                         type = kPortTypeCV;
                     else if (strcmp(nodestr, LV2_ATOM__AtomPort) == 0 && lilv_port_supports_event(p, port, ns.midi_MidiEvent))
                     {
