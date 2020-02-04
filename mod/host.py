@@ -337,6 +337,7 @@ class Host(object):
         self.addressings._task_unaddressing = self.addr_task_unaddressing
         self.addressings._task_set_value = self.addr_task_set_value
         self.addressings._task_get_plugin_data = self.addr_task_get_plugin_data
+        self.addressings._task_get_plugin_cv_port_op_mode = self.addr_task_get_plugin_cv_port_op_mode
         self.addressings._task_get_plugin_presets = self.addr_task_get_plugin_presets
         self.addressings._task_get_port_value = self.addr_task_get_port_value
         self.addressings._task_store_address_data = self.addr_task_store_address_data
@@ -762,6 +763,23 @@ class Host(object):
         print("WARNING: Trying to send available pages, HMI not initialized")
         callback(False)
         return
+
+    def addr_task_get_plugin_cv_port_op_mode(self, actuator_uri):
+        instance, port = actuator_uri.split(CV_OPTION)[1].rsplit("/", 1)
+        instance_id = self.mapper.get_id_without_creating(instance)
+        plugin_data = self.plugins[instance_id]
+        plugin_info = get_plugin_info(plugin_data['uri'])
+        port_info = next((p for p in plugin_info['ports']['cv']['output'] if p['symbol'] == port), None)
+        if port_info:
+            maximum = port_info['ranges']['maximum']
+            minimum = port_info['ranges']['minimum']
+            if minimum < 0 and maximum <= 0: # unipolar-
+                return "-"
+            if minimum < 0 and maximum > 0: # bipolar
+                return "b"
+            if minimum >= 0 and maximum > 0: # unipolar+
+                return "+"
+        return "+"
 
     # -----------------------------------------------------------------------------------------------------------------
     # Initialization
@@ -3914,8 +3932,6 @@ _:b%i
         page = extras.get('page', None)
         operational_mode = extras.get('operational_mode', '=')
 
-        print("address")
-        print(operational_mode)
         if pluginData is None:
             print("ERROR: Trying to address non-existing plugin instance %i: '%s'" % (instance_id, instance))
             callback(False)
@@ -4136,6 +4152,7 @@ _:b%i
             self.addressings.cv_addressings[uri]['name'] = name
         else:
             self.addressings.cv_addressings[uri] = { 'name': name, 'addrs': [] }
+        return self.addr_task_get_plugin_cv_port_op_mode(uri)
 
     def cv_addressing_plugin_port_remove(self, uri, callback):
         if uri not in self.addressings.cv_addressings:

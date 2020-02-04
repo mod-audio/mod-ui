@@ -204,7 +204,8 @@ $('document').ready(function() {
           var minimum  = parseFloat(data[3])
           var maximum  = parseFloat(data[4])
           var label    = data[5].replace(/_/g," ")
-          var feedback = parseInt(data[6]) == 1
+          var operationalMode = data[6]
+          var feedback = parseInt(data[7]) == 1
 
           desktop.hardwareManager.addCvMapping(instance,
                                                symbol,
@@ -212,6 +213,7 @@ $('document').ready(function() {
                                                label,
                                                minimum,
                                                maximum,
+                                               operationalMode,
                                                feedback)
         }
 
@@ -350,10 +352,11 @@ $('document').ready(function() {
         }
 
         if (cmd == "add_cv_port") {
-          data         = data.substr(cmd.length+1).split(" ", 2)
+          data         = data.substr(cmd.length+1).split(" ", 3)
           var instance = data[0]
           var name     = data[1].replace(/_/g," ")
-          desktop.hardwareManager.addCvOutputPort(instance, name)
+          var operationalMode = data[2]
+          desktop.hardwareManager.addCvOutputPort(instance, name, operationalMode)
           return
         }
 
@@ -369,7 +372,7 @@ $('document').ready(function() {
                 var el = $('<div id="' + instance + '" class="hardware-output" mod-port-index=' + index + ' title="Hardware ' + name + '">')
                 desktop.pedalboard.pedalboard('addHardwareOutput', el, instance, type)
                 if (type === 'cv') {
-                  desktop.hardwareManager.addCvOutputPort('/cv' + instance, name)
+                  desktop.hardwareManager.addCvOutputPort('/cv' + instance, name, '+')
                 }
             } else {
                 var el = $('<div id="' + instance + '" class="hardware-input" mod-port-index=' + index + ' title="Hardware ' + name + '">')

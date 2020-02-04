@@ -966,7 +966,7 @@ class EffectPresetSaveNew(JsonRequestHandler):
                 dividers = presets.get('dividers', None)
                 page = presets.get('page', None)
                 operational_mode = presets.get('operationalMode', None)
-                
+
                 ok = yield gen.Task(SESSION.web_parameter_address, port, actuator_uri, label, minimum, maximum, value, steps, tempo, dividers, page, operational_mode)
 
 
@@ -1335,8 +1335,11 @@ class PedalboardCvAddressingPluginPortAdd(JsonRequestHandler):
     def post(self):
         uri = self.get_argument('uri')
         name = self.get_argument('name')
-        SESSION.web_cv_addressing_plugin_port_add(uri, name)
-        self.write(True)
+        operational_mode = SESSION.web_cv_addressing_plugin_port_add(uri, name)
+        self.write({
+            'ok': True,
+            'operational_mode': operational_mode,
+        })
 
 class PedalboardCvAddressingPluginPortRemove(JsonRequestHandler):
     @web.asynchronous

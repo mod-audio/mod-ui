@@ -2014,8 +2014,8 @@ JqueryClass('pedalboard', {
             if ($(this).prop('checked')) {
               // Register new addressable cv port
               self.data('addCVAddressingPluginPort')(cvPort, name, function (resp) {
-                if (resp) {
-                  self.data('hardwareManager').addCvOutputPort(cvPort, name);
+                if (resp && resp.ok) {
+                  self.data('hardwareManager').addCvOutputPort(cvPort, name, resp.operational_mode);
                   // Show and highlight text input
                   textInput.show();
                   textInput.select();
@@ -2036,8 +2036,8 @@ JqueryClass('pedalboard', {
           textInput.change(function () {
             var name = $(this).val();
             self.data('addCVAddressingPluginPort')(cvPort, name, function (resp) {
-              if (resp) {
-                self.data('hardwareManager').addCvOutputPort(cvPort, name);
+              if (resp && resp.ok) {
+                self.data('hardwareManager').addCvOutputPort(cvPort, name, resp.operational_mode);
               }
             });
           });

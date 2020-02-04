@@ -68,6 +68,7 @@ class Addressings(object):
         self._task_act_added   = None
         self._task_act_removed = None
         self._task_set_available_pages = None
+        self.addr_task_get_plugin_cv_port_op_mode = None
 
         # First addressings/pedalboard load flag
         self.first_load = True
@@ -579,12 +580,13 @@ class Addressings(object):
             if not self.is_hw_cv_port(uri):
                 addrs = addrs['addrs']
             for addr in addrs:
-                msg_callback("cv_map %s %s %s %f %f %s 0" % (instances[addr['instance_id']],
+                msg_callback("cv_map %s %s %s %f %f %s %s 0" % (instances[addr['instance_id']],
                                                                            addr['port'],
                                                                            uri,
                                                                            addr['minimum'],
                                                                            addr['maximum'],
-                                                                           addr['label'].replace(" ","_")))
+                                                                           addr['label'].replace(" ","_"),
+                                                                           addr.get('operational_mode')))
 
     # -----------------------------------------------------------------------------------------------------------------
 
@@ -596,8 +598,7 @@ class Addressings(object):
 
         unit = "none"
         options = []
-        print("add")
-        print(operational_mode)
+
         if portsymbol == ":presets":
             data = self.get_presets_as_options(instance_id)
 
@@ -1215,8 +1216,10 @@ class Addressings(object):
 
     def add_cv_plugin_ports(self, msg_callback):
         for actuator_uri, addrs in self.cv_addressings.items():
+            # pluginData = self._task_get_plugin_data(instance_id)
             if not self.is_hw_cv_port(actuator_uri):
-                msg_callback("add_cv_port %s %s" % (actuator_uri, addrs['name'].replace(" ","_")))
+                operational_mode = self._task_get_plugin_cv_port_op_mode(actuator_uri)
+                msg_callback("add_cv_port %s %s %s" % (actuator_uri, addrs['name'].replace(" ","_"), operational_mode))
 
     def add_hw_cv_port(self, actuator_uri):
         if not self.is_hw_cv_port(actuator_uri):

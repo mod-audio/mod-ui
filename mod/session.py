@@ -219,7 +219,7 @@ class Session(object):
         self.msg_callback("ping")
 
     def web_cv_addressing_plugin_port_add(self, uri, name):
-        self.host.cv_addressing_plugin_port_add(uri, name)
+        return self.host.cv_addressing_plugin_port_add(uri, name)
 
     def web_cv_addressing_plugin_port_remove(self, uri, callback):
         self.host.cv_addressing_plugin_port_remove(uri, callback)

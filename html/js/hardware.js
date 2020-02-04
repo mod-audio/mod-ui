@@ -132,7 +132,7 @@ function HardwareManager(options) {
 
         if (addressingsByActuator) {
           for (var act in addressingsByActuator) {
-            if (isCvUri(act) && cvOutputPorts.find(function (port) { return port.uri === act})) {
+            if (isCvUri(act) && cvOutputPorts.find(function (port) { return port.uri === act })) {
               self.addressingsByActuator[act] = []
             }
           }
@@ -413,6 +413,16 @@ function HardwareManager(options) {
       } else {
         form.find('.cv-op-mode').css({ display: "block" })
       }
+
+      // Set unipolar mode based on default cv port ranges or current addressing
+      if (typeInputVal === cvOption) {
+        var cvPort = self.cvOutputPorts.find(function (port) { return port.uri === cvUri })
+        var operationalMode = cvPort.defaultOperationalMode
+        if (currentAddressing && currentAddressing.uri && isCvUri(currentAddressing.uri) && currentAddressing.operationalMode) {
+          operationalMode = currentAddressing.operationalMode
+        }
+        form.find('select[name=cv-op-mode]').val(operationalMode)
+      }
     }
 
     this.buildDeviceTable = function (deviceTable, currentAddressing, actuators, hmiPageInput, hmiUriInput, sensibility, port) {
@@ -592,9 +602,6 @@ function HardwareManager(options) {
         var deviceTable = form.find('.device-table')
         var sensibility = form.find('select[name=steps]')
         var operationalMode = form.find('select[name=cv-op-mode]')
-
-        // Unipolar+ is default operational mode
-        operationalMode.val('+')
 
         // Create selectable buttons to choose addressings type and show relevant dynamic content
         var typeInputVal = kNullAddressURI
@@ -1107,7 +1114,7 @@ function HardwareManager(options) {
     }
 
     this.addCvMapping = function (instance, portSymbol, actuator_uri,
-                                        label, minimum, maximum, feedback) {
+                                        label, minimum, maximum, operationalMode, feedback) {
         var instanceAndSymbol = instance+"/"+portSymbol
 
         self.addressingsByActuator  [actuator_uri].push(instanceAndSymbol)
@@ -1118,6 +1125,7 @@ function HardwareManager(options) {
             minimum : minimum,
             maximum : maximum,
             feedback: feedback,
+            operationalMode: operationalMode,
         }
         // disable this control
         options.setEnabled(instance, portSymbol, false, feedback, true)
@@ -1231,7 +1239,7 @@ function HardwareManager(options) {
         return false
     }
 
-    this.addCvOutputPort = function (uri, name) {
+    this.addCvOutputPort = function (uri, name, operationalMode) {
       var existingPort = self.cvOutputPorts.find(function (port) {
         return port.uri === uri;
       })
@@ -1245,6 +1253,7 @@ function HardwareManager(options) {
           steps: [],
           max_assigns: 99,
           feedback: false,
+          defaultOperationalMode: operationalMode,
         })
         self.addressingsByActuator[uri] = []
       }
