@@ -78,9 +78,6 @@ class Profile(object):
     NUM_PROFILES = 4
     INTERMEDIATE_PROFILE_PATH = index_to_filepath(NUM_PROFILES + 1)
 
-    CONTROL_VOLTAGE_BIAS_0_to_5      = 0 # 0 to 5 volts
-    CONTROL_VOLTAGE_BIAS_m2d5_TO_2d5 = 1 # 2.5 to 2.5 volts
-
     EXPRESSION_PEDAL_MODE_TIP    = 0 # signal on tip
     EXPRESSION_PEDAL_MODE_SLEEVE = 1 # signal on sleeve
 
@@ -102,7 +99,6 @@ class Profile(object):
     TRANSPORT_SOURCE_ABLETON_LINK = 2
 
     DEFAULTS = {
-        'cvBias': CONTROL_VOLTAGE_BIAS_0_to_5,
         'expPedalMode': EXPRESSION_PEDAL_MODE_TIP,
         'headphoneVolume': -6.0, # 60%
         'inputMode': INPUT_MODE_EXP_PEDAL,
@@ -202,9 +198,6 @@ class Profile(object):
     def get_configurable_output_mode(self):
         return self.values['outputMode']
 
-    def get_control_voltage_bias(self):
-        return self.values['cvBias']
-
     def get_exp_mode(self):
         return self.values['expPedalMode']
 
@@ -247,12 +240,6 @@ class Profile(object):
             logging.error("[profile] set_configurable_output_mode called with invalid value %s", value)
             return False
         return self._compare_and_set_value('outputMode', value)
-
-    def set_control_voltage_bias(self, value):
-        if value not in (self.CONTROL_VOLTAGE_BIAS_0_to_5, self.CONTROL_VOLTAGE_BIAS_m2d5_TO_2d5):
-            logging.error("[profile] set_control_voltage_bias called with invalid value %s", value)
-            return False
-        return self._compare_and_set_value('cvBias', value)
 
     def set_exp_mode(self, value):
         if value not in (self.EXPRESSION_PEDAL_MODE_TIP, self.EXPRESSION_PEDAL_MODE_SLEEVE):

@@ -384,8 +384,6 @@ class Host(object):
 
         Protocol.register_cmd_callback("g_exp_m", self.hmi_get_exp_mode)
         Protocol.register_cmd_callback("s_exp_m", self.hmi_set_exp_mode)
-        Protocol.register_cmd_callback("g_cvb", self.hmi_get_control_voltage_bias)
-        Protocol.register_cmd_callback("s_cvb", self.hmi_set_control_voltage_bias)
 
         Protocol.register_cmd_callback("g_il", self.hmi_get_in_chan_link)
         Protocol.register_cmd_callback("s_il", self.hmi_set_in_chan_link)
@@ -5022,16 +5020,6 @@ _:b%i
     def hmi_set_exp_mode(self, mode, callback):
         """Set the mode mode for the expression pedal input. That is, if the signal is on tip or sleeve."""
         result = self.profile.set_exp_mode(mode)
-        callback(result)
-
-    def hmi_get_control_voltage_bias(self, callback):
-        """Get the setting of the control voltage bias."""
-        result = self.profile.get_control_voltage_bias()
-        callback(True, result)
-
-    def hmi_set_control_voltage_bias(self, bias_mode, callback):
-        """Set the setting of the control voltage bias."""
-        result = self.profile.set_control_voltage_bias(bias_mode)
         callback(result)
 
     def hmi_snapshot_save(self, idx, callback):
