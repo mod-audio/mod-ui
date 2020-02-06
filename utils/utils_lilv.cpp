@@ -964,6 +964,7 @@ const PluginInfo_Mini& _get_plugin_info_mini(const LilvPlugin* const p, const Na
 
         if (LilvNodes* const typenodes = lilv_port_get_value(p, port, ns.rdf_type))
         {
+            bool hasDirection = false;
             bool isGood = false;
 
             LILV_FOREACH(nodes, it, typenodes)
@@ -973,13 +974,19 @@ const PluginInfo_Mini& _get_plugin_info_mini(const LilvPlugin* const p, const Na
                 if (typestr == nullptr)
                     continue;
 
-                // ignore normal ports
+                // ignore raw port type
                 if (strcmp(typestr, LV2_CORE__Port) == 0)
                     continue;
-                if (strcmp(typestr, LV2_CORE__InputPort) == 0)
+
+                // direction (input or output) is required
+                if (strcmp(typestr, LV2_CORE__InputPort) == 0) {
+                    hasDirection = true;
                     continue;
-                if (strcmp(typestr, LV2_CORE__OutputPort) == 0)
+                }
+                if (strcmp(typestr, LV2_CORE__OutputPort) == 0) {
+                    hasDirection = true;
                     continue;
+                }
 
                 // ignore morph ports if base type is supported
                 if (strcmp(typestr, LV2_MORPH__MorphPort) == 0)
@@ -1006,13 +1013,10 @@ const PluginInfo_Mini& _get_plugin_info_mini(const LilvPlugin* const p, const Na
                     isGood = true;
                     continue;
                 }
-
-                supported = false;
-                break;
             }
             lilv_nodes_free(typenodes);
 
-            if (! isGood)
+            if (! (hasDirection && isGood))
                 supported = false;
         }
     }
