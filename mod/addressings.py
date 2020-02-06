@@ -47,6 +47,7 @@ class Addressings(object):
     ADDRESSING_TYPE_CC   = 2
     ADDRESSING_TYPE_MIDI = 3
     ADDRESSING_TYPE_BPM  = 4
+    ADDRESSING_TYPE_CV   = 5
 
     def __init__(self):
         self.init()
@@ -1007,6 +1008,8 @@ class Addressings(object):
             return self.ADDRESSING_TYPE_HMI
         if actuator_uri.startswith(kMidiCustomPrefixURI):
             return self.ADDRESSING_TYPE_MIDI
+        if actuator_uri.startswith("/cv/"):
+            return self.ADDRESSING_TYPE_CV
         if actuator_uri == kBpmURI:
             return self.ADDRESSING_TYPE_BPM
         return self.ADDRESSING_TYPE_CC
