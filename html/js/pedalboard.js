@@ -36,8 +36,8 @@
    case "custom":
  			return (l < x1 + (draggable.helperProportions.width / 2) && // Right Half
  				x2 - (draggable.helperProportions.width / 2) < r && // Left Half
-        t < y1 + (draggable.helperProportions.height / 4) && // Bottom Half
-        y2 - (draggable.helperProportions.height / 4) < b ); // Top Half
+        t < y1 + (draggable.helperProportions.height / 2.5) && // Bottom Half
+        y2 - (draggable.helperProportions.height / 2.5) < b ); // Top Half
  		case "fit":
  			return (l <= x1 && x2 <= r && t <= y1 && y2 <= b);
  		case "intersect":
@@ -2134,6 +2134,7 @@ JqueryClass('pedalboard', {
                 var scale = self.data('scale')
                 ui.position.top /= scale
                 ui.position.left /= scale
+                jack.css({ marginTop: 0 })
                 self.pedalboard('drawJack', jack, true)
             },
             stop: function () {
@@ -2216,7 +2217,7 @@ JqueryClass('pedalboard', {
 
             // Adjust jack offset top position
             // that is sometimes biased by jack destination previous sibling margin bottom
-            if (!force && (parseInt(jack.css('top')) + parseInt(jack.css('bottom')) === 0)) {
+            if (!force && parseInt(jack.css('top')) === 0 && parseInt(jack.css('bottom')) === 0) {
               jackOffsetTop = jack.offset().top - jack.position().top
             }
             var yo = jackOffsetTop / scale - self.offset().top / scale + jack.height() / 2
@@ -2520,7 +2521,6 @@ JqueryClass('pedalboard', {
 
         jacks.each(function () {
             var jack = $(this)
-
             jack.css({
                 top: 'auto',
                 left: 'auto',
@@ -2529,9 +2529,10 @@ JqueryClass('pedalboard', {
 
             // if jack input previous sibling has a margin-bottom,
             // adjust jack top position in accordance
-            if (jack.data('destination') && jack.data('destination').prev() && jack.data('destination').prev().css('margin-bottom')) {
+            if (jack.position().top !== 0 && jack.data('destination') && jack.data('destination').prev() && jack.data('destination').prev().css('margin-bottom')) {
               jack.css('top', parseInt(jack.css('top')) - parseInt(jack.data('destination').prev().css('margin-bottom')))
             }
+
             jack.draggable(count <= 1 ? 'enable' : 'disable')
             self.pedalboard('drawJack', jack)
         });
