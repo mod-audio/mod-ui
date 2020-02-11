@@ -33,6 +33,7 @@
 #define ALSA_CONTROL_BYPASS_RIGHT  "Right True-Bypass"
 #define ALSA_CONTROL_LOOPBACK1     "LOOPBACK"
 #define ALSA_CONTROL_LOOPBACK2     "Loopback Switch"
+#define ALSA_CONTROL_SPDIF_ENABLE  "SPDIF Enable"
 #define ALSA_CONTROL_MASTER_VOLUME "DAC"
 
 #define JACK_SLAVE_PREFIX     "mod-slave"
@@ -583,6 +584,12 @@ void init_bypass(void)
 
         if (snd_mixer_elem_t* const elem = snd_mixer_find_selem(gAlsaMixer, sid))
             snd_mixer_selem_set_playback_switch_all(elem, 0);
+
+        snd_mixer_selem_id_set_index(sid, 0);
+        snd_mixer_selem_id_set_name(sid, ALSA_CONTROL_SPDIF_ENABLE);
+
+        if (snd_mixer_elem_t* const elem = snd_mixer_find_selem(gAlsaMixer, sid))
+            snd_mixer_selem_set_playback_switch_all(elem, 1);
 
         snd_mixer_selem_id_free(sid);
     }
