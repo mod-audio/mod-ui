@@ -635,6 +635,7 @@ class EffectInstaller(SimpleFileReceiver):
     @gen.engine
     def process_file(self, basename, callback=lambda:None):
         def on_finish(resp):
+            reset_get_all_pedalboards_cache()
             self.result = resp
             callback()
         install_package(os.path.join(DOWNLOAD_TMP_DIR, basename), on_finish)
