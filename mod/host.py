@@ -664,7 +664,7 @@ class Host(object):
         callback(False)
         return
 
-    def addr_task_set_value(self, atype, actuator, data, callback):
+    def addr_task_set_value(self, atype, actuator, data, callback, send_hmi=True):
         if atype == Addressings.ADDRESSING_TYPE_HMI:
             if not self.hmi.initialized:
                 return callback(False)
@@ -684,7 +684,12 @@ class Host(object):
                 return
             else:
                 value = data['value']
-            return self.hmi.control_set(actuator, value, callback)
+            if send_hmi:
+                return self.hmi.control_set(actuator, value, callback)
+            else:
+                if callback is not None:
+                    callback(True)
+                return
 
         if atype == Addressings.ADDRESSING_TYPE_CC:
             # FIXME not supported yet, this line never gets reached
@@ -5267,12 +5272,24 @@ _:b%i
         callback(True)
 
     def hmi_snapshot_load(self, idx, callback):
-        abort_catcher = self.abort_previous_loading_progress("hmi_snapshot_load")
         # Use negative numbers for HMI snapshots
-        try:
-            self.snapshot_load(0 - (self.HMI_SNAPSHOTS_OFFSET + idx), True, abort_catcher, callback)
-        except Exception as e:
+        snapshot_id = 0 - (self.HMI_SNAPSHOTS_OFFSET + idx)
+
+        if snapshot_id not in (self.HMI_SNAPSHOTS_LEFT, self.HMI_SNAPSHOTS_RIGHT):
             callback(False)
+            logging.error("hmi_snapshot_load received with wrong index %d (snapshot id %d)",
+                          idx, snapshot_id)
+            return
+
+        abort_catcher = self.abort_previous_loading_progress("hmi_snapshot_load")
+        callback(True)
+
+        def load_finished(ok):
+            logging.debug("[host] hmi_snapshot_load done for %d", idx)
+
+        try:
+            self.snapshot_load(snapshot_id, True, abort_catcher, load_finished)
+        except Exception as e:
             logging.exception(e)
 
     def hmi_page_load(self, idx, callback):
