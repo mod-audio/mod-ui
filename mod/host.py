@@ -664,7 +664,7 @@ class Host(object):
         callback(False)
         return
 
-    def addr_task_set_value(self, atype, actuator, data, callback):
+    def addr_task_set_value(self, atype, actuator, data, callback, send_hmi=True):
         if atype == Addressings.ADDRESSING_TYPE_HMI:
             if not self.hmi.initialized:
                 return callback(False)
@@ -684,7 +684,12 @@ class Host(object):
                 return
             else:
                 value = data['value']
-            return self.hmi.control_set(actuator, value, callback)
+            if send_hmi:
+                return self.hmi.control_set(actuator, value, callback)
+            else:
+                if callback is not None:
+                    callback(True)
+                return
 
         if atype == Addressings.ADDRESSING_TYPE_CC:
             # FIXME not supported yet, this line never gets reached

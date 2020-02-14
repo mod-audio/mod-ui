@@ -973,7 +973,7 @@ class Addressings(object):
 
         # NOTE we never call `control_set` for HMI lists, as it breaks pagination
         if updateValue and not (addressing_data['hmitype'] & HMI_ADDRESSING_TYPE_ENUMERATION):
-            self._task_set_value(self.ADDRESSING_TYPE_HMI, actuator_hmi, addressing_data, callback)
+            self._task_set_value(self.ADDRESSING_TYPE_HMI, actuator_hmi, addressing_data, callback, send_hmi=send_hmi)
         else:
             self._task_addressing(self.ADDRESSING_TYPE_HMI, actuator_hmi, addressing_data, callback, send_hmi=send_hmi)
 
