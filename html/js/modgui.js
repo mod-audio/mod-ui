@@ -1554,7 +1554,9 @@ JqueryClass('film', baseWidget, {
             bgImg.onload = function () {
                 var w = this.naturalWidth;
                 var h = this.naturalHeight;
-                var sw = self.outerWidth();
+                var computedStyle = window.getComputedStyle(self.get(0));
+                var computedStyleWidth = computedStyle.getPropertyValue('width')
+                var sw = computedStyleWidth ? Math.round(parseFloat(computedStyleWidth)) : self.outerWidth();
                 if (w == 0) {
                     new Notification('error', 'Apparently your browser does not support all features you need. Install latest Chromium, Google Chrome or Safari')
                 }
