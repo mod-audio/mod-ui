@@ -476,6 +476,7 @@ static const char* const kUnit_cent[] = { "cents", "%f ct", "ct" };
 static const char* const kUnit_semitone12TET[] = { "semitones", "%f semi", "semi" };
 static const char* const kUnit_degree[] = { "degrees", "%f deg", "deg" };
 static const char* const kUnit_midiNote[] = { "MIDI note", "MIDI note %d", "note" };
+static const char* const kUnit_volts[] = { "volts", "%f v", "v" };
 
 static const char nc[1] = { '\0' };
 
@@ -2234,6 +2235,13 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
                                 portinfo.units.symbol = unittable[2];
                             }
                         }
+                    }
+                    // using mod:volts unit
+                    else if (uuri != nullptr && strcmp(uuri, LILV_NS_MOD "volts") == 0)
+                    {
+                        portinfo.units.label  = kUnit_volts[0];
+                        portinfo.units.render = kUnit_volts[1];
+                        portinfo.units.symbol = kUnit_volts[2];
                     }
                     // using custom unit
                     else
