@@ -35,7 +35,7 @@ from uuid import uuid4
 from mod.profile import Profile
 from mod.settings import (APP, LOG, DEV_API,
                           HTML_DIR, DOWNLOAD_TMP_DIR, DEVICE_KEY, DEVICE_WEBSERVER_PORT,
-                          CLOUD_HTTP_ADDRESS, PLUGINS_HTTP_ADDRESS, PEDALBOARDS_HTTP_ADDRESS, CONTROLCHAIN_HTTP_ADDRESS,
+                          CLOUD_HTTP_ADDRESS, LABS_HTTP_ADDRESS, PLUGINS_HTTP_ADDRESS, PEDALBOARDS_HTTP_ADDRESS, CONTROLCHAIN_HTTP_ADDRESS,
                           LV2_PLUGIN_DIR, LV2_PEDALBOARDS_DIR, IMAGE_VERSION,
                           UPDATE_CC_FIRMWARE_FILE, UPDATE_MOD_OS_FILE, USING_256_FRAMES_FILE,
                           DEFAULT_ICON_TEMPLATE, DEFAULT_SETTINGS_TEMPLATE, DEFAULT_ICON_IMAGE,
@@ -1557,6 +1557,7 @@ class TemplateHandler(TimelessRequestHandler):
             'default_settings_template': default_settings_template,
             'default_pedalboard': DEFAULT_PEDALBOARD,
             'cloud_url': CLOUD_HTTP_ADDRESS,
+            'labs_url': LABS_HTTP_ADDRESS,
             'plugins_url': PLUGINS_HTTP_ADDRESS,
             'pedalboards_url': PEDALBOARDS_HTTP_ADDRESS,
             'controlchain_url': CONTROLCHAIN_HTTP_ADDRESS,
