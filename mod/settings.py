@@ -88,9 +88,10 @@ DEFAULT_ICON_IMAGE = {
 
 # Cloud API addresses
 CLOUD_HTTP_ADDRESS = os.environ.pop('MOD_CLOUD_HTTP_ADDRESS', "https://api-dev.moddevices.com/v2")
-LABS_HTTP_ADDRESS = os.environ.pop('MOD_LABS_HTTP_ADDRESS', "https://api-labs.moddevices.com/v2")
+CLOUD_LABS_HTTP_ADDRESS = os.environ.pop('MOD_CLOUD_LABS_HTTP_ADDRESS', "https://api-labs.moddevices.com/v2")
 PLUGINS_HTTP_ADDRESS = os.environ.pop('MOD_PLUGINS_HTTP_ADDRESS', "https://pedalboards.moddevices.com/plugins")
 PEDALBOARDS_HTTP_ADDRESS = os.environ.pop('MOD_PEDALBOARDS_HTTP_ADDRESS', "https://pedalboards-dev.moddevices.com")
+PEDALBOARDS_LABS_HTTP_ADDRESS = os.environ.pop('MOD_PEDALBOARDS_LABS_HTTP_ADDRESS', "https://pedalboards-labs.moddevices.com")
 CONTROLCHAIN_HTTP_ADDRESS = os.environ.pop('MOD_CONTROLCHAIN_HTTP_ADDRESS',
                                            "http://download.moddevices.com/releases/cc-firmware/v1")
 
