@@ -842,9 +842,6 @@ class Host(object):
         self.transport_bpm     = data['bpm']
         self.transport_bpb     = data['bpb']
 
-        # current aggregated mode
-        self.midi_aggregated_mode = has_midi_broadcaster_input_port() and has_midi_merger_output_port()
-
         # load everything
         if self.allpedalboards is None:
             self.allpedalboards = get_all_good_pedalboards()
@@ -910,6 +907,7 @@ class Host(object):
 
         self.hasSerialMidiIn = has_serial_midi_input_port()
         self.hasSerialMidiOut = has_serial_midi_output_port()
+        self.midi_aggregated_mode = has_midi_merger_output_port() or has_midi_broadcaster_input_port()
 
         return True
 
