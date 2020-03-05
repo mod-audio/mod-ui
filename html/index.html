@@ -133,6 +133,8 @@ $('document').ready(function() {
         bankBox: $('#bank-library'),
         bankBoxTrigger: $('#main-menu #mod-bank'),
         bankList: $('#bank-list'),
+        fileManagerBox: $('#file-manager-library'),
+        fileManagerBoxTrigger: $('#main-menu #mod-file-manager'),
         shareButton: $('#pedalboard-info .js-cloud'),
         shareWindow: $('#share-window'),
         presetSaveBox: $('#save-preset'),
@@ -237,6 +239,7 @@ $('document').ready(function() {
 <script type="text/javascript" src="js/desktop.js?v={{version}}"></script>
 <script type="text/javascript" src="js/pedalboard.js?v={{version}}"></script>
 <script type="text/javascript" src="js/pedalboards.js?v={{version}}"></script>
+<script type="text/javascript" src="js/file_manager.js?v={{version}}"></script>
 <script type="text/javascript" src="js/banks.js?v={{version}}"></script>
 <script type="text/javascript" src="js/effects.js?v={{version}}"></script>
 <script type="text/javascript" src="js/cloudplugin.js?v={{version}}"></script>
@@ -585,6 +588,7 @@ $('document').ready(function() {
         <div id="mod-pedalboard" class="icon" data-message="Pedalboards Library"></div>
         <div id="mod-bank" class="icon" data-message="Banks"></div>
         <div id="mod-cloud-plugins" class="icon" data-message="Plugin Store"></div>
+        <div id="mod-file-manager" class="icon" data-message="File Manager"></div>
         <div id="banks-saving">Auto saving banks...</div>
         <div id="mod-update" class="status icon"></div>
         <div id="mod-status" class="status icon mod-hidden"></div>
@@ -826,6 +830,17 @@ $('document').ready(function() {
 
     </div></div>
     <!-- END BANK LIBRARY -->
+
+    <!-- FILE MANAGER -->
+    <div id="file-manager-library" class="mod-hidden mod-init-hidden"><div class="box">
+        <header>
+            <h1 class="bottom top">File Manager</h1>
+        </header>
+        <div id="file-manager-wrapper">
+            <iframe title="File Manager"></iframe>
+        </div>
+    </div></div>
+    <!-- END FILE MANAGER -->
 
     <!-- MOD UPDATE/UPGRADE TOOLTIP -->
     <div class="tooltip mod-hidden" style="right:102px;">

@@ -51,6 +51,8 @@ function Desktop(elements) {
         cloudPluginBox: $('<div>'),
         cloudPluginBoxTrigger: $('<div>'),
         pedalboardTrigger: $('<div>'),
+        fileManagerBox: $('<div>'),
+        fileManagerBoxTrigger: $('<div>'),
         pedalboardBox: $('<div>'),
         pedalboardBoxTrigger: $('<div>'),
         bankBox: $('<div>'),
@@ -725,6 +727,8 @@ function Desktop(elements) {
                                                 elements.pedalboardBoxTrigger)
     this.bankBox = self.makeBankBox(elements.bankBox,
                                     elements.bankBoxTrigger)
+    this.fileManagerBox = self.makeFileManagerBox(elements.fileManagerBox,
+                                                  elements.fileManagerBoxTrigger)
 
     this.getPluginsData = function (uris, callback) {
         $.ajax({
@@ -1296,15 +1300,16 @@ function Desktop(elements) {
         }
     })
 
-	elements.settingsIcon.click(function() {
-		document.location.href = '/settings';
-	})
+    elements.settingsIcon.click(function() {
+        document.location.href = '/settings';
+    })
 
-	elements.settingsIcon.statusTooltip()
-	elements.pedalboardTrigger.statusTooltip()
-	elements.pedalboardBoxTrigger.statusTooltip()
-	elements.bankBoxTrigger.statusTooltip()
-	elements.cloudPluginBoxTrigger.statusTooltip()
+    elements.settingsIcon.statusTooltip()
+    elements.pedalboardTrigger.statusTooltip()
+    elements.pedalboardBoxTrigger.statusTooltip()
+    elements.bankBoxTrigger.statusTooltip()
+    elements.cloudPluginBoxTrigger.statusTooltip()
+    elements.fileManagerBoxTrigger.statusTooltip()
 
     this.upgradeWindow = elements.upgradeWindow.upgradeWindow({
         icon: elements.upgradeIcon,
@@ -1752,6 +1757,14 @@ Desktop.prototype.makeBankBox = function (el, trigger) {
                 cache: false,
             })
         }
+    })
+}
+
+Desktop.prototype.makeFileManagerBox = function (el, trigger) {
+    var self = this
+    el.fileManagerBox({
+        trigger: trigger,
+        windowManager: this.windowManager,
     })
 }
 
