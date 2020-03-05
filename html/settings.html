@@ -42,7 +42,7 @@
         position: fixed;
         text-align: left;
         top: 45px;
-        width: 50%;
+        width: calc(70% - 290px);
         overflow-y: auto;
     }
     .settings-page-content h1 {
@@ -98,6 +98,16 @@
     #bank-pedalboards-search #bank-pedalboards-result .form {
         min-height: 50px;
         color: #AAA;
+    }
+
+    /* smaller screen setup */
+    @media screen and (width < 1100px) {
+        .settings-page-content {
+            width: calc(100% - 290px);
+        }
+        #bank-pedalboards-search {
+            display: none;
+        }
     }
 </style>
 
@@ -420,7 +430,7 @@ $('document').ready(function() {
         // hide all
         $(".add-bank").removeClass("selected")
         $(".settings-page").hide()
-        // show dangerous
+        // show device updates
         $("#tab-device-updates").addClass("selected")
         $("#settings-page-device-updates").show()
     })
@@ -664,14 +674,14 @@ $('document').ready(function() {
     // ----------------------------------------------------------------------------------------------------------------
     // --- Device Updates
 
-    var respDev, respVer
+    var deviceUpdatesRespDev, deviceUpdatesRespVer
 
     $.ajax({
         method: 'GET',
         url: CONTROLCHAIN_URL + '/devices',
         success: function (resp) {
-            respDev = resp
-            refresh_device_updates(respDev, respVer)
+            deviceUpdatesRespDev = resp
+            refresh_device_updates(deviceUpdatesRespDev, deviceUpdatesRespVer)
         },
         error: function () {
             console.log("Error: failed to get devices information")
@@ -684,8 +694,8 @@ $('document').ready(function() {
         method: 'GET',
         url: CONTROLCHAIN_URL + '/versions',
         success: function (resp) {
-            respVer = resp
-            refresh_device_updates(respDev, respVer)
+            deviceUpdatesRespVer = resp
+            refresh_device_updates(deviceUpdatesRespDev, deviceUpdatesRespVer)
         },
         error: function () {
         },
@@ -946,7 +956,7 @@ $('document').ready(function() {
                 </form>
             </div>
         </div>
-        <!-- SETTINGS PAGE (ADVANCED) -->
+        <!-- SETTINGS PAGE (DEVICES) -->
 
         <!-- SETTINGS PAGE (DANGEROUS) -->
         <div class="settings-page mod-hidden" id="settings-page-dangerous">
