@@ -700,8 +700,15 @@ $('document').ready(function() {
                     <label for="cloud-plugins-installed">Installed only</label>
                 </div>
                 <div class="control-group mod-hidden">
-                    <input type="checkbox" name="unstable" id="cloud-plugins-stable" />
-                    <label for="cloud-plugins-stable">Show beta plugins</label>
+                    <div class="switch" id="cloud-plugins-stable">
+                      <input type="radio" id="official" name="unstable" value="official" checked="checked">
+                      <label for="official">Official</label>
+                      <input type="radio" id="labs" name="unstable" value="labs">
+                      <label for="labs">Labs</label>
+                      <span class="toggle-outside">
+                        <span class="toggle-inside"></span>
+                      </span>
+                    </div>
                 </div>
                 <ul class="categories list list-unstyled">
                     <li id="cloud-plugin-tab-All">All</li>
