@@ -92,7 +92,8 @@ JqueryClass('cloudPluginBox', {
             self.cloudPluginBox('search')
         })
 
-        self.find('input:checkbox[name=unstable]').click(function (e) {
+        self.find('input:radio[name=unstable]').click(function (e) {
+            self.cloudPluginBox('toggleFeaturedPlugins')
             self.cloudPluginBox('search')
         })
 
@@ -123,12 +124,8 @@ JqueryClass('cloudPluginBox', {
             $('#cloud_install_all').addClass("disabled").css({color:'#444'})
             $('#cloud_update_all').addClass("disabled").css({color:'#444'})
 
-            var unstablecb = self.find('input:checkbox[name=unstable]')
-            if (!unstablecb.is(':checked')) {
-                self.cloudPluginBox('search')
-            } else {
-                unstablecb.click()
-            }
+            self.cloudPluginBox('search')
+
             return false
         }
 
@@ -185,10 +182,11 @@ JqueryClass('cloudPluginBox', {
     toggleFeaturedPlugins: function () {
       var self  = $(this)
       var featuredPlugins = self.find('.featured-plugins')
+      var officialPlugins = self.find('input:radio[name=unstable]:checked').val() === 'official'
       var queryText = self.data('searchbox').val()
       var category = self.data('category')
 
-      if (queryText === '' && category === 'All') {
+      if (queryText === '' && category === 'All' && officialPlugins) {
         if (featuredPlugins.is(':hidden')) {
           featuredPlugins.show()
         }
@@ -204,17 +202,22 @@ JqueryClass('cloudPluginBox', {
             text: self.data('searchbox').val(),
             summary: "true",
             image_version: VERSION,
+            stable: true,
         }
 
         // hide/show featured plugins if searching/not searching
         self.cloudPluginBox('toggleFeaturedPlugins')
-
-        if (self.find('input:checkbox[name=unstable]:checked').length == 0) {
+        var url = SITEURL
+        if (self.find('input:radio[name=unstable]:checked').val() === 'official') {
             query.stable = "true"
+        } else {
+          url = CLOUD_LABS_URL
         }
+
         if (self.find('input:checkbox[name=installed]:checked').length)
-            return self.cloudPluginBox('searchInstalled', query, customRenderCallback)
-        return self.cloudPluginBox('searchAll', query, customRenderCallback)
+            return self.cloudPluginBox('searchInstalled', url, query, customRenderCallback)
+
+        return self.cloudPluginBox('searchAll', url, query, customRenderCallback)
     },
 
     synchronizePluginData: function (plugin) {
@@ -236,7 +239,7 @@ JqueryClass('cloudPluginBox', {
 	},
 
     // search cloud and local plugins, show all but prefer cloud
-    searchAll: function (query, customRenderCallback) {
+    searchAll: function (url, query, customRenderCallback) {
         var self = $(this)
         var results = {}
         var cplugin, lplugin,
@@ -376,7 +379,7 @@ JqueryClass('cloudPluginBox', {
         var cloudResults
         $.ajax({
             method: 'GET',
-            url: SITEURL + "/lv2/plugins",
+            url: url + "/lv2/plugins",
             data: query,
             success: function (plugins) {
                 cloudReached = true
@@ -449,7 +452,7 @@ JqueryClass('cloudPluginBox', {
     },
 
     // search cloud and local plugins, show installed only
-    searchInstalled: function (query, customRenderCallback) {
+    searchInstalled: function (url, query, customRenderCallback) {
         var self = $(this)
         var results = {}
         var cplugin, lplugin,
@@ -526,7 +529,7 @@ JqueryClass('cloudPluginBox', {
         // cloud search
         $.ajax({
             method: 'GET',
-            url: SITEURL + "/lv2/plugins",
+            url: url + "/lv2/plugins",
             data: query,
             success: function (plugins) {
                 // index by uri, needed later to check its latest version
