@@ -28,6 +28,7 @@
 #include "lv2/lv2plug.in/ns/ext/atom/atom.h"
 #include "lv2/lv2plug.in/ns/ext/midi/midi.h"
 #include "lv2/lv2plug.in/ns/ext/morph/morph.h"
+#include "lv2/lv2plug.in/ns/ext/patch/patch.h"
 #include "lv2/lv2plug.in/ns/ext/port-props/port-props.h"
 #include "lv2/lv2plug.in/ns/ext/presets/presets.h"
 #include "lv2/lv2plug.in/ns/extensions/units/units.h"
@@ -67,6 +68,10 @@ LilvNode* lilv_new_file_uri2(LilvWorld* world, const char*, const char* path)
 #define lilv_free(x) free(x)
 #define lilv_file_uri_parse(x,y) lilv_file_uri_parse2(x,y)
 #define lilv_new_file_uri(x,y,z) lilv_new_file_uri2(x,y,z)
+#endif
+
+#ifndef LV2_CORE__Parameter
+#define LV2_CORE__Parameter LV2_CORE_PREFIX "Parameter" // http://lv2plug.in/ns/lv2core#Parameter
 #endif
 
 // our lilv world
@@ -125,6 +130,7 @@ static const bool kAllowRegularCV = getenv("MOD_UI_ALLOW_REGULAR_CV") != nullptr
         { nullptr, nullptr },                        \
         { nullptr, nullptr }                         \
     },                                               \
+    nullptr,                                         \
     nullptr                                          \
 }
 
@@ -229,6 +235,7 @@ struct NamespaceDefinitions {
     LilvNode* const rdf_type;
     LilvNode* const rdfs_comment;
     LilvNode* const rdfs_label;
+    LilvNode* const rdfs_range;
     LilvNode* const lv2core_designation;
     LilvNode* const lv2core_index;
     LilvNode* const lv2core_microVersion;
@@ -271,6 +278,7 @@ struct NamespaceDefinitions {
     LilvNode* const atom_Sequence;
     LilvNode* const midi_MidiEvent;
     LilvNode* const pprops_rangeSteps;
+    LilvNode* const patch_writable;
     LilvNode* const pset_Preset;
     LilvNode* const units_render;
     LilvNode* const units_symbol;
@@ -283,6 +291,7 @@ struct NamespaceDefinitions {
           rdf_type                 (lilv_new_uri(W, LILV_NS_RDF    "type"              )),
           rdfs_comment             (lilv_new_uri(W, LILV_NS_RDFS   "comment"           )),
           rdfs_label               (lilv_new_uri(W, LILV_NS_RDFS   "label"             )),
+          rdfs_range               (lilv_new_uri(W, LILV_NS_RDFS   "range"             )),
           lv2core_designation      (lilv_new_uri(W, LILV_NS_LV2    "designation"       )),
           lv2core_index            (lilv_new_uri(W, LILV_NS_LV2    "index"             )),
           lv2core_microVersion     (lilv_new_uri(W, LILV_NS_LV2    "microVersion"      )),
@@ -325,6 +334,7 @@ struct NamespaceDefinitions {
           atom_Sequence            (lilv_new_uri(W, LV2_ATOM__Sequence                 )),
           midi_MidiEvent           (lilv_new_uri(W, LV2_MIDI__MidiEvent                )),
           pprops_rangeSteps        (lilv_new_uri(W, LV2_PORT_PROPS__rangeSteps         )),
+          patch_writable           (lilv_new_uri(W, LV2_PATCH__writable                )),
           pset_Preset              (lilv_new_uri(W, LV2_PRESETS__Preset                )),
           units_render             (lilv_new_uri(W, LV2_UNITS__render                  )),
           units_symbol             (lilv_new_uri(W, LV2_UNITS__symbol                  )),
@@ -338,6 +348,7 @@ struct NamespaceDefinitions {
         lilv_node_free(rdf_type);
         lilv_node_free(rdfs_comment);
         lilv_node_free(rdfs_label);
+        lilv_node_free(rdfs_range);
         lilv_node_free(lv2core_designation);
         lilv_node_free(lv2core_index);
         lilv_node_free(lv2core_microVersion);
@@ -380,6 +391,7 @@ struct NamespaceDefinitions {
         lilv_node_free(atom_Sequence);
         lilv_node_free(midi_MidiEvent);
         lilv_node_free(pprops_rangeSteps);
+        lilv_node_free(patch_writable);
         lilv_node_free(pset_Preset);
         lilv_node_free(units_render);
         lilv_node_free(units_symbol);
@@ -2392,6 +2404,70 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
     }
 
     // --------------------------------------------------------------------------------------------------------
+    // parameters
+
+    if (LilvNodes* const patches = lilv_plugin_get_value(p, ns.patch_writable))
+    {
+        if (unsigned int count = lilv_nodes_size(patches))
+        {
+            PluginParameter* const params = new PluginParameter[count+1];
+            memset(params, 0, sizeof(PluginParameter) * (count+1));
+
+            count = 0;
+            LILV_FOREACH(nodes, itpatches, patches)
+            {
+                const LilvNode* const patch = lilv_nodes_get(patches, itpatches);
+
+                LilvNode* const typeNode = lilv_world_get(W, patch, ns.rdf_type, nullptr);
+
+                if (typeNode == nullptr)
+                    continue;
+
+                if (strcmp(lilv_node_as_uri(typeNode), LV2_CORE__Parameter) != 0)
+                {
+                    lilv_node_free(typeNode);
+                    continue;
+                }
+
+                LilvNode* const rangeNode = lilv_world_get(W, patch, ns.rdfs_range, nullptr);
+
+                if (rangeNode == nullptr)
+                {
+                    lilv_node_free(typeNode);
+                    continue;
+                }
+
+                LilvNode* const labelNode = lilv_world_get(W, patch, ns.rdfs_label, nullptr);
+
+                if (labelNode == nullptr)
+                {
+                    lilv_node_free(rangeNode);
+                    lilv_node_free(typeNode);
+                    continue;
+                }
+
+                PluginParameter param;
+                memset(&param, 0, sizeof(PluginParameter));
+
+                param.valid = true;
+                param.uri   = strdup(lilv_node_as_uri(patch));
+                param.label = strdup(lilv_node_as_string(labelNode));
+                param.type  = strdup(lilv_node_as_string(rangeNode));
+
+                lilv_node_free(labelNode);
+                lilv_node_free(rangeNode);
+                lilv_node_free(typeNode);
+
+                params[count++] = param;
+            }
+
+            info.parameters = params;
+        }
+
+        lilv_nodes_free(patches);
+    }
+
+    // --------------------------------------------------------------------------------------------------------
     // presets
 
     _place_preset_info(info, p, ns.pset_Preset, ns.rdfs_label);
@@ -2756,6 +2832,17 @@ static void _clear_plugin_info(PluginInfo& info)
         for (int i=0; info.ports.midi.output[i].valid; ++i)
             _clear_port_info(info.ports.midi.output[i]);
         delete[] info.ports.midi.output;
+    }
+
+    if (info.parameters != nullptr)
+    {
+        for (int i=0; info.parameters[i].valid; ++i)
+        {
+            free((void*)info.parameters[i].uri);
+            free((void*)info.parameters[i].label);
+            free((void*)info.parameters[i].type);
+        }
+        delete[] info.parameters;
     }
 
     if (info.presets != nullptr)
