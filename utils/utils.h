@@ -114,6 +114,14 @@ typedef struct {
     bool valid;
     const char* uri;
     const char* label;
+    const char* type;
+    // TODO see what else is needed
+} PluginParameter;
+
+typedef struct {
+    bool valid;
+    const char* uri;
+    const char* label;
     const char* path;
 } PluginPreset;
 
@@ -138,6 +146,7 @@ typedef struct {
     const char* const* bundles;
     PluginGUI gui;
     PluginPorts ports;
+    const PluginParameter* parameters;
     const PluginPreset* presets;
 } PluginInfo;
 

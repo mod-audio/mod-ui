@@ -226,6 +226,14 @@ class PluginPorts(Structure):
         ("midi", PluginPortsI),
     ]
 
+class PluginParameter(Structure):
+    _fields_ = [
+        ("valid", c_bool),
+        ("uri", c_char_p),
+        ("label", c_char_p),
+        ("type", c_char_p),
+    ]
+
 class PluginPreset(Structure):
     _fields_ = [
         ("valid", c_bool),
@@ -256,6 +264,7 @@ class PluginInfo(Structure):
         ("bundles", POINTER(c_char_p)),
         ("gui", PluginGUI),
         ("ports", PluginPorts),
+        ("parameters", POINTER(PluginParameter)),
         ("presets", POINTER(PluginPreset)),
     ]
 
@@ -430,6 +439,7 @@ c_struct_types = (PluginAuthor,
 c_structp_types = (POINTER(PluginGUIPort),
                    POINTER(PluginPortScalePoint),
                    POINTER(PluginPort),
+                   POINTER(PluginParameter),
                    POINTER(PluginPreset),
                    POINTER(PedalboardPlugin),
                    POINTER(PedalboardConnection),
