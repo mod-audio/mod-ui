@@ -2063,6 +2063,35 @@ class TokensSave(JsonRequestHandler):
 
         self.write(True)
 
+class FilesList(JsonRequestHandler):
+    def get(self):
+        filetype = self.get_argument('type')
+
+        if filetype == "ir":
+            datadir    = "IR"
+            extensions = (".wav", ".w64")
+
+        else:
+            self.write({
+                'ok': False,
+                'files': [],
+            })
+            return
+
+        retfiles = []
+
+        for root, dirs, files in os.walk(os.path.join("/data/user-files", datadir)):
+            for name in tuple(name for name in sorted(files) if name.lower().endswith(extensions)):
+                retfiles.append({
+                    'fullname': os.path.join(root, name),
+                    'basename': name,
+                })
+
+        self.write({
+            'ok': True,
+            'files': retfiles,
+        })
+
 settings = {'log_function': lambda handler: None} if not LOG else {}
 
 application = web.Application(
@@ -2158,6 +2187,9 @@ application = web.Application(
             (r"/tokens/delete", TokensDelete),
             (r"/tokens/get", TokensGet),
             (r"/tokens/save/?", TokensSave),
+
+            # file listing etc
+            (r"/files/list", FilesList),
 
             (r"/reset/?", DashboardClean),
 
