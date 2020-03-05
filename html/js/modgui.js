@@ -19,6 +19,7 @@ var loadedIcons = {}
 var loadedSettings = {}
 var loadedCSSs = {}
 var loadedJSs = {}
+var loadedFilenames = {}
 var isSDK = false
 
 function shouldSkipPort(port) {
@@ -43,9 +44,10 @@ function loadDependencies(gui, effect, callback) { //source, effect, bundle, cal
     var cssLoaded = true
     var jsLoaded = true
     var nonCachedInfoLoaded = true
+    var filelistLoaded = true
 
     var cb = function () {
-        if (iconLoaded && settingsLoaded && cssLoaded && jsLoaded && nonCachedInfoLoaded) {
+        if (iconLoaded && settingsLoaded && cssLoaded && jsLoaded && nonCachedInfoLoaded && filelistLoaded) {
             setTimeout(callback, 0)
         }
     }
@@ -151,6 +153,34 @@ function loadDependencies(gui, effect, callback) { //source, effect, bundle, cal
                     cb()
                 },
             })
+        }
+    }
+
+    if (effect.parameters.length != 0) {
+        for (var i in effect.parameters) {
+            var parameter = effect.parameters[i]
+
+            // TODO pass wanted file-type as argument
+            if (parameter.type === "http://lv2plug.in/ns/ext/atom#Path") {
+                filelistLoaded = false
+                $.ajax({
+                    url: '/files/list',
+                    data: {
+                        'type': 'ir',
+                    },
+                    success: function (data) {
+                        parameter.files = data.files
+                        filelistLoaded = true
+                        cb()
+                    },
+                    error: function () {
+                        filelistLoaded = true
+                        cb()
+                    },
+                    cache: false,
+                    dataType: 'json'
+                })
+            }
         }
     }
 
@@ -1180,6 +1210,15 @@ function GUI(effect, options) {
         else
         {
             data.effect.all_control_in_ports = []
+        }
+
+        // handle parameter types
+        for (var i in data.effect.parameters) {
+            var parameter = data.effect.parameters[i]
+
+            if (parameter.type === "http://lv2plug.in/ns/ext/atom#Path") {
+                parameter.path = true;
+            }
         }
 
         if (isSDK) {
