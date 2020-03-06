@@ -133,6 +133,9 @@ JqueryClass('pedalboard', {
             // Changes the parameter of a plugin's control port
             pluginParameterChange: function (port, value) {},
 
+            // Changes the patch:writable parameter of a plugin
+            pluginPatchParameterChange: function (instance, uri, value) {},
+
             // Connects two ports
             portConnect: function (fromPort, toPort, callback) {
                 callback(true)
@@ -184,7 +187,7 @@ JqueryClass('pedalboard', {
         self.pedalboard('wrapApplicationFunctions', options, [
             'pluginLoad', 'pluginRemove',
             'pluginPresetLoad', 'pluginPresetSaveNew', 'pluginPresetSaveReplace', 'pluginPresetDelete',
-            'pluginParameterChange', 'pluginMove',
+            'pluginParameterChange', 'pluginPatchParameterChange', 'pluginMove',
             'portConnect', 'portDisconnect', 'reset', 'getPluginsData'
         ])
 
@@ -1320,6 +1323,9 @@ JqueryClass('pedalboard', {
             },
             change: function (port, value) {
                 self.data('pluginParameterChange')(port, value)
+            },
+            changeParam: function (uri, value) {
+                self.data('pluginPatchParameterChange')(instance, uri, value)
             },
             presetLoad: function (uri) {
                 self.data('pluginPresetLoad')(instance, uri, function (ok) {

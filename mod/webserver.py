@@ -1032,6 +1032,12 @@ class ServerWebSocket(websocket.WebSocketHandler):
             value = float(data[2])
             SESSION.ws_parameter_set(port, value, self)
 
+        elif cmd == "patch_param_set":
+            inst  = data[1]
+            uri   = data[2]
+            value = " ".join(data[3:])
+            SESSION.ws_patch_parameter_set(inst, uri, value, self)
+
         elif cmd == "plugin_pos":
             inst = data[1]
             x    = float(data[2])
@@ -1917,7 +1923,7 @@ class FilesList(JsonRequestHandler):
 
         if filetype == "ir":
             datadir    = "IR"
-            extensions = (".wav", ".w64")
+            #extensions = (".wav", ".w64")
 
         else:
             self.write({
@@ -1929,7 +1935,7 @@ class FilesList(JsonRequestHandler):
         retfiles = []
 
         for root, dirs, files in os.walk(os.path.join("/data/user-files", datadir)):
-            for name in tuple(name for name in sorted(files) if name.lower().endswith(extensions)):
+            for name in tuple(name for name in sorted(files)): # if name.lower().endswith(extensions)):
                 retfiles.append({
                     'fullname': os.path.join(root, name),
                     'basename': name,

@@ -1531,6 +1531,10 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
             ws.send(sprintf("param_set %s %f", port, value))
         },
 
+        pluginPatchParameterChange: function (instance, uri, value) {
+            ws.send(sprintf("patch_param_set %s %s %s", instance, uri, value))
+        },
+
         pluginMove: function (instance, x, y) {
             ws.send(sprintf("plugin_pos %s %f %f", instance, x, y))
         },
