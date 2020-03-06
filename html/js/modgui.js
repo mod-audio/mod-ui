@@ -1287,7 +1287,7 @@ function GUI(effect, options) {
         },
         // added in v2: allow plugin js code to set parameter values (arbitrary type)
         set_parameter_value: function (uri, value) {
-            self.setParameterValue(symbol, value, null)
+            self.setParameterValue(uri, value, null)
         }
     }
 
