@@ -2207,6 +2207,19 @@ class Host(object):
         pluginData['ports'][symbol] = value
         self.send_modified("param_set %d %s %f" % (instance_id, symbol, value), callback, datatype='boolean')
 
+    def patch_param_set(self, instance, uri, value, callback):
+        instance_id = self.mapper.get_id_without_creating(instance)
+        pluginData  = self.plugins[instance_id]
+
+        if uri in pluginData['designations']:
+            print("ERROR: Trying to modify a specially designated parameter '%s', stop!" % uri)
+            callback(False)
+            return
+
+        # pluginData['parameters'][uri] = value
+        print("mod-host sent param_set %d %s \"%s\"" % (instance_id, uri, value))
+        self.send_modified("param_set %d %s \"%s\"" % (instance_id, uri, value), callback, datatype='boolean')
+
     def set_position(self, instance, x, y):
         instance_id = self.mapper.get_id_without_creating(instance)
         pluginData  = self.plugins[instance_id]

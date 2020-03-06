@@ -197,7 +197,10 @@ function GUI(effect, options) {
 
     options = $.extend({
         change: function(symbol, value) {
-            console.log("PARAM CHANGE =>", symbol, value)
+            console.log("CONTROL PORT CHANGE =>", symbol, value)
+        },
+        changeParam: function(uri, value) {
+            console.log("PATCH PARAMETER CHANGE =>", uri, value)
         },
         click: function (event) {
         },
@@ -343,6 +346,7 @@ function GUI(effect, options) {
         valueFields: []
     }
 
+    // changes control port
     this.setPortValue = function (symbol, value, source) {
         if (isNaN(value)) {
             throw "Invalid NaN value for " + symbol
@@ -369,6 +373,14 @@ function GUI(effect, options) {
         // let the HMI know about this change
         paramchange = (self.instance + '/' + symbol + '/' + value)
         desktop.ParameterSet(paramchange)
+    }
+
+    // changes parameter patch:writable
+    this.setParameterValue = function (uri, value, source) {
+        // TODO: update our own widgets
+
+        // let the host know about this change
+        options.changeParam(uri, value)
     }
 
     this.setPortWidgetsValue = function (symbol, value, source, only_gui) {
@@ -1033,6 +1045,36 @@ function GUI(effect, options) {
             self.setPortWidgetsValue(':bypass', onlySetValues ? 0 : (self.bypassed ? 1 : 0), $(this), true)
         })
 
+        element.find('[mod-role=input-parameter]').each(function () {
+            var control = $(this)
+            var uri = $(this).attr('mod-parameter-uri')
+            // TODO set value here
+            var port = {
+                ranges: {},
+                properties: [],
+                // FIXME which ones are needed?
+                enabled: true,
+                widgets: [],
+                format: null,
+                scalePointsIndex: null,
+                valueFields: [],
+                /*
+                value: 1337,
+                name: 'Presets',
+                symbol: ':presets',
+                scalePoints: [],
+                */
+            }
+
+            control.controlWidget({
+                dummy: onlySetValues,
+                port: port,
+                change: function (e, value) {
+                    self.setParameterValue(uri, value, control)
+                }
+            })
+        })
+
         if (onlySetValues) {
             return
         }
@@ -1242,6 +1284,10 @@ function GUI(effect, options) {
         // added in v1: allow plugin js code to change plugin controls
         set_port_value: function (symbol, value) {
             self.setPortValue(symbol, value, null)
+        },
+        // added in v2: allow plugin js code to set parameter values (arbitrary type)
+        set_parameter_value: function (uri, value) {
+            self.setParameterValue(symbol, value, null)
         }
     }
 
@@ -1250,7 +1296,7 @@ function GUI(effect, options) {
             return
 
         // bump this everytime the data structure or funtions change
-        event.api_version = 1
+        event.api_version = 2
 
         // normal data
         event.data     = self.jsData
@@ -1293,7 +1339,8 @@ function JqueryClass() {
             'switch': 'switchWidget',
             'bypass': 'bypassWidget',
             'select': 'selectWidget',
-            'custom-select': 'customSelect'
+            'custom-select': 'customSelect',
+            'custom-parameter-select': 'customParameterSelect',
         }
         var name = self.attr('mod-widget') || 'film'
         name = widgets[name]
@@ -2102,5 +2149,45 @@ JqueryClass('customSelect', baseWidget, {
         }
 
         return self.find('[mod-role=enumeration-option][mod-port-value="' + nvalue + '"]')
+    },
+})
+
+JqueryClass('customParameterSelect', baseWidget, {
+    init: function (options) {
+        var self = $(this)
+        self.customParameterSelect('config', options)
+        // TODO find a way to get selected value
+        // self.customParameterSelect('setValue', options.port.ranges.default, true)
+        self.find('[mod-role=enumeration-option]').each(function () {
+            var opt = $(this)
+            opt.click(function (e) {
+                if (!self.data('enabled')) {
+                    return self.customParameterSelect('prevent', e)
+                }
+                var value = opt.attr('mod-parameter-value')
+                self.customParameterSelect('setValue', value, false)
+            })
+        })
+        self.click(function () {
+            self.find('.mod-enumerated-list').toggle()
+        })
+
+        return self
+    },
+
+    setValue: function (value, only_gui) {
+        var self = $(this)
+        self.find('[mod-role=enumeration-option]').removeClass('selected')
+
+        var selected = self.find('[mod-role=enumeration-option][mod-parameter-value="' + value + '"]')
+        if (selected.length === 0) {
+            return
+        }
+
+        selected.addClass('selected')
+
+        if (!only_gui) {
+            self.trigger('valuechange', value)
+        }
     },
 })
