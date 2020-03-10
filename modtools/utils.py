@@ -232,6 +232,8 @@ class PluginParameter(Structure):
         ("uri", c_char_p),
         ("label", c_char_p),
         ("type", c_char_p),
+        ("fileTypes", POINTER(c_char_p)),
+        ("supportedExtensions", POINTER(c_char_p)),
     ]
 
 class PluginPreset(Structure):
