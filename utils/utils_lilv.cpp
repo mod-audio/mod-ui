@@ -257,6 +257,8 @@ struct NamespaceDefinitions {
     LilvNode* const mod_release;
     LilvNode* const mod_builder;
     LilvNode* const mod_buildEnvironment;
+    LilvNode* const mod_fileTypes;
+    LilvNode* const mod_supportedExtensions;
     LilvNode* const modlicense_interface;
     LilvNode* const modgui_gui;
     LilvNode* const modgui_resourcesDirectory;
@@ -313,6 +315,8 @@ struct NamespaceDefinitions {
           mod_release              (lilv_new_uri(W, LILV_NS_MOD    "releaseNumber"     )),
           mod_builder              (lilv_new_uri(W, LILV_NS_MOD    "builderVersion"    )),
           mod_buildEnvironment     (lilv_new_uri(W, LILV_NS_MOD    "buildEnvironment"  )),
+          mod_fileTypes            (lilv_new_uri(W, LILV_NS_MOD    "fileTypes"         )),
+          mod_supportedExtensions  (lilv_new_uri(W, LILV_NS_MOD    "supportedExtensions")),
           modlicense_interface     (lilv_new_uri(W, MOD_LICENSE__interface             )),
           modgui_gui               (lilv_new_uri(W, LILV_NS_MODGUI "gui"               )),
           modgui_resourcesDirectory(lilv_new_uri(W, LILV_NS_MODGUI "resourcesDirectory")),
@@ -370,6 +374,8 @@ struct NamespaceDefinitions {
         lilv_node_free(mod_release);
         lilv_node_free(mod_builder);
         lilv_node_free(mod_buildEnvironment);
+        lilv_node_free(mod_fileTypes);
+        lilv_node_free(mod_supportedExtensions);
         lilv_node_free(modlicense_interface);
         lilv_node_free(modgui_gui);
         lilv_node_free(modgui_resourcesDirectory);
@@ -2454,6 +2460,78 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
                 param.label = strdup(lilv_node_as_string(labelNode));
                 param.type  = strdup(lilv_node_as_string(rangeNode));
 
+                if (LilvNode* const fileTypesNode = lilv_world_get(W, patch, ns.mod_fileTypes, nullptr))
+                {
+                    if (char* const fileTypes = strdup(lilv_node_as_string(fileTypesNode)))
+                    {
+                        const size_t fileTypesLen = strlen(fileTypes);
+                        uint fileTypesCount = 1;
+
+                        // count number of items
+                        for (size_t i=0; i<fileTypesLen; ++i)
+                        {
+                            if (fileTypes[i] == ',')
+                                ++fileTypesCount;
+                        }
+
+                        const char** const fileTypesArray = new const char*[fileTypesCount+1U];
+                        memset(fileTypesArray, 0, sizeof(const char*)*(fileTypesCount+1U));
+
+                        // assign data, reusing fileTypes string pointer
+                        fileTypesCount = 0;
+                        fileTypesArray[0] = fileTypes;
+
+                        for (size_t i=0; i<fileTypesLen; ++i)
+                        {
+                            if (fileTypes[i] == ',')
+                            {
+                                fileTypes[i] = '\0';
+                                fileTypesArray[++fileTypesCount] = &fileTypes[i+1];
+                            }
+                        }
+
+                        param.fileTypes = fileTypesArray;
+                    }
+
+                    lilv_node_free(fileTypesNode);
+                }
+
+                if (LilvNode* const supportedExtensionsNode = lilv_world_get(W, patch, ns.mod_supportedExtensions, nullptr))
+                {
+                    if (char* const supportedExtensions = strdup(lilv_node_as_string(supportedExtensionsNode)))
+                    {
+                        const size_t supportedExtensionsLen = strlen(supportedExtensions);
+                        uint supportedExtensionsCount = 1;
+
+                        // count number of items
+                        for (size_t i=0; i<supportedExtensionsLen; ++i)
+                        {
+                            if (supportedExtensions[i] == ',')
+                                ++supportedExtensionsCount;
+                        }
+
+                        const char** const supportedExtensionsArray = new const char*[supportedExtensionsCount+1U];
+                        memset(supportedExtensionsArray, 0, sizeof(const char*)*(supportedExtensionsCount+1U));
+
+                        // assign data, reusing supportedExtensions string pointer
+                        supportedExtensionsCount = 0;
+                        supportedExtensionsArray[0] = supportedExtensions;
+
+                        for (size_t i=0; i<supportedExtensionsLen; ++i)
+                        {
+                            if (supportedExtensions[i] == ',')
+                            {
+                                supportedExtensions[i] = '\0';
+                                supportedExtensionsArray[++supportedExtensionsCount] = &supportedExtensions[i+1];
+                            }
+                        }
+
+                        param.supportedExtensions = supportedExtensionsArray;
+                    }
+
+                    lilv_node_free(supportedExtensionsNode);
+                }
+
                 lilv_node_free(labelNode);
                 lilv_node_free(rangeNode);
                 lilv_node_free(typeNode);
@@ -2841,6 +2919,16 @@ static void _clear_plugin_info(PluginInfo& info)
             free((void*)info.parameters[i].uri);
             free((void*)info.parameters[i].label);
             free((void*)info.parameters[i].type);
+            if (info.parameters[i].fileTypes != nullptr)
+            {
+                free((void*)info.parameters[i].fileTypes[0]);
+                delete[] info.parameters[i].fileTypes;
+            }
+            if (info.parameters[i].supportedExtensions != nullptr)
+            {
+                free((void*)info.parameters[i].supportedExtensions[0]);
+                delete[] info.parameters[i].supportedExtensions;
+            }
         }
         delete[] info.parameters;
     }

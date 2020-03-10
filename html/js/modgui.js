@@ -165,14 +165,18 @@ function loadDependencies(gui, effect, dummy, callback) { //source, effect, bund
         for (var i in effect.parameters) {
             var parameter = effect.parameters[i]
 
-            // TODO pass wanted file-type as argument
             if (parameter.type === "http://lv2plug.in/ns/ext/atom#Path") {
                 filelistLoaded = false
                 $.ajax({
                     url: '/files/list',
-                    data: {
-                        'type': 'ir',
-                    },
+                    contentType: 'application/json',
+                    method: 'POST',
+                    data: JSON.stringify(
+                        // FIXME IR as fallback for now
+                        parameter.fileTypes.length !== 0
+                        ? { 'types': parameter.fileTypes }
+                        : { 'type': 'ir' }
+                    ),
                     success: function (data) {
                         parameter.files = data.files
                         filelistLoaded = true
@@ -183,7 +187,7 @@ function loadDependencies(gui, effect, dummy, callback) { //source, effect, bund
                         cb()
                     },
                     cache: false,
-                    dataType: 'json'
+                    dataType: 'json',
                 })
             }
         }

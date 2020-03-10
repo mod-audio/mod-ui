@@ -115,6 +115,8 @@ typedef struct {
     const char* uri;
     const char* label;
     const char* type;
+    const char* const* fileTypes;
+    const char* const* supportedExtensions;
     // TODO see what else is needed
 } PluginParameter;
 
