@@ -139,6 +139,7 @@ typedef struct {
     PluginGUI gui;
     PluginPorts ports;
     const PluginPreset* presets;
+    const char* buildEnvironment;
 } PluginInfo;
 
 typedef struct {
