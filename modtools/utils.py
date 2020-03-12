@@ -257,6 +257,7 @@ class PluginInfo(Structure):
         ("gui", PluginGUI),
         ("ports", PluginPorts),
         ("presets", POINTER(PluginPreset)),
+        ("buildEnvironment", c_char_p),
     ]
 
 # a subset of PluginInfo

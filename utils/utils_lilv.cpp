@@ -125,7 +125,7 @@ static const bool kAllowRegularCV = getenv("MOD_UI_ALLOW_REGULAR_CV") != nullptr
         { nullptr, nullptr },                        \
         { nullptr, nullptr }                         \
     },                                               \
-    nullptr                                          \
+    nullptr, nullptr                                 \
 }
 
 // Blacklisted plugins, which don't work properly on MOD for various reasons
@@ -271,6 +271,7 @@ struct NamespaceDefinitions {
     LilvNode* const units_render;
     LilvNode* const units_symbol;
     LilvNode* const units_unit;
+    LilvNode* const mod_build_environment;
 
     NamespaceDefinitions()
         : doap_license             (lilv_new_uri(W, LILV_NS_DOAP   "license"           )),
@@ -323,7 +324,8 @@ struct NamespaceDefinitions {
           pset_Preset              (lilv_new_uri(W, LV2_PRESETS__Preset                )),
           units_render             (lilv_new_uri(W, LV2_UNITS__render                  )),
           units_symbol             (lilv_new_uri(W, LV2_UNITS__symbol                  )),
-          units_unit               (lilv_new_uri(W, LV2_UNITS__unit                    )) {}
+          units_unit               (lilv_new_uri(W, LV2_UNITS__unit                    )),
+          mod_build_environment    (lilv_new_uri(W, LILV_NS_MOD "buildEnvironment"     )) {}
 
     ~NamespaceDefinitions()
     {
@@ -378,6 +380,7 @@ struct NamespaceDefinitions {
         lilv_node_free(units_render);
         lilv_node_free(units_symbol);
         lilv_node_free(units_unit);
+        lilv_node_free(mod_build_environment);
     }
 };
 
@@ -450,6 +453,8 @@ static const char* const kStabilityTesting = "testing";
 static const char* const kStabilityUnstable = "unstable";
 
 static const char* const kUntitled = "Untitled";
+
+static const char* const kLocalBuild = "local";
 
 // label, render, symbol
 static const char* const kUnit_s[] = { "seconds", "%f s", "s" };
@@ -1345,6 +1350,12 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
     {
         info.builder = lilv_node_as_int(lilv_nodes_get_first(buildernode));
         lilv_nodes_free(buildernode);
+    }
+
+    if (LilvNodes* const buildEnvironmentnode = lilv_plugin_get_value(p, ns.mod_build_environment))
+    {
+        info.buildEnvironment = lilv_node_as_string(lilv_nodes_get_first(buildEnvironmentnode));
+        lilv_nodes_free(buildEnvironmentnode);
     }
 
     {
