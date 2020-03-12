@@ -302,6 +302,9 @@ JqueryClass('cloudPluginBox', {
                         cplugin.status = 'outdated'
                     }
 
+                    // overwrite build environment if local plugin
+                    cplugin.buildEnvironment = lplugin.buildEnvironment
+
                     self.cloudPluginBox('checkLocalScreenshot', cplugin)
                 } else {
                     cplugin.installedVersion = null // if set to [0, 0, 0, 0], it appears as intalled on cloudplugininfo
@@ -314,6 +317,7 @@ JqueryClass('cloudPluginBox', {
                         cplugin.thumbnail_href  = "/resources/pedals/default-thumbnail.png"
                     }
                 }
+
                 self.cloudPluginBox('synchronizePluginData', cplugin)
                 plugins.push(cplugin)
             }
@@ -438,6 +442,7 @@ JqueryClass('cloudPluginBox', {
                     var i, plugin, allplugins = {}
                     for (i in plugins) {
                         plugin = plugins[i]
+
                         plugin.installedVersion = [plugin.builder, plugin.minorVersion, plugin.microVersion, plugin.release]
                         allplugins[plugin.uri] = plugin
                     }
@@ -599,7 +604,6 @@ JqueryClass('cloudPluginBox', {
     showPlugins: function (plugins, cloudReached) {
         var self = $(this)
         self.cloudPluginBox('cleanResults')
-
         var featured = plugins.filter(function(p) {
             return p.featured;
         })
@@ -751,8 +755,9 @@ JqueryClass('cloudPluginBox', {
             demo: !!plugin.demo,
             price: plugin.price,
             licensed: plugin.licensed,
-			featured: plugin.featured,
-            coming: plugin.coming
+            featured: plugin.featured,
+            coming: plugin.coming,
+			      buildEnvironment: plugin.buildEnvironment
         }
 
         var template = featured ? TEMPLATES.featuredplugin : TEMPLATES.cloudplugin

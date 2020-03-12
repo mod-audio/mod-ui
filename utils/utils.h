@@ -161,6 +161,7 @@ typedef struct {
     int builder;
     int licensed;
     PluginGUI_Mini gui;
+    const char* buildEnvironment;
     bool needsDealloc;
 } PluginInfo_Mini;
 

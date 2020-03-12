@@ -101,6 +101,7 @@ static const bool kAllowRegularCV = getenv("MOD_UI_ALLOW_REGULAR_CV") != nullptr
     nullptr, nullptr, nullptr, nullptr, nullptr, \
     nullptr, 0, 0, 0, 0, 0,                      \
     { nullptr, nullptr, nullptr },               \
+    nullptr,                                     \
     false                                        \
 }
 
@@ -180,6 +181,7 @@ struct NamespaceDefinitions_Mini {
     LilvNode* const mod_label;
     LilvNode* const mod_release;
     LilvNode* const mod_builder;
+    LilvNode* const mod_buildEnvironment;
     LilvNode* const modlicense_interface;
     LilvNode* const modgui_gui;
     LilvNode* const modgui_resourcesDirectory;
@@ -195,6 +197,7 @@ struct NamespaceDefinitions_Mini {
           mod_label                (lilv_new_uri(W, LILV_NS_MOD    "label"             )),
           mod_release              (lilv_new_uri(W, LILV_NS_MOD    "releaseNumber"     )),
           mod_builder              (lilv_new_uri(W, LILV_NS_MOD    "builderVersion"    )),
+          mod_buildEnvironment     (lilv_new_uri(W, LILV_NS_MOD    "buildEnvironment"  )),
           modlicense_interface     (lilv_new_uri(W, MOD_LICENSE__interface             )),
           modgui_gui               (lilv_new_uri(W, LILV_NS_MODGUI "gui"               )),
           modgui_resourcesDirectory(lilv_new_uri(W, LILV_NS_MODGUI "resourcesDirectory")),
@@ -211,6 +214,7 @@ struct NamespaceDefinitions_Mini {
         lilv_node_free(mod_label);
         lilv_node_free(mod_release);
         lilv_node_free(mod_builder);
+        lilv_node_free(mod_buildEnvironment);
         lilv_node_free(modlicense_interface);
         lilv_node_free(modgui_gui);
         lilv_node_free(modgui_resourcesDirectory);
@@ -1144,6 +1148,16 @@ const PluginInfo_Mini& _get_plugin_info_mini(const LilvPlugin* const p, const Na
     {
         info.builder = lilv_node_as_int(lilv_nodes_get_first(buildernode));
         lilv_nodes_free(buildernode);
+    }
+
+    if (LilvNodes* const buildEnvironmentnode = lilv_plugin_get_value(p, ns.mod_buildEnvironment))
+    {
+        info.buildEnvironment = strdup(lilv_node_as_string(lilv_nodes_get_first(buildEnvironmentnode)));
+        lilv_nodes_free(buildEnvironmentnode);
+    }
+    else
+    {
+        info.buildEnvironment = nc;
     }
 
     // --------------------------------------------------------------------------------------------------------
@@ -2717,6 +2731,8 @@ static void _clear_plugin_info_mini(PluginInfo_Mini& info)
             free((void*)info.gui.screenshot);
         if (info.gui.thumbnail != nc)
             free((void*)info.gui.thumbnail);
+        if (info.buildEnvironment != nc)
+            free((void*)info.buildEnvironment);
     }
 
     memset(&info, 0, sizeof(PluginInfo_Mini));
