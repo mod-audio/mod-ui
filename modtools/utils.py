@@ -282,6 +282,7 @@ class PluginInfo_Mini(Structure):
         ("builder", c_int),
         ("licensed", c_int),
         ("gui", PluginGUI_Mini),
+        ("buildEnvironment", c_char_p),
     ]
 
 class PluginInfo_Controls(Structure):

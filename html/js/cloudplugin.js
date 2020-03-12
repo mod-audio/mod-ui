@@ -250,6 +250,9 @@ JqueryClass('cloudPluginBox', {
                         cplugin.status = 'outdated'
                     }
 
+                    // overwrite build environment if local plugin
+                    cplugin.buildEnvironment = lplugin.buildEnvironment
+
                     self.cloudPluginBox('checkLocalScreenshot', cplugin)
 
                 } else {
@@ -263,7 +266,6 @@ JqueryClass('cloudPluginBox', {
                         cplugin.thumbnail_href  = "/resources/pedals/default-thumbnail.png"
                     }
                 }
-
                 plugins.push(cplugin)
             }
 
@@ -354,6 +356,7 @@ JqueryClass('cloudPluginBox', {
                     var i, plugin, allplugins = {}
                     for (i in plugins) {
                         plugin = plugins[i]
+
                         plugin.installedVersion = [plugin.builder, plugin.minorVersion, plugin.microVersion, plugin.release]
                         allplugins[plugin.uri] = plugin
                     }
@@ -503,7 +506,6 @@ JqueryClass('cloudPluginBox', {
     showPlugins: function (plugins, cloudReached) {
         var self = $(this)
         self.cloudPluginBox('cleanResults')
-
         var featured = plugins.filter(function(p) {
             return p.featured;
         })
@@ -651,7 +653,8 @@ JqueryClass('cloudPluginBox', {
             label : plugin.label,
             stable: !!(plugin.stable || !cloudReached),
             demo: !!plugin.demo, // FIXME
-			featured: plugin.featured
+            featured: plugin.featured,
+			      buildEnvironment: plugin.buildEnvironment
         }
 
         var template = featured ? TEMPLATES.featuredplugin : TEMPLATES.cloudplugin

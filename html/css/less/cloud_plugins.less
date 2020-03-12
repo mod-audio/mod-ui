@@ -473,11 +473,31 @@
       content: "new version";
     }
   }
-  .status.unstable {
+  .status.buildEnvironment {
     border: 1px solid #FF2927;
     background-color: #FF2927;
+
     &:after {
-      content: "beta";
+      content: "local";
+    }
+
+    &.labs {
+      &:after {
+        content: "labs";
+      }
+    }
+
+    &.dev {
+      &:after {
+        content: "dev";
+      }
+    }
+
+    &.prod {
+      display: none;
+      &:after {
+        content: "";
+      }
     }
   }
   .status.demo {
