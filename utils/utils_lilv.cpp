@@ -246,6 +246,7 @@ struct NamespaceDefinitions {
     LilvNode* const mod_rangeSteps;
     LilvNode* const mod_release;
     LilvNode* const mod_builder;
+    LilvNode* const mod_buildEnvironment;
     LilvNode* const modlicense_interface;
     LilvNode* const modgui_gui;
     LilvNode* const modgui_resourcesDirectory;
@@ -271,7 +272,6 @@ struct NamespaceDefinitions {
     LilvNode* const units_render;
     LilvNode* const units_symbol;
     LilvNode* const units_unit;
-    LilvNode* const mod_build_environment;
 
     NamespaceDefinitions()
         : doap_license             (lilv_new_uri(W, LILV_NS_DOAP   "license"           )),
@@ -300,6 +300,7 @@ struct NamespaceDefinitions {
           mod_rangeSteps           (lilv_new_uri(W, LILV_NS_MOD    "rangeSteps"        )),
           mod_release              (lilv_new_uri(W, LILV_NS_MOD    "releaseNumber"     )),
           mod_builder              (lilv_new_uri(W, LILV_NS_MOD    "builderVersion"    )),
+          mod_buildEnvironment     (lilv_new_uri(W, LILV_NS_MOD    "buildEnvironment"  )),
           modlicense_interface     (lilv_new_uri(W, MOD_LICENSE__interface             )),
           modgui_gui               (lilv_new_uri(W, LILV_NS_MODGUI "gui"               )),
           modgui_resourcesDirectory(lilv_new_uri(W, LILV_NS_MODGUI "resourcesDirectory")),
@@ -324,8 +325,7 @@ struct NamespaceDefinitions {
           pset_Preset              (lilv_new_uri(W, LV2_PRESETS__Preset                )),
           units_render             (lilv_new_uri(W, LV2_UNITS__render                  )),
           units_symbol             (lilv_new_uri(W, LV2_UNITS__symbol                  )),
-          units_unit               (lilv_new_uri(W, LV2_UNITS__unit                    )),
-          mod_build_environment    (lilv_new_uri(W, LILV_NS_MOD "buildEnvironment"     )) {}
+          units_unit               (lilv_new_uri(W, LV2_UNITS__unit                    )) {}
 
     ~NamespaceDefinitions()
     {
@@ -355,6 +355,7 @@ struct NamespaceDefinitions {
         lilv_node_free(mod_rangeSteps);
         lilv_node_free(mod_release);
         lilv_node_free(mod_builder);
+        lilv_node_free(mod_buildEnvironment);
         lilv_node_free(modlicense_interface);
         lilv_node_free(modgui_gui);
         lilv_node_free(modgui_resourcesDirectory);
@@ -380,7 +381,6 @@ struct NamespaceDefinitions {
         lilv_node_free(units_render);
         lilv_node_free(units_symbol);
         lilv_node_free(units_unit);
-        lilv_node_free(mod_build_environment);
     }
 };
 
@@ -453,8 +453,6 @@ static const char* const kStabilityTesting = "testing";
 static const char* const kStabilityUnstable = "unstable";
 
 static const char* const kUntitled = "Untitled";
-
-static const char* const kLocalBuild = "local";
 
 // label, render, symbol
 static const char* const kUnit_s[] = { "seconds", "%f s", "s" };
@@ -1352,10 +1350,14 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
         lilv_nodes_free(buildernode);
     }
 
-    if (LilvNodes* const buildEnvironmentnode = lilv_plugin_get_value(p, ns.mod_build_environment))
+    if (LilvNodes* const buildEnvironmentnode = lilv_plugin_get_value(p, ns.mod_buildEnvironment))
     {
-        info.buildEnvironment = lilv_node_as_string(lilv_nodes_get_first(buildEnvironmentnode));
+        info.buildEnvironment = strdup(lilv_node_as_string(lilv_nodes_get_first(buildEnvironmentnode)));
         lilv_nodes_free(buildEnvironmentnode);
+    }
+    else
+    {
+        info.buildEnvironment = nc;
     }
 
     {
@@ -2609,6 +2611,8 @@ static void _clear_plugin_info(PluginInfo& info)
         free((void*)info.gui.color);
     if (info.gui.knob != nc)
         free((void*)info.gui.knob);
+    if (info.buildEnvironment != nc)
+        free((void*)info.buildEnvironment);
 
     if (info.gui.ports != nullptr)
     {
