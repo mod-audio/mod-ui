@@ -802,20 +802,29 @@ class Addressings(object):
 
         self._task_addressing(actuator_type, actuator_hw, addressing_data, callback, send_hmi=send_hmi)
 
+    def load_current_with_callback(self, actuator_uris, skippedPort, updateValue, from_hmi, abort_catcher, callback):
+        self.load_current(actuator_uris, skippedPort, updateValue, from_hmi, abort_catcher, callback)
+
     @gen.coroutine
-    def load_current(self, actuator_uris, skippedPort, updateValue, abort_catcher):
+    def load_current(self, actuator_uris, skippedPort, updateValue, from_hmi, abort_catcher, callback=None):
         for actuator_uri in actuator_uris:
             if abort_catcher.get('abort', False):
+                if callback is not None:
+                    callback(False)
                 print("WARNING: Abort triggered during load_current request, caller:", abort_catcher['caller'])
                 return
 
             actuator_type = self.get_actuator_type(actuator_uri)
 
             if actuator_type == Addressings.ADDRESSING_TYPE_HMI:
-                try:
-                    yield gen.Task(self.hmi_load_current, actuator_uri, skippedPort=skippedPort, updateValue=updateValue)
-                except Exception as e:
-                    logging.exception(e)
+                # if the request comes from HMI, we cannot wait for HMI stuff, as otherwise we stall
+                if from_hmi:
+                    self.hmi_load_current(actuator_uri, None, skippedPort, updateValue)
+                else:
+                    try:
+                        yield gen.Task(self.hmi_load_current, actuator_uri, skippedPort=skippedPort, updateValue=updateValue)
+                    except Exception as e:
+                        logging.exception(e)
 
             elif actuator_type == Addressings.ADDRESSING_TYPE_CC:
                 # FIXME: we need a way to change CC value, without re-addressing
@@ -841,6 +850,9 @@ class Addressings(object):
                         yield gen.Task(self._task_addressing, self.ADDRESSING_TYPE_CC, actuator_cc, data)
                     except Exception as e:
                         logging.exception(e)
+
+        if callback is not None:
+            callback(True)
 
     def remove_hmi(self, addressing_data, actuator_uri):
         addressings       = self.hmi_addressings[actuator_uri]

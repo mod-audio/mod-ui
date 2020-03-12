@@ -1060,7 +1060,7 @@ class Host(object):
 
         actuators = [actuator['uri'] for actuator in self.descriptor.get('actuators', [])]
         self.addressings.current_page = 0
-        self.addressings.load_current(actuators, (None, None), False, abort_catcher)
+        self.addressings.load_current(actuators, (None, None), False, True, abort_catcher)
 
     def reconnect_jack(self):
         if not self.init_jack():
@@ -1234,7 +1234,7 @@ class Host(object):
                             value = int(pluginData['mapPresets'][value].replace("file:///",""))
                             yield gen.Task(self.snapshot_load_gen_helper, value, False, abort_catcher)
                         else:
-                            yield gen.Task(self.preset_load, instance, pluginData['mapPresets'][value], abort_catcher)
+                            yield gen.Task(self.preset_load_gen_helper, instance, pluginData['mapPresets'][value], False, abort_catcher)
                     except Exception as e:
                         logging.exception(e)
 
@@ -2143,80 +2143,98 @@ class Host(object):
     # -----------------------------------------------------------------------------------------------------------------
     # Host stuff - plugin presets
 
-    def preset_load(self, instance, uri, abort_catcher, callback):
+    # helper function for gen.Task, which has troubles calling into a coroutine directly
+    def preset_load_gen_helper(self, instance, uri, from_hmi, abort_catcher, callback):
+        self.preset_load(instance, uri, from_hmi, abort_catcher, callback)
+
+    @gen.coroutine
+    def preset_load(self, instance, uri, from_hmi, abort_catcher, callback):
         instance_id = self.mapper.get_id_without_creating(instance)
         current_pedal = self.pedalboard_path
         pluginData = self.plugins[instance_id]
         pluginData['nextPreset'] = uri
 
-        def preset_callback(state):
-            if not state:
-                callback(False)
-                return
-            if self.pedalboard_path != current_pedal:
-                print("WARNING: Pedalboard changed during preset_show request")
-                callback(False)
-                return
-            if pluginData['nextPreset'] != uri:
-                print("WARNING: Preset changed during preset_load request")
-                callback(False)
-                return
-            if abort_catcher.get('abort', False):
-                print("WARNING: Abort triggered during preset_load request, caller:", abort_catcher['caller'])
-                callback(False)
-                return
+        try:
+            ok = yield gen.Task(self.send_modified, "preset_load %d %s" % (instance_id, uri), datatype='boolean')
+        except Exception as e:
+            callback(False)
+            logging.exception(e)
+            return
 
-            pluginData['preset'] = uri
-            self.msg_callback("preset %s %s" % (instance, uri))
+        if not ok:
+            callback(False)
+            return
+        if self.pedalboard_path != current_pedal:
+            print("WARNING: Pedalboard changed during preset_load request")
+            callback(False)
+            return
+        if pluginData['nextPreset'] != uri:
+            print("WARNING: Preset changed during preset_load request")
+            callback(False)
+            return
+        if abort_catcher.get('abort', False):
+            print("WARNING: Abort triggered during preset_load request, caller:", abort_catcher['caller'])
+            callback(False)
+            return
 
-            used_actuators = []
+        try:
+            state = yield gen.Task(self.send_notmodified, "preset_show %s" % uri, datatype='string')
+        except Exception as e:
+            callback(False)
+            logging.exception(e)
+            return
 
-            for symbol, value in get_state_port_values(state).items():
-                if symbol in pluginData['designations'] or pluginData['ports'].get(symbol, None) in (value, None):
-                    continue
+        if not state:
+            callback(False)
+            return
+        if self.pedalboard_path != current_pedal:
+            print("WARNING: Pedalboard changed during preset_show request")
+            callback(False)
+            return
+        if pluginData['nextPreset'] != uri:
+            print("WARNING: Preset changed during preset_load request")
+            callback(False)
+            return
+        if abort_catcher.get('abort', False):
+            print("WARNING: Abort triggered during preset_load request, caller:", abort_catcher['caller'])
+            callback(False)
+            return
 
-                minimum, maximum = pluginData['ranges'][symbol]
-                if value < minimum:
-                    print("ERROR: preset_load with value below minimum: symbol '%s', value %f" % (symbol, value))
-                    value = minimum
-                elif value > maximum:
-                    print("ERROR: preset_load with value above maximum: symbol '%s', value %f" % (symbol, value))
-                    value = maximum
+        pluginData['preset'] = uri
+        self.msg_callback("preset %s %s" % (instance, uri))
 
-                pluginData['ports'][symbol] = value
+        used_actuators = []
 
-                self.msg_callback("param_set %s %s %f" % (instance, symbol, value))
+        for symbol, value in get_state_port_values(state).items():
+            if symbol in pluginData['designations'] or pluginData['ports'].get(symbol, None) in (value, None):
+                continue
 
-                addressing = pluginData['addressings'].get(symbol, None)
-                if addressing is not None:
-                    addressing['value'] = value
-                    if addressing['actuator_uri'] not in used_actuators:
-                        used_actuators.append(addressing['actuator_uri'])
+            minimum, maximum = pluginData['ranges'][symbol]
+            if value < minimum:
+                print("ERROR: preset_load with value below minimum: symbol '%s', value %f" % (symbol, value))
+                value = minimum
+            elif value > maximum:
+                print("ERROR: preset_load with value above maximum: symbol '%s', value %f" % (symbol, value))
+                value = maximum
 
-            self.addressings.load_current(used_actuators, (instance_id, ":presets"), True, abort_catcher)
+            pluginData['ports'][symbol] = value
 
-            # callback must be last action
-            callback(True)
+            self.msg_callback("param_set %s %s %f" % (instance, symbol, value))
 
-        def host_callback(ok):
-            if not ok:
-                callback(False)
-                return
-            if self.pedalboard_path != current_pedal:
-                print("WARNING: Pedalboard changed during preset_load request")
-                callback(False)
-                return
-            if pluginData['nextPreset'] != uri:
-                print("WARNING: Preset changed during preset_load request")
-                callback(False)
-                return
-            if abort_catcher.get('abort', False):
-                print("WARNING: Abort triggered during preset_load request, caller:", abort_catcher['caller'])
-                callback(False)
-                return
-            self.send_notmodified("preset_show %s" % uri, preset_callback, datatype='string')
+            addressing = pluginData['addressings'].get(symbol, None)
+            if addressing is not None:
+                addressing['value'] = value
+                if addressing['actuator_uri'] not in used_actuators:
+                    used_actuators.append(addressing['actuator_uri'])
 
-        self.send_modified("preset_load %d %s" % (instance_id, uri), host_callback, datatype='boolean')
+        try:
+            yield gen.Task(self.addressings.load_current_with_callback, used_actuators, (instance_id, ":presets"), True, from_hmi, abort_catcher)
+        except Exception as e:
+            callback(False)
+            logging.exception(e)
+            return
+
+        callback(True)
 
     def preset_save_new(self, instance, name, callback):
         instance_id  = self.mapper.get_id_without_creating(instance)
@@ -2476,7 +2494,7 @@ class Host(object):
             if data['preset'] and data['preset'] != pluginData['preset']:
                 self.msg_callback("preset %s %s" % (instance, data['preset']))
                 try:
-                    yield gen.Task(self.preset_load, instance, data['preset'], abort_catcher)
+                    yield gen.Task(self.preset_load_gen_helper, instance, data['preset'], from_hmi, abort_catcher)
                 except Exception as e:
                     logging.exception(e)
 
@@ -2518,7 +2536,8 @@ class Host(object):
             skippedPort = (None, None)
         else:
             skippedPort = (PEDALBOARD_INSTANCE_ID, ":presets")
-        self.addressings.load_current(used_actuators, skippedPort, True, abort_catcher)
+
+        self.addressings.load_current(used_actuators, skippedPort, True, from_hmi, abort_catcher)
 
         if not is_hmi_snapshot:
             # TODO: change to pedal_snapshot?
@@ -4542,7 +4561,7 @@ _:b%i
                     logging.exception(e)
             else:
                 try:
-                    self.preset_load(instance, pluginData['mapPresets'][value], abort_catcher, cb)
+                    self.preset_load(instance, pluginData['mapPresets'][value], True, abort_catcher, cb)
                 except Exception as e:
                     callback(False)
                     logging.exception(e)
@@ -4673,7 +4692,7 @@ _:b%i
         callback(True)
 
     def hmi_next_control_page(self, hw_id, props, callback):
-        logging.error("hmi next control page %d %d", hw_id, props)
+        logging.debug("hmi next control page %d %d", hw_id, props)
         try:
             self.hmi_next_control_page_real(hw_id, props, callback)
         except Exception as e:
@@ -4870,7 +4889,8 @@ _:b%i
                     logging.exception(e)
 
         self.pedalboard_modified = False
-        self.addressings.load_current(used_actuators, (None, None), False, abort_catcher)
+        self.addressings.load_current(used_actuators, (None, None), False, True, abort_catcher)
+
         callback(True)
 
     def hmi_tuner(self, status, callback):
