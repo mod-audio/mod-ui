@@ -2023,7 +2023,7 @@ class Host(object):
             addressing    = pluginData['addressings'].pop(symbol)
             actuator_uri  = addressing['actuator_uri']
             actuator_type = self.addressings.get_actuator_type(actuator_uri)
-            was_active = self.addressings.remove(addressing)
+            was_active    = self.addressings.remove(addressing)
             if actuator_type == Addressings.ADDRESSING_TYPE_HMI:
                 if actuator_uri not in used_hmi_actuators and was_active:
                     group_actuators = self.addressings.get_group_actuators(actuator_uri)
@@ -2042,45 +2042,43 @@ class Host(object):
                     logging.exception(e)
 
         # Send new available pages to hmi if needed
+        send_hmi_available_pages = False
         if self.addressings.pages_cb:
-            send_hmi_available_pages = False
             for page in range(self.addressings.pages_nb):
                 send_hmi_available_pages |= self.check_available_pages(page)
+
+        # Send everything that HMI needs
+        if self.hmi.initialized:
             if send_hmi_available_pages:
                 try:
                     yield gen.Task(self.addr_task_set_available_pages, self.addressings.available_pages)
                 except Exception as e:
                     logging.exception(e)
 
-        def host_callback(ok):
-            removed_connections = []
-            for ports in self.connections:
-                if ports[0].rsplit("/",1)[0] == instance or ports[1].rsplit("/",1)[0] == instance:
-                    removed_connections.append(ports)
-            for ports in removed_connections:
-                self.connections.remove(ports)
-                self.msg_callback("disconnect %s %s" % (ports[0], ports[1]))
+            if len(used_hw_ids) > 0:
+                try:
+                    yield gen.Task(self.hmi.control_rm, used_hw_ids)
+                except Exception as e:
+                    logging.exception(e)
 
-            self.msg_callback("remove %s" % (instance))
-            callback(ok)
-
-        def hmi_callback(_):
-            self.send_modified("remove %d" % instance_id, host_callback, datatype='boolean')
-
-        @gen.coroutine
-        def hmi_control_rm_callback(_):
             for actuator_uri in used_hmi_actuators:
                 try:
                     yield gen.Task(self.addressings.hmi_load_current, actuator_uri)
                 except Exception as e:
                     logging.exception(e)
-            hmi_callback(True)
 
-        if self.hmi.initialized and len(used_hw_ids) > 0:
-            # Remove active addressed port from HMI
-            self.hmi.control_rm(used_hw_ids, hmi_control_rm_callback)
-        else:
-            hmi_callback(True)
+        ok = yield gen.Task(self.send_modified, "remove %d" % instance_id, datatype='boolean')
+
+        removed_connections = []
+        for ports in self.connections:
+            if ports[0].rsplit("/",1)[0] == instance or ports[1].rsplit("/",1)[0] == instance:
+                removed_connections.append(ports)
+        for ports in removed_connections:
+            self.connections.remove(ports)
+            self.msg_callback("disconnect %s %s" % (ports[0], ports[1]))
+
+        self.msg_callback("remove %s" % (instance))
+        callback(ok)
 
     # -----------------------------------------------------------------------------------------------------------------
     # Host stuff - plugin values
