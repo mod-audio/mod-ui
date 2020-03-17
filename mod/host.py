@@ -4204,25 +4204,26 @@ _:b%i
             callback(False)
             return
 
+        # Unadress everything that was assigned to this plugin cv port
+        addressings = self.addressings.cv_addressings[uri]
+        numLeftToUnaddress = len(addressings['addrs'])
+
         def remove_callback(ok):
             if ok:
                 del self.addressings.cv_addressings[uri]
+            numLeftToUnaddress -= 1
+            if numLeftToUnaddress == 0:
                 callback(True)
-            else:
-                callback(False)
-                return
 
-        # Unadress everything that was assigned to this plugin cv port
-        addressings = self.addressings.cv_addressings[uri]
-
-        if len(addressings['addrs']) == 0:
+        if numLeftToUnaddress == 0:
             remove_callback(True)
+            return
 
         for addressing in addressings['addrs']:
             try:
                 instance_id = addressing['instance_id']
-                instance = self.mapper.get_instance(instance_id)
-                port = addressing['port']
+                port        = addressing['port']
+                instance    = self.mapper.get_instance(instance_id)
                 self.address(instance, port, kNullAddressURI, "---", 0.0, 0.0, 0.0, 0, {}, remove_callback)
             except Exception as e:
                 callback(False)
