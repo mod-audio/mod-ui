@@ -207,7 +207,7 @@ JqueryClass('cloudPluginBox', {
         if (self.find('input:radio[name=plugins-source]:checked').val() === 'official') {
             query.stable = "true"
         } else {
-          url = CLOUD_LABS_URL
+            url = CLOUD_LABS_URL
         }
 
         if (self.find('input:checkbox[name=installed]:checked').length)
@@ -230,8 +230,15 @@ JqueryClass('cloudPluginBox', {
                 cplugin = results.cloud[i]
                 lplugin = results.local[cplugin.uri]
 
-                if (results.featured)
+                if (results.featured) {
                     cplugin.featured = results.featured.filter(function (ft) { return ft.uri === cplugin.uri })[0]
+                }
+
+                // NOTE backwards compatibility, to be removed once cloud updates itself and rebuilds all plugins
+                if (cplugin.buildEnvironment === undefined) {
+                    cplugin.buildEnvironment = url === CLOUD_LABS_URL ? "labs" : "prod"
+                }
+
                 cplugin.latestVersion = [cplugin.builder_version || 0, cplugin.minorVersion, cplugin.microVersion, cplugin.release_number]
 
                 if (lplugin) {
