@@ -204,9 +204,7 @@ JqueryClass('cloudPluginBox', {
         // hide/show featured plugins if searching/not searching
         self.cloudPluginBox('toggleFeaturedPlugins')
         var url = SITEURL
-        if (self.find('input:radio[name=plugins-source]:checked').val() === 'official') {
-            query.stable = "true"
-        } else {
+        if (self.find('input:radio[name=plugins-source]:checked').val() === 'labs') {
             url = CLOUD_LABS_URL
         }
 
@@ -275,14 +273,13 @@ JqueryClass('cloudPluginBox', {
                 plugins.push(cplugin)
             }
 
-            if (! self.find('#cloud-plugins-source').is(':visible') || ! query.stable) {
-                for (var uri in results.local) {
-                    lplugin = results.local[uri]
-                    lplugin.status = 'installed'
-                    lplugin.latestVersion = null
-                    self.cloudPluginBox('checkLocalScreenshot', lplugin)
-                    plugins.push(lplugin)
-                }
+            // for all the other plugins that are not in the cloud
+            for (var uri in results.local) {
+                lplugin = results.local[uri]
+                lplugin.status = 'installed'
+                lplugin.latestVersion = null
+                self.cloudPluginBox('checkLocalScreenshot', lplugin)
+                plugins.push(lplugin)
             }
 
             if (customRenderCallback) {
