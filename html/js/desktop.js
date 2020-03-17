@@ -829,7 +829,7 @@ function Desktop(elements) {
             contentType: 'application/json',
             success: function (resp) {
                 if (!resp.data.stable && PREFERENCES['show-labs-plugins'] !== "true") {
-                    new Notification('error', 'This pedalboard contains beta plugins. To load it, you need to enable beta plugins in <a href="settings">Settings</a> -> Advanced');
+                    new Notification('error', 'This pedalboard contains one or more community maintained MOD Labs plugins. To load it, you need to enable MOD Labs plugins in <a href="settings">Settings</a> -> Advanced');
                     return;
                 }
                 self.reset(function () {
