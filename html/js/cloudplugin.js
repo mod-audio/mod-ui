@@ -660,7 +660,7 @@ JqueryClass('cloudPluginBox', {
             stable: !!(plugin.stable || !cloudReached),
             demo: !!plugin.demo, // FIXME
             featured: plugin.featured,
-			      buildEnvironment: plugin.buildEnvironment
+            buildEnvironment: plugin.buildEnvironment
         }
 
         var template = featured ? TEMPLATES.featuredplugin : TEMPLATES.cloudplugin
