@@ -756,7 +756,7 @@ JqueryClass('cloudPluginBox', {
             licensed: plugin.licensed,
             featured: plugin.featured,
             coming: plugin.coming,
-			      buildEnvironment: plugin.buildEnvironment
+            buildEnvironment: plugin.buildEnvironment
         }
 
         var template = featured ? TEMPLATES.featuredplugin : TEMPLATES.cloudplugin
