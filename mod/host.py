@@ -138,15 +138,27 @@ def midi_port_alias_to_name(alias, withSpaces):
           .replace("/midi_capture_",space+"MIDI"+space)\
           .replace("/midi_playback_",space+"MIDI"+space)
 
-def get_all_good_pedalboards():
+def get_all_good_and_bad_pedalboards():
     allpedals  = get_all_pedalboards()
     goodpedals = []
+    badbundles = []
 
     for pb in allpedals:
-        if not pb['broken']:
+        if pb['broken']:
+            badbundles.append(pb['bundle'])
+        else:
             goodpedals.append(pb)
 
-    return goodpedals
+    if len(goodpedals) == 0:
+        goodpedals.append({
+            'broken': False,
+            "uri": "file://" + DEFAULT_PEDALBOARD,
+            "bundle": DEFAULT_PEDALBOARD,
+            "title": UNTITLED_PEDALBOARD_NAME,
+            "version": 0,
+        })
+
+    return goodpedals, badbundles
 
 # class to map between numeric ids and string instances
 class InstanceIdMapper(object):
@@ -225,12 +237,13 @@ class Host(object):
         self.mapper = InstanceIdMapper()
         self.descriptor = get_hardware_descriptor()
         self.profile = Profile(self.profile_apply, self.descriptor)
-        self.banks = list_banks()
 
         self.current_tuner_port = 1
         self.current_tuner_mute = self.prefs.get("tuner-mutes-outputs", False, bool)
 
         self.allpedalboards = None
+        self.banks = None
+
         self.bank_id = 0
         self.connections = []
         self.audioportsIn = []
@@ -843,8 +856,8 @@ class Host(object):
         self.transport_bpb     = data['bpb']
 
         # load everything
-        if self.allpedalboards is None:
-            self.allpedalboards = get_all_good_pedalboards()
+        self.allpedalboards, badbundles = get_all_good_and_bad_pedalboards()
+        self.banks = list_banks(badbundles, False)
 
         bank_id, pedalboard = get_last_bank_and_pedalboard()
 
@@ -1081,10 +1094,10 @@ class Host(object):
             callback(True)
             return
 
-        bank_id, pedalboard = get_last_bank_and_pedalboard()
+        self.allpedalboards, badbundles = get_all_good_and_bad_pedalboards()
+        self.banks = list_banks(badbundles, False)
 
-        if self.allpedalboards is None:
-            self.allpedalboards = get_all_good_pedalboards()
+        bank_id, pedalboard = get_last_bank_and_pedalboard()
 
         # report pedalboard and banks
         if pedalboard and os.path.exists(pedalboard) and bank_id > 0 and bank_id <= len(self.banks):
@@ -1155,8 +1168,8 @@ class Host(object):
         if midi_ss_prgch >= 1 and midi_ss_prgch <= 16:
             self.send_notmodified("monitor_midi_program %d 0" % (midi_ss_prgch-1))
 
-        self.banks = []
         self.allpedalboards = []
+        self.banks = []
 
         if not self.hmi.initialized:
             callback(True)
@@ -1176,8 +1189,8 @@ class Host(object):
         self.hmi.ui_con(footswitch_bank_callback)
 
     def end_session(self, callback):
-        self.banks = list_banks()
-        self.allpedalboards = get_all_good_pedalboards()
+        self.allpedalboards, badbundles = get_all_good_and_bad_pedalboards()
+        self.banks = list_banks(badbundles, False)
 
         if not self.hmi.initialized:
             callback(True)
