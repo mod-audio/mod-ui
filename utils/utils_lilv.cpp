@@ -450,6 +450,10 @@ static const char* const kCategoryMaxGenPluginMOD[] = { "MaxGen", nullptr };
 static const char* const kCategoryCamomilePluginMOD[] = { "Camomile", nullptr };
 static const char* const kCategoryControlVoltagePluginMOD[] = { "ControlVoltage", nullptr };
 
+static const char* const kBuildEnvironmentProd = "prod";
+static const char* const kBuildEnvironmentDev = "dev";
+static const char* const kBuildEnvironmentLabs = "labs";
+
 static const char* const kStabilityExperimental = "experimental";
 static const char* const kStabilityStable = "stable";
 static const char* const kStabilityTesting = "testing";
@@ -1123,19 +1127,6 @@ const PluginInfo_Mini& _get_plugin_info_mini(const LilvPlugin* const p, const Na
     }
 
     // --------------------------------------------------------------------------------------------------------
-    // build environment
-
-    if (LilvNodes* const nodes = lilv_plugin_get_value(p, ns.mod_buildEnvironment))
-    {
-        info.buildEnvironment = strdup(lilv_node_as_string(lilv_nodes_get_first(nodes)));
-        lilv_nodes_free(nodes);
-    }
-    else
-    {
-        info.buildEnvironment = nc;
-    }
-
-    // --------------------------------------------------------------------------------------------------------
     // version
 
     if (LilvNodes* const minorvers = lilv_plugin_get_value(p, ns.lv2core_minorVersion))
@@ -1160,6 +1151,34 @@ const PluginInfo_Mini& _get_plugin_info_mini(const LilvPlugin* const p, const Na
     {
         info.builder = lilv_node_as_int(lilv_nodes_get_first(buildernode));
         lilv_nodes_free(buildernode);
+    }
+
+    // --------------------------------------------------------------------------------------------------------
+    // build environment
+
+    if (LilvNodes* const nodes = lilv_plugin_get_value(p, ns.mod_buildEnvironment))
+    {
+        const char* const buildEnvironment = lilv_node_as_string(lilv_nodes_get_first(nodes));
+
+        /**/ if (strcmp(buildEnvironment, "prod") == 0)
+            info.buildEnvironment = kBuildEnvironmentProd;
+        else if (strcmp(buildEnvironment, "dev") == 0)
+            info.buildEnvironment = kBuildEnvironmentDev;
+        else if (strcmp(buildEnvironment, "labs") == 0)
+            info.buildEnvironment = kBuildEnvironmentLabs;
+        else
+            info.buildEnvironment = strdup(buildEnvironment);
+
+        lilv_nodes_free(nodes);
+    }
+    // if cloud built the plugin, but no buildEnvironment was set, switch to prod for backwards compat
+    else if (info.release >= 1 && info.builder >= 1)
+    {
+        info.buildEnvironment = kBuildEnvironmentProd;
+    }
+    else
+    {
+        info.buildEnvironment = nc;
     }
 
     // --------------------------------------------------------------------------------------------------------
@@ -1335,19 +1354,6 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
     }
 
     // --------------------------------------------------------------------------------------------------------
-    // build environment
-
-    if (LilvNodes* const nodes = lilv_plugin_get_value(p, ns.mod_buildEnvironment))
-    {
-        info.buildEnvironment = strdup(lilv_node_as_string(lilv_nodes_get_first(nodes)));
-        lilv_nodes_free(nodes);
-    }
-    else
-    {
-        info.buildEnvironment = nc;
-    }
-
-    // --------------------------------------------------------------------------------------------------------
     // category
 
     info.category = _get_plugin_categories(p, ns.rdf_type);
@@ -1396,6 +1402,34 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
     // otherwise it's stable
     else
         info.stability = kStabilityStable;
+
+    // --------------------------------------------------------------------------------------------------------
+    // build environment
+
+    if (LilvNodes* const nodes = lilv_plugin_get_value(p, ns.mod_buildEnvironment))
+    {
+        const char* const buildEnvironment = lilv_node_as_string(lilv_nodes_get_first(nodes));
+
+        /**/ if (strcmp(buildEnvironment, "prod") == 0)
+            info.buildEnvironment = kBuildEnvironmentProd;
+        else if (strcmp(buildEnvironment, "dev") == 0)
+            info.buildEnvironment = kBuildEnvironmentDev;
+        else if (strcmp(buildEnvironment, "labs") == 0)
+            info.buildEnvironment = kBuildEnvironmentLabs;
+        else
+            info.buildEnvironment = strdup(buildEnvironment);
+
+        lilv_nodes_free(nodes);
+    }
+    // if cloud built the plugin, but no buildEnvironment was set, switch to prod for backwards compat
+    else if (info.release >= 1 && info.builder >= 1)
+    {
+        info.buildEnvironment = kBuildEnvironmentProd;
+    }
+    else
+    {
+        info.buildEnvironment = nc;
+    }
 
     // --------------------------------------------------------------------------------------------------------
     // licensed
@@ -2592,7 +2626,10 @@ static void _clear_plugin_info(PluginInfo& info)
         free((void*)info.license);
     if (info.comment != nc)
         free((void*)info.comment);
-    if (info.buildEnvironment != nc)
+    if (info.buildEnvironment != nc &&
+        info.buildEnvironment != kBuildEnvironmentProd &&
+        info.buildEnvironment != kBuildEnvironmentDev &&
+        info.buildEnvironment != kBuildEnvironmentLabs)
         free((void*)info.buildEnvironment);
     if (info.version != nc)
         free((void*)info.version);
@@ -2730,7 +2767,10 @@ static void _clear_plugin_info_mini(PluginInfo_Mini& info)
             free((void*)info.name);
         if (info.comment != nc)
             free((void*)info.comment);
-        if (info.buildEnvironment != nc)
+        if (info.buildEnvironment != nc &&
+            info.buildEnvironment != kBuildEnvironmentProd &&
+            info.buildEnvironment != kBuildEnvironmentDev &&
+            info.buildEnvironment != kBuildEnvironmentLabs)
             free((void*)info.buildEnvironment);
         if (info.gui.resourcesDirectory != nc)
             free((void*)info.gui.resourcesDirectory);
