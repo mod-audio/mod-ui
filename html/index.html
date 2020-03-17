@@ -193,8 +193,8 @@ $('document').ready(function() {
     if (PREFERENCES['plugins-folded'] == "true") {
         desktop.effectBox.effectBox('toggle')
     }
-    if (PREFERENCES['show-unstable-plugins'] == "true") {
-        $("#cloud-plugins-stable").parent().show()
+    if (PREFERENCES['show-labs-plugins'] == "true") {
+        $("#cloud-plugins-source").parent().show()
     }
     desktop.pedalboardBox.pedalboardBox('initViewMode', PREFERENCES['pb-view-mode'])
 
@@ -700,10 +700,10 @@ $('document').ready(function() {
                     <label for="cloud-plugins-installed">Installed only</label>
                 </div>
                 <div class="control-group mod-hidden">
-                    <div class="switch" id="cloud-plugins-stable">
-                      <input type="radio" id="official" name="unstable" value="official" checked="checked">
+                    <div class="switch" id="cloud-plugins-source">
+                      <input type="radio" id="cloud-radio-official" name="plugins-source" value="official" checked="checked">
                       <label for="official">Official</label>
-                      <input type="radio" id="labs" name="unstable" value="labs">
+                      <input type="radio" id="cloud-radio-labs" name="plugins-source" value="labs">
                       <label for="labs">Labs</label>
                       <span class="toggle-outside">
                         <span class="toggle-inside"></span>

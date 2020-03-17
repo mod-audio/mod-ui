@@ -460,8 +460,8 @@ $('document').ready(function() {
     if (PREFERENCES['dev-mode'] == "on") {
         $("#prefs-ui-developer-mode").prop("checked", true)
     }
-    if (PREFERENCES['show-unstable-plugins'] == "true") {
-        $("#prefs-ui-unstable-plugins").prop("checked", true)
+    if (PREFERENCES['show-labs-plugins'] == "true") {
+        $("#prefs-ui-labs-plugins").prop("checked", true)
     }
 
     // ----------------------------------------------------------------------------------------------------------------
@@ -635,8 +635,8 @@ $('document').ready(function() {
         config_set("dev-mode", $(this).prop("checked") ? "on" : "off")
     })
 
-    $("#prefs-ui-unstable-plugins").click(function () {
-        config_set("show-unstable-plugins", bool2str($(this).prop("checked")))
+    $("#prefs-ui-labs-plugins").click(function () {
+        config_set("show-labs-plugins", bool2str($(this).prop("checked")))
     })
 
     // ----------------------------------------------------------------------------------------------------------------
@@ -907,7 +907,7 @@ $('document').ready(function() {
                         Show a few more options on the Web Interface, useful for developers.
                     </p>
                     <label>
-                        <input type="checkbox" autocomplete="off" id="prefs-ui-unstable-plugins">
+                        <input type="checkbox" autocomplete="off" id="prefs-ui-labs-plugins">
                             Show MOD Labs plugins in the store
                         </input>
                     </label>

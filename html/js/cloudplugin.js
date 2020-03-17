@@ -91,7 +91,7 @@ JqueryClass('cloudPluginBox', {
             self.cloudPluginBox('search')
         })
 
-        self.find('input:radio[name=unstable]').click(function (e) {
+        self.find('input:radio[name=plugins-source]').click(function (e) {
             self.cloudPluginBox('toggleFeaturedPlugins')
             self.cloudPluginBox('search')
         })
@@ -179,7 +179,7 @@ JqueryClass('cloudPluginBox', {
     toggleFeaturedPlugins: function () {
       var self  = $(this)
       var featuredPlugins = self.find('.featured-plugins')
-      var officialPlugins = self.find('input:radio[name=unstable]:checked').val() === 'official'
+      var officialPlugins = self.find('input:radio[name=plugins-source]:checked').val() === 'official'
       var queryText = self.data('searchbox').val()
       var category = self.data('category')
 
@@ -199,13 +199,12 @@ JqueryClass('cloudPluginBox', {
             text: self.data('searchbox').val(),
             summary: "true",
             image_version: VERSION,
-            stable: true,
         }
 
         // hide/show featured plugins if searching/not searching
         self.cloudPluginBox('toggleFeaturedPlugins')
         var url = SITEURL
-        if (self.find('input:radio[name=unstable]:checked').val() === 'official') {
+        if (self.find('input:radio[name=plugins-source]:checked').val() === 'official') {
             query.stable = "true"
         } else {
           url = CLOUD_LABS_URL
@@ -269,7 +268,7 @@ JqueryClass('cloudPluginBox', {
                 plugins.push(cplugin)
             }
 
-            if (! self.find('#cloud-plugins-stable').is(':visible') || ! query.stable) {
+            if (! self.find('#cloud-plugins-source').is(':visible') || ! query.stable) {
                 for (var uri in results.local) {
                     lplugin = results.local[uri]
                     lplugin.status = 'installed'
