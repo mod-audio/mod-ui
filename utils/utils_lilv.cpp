@@ -2592,6 +2592,8 @@ static void _clear_plugin_info(PluginInfo& info)
         free((void*)info.license);
     if (info.comment != nc)
         free((void*)info.comment);
+    if (info.buildEnvironment != nc)
+        free((void*)info.buildEnvironment);
     if (info.version != nc)
         free((void*)info.version);
     if (info.brand != nc)
@@ -2630,8 +2632,6 @@ static void _clear_plugin_info(PluginInfo& info)
         free((void*)info.gui.color);
     if (info.gui.knob != nc)
         free((void*)info.gui.knob);
-    if (info.buildEnvironment != nc)
-        free((void*)info.buildEnvironment);
 
     if (info.gui.ports != nullptr)
     {
@@ -2730,14 +2730,14 @@ static void _clear_plugin_info_mini(PluginInfo_Mini& info)
             free((void*)info.name);
         if (info.comment != nc)
             free((void*)info.comment);
+        if (info.buildEnvironment != nc)
+            free((void*)info.buildEnvironment);
         if (info.gui.resourcesDirectory != nc)
             free((void*)info.gui.resourcesDirectory);
         if (info.gui.screenshot != nc)
             free((void*)info.gui.screenshot);
         if (info.gui.thumbnail != nc)
             free((void*)info.gui.thumbnail);
-        if (info.buildEnvironment != nc)
-            free((void*)info.buildEnvironment);
     }
 
     memset(&info, 0, sizeof(PluginInfo_Mini));
@@ -2937,17 +2937,18 @@ static void _fill_plugin_info_mini_from_full(const PluginInfo& info2, PluginInfo
 
     if (info2.valid)
     {
-        info.uri          = info2.uri;
-        info.name         = info2.name;
-        info.brand        = info2.brand;
-        info.label        = info2.label;
-        info.comment      = info2.comment;
-        info.category     = info2.category;
-        info.microVersion = info2.microVersion;
-        info.minorVersion = info2.minorVersion;
-        info.release      = info2.release;
-        info.builder      = info2.builder;
-        info.licensed     = info2.licensed;
+        info.uri              = info2.uri;
+        info.name             = info2.name;
+        info.brand            = info2.brand;
+        info.label            = info2.label;
+        info.comment          = info2.comment;
+        info.buildEnvironment = info2.buildEnvironment;
+        info.category         = info2.category;
+        info.microVersion     = info2.microVersion;
+        info.minorVersion     = info2.minorVersion;
+        info.release          = info2.release;
+        info.builder          = info2.builder;
+        info.licensed         = info2.licensed;
 
         info.gui.resourcesDirectory = info2.gui.resourcesDirectory;
         info.gui.screenshot = info2.gui.screenshot;
