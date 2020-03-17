@@ -126,6 +126,7 @@ typedef struct {
     const char* label;
     const char* license;
     const char* comment;
+    const char* buildEnvironment;
     const char* const* category;
     int microVersion;
     int minorVersion;
@@ -139,7 +140,6 @@ typedef struct {
     PluginGUI gui;
     PluginPorts ports;
     const PluginPreset* presets;
-    const char* buildEnvironment;
 } PluginInfo;
 
 typedef struct {
@@ -154,6 +154,7 @@ typedef struct {
     const char* brand;
     const char* label;
     const char* comment;
+    const char* buildEnvironment;
     const char* const* category;
     int microVersion;
     int minorVersion;
@@ -161,7 +162,6 @@ typedef struct {
     int builder;
     int licensed;
     PluginGUI_Mini gui;
-    const char* buildEnvironment;
     bool needsDealloc;
 } PluginInfo_Mini;
 

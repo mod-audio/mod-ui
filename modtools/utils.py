@@ -244,6 +244,7 @@ class PluginInfo(Structure):
         ("label", c_char_p),
         ("license", c_char_p),
         ("comment", c_char_p),
+        ("buildEnvironment", c_char_p),
         ("category", POINTER(c_char_p)),
         ("microVersion", c_int),
         ("minorVersion", c_int),
@@ -257,7 +258,6 @@ class PluginInfo(Structure):
         ("gui", PluginGUI),
         ("ports", PluginPorts),
         ("presets", POINTER(PluginPreset)),
-        ("buildEnvironment", c_char_p),
     ]
 
 # a subset of PluginInfo
@@ -275,6 +275,7 @@ class PluginInfo_Mini(Structure):
         ("brand", c_char_p),
         ("label", c_char_p),
         ("comment", c_char_p),
+        ("buildEnvironment", c_char_p),
         ("category", POINTER(c_char_p)),
         ("microVersion", c_int),
         ("minorVersion", c_int),
@@ -282,7 +283,6 @@ class PluginInfo_Mini(Structure):
         ("builder", c_int),
         ("licensed", c_int),
         ("gui", PluginGUI_Mini),
-        ("buildEnvironment", c_char_p),
     ]
 
 class PluginInfo_Controls(Structure):

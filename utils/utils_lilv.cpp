@@ -99,9 +99,8 @@ static const bool kAllowRegularCV = getenv("MOD_UI_ALLOW_REGULAR_CV") != nullptr
 #define PluginInfo_Mini_Init {                   \
     false,                                       \
     nullptr, nullptr, nullptr, nullptr, nullptr, \
-    nullptr, 0, 0, 0, 0, 0,                      \
+    nullptr, nullptr, 0, 0, 0, 0, 0,             \
     { nullptr, nullptr, nullptr },               \
-    nullptr,                                     \
     false                                        \
 }
 
@@ -109,7 +108,7 @@ static const bool kAllowRegularCV = getenv("MOD_UI_ALLOW_REGULAR_CV") != nullptr
     false,                                           \
     nullptr, nullptr,                                \
     nullptr, nullptr, nullptr, nullptr, nullptr,     \
-    nullptr, 0, 0, 0, 0, 0,                          \
+    nullptr, nullptr, 0, 0, 0, 0, 0,                 \
     nullptr, nullptr,                                \
     { nullptr, nullptr, nullptr },                   \
     nullptr,                                         \
@@ -126,7 +125,7 @@ static const bool kAllowRegularCV = getenv("MOD_UI_ALLOW_REGULAR_CV") != nullptr
         { nullptr, nullptr },                        \
         { nullptr, nullptr }                         \
     },                                               \
-    nullptr, nullptr                                 \
+    nullptr                                          \
 }
 
 // Blacklisted plugins, which don't work properly on MOD for various reasons
@@ -1124,6 +1123,19 @@ const PluginInfo_Mini& _get_plugin_info_mini(const LilvPlugin* const p, const Na
     }
 
     // --------------------------------------------------------------------------------------------------------
+    // build environment
+
+    if (LilvNodes* const nodes = lilv_plugin_get_value(p, ns.mod_buildEnvironment))
+    {
+        info.buildEnvironment = strdup(lilv_node_as_string(lilv_nodes_get_first(nodes)));
+        lilv_nodes_free(nodes);
+    }
+    else
+    {
+        info.buildEnvironment = nc;
+    }
+
+    // --------------------------------------------------------------------------------------------------------
     // version
 
     if (LilvNodes* const minorvers = lilv_plugin_get_value(p, ns.lv2core_minorVersion))
@@ -1148,16 +1160,6 @@ const PluginInfo_Mini& _get_plugin_info_mini(const LilvPlugin* const p, const Na
     {
         info.builder = lilv_node_as_int(lilv_nodes_get_first(buildernode));
         lilv_nodes_free(buildernode);
-    }
-
-    if (LilvNodes* const buildEnvironmentnode = lilv_plugin_get_value(p, ns.mod_buildEnvironment))
-    {
-        info.buildEnvironment = strdup(lilv_node_as_string(lilv_nodes_get_first(buildEnvironmentnode)));
-        lilv_nodes_free(buildEnvironmentnode);
-    }
-    else
-    {
-        info.buildEnvironment = nc;
     }
 
     // --------------------------------------------------------------------------------------------------------
@@ -1333,6 +1335,19 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
     }
 
     // --------------------------------------------------------------------------------------------------------
+    // build environment
+
+    if (LilvNodes* const nodes = lilv_plugin_get_value(p, ns.mod_buildEnvironment))
+    {
+        info.buildEnvironment = strdup(lilv_node_as_string(lilv_nodes_get_first(nodes)));
+        lilv_nodes_free(nodes);
+    }
+    else
+    {
+        info.buildEnvironment = nc;
+    }
+
+    // --------------------------------------------------------------------------------------------------------
     // category
 
     info.category = _get_plugin_categories(p, ns.rdf_type);
@@ -1362,16 +1377,6 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
     {
         info.builder = lilv_node_as_int(lilv_nodes_get_first(buildernode));
         lilv_nodes_free(buildernode);
-    }
-
-    if (LilvNodes* const buildEnvironmentnode = lilv_plugin_get_value(p, ns.mod_buildEnvironment))
-    {
-        info.buildEnvironment = strdup(lilv_node_as_string(lilv_nodes_get_first(buildEnvironmentnode)));
-        lilv_nodes_free(buildEnvironmentnode);
-    }
-    else
-    {
-        info.buildEnvironment = nc;
     }
 
     {
