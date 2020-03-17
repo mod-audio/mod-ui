@@ -858,6 +858,9 @@ class Addressings(object):
         addressings       = self.hmi_addressings[actuator_uri]
         addressings_addrs = addressings['addrs']
 
+        if self.pages_cb:
+            was_assigned = self.is_page_assigned(addressings_addrs, self.current_page)
+
         for i, addr in enumerate(addressings_addrs):
             if addressing_data['actuator_uri'] != addr['actuator_uri']:
                 continue
@@ -870,6 +873,9 @@ class Addressings(object):
             break
         else:
             return False
+
+        if self.pages_cb:
+            return was_assigned
 
         old_idx = addressings['idx']
         # if addressings['idx'] == index:
