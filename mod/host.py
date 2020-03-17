@@ -115,9 +115,6 @@ kMidiCustomPrefixURI = "/midi-custom_" # to show current one
 # URI for BPM sync (for non-addressed control ports)
 kBpmURI ="/bpm"
 
-# Limits
-kMaxAddressableScalepoints = 50
-
 # CV related constants
 CV_PREFIX = 'cv_'
 CV_OPTION = '/cv'
