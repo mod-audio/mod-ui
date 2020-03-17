@@ -10,9 +10,7 @@
         {{#status}}
         <span class="status {{status}}"></span>
         {{/status}}
-        {{^stable}}
-        <span class="status unstable"></span>
-        {{/stable}}
+        <span class="status buildEnvironment {{buildEnvironment}}"></span>
         {{#demo}}
         <span class="status demo" title="This plugin is for demo purposes only and shall not be used live or in a studio"></span>
         {{/demo}}
