@@ -649,6 +649,7 @@ JqueryClass('cloudPluginBox', {
         var plugin_data = {
             uri: uri,
             screenshot_href: plugin.screenshot_href,
+            thumbnail_href: plugin.thumbnail_href,
             has_comment: has_comment,
             comment: comment,
             status: plugin.status,
@@ -857,6 +858,7 @@ JqueryClass('cloudPluginBox', {
                 brand : plugin.brand,
                 name  : plugin.name,
                 label : plugin.label,
+                stable: !!plugin.stable,
                 ports : plugin.ports,
                 demo  : !!plugin.demo, // FIXME
                 plugin_href: PLUGINS_URL + '/' + btoa(plugin.uri),

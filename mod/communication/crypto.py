@@ -3,6 +3,8 @@ import uuid
 
 from Crypto.Cipher import PKCS1_OAEP, AES
 from Crypto.PublicKey import RSA
+from Crypto.Signature import PKCS1_v1_5
+from Crypto.Hash import SHA1
 
 
 def encrypt(recipient_key_txt: str, data: str):
@@ -41,3 +43,17 @@ def decrypt(private_key_txt: str, encrypted: bytes):
     cipher_aes = AES.new(session_key, AES.MODE_EAX, nonce)
     data = cipher_aes.decrypt_and_verify(ciphertext, tag)
     return data.decode()
+
+
+def sign_message_sha1(key_txt: str, message: str):
+    key = RSA.importKey(key_txt)
+    sha1 = SHA1.new()
+    sha1.update(message.encode())
+    return PKCS1_v1_5.new(key).sign(sha1)
+
+
+def verify_signature(sender_key_txt: str, contents: str, signature: str):
+    sender_key = RSA.importKey(sender_key_txt)
+    sha1 = SHA1.new()
+    sha1.update(contents.encode())
+    return PKCS1_v1_5.new(sender_key).verify(sha1, signature)

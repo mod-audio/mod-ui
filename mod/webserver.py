@@ -1126,7 +1126,11 @@ class PackageUninstall(JsonRequestHandler):
 
 class PedalboardList(JsonRequestHandler):
     def get(self):
-        self.write(get_all_pedalboards())
+        all = get_all_pedalboards()
+        default_pb = next((p for p in all if p['title'] == 'Default'), None)
+        if default_pb:
+            default_pb['broken'] = False
+        self.write(all)
 
 class PedalboardSave(JsonRequestHandler):
     def post(self):
@@ -1651,6 +1655,12 @@ class BulkTemplateLoader(TimelessRequestHandler):
                           )
                        )
         self.finish()
+
+    # custom call, we cannot use CachedJsonRequestHandler
+    def set_default_headers(self):
+        TimelessRequestHandler.set_default_headers(self)
+        self.set_header("Cache-Control", "public, max-age=31536000")
+        self.set_header("Expires", "Mon, 31 Dec 2035 12:00:00 gmt")
 
 class Ping(JsonRequestHandler):
     @web.asynchronous

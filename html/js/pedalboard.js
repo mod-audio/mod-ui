@@ -1800,6 +1800,11 @@ JqueryClass('pedalboard', {
         self.data('hardwareManager').reset()
 
         var connMgr = self.data('connectionManager')
+
+         connMgr.iterate(function(jack) {
+            self.pedalboard('destroyJack', jack);
+        })
+
         connMgr.reset()
 
         var plugins = self.data('plugins')

@@ -53,6 +53,12 @@ LAST_STATE_JSON_FILE = os.environ.get('MOD_LAST_STATE_JSON', join(DATA_DIR, 'las
 PREFERENCES_JSON_FILE = os.environ.get('MOD_PREFERENCES_JSON', join(DATA_DIR, 'prefs.json'))
 USER_ID_JSON_FILE = os.environ.get('MOD_USER_ID_JSON', join(DATA_DIR, 'user-id.json'))
 
+# It's mandatory KEYS_PATH ends with / and is in MOD_KEYS_PATH,
+# so utils_lilv.so can properly access it
+if not KEYS_PATH.endswith('/'):
+    KEYS_PATH += '/'
+os.environ['MOD_KEYS_PATH'] = KEYS_PATH
+
 DOWNLOAD_TMP_DIR = os.environ.get('MOD_DOWNLOAD_TMP_DIR', '/tmp/mod-ui')
 
 LV2_PLUGIN_DIR = os.path.expanduser("~/.lv2/")

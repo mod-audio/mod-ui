@@ -873,6 +873,7 @@ header#pedalboard-actions {
       overflow: hidden;
       position: relative;
       width: 100%;
+      z-index: 1;
       .nav {
         background: url(../img/nav-left.png) 50% 50% no-repeat;
         cursor: pointer;
@@ -1025,6 +1026,9 @@ header#pedalboard-actions {
       background-color: #111;
       padding: 15px;
       border: 2px solid #333;
+      .row-fluid {
+          position: relative;
+      }
     }
     .close {
       color: #fff;
@@ -1043,6 +1047,17 @@ header#pedalboard-actions {
       min-height: 9em;
       display: inline-block;
       z-index: 0;
+      div.beta {
+          background-color: #FF2927;
+          font-family: "cooper hewitt", sans-serif;
+          font-weight: 700;
+          padding: 5px 10px;
+          color: white;
+          position: absolute;
+          top: 18px;
+          left: 30px;
+          font-size: 16px;
+      }
     }
     figure {
       .make-md-column(4);
@@ -1472,6 +1487,27 @@ header#pedalboard-actions {
   right: 0;
   top: 0;
   z-index: 20;
+}
+
+.demo-plugin {
+    background: url("/img/trial.svg") no-repeat center center;
+    background-size: contain;
+    opacity: 0.4;
+    z-index: 11 !important;
+}
+
+.demo-mask {
+    width: 100%;
+    height: 100%;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    position: absolute;
+}
+
+.demo-plugin-light {
+    opacity: 0.1 !important;
 }
 
 .actions {
