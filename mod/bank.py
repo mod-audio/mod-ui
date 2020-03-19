@@ -20,14 +20,14 @@ from mod import safe_json_load, TextFileFlusher
 from mod.settings import BANKS_JSON_FILE, LAST_STATE_JSON_FILE
 
 # return list of banks
-def list_banks(brokenpedals = []):
+def list_banks(brokenpedalbundles = [], shouldSave = True):
     banks = safe_json_load(BANKS_JSON_FILE, list)
 
     if len(banks) == 0:
         return []
 
     changed     = False
-    checkbroken = len(brokenpedals) > 0
+    checkbroken = len(brokenpedalbundles) > 0
     validbanks  = []
 
     for bank in banks:
@@ -44,7 +44,7 @@ def list_banks(brokenpedals = []):
                 print("ERROR in banks.py: referenced pedalboard does not exist:", bundle)
                 changed = True
                 continue
-            if checkbroken and os.path.abspath(pb['bundle']) in brokenpedals:
+            if checkbroken and os.path.abspath(pb['bundle']) in brokenpedalbundles:
                 title = pb['title'].encode("ascii", "ignore").decode("ascii")
                 print("Auto-removing pedalboard '%s' from bank (it's broken)" % title)
                 changed = True
@@ -61,7 +61,7 @@ def list_banks(brokenpedals = []):
         bank['pedalboards'] = validpedals
         validbanks.append(bank)
 
-    if changed:
+    if changed and shouldSave:
         save_banks(validbanks)
 
     return validbanks

@@ -126,6 +126,7 @@ typedef struct {
     const char* label;
     const char* license;
     const char* comment;
+    const char* buildEnvironment;
     const char* const* category;
     int microVersion;
     int minorVersion;
@@ -153,6 +154,7 @@ typedef struct {
     const char* brand;
     const char* label;
     const char* comment;
+    const char* buildEnvironment;
     const char* const* category;
     int microVersion;
     int minorVersion;

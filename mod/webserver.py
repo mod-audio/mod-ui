@@ -35,12 +35,12 @@ from uuid import uuid4
 from mod.profile import Profile
 from mod.settings import (APP, LOG, DEV_API,
                           HTML_DIR, DOWNLOAD_TMP_DIR, DEVICE_KEY, DEVICE_WEBSERVER_PORT,
-                          CLOUD_HTTP_ADDRESS, PLUGINS_HTTP_ADDRESS, PEDALBOARDS_HTTP_ADDRESS, CONTROLCHAIN_HTTP_ADDRESS,
+                          CLOUD_HTTP_ADDRESS, CLOUD_LABS_HTTP_ADDRESS, PLUGINS_HTTP_ADDRESS, PEDALBOARDS_HTTP_ADDRESS, CONTROLCHAIN_HTTP_ADDRESS,
                           LV2_PLUGIN_DIR, LV2_PEDALBOARDS_DIR, IMAGE_VERSION,
                           UPDATE_CC_FIRMWARE_FILE, UPDATE_MOD_OS_FILE, USING_256_FRAMES_FILE,
                           DEFAULT_ICON_TEMPLATE, DEFAULT_SETTINGS_TEMPLATE, DEFAULT_ICON_IMAGE,
                           DEFAULT_PEDALBOARD, DATA_DIR, FAVORITES_JSON_FILE, PREFERENCES_JSON_FILE, USER_ID_JSON_FILE,
-                          DEV_HOST, UNTITLED_PEDALBOARD_NAME, MODEL_CPU, MODEL_TYPE)
+                          DEV_HOST, UNTITLED_PEDALBOARD_NAME, MODEL_CPU, MODEL_TYPE, PEDALBOARDS_LABS_HTTP_ADDRESS)
 
 from mod import check_environment, jsoncall, safe_json_load, TextFileFlusher, get_hardware_descriptor
 from mod.bank import list_banks, save_banks, remove_pedalboard_from_banks
@@ -1561,8 +1561,10 @@ class TemplateHandler(TimelessRequestHandler):
             'default_settings_template': default_settings_template,
             'default_pedalboard': DEFAULT_PEDALBOARD,
             'cloud_url': CLOUD_HTTP_ADDRESS,
+            'cloud_labs_url': CLOUD_LABS_HTTP_ADDRESS,
             'plugins_url': PLUGINS_HTTP_ADDRESS,
             'pedalboards_url': PEDALBOARDS_HTTP_ADDRESS,
+            'pedalboards_labs_url': PEDALBOARDS_LABS_HTTP_ADDRESS,
             'controlchain_url': CONTROLCHAIN_HTTP_ADDRESS,
             'hardware_profile': b64encode(json.dumps(SESSION.get_hardware_actuators()).encode("utf-8")),
             'version': self.get_argument('v'),

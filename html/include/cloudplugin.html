@@ -15,9 +15,7 @@
             {{#status}}
             <span class="status {{status}}"></span>
             {{/status}}
-            {{^stable}}
-            <span class="status unstable"></span>
-            {{/stable}}
+            <span class="status buildEnvironment {{buildEnvironment}}"></span>
             {{#price}}
             <span class="price-container">
             <span class="price">{{price}}</span>
