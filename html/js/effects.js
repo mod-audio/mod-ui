@@ -547,7 +547,6 @@ JqueryClass('effectBox', {
                     }
                 })
             }
-
         }
 
         if (plugin.bundles) {

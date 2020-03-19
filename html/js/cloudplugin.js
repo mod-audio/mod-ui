@@ -245,6 +245,7 @@ JqueryClass('cloudPluginBox', {
                 return
 
             var plugins = []
+
             for (var i in results.cloud) {
                 cplugin = results.cloud[i]
                 lplugin = results.local[cplugin.uri]
@@ -318,7 +319,6 @@ JqueryClass('cloudPluginBox', {
                         cplugin.thumbnail_href  = "/resources/pedals/default-thumbnail.png"
                     }
                 }
-
                 self.cloudPluginBox('synchronizePluginData', cplugin)
                 plugins.push(cplugin)
             }
