@@ -377,7 +377,6 @@ JqueryClass('cloudPluginBox', {
             results.shopify = {}
             renderResults();
         });
-        
 
         // cloud search
         var cloudResults
