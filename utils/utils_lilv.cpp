@@ -99,7 +99,7 @@ static const bool kAllowRegularCV = getenv("MOD_UI_ALLOW_REGULAR_CV") != nullptr
 #define PluginInfo_Mini_Init {                   \
     false,                                       \
     nullptr, nullptr, nullptr, nullptr, nullptr, \
-    nullptr, 0, 0, 0, 0, 0,                      \
+    nullptr, nullptr, 0, 0, 0, 0, 0,             \
     { nullptr, nullptr, nullptr },               \
     false                                        \
 }
@@ -108,7 +108,7 @@ static const bool kAllowRegularCV = getenv("MOD_UI_ALLOW_REGULAR_CV") != nullptr
     false,                                           \
     nullptr, nullptr,                                \
     nullptr, nullptr, nullptr, nullptr, nullptr,     \
-    nullptr, 0, 0, 0, 0, 0,                          \
+    nullptr, nullptr, 0, 0, 0, 0, 0,                 \
     nullptr, nullptr,                                \
     { nullptr, nullptr, nullptr },                   \
     nullptr,                                         \
@@ -180,6 +180,7 @@ struct NamespaceDefinitions_Mini {
     LilvNode* const mod_label;
     LilvNode* const mod_release;
     LilvNode* const mod_builder;
+    LilvNode* const mod_buildEnvironment;
     LilvNode* const modlicense_interface;
     LilvNode* const modgui_gui;
     LilvNode* const modgui_resourcesDirectory;
@@ -195,6 +196,7 @@ struct NamespaceDefinitions_Mini {
           mod_label                (lilv_new_uri(W, LILV_NS_MOD    "label"             )),
           mod_release              (lilv_new_uri(W, LILV_NS_MOD    "releaseNumber"     )),
           mod_builder              (lilv_new_uri(W, LILV_NS_MOD    "builderVersion"    )),
+          mod_buildEnvironment     (lilv_new_uri(W, LILV_NS_MOD    "buildEnvironment"  )),
           modlicense_interface     (lilv_new_uri(W, MOD_LICENSE__interface             )),
           modgui_gui               (lilv_new_uri(W, LILV_NS_MODGUI "gui"               )),
           modgui_resourcesDirectory(lilv_new_uri(W, LILV_NS_MODGUI "resourcesDirectory")),
@@ -211,6 +213,7 @@ struct NamespaceDefinitions_Mini {
         lilv_node_free(mod_label);
         lilv_node_free(mod_release);
         lilv_node_free(mod_builder);
+        lilv_node_free(mod_buildEnvironment);
         lilv_node_free(modlicense_interface);
         lilv_node_free(modgui_gui);
         lilv_node_free(modgui_resourcesDirectory);
@@ -246,6 +249,7 @@ struct NamespaceDefinitions {
     LilvNode* const mod_rangeSteps;
     LilvNode* const mod_release;
     LilvNode* const mod_builder;
+    LilvNode* const mod_buildEnvironment;
     LilvNode* const modlicense_interface;
     LilvNode* const modgui_gui;
     LilvNode* const modgui_resourcesDirectory;
@@ -299,6 +303,7 @@ struct NamespaceDefinitions {
           mod_rangeSteps           (lilv_new_uri(W, LILV_NS_MOD    "rangeSteps"        )),
           mod_release              (lilv_new_uri(W, LILV_NS_MOD    "releaseNumber"     )),
           mod_builder              (lilv_new_uri(W, LILV_NS_MOD    "builderVersion"    )),
+          mod_buildEnvironment     (lilv_new_uri(W, LILV_NS_MOD    "buildEnvironment"  )),
           modlicense_interface     (lilv_new_uri(W, MOD_LICENSE__interface             )),
           modgui_gui               (lilv_new_uri(W, LILV_NS_MODGUI "gui"               )),
           modgui_resourcesDirectory(lilv_new_uri(W, LILV_NS_MODGUI "resourcesDirectory")),
@@ -353,6 +358,7 @@ struct NamespaceDefinitions {
         lilv_node_free(mod_rangeSteps);
         lilv_node_free(mod_release);
         lilv_node_free(mod_builder);
+        lilv_node_free(mod_buildEnvironment);
         lilv_node_free(modlicense_interface);
         lilv_node_free(modgui_gui);
         lilv_node_free(modgui_resourcesDirectory);
@@ -443,6 +449,10 @@ static const char* const kCategoryMIDIPluginMOD[] = { "MIDI", nullptr };
 static const char* const kCategoryMaxGenPluginMOD[] = { "MaxGen", nullptr };
 static const char* const kCategoryCamomilePluginMOD[] = { "Camomile", nullptr };
 static const char* const kCategoryControlVoltagePluginMOD[] = { "ControlVoltage", nullptr };
+
+static const char* const kBuildEnvironmentProd = "prod";
+static const char* const kBuildEnvironmentDev = "dev";
+static const char* const kBuildEnvironmentLabs = "labs";
 
 static const char* const kStabilityExperimental = "experimental";
 static const char* const kStabilityStable = "stable";
@@ -1144,6 +1154,34 @@ const PluginInfo_Mini& _get_plugin_info_mini(const LilvPlugin* const p, const Na
     }
 
     // --------------------------------------------------------------------------------------------------------
+    // build environment
+
+    if (LilvNodes* const nodes = lilv_plugin_get_value(p, ns.mod_buildEnvironment))
+    {
+        const char* const buildEnvironment = lilv_node_as_string(lilv_nodes_get_first(nodes));
+
+        /**/ if (strcmp(buildEnvironment, "prod") == 0)
+            info.buildEnvironment = kBuildEnvironmentProd;
+        else if (strcmp(buildEnvironment, "dev") == 0)
+            info.buildEnvironment = kBuildEnvironmentDev;
+        else if (strcmp(buildEnvironment, "labs") == 0)
+            info.buildEnvironment = kBuildEnvironmentLabs;
+        else
+            info.buildEnvironment = strdup(buildEnvironment);
+
+        lilv_nodes_free(nodes);
+    }
+    // if cloud built the plugin, but no buildEnvironment was set, switch to prod for backwards compat
+    else if (info.release >= 1 && info.builder >= 1)
+    {
+        info.buildEnvironment = kBuildEnvironmentProd;
+    }
+    else
+    {
+        info.buildEnvironment = nc;
+    }
+
+    // --------------------------------------------------------------------------------------------------------
     // licensed
 
     if (KEYS_PATHlen > 0 && lilv_plugin_has_extension_data(p, ns.modlicense_interface))
@@ -1364,6 +1402,34 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
     // otherwise it's stable
     else
         info.stability = kStabilityStable;
+
+    // --------------------------------------------------------------------------------------------------------
+    // build environment
+
+    if (LilvNodes* const nodes = lilv_plugin_get_value(p, ns.mod_buildEnvironment))
+    {
+        const char* const buildEnvironment = lilv_node_as_string(lilv_nodes_get_first(nodes));
+
+        /**/ if (strcmp(buildEnvironment, "prod") == 0)
+            info.buildEnvironment = kBuildEnvironmentProd;
+        else if (strcmp(buildEnvironment, "dev") == 0)
+            info.buildEnvironment = kBuildEnvironmentDev;
+        else if (strcmp(buildEnvironment, "labs") == 0)
+            info.buildEnvironment = kBuildEnvironmentLabs;
+        else
+            info.buildEnvironment = strdup(buildEnvironment);
+
+        lilv_nodes_free(nodes);
+    }
+    // if cloud built the plugin, but no buildEnvironment was set, switch to prod for backwards compat
+    else if (info.release >= 1 && info.builder >= 1)
+    {
+        info.buildEnvironment = kBuildEnvironmentProd;
+    }
+    else
+    {
+        info.buildEnvironment = nc;
+    }
 
     // --------------------------------------------------------------------------------------------------------
     // licensed
@@ -2560,6 +2626,11 @@ static void _clear_plugin_info(PluginInfo& info)
         free((void*)info.license);
     if (info.comment != nc)
         free((void*)info.comment);
+    if (info.buildEnvironment != nc &&
+        info.buildEnvironment != kBuildEnvironmentProd &&
+        info.buildEnvironment != kBuildEnvironmentDev &&
+        info.buildEnvironment != kBuildEnvironmentLabs)
+        free((void*)info.buildEnvironment);
     if (info.version != nc)
         free((void*)info.version);
     if (info.brand != nc)
@@ -2696,6 +2767,11 @@ static void _clear_plugin_info_mini(PluginInfo_Mini& info)
             free((void*)info.name);
         if (info.comment != nc)
             free((void*)info.comment);
+        if (info.buildEnvironment != nc &&
+            info.buildEnvironment != kBuildEnvironmentProd &&
+            info.buildEnvironment != kBuildEnvironmentDev &&
+            info.buildEnvironment != kBuildEnvironmentLabs)
+            free((void*)info.buildEnvironment);
         if (info.gui.resourcesDirectory != nc)
             free((void*)info.gui.resourcesDirectory);
         if (info.gui.screenshot != nc)
@@ -2901,17 +2977,18 @@ static void _fill_plugin_info_mini_from_full(const PluginInfo& info2, PluginInfo
 
     if (info2.valid)
     {
-        info.uri          = info2.uri;
-        info.name         = info2.name;
-        info.brand        = info2.brand;
-        info.label        = info2.label;
-        info.comment      = info2.comment;
-        info.category     = info2.category;
-        info.microVersion = info2.microVersion;
-        info.minorVersion = info2.minorVersion;
-        info.release      = info2.release;
-        info.builder      = info2.builder;
-        info.licensed     = info2.licensed;
+        info.uri              = info2.uri;
+        info.name             = info2.name;
+        info.brand            = info2.brand;
+        info.label            = info2.label;
+        info.comment          = info2.comment;
+        info.buildEnvironment = info2.buildEnvironment;
+        info.category         = info2.category;
+        info.microVersion     = info2.microVersion;
+        info.minorVersion     = info2.minorVersion;
+        info.release          = info2.release;
+        info.builder          = info2.builder;
+        info.licensed         = info2.licensed;
 
         info.gui.resourcesDirectory = info2.gui.resourcesDirectory;
         info.gui.screenshot = info2.gui.screenshot;

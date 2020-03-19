@@ -115,9 +115,6 @@ kMidiCustomPrefixURI = "/midi-custom_" # to show current one
 # URI for BPM sync (for non-addressed control ports)
 kBpmURI ="/bpm"
 
-# Limits
-kMaxAddressableScalepoints = 50
-
 # CV related constants
 CV_PREFIX = 'cv_'
 CV_OPTION = '/cv'
@@ -138,15 +135,27 @@ def midi_port_alias_to_name(alias, withSpaces):
           .replace("/midi_capture_",space+"MIDI"+space)\
           .replace("/midi_playback_",space+"MIDI"+space)
 
-def get_all_good_pedalboards():
+def get_all_good_and_bad_pedalboards():
     allpedals  = get_all_pedalboards()
     goodpedals = []
+    badbundles = []
 
     for pb in allpedals:
-        if not pb['broken']:
+        if pb['broken']:
+            badbundles.append(pb['bundle'])
+        else:
             goodpedals.append(pb)
 
-    return goodpedals
+    if len(goodpedals) == 0:
+        goodpedals.append({
+            'broken': False,
+            "uri": "file://" + DEFAULT_PEDALBOARD,
+            "bundle": DEFAULT_PEDALBOARD,
+            "title": UNTITLED_PEDALBOARD_NAME,
+            "version": 0,
+        })
+
+    return goodpedals, badbundles
 
 # class to map between numeric ids and string instances
 class InstanceIdMapper(object):
@@ -225,12 +234,13 @@ class Host(object):
         self.mapper = InstanceIdMapper()
         self.descriptor = get_hardware_descriptor()
         self.profile = Profile(self.profile_apply, self.descriptor)
-        self.banks = list_banks()
 
         self.current_tuner_port = 1
         self.current_tuner_mute = self.prefs.get("tuner-mutes-outputs", False, bool)
 
         self.allpedalboards = None
+        self.banks = None
+
         self.bank_id = 0
         self.connections = []
         self.audioportsIn = []
@@ -843,8 +853,8 @@ class Host(object):
         self.transport_bpb     = data['bpb']
 
         # load everything
-        if self.allpedalboards is None:
-            self.allpedalboards = get_all_good_pedalboards()
+        self.allpedalboards, badbundles = get_all_good_and_bad_pedalboards()
+        self.banks = list_banks(badbundles, False)
 
         bank_id, pedalboard = get_last_bank_and_pedalboard()
 
@@ -1081,10 +1091,10 @@ class Host(object):
             callback(True)
             return
 
-        bank_id, pedalboard = get_last_bank_and_pedalboard()
+        self.allpedalboards, badbundles = get_all_good_and_bad_pedalboards()
+        self.banks = list_banks(badbundles, False)
 
-        if self.allpedalboards is None:
-            self.allpedalboards = get_all_good_pedalboards()
+        bank_id, pedalboard = get_last_bank_and_pedalboard()
 
         # report pedalboard and banks
         if pedalboard and os.path.exists(pedalboard) and bank_id > 0 and bank_id <= len(self.banks):
@@ -1155,8 +1165,8 @@ class Host(object):
         if midi_ss_prgch >= 1 and midi_ss_prgch <= 16:
             self.send_notmodified("monitor_midi_program %d 0" % (midi_ss_prgch-1))
 
-        self.banks = []
         self.allpedalboards = []
+        self.banks = []
 
         if not self.hmi.initialized:
             callback(True)
@@ -1176,8 +1186,8 @@ class Host(object):
         self.hmi.ui_con(footswitch_bank_callback)
 
     def end_session(self, callback):
-        self.banks = list_banks()
-        self.allpedalboards = get_all_good_pedalboards()
+        self.allpedalboards, badbundles = get_all_good_and_bad_pedalboards()
+        self.banks = list_banks(badbundles, False)
 
         if not self.hmi.initialized:
             callback(True)
@@ -2023,7 +2033,7 @@ class Host(object):
             addressing    = pluginData['addressings'].pop(symbol)
             actuator_uri  = addressing['actuator_uri']
             actuator_type = self.addressings.get_actuator_type(actuator_uri)
-            was_active = self.addressings.remove(addressing)
+            was_active    = self.addressings.remove(addressing)
             if actuator_type == Addressings.ADDRESSING_TYPE_HMI:
                 if actuator_uri not in used_hmi_actuators and was_active:
                     group_actuators = self.addressings.get_group_actuators(actuator_uri)
@@ -2042,45 +2052,43 @@ class Host(object):
                     logging.exception(e)
 
         # Send new available pages to hmi if needed
+        send_hmi_available_pages = False
         if self.addressings.pages_cb:
-            send_hmi_available_pages = False
             for page in range(self.addressings.pages_nb):
                 send_hmi_available_pages |= self.check_available_pages(page)
+
+        # Send everything that HMI needs
+        if self.hmi.initialized:
             if send_hmi_available_pages:
                 try:
                     yield gen.Task(self.addr_task_set_available_pages, self.addressings.available_pages)
                 except Exception as e:
                     logging.exception(e)
 
-        def host_callback(ok):
-            removed_connections = []
-            for ports in self.connections:
-                if ports[0].rsplit("/",1)[0] == instance or ports[1].rsplit("/",1)[0] == instance:
-                    removed_connections.append(ports)
-            for ports in removed_connections:
-                self.connections.remove(ports)
-                self.msg_callback("disconnect %s %s" % (ports[0], ports[1]))
+            if len(used_hw_ids) > 0:
+                try:
+                    yield gen.Task(self.hmi.control_rm, used_hw_ids)
+                except Exception as e:
+                    logging.exception(e)
 
-            self.msg_callback("remove %s" % (instance))
-            callback(ok)
-
-        def hmi_callback(_):
-            self.send_modified("remove %d" % instance_id, host_callback, datatype='boolean')
-
-        @gen.coroutine
-        def hmi_control_rm_callback(_):
             for actuator_uri in used_hmi_actuators:
                 try:
                     yield gen.Task(self.addressings.hmi_load_current, actuator_uri)
                 except Exception as e:
                     logging.exception(e)
-            hmi_callback(True)
 
-        if self.hmi.initialized and len(used_hw_ids) > 0:
-            # Remove active addressed port from HMI
-            self.hmi.control_rm(used_hw_ids, hmi_control_rm_callback)
-        else:
-            hmi_callback(True)
+        ok = yield gen.Task(self.send_modified, "remove %d" % instance_id, datatype='boolean')
+
+        removed_connections = []
+        for ports in self.connections:
+            if ports[0].rsplit("/",1)[0] == instance or ports[1].rsplit("/",1)[0] == instance:
+                removed_connections.append(ports)
+        for ports in removed_connections:
+            self.connections.remove(ports)
+            self.msg_callback("disconnect %s %s" % (ports[0], ports[1]))
+
+        self.msg_callback("remove %s" % (instance))
+        callback(ok)
 
     # -----------------------------------------------------------------------------------------------------------------
     # Host stuff - plugin values
@@ -4185,25 +4193,26 @@ _:b%i
             callback(False)
             return
 
+        # Unadress everything that was assigned to this plugin cv port
+        addressings = self.addressings.cv_addressings[uri]
+        numLeftToUnaddress = len(addressings['addrs'])
+
         def remove_callback(ok):
             if ok:
                 del self.addressings.cv_addressings[uri]
+            numLeftToUnaddress -= 1
+            if numLeftToUnaddress == 0:
                 callback(True)
-            else:
-                callback(False)
-                return
 
-        # Unadress everything that was assigned to this plugin cv port
-        addressings = self.addressings.cv_addressings[uri]
-
-        if len(addressings['addrs']) == 0:
+        if numLeftToUnaddress == 0:
             remove_callback(True)
+            return
 
         for addressing in addressings['addrs']:
             try:
                 instance_id = addressing['instance_id']
-                instance = self.mapper.get_instance(instance_id)
-                port = addressing['port']
+                port        = addressing['port']
+                instance    = self.mapper.get_instance(instance_id)
                 self.address(instance, port, kNullAddressURI, "---", 0.0, 0.0, 0.0, 0, {}, remove_callback)
             except Exception as e:
                 callback(False)

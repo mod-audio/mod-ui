@@ -62,8 +62,10 @@
     {% autoescape None %}
     var TEMPLATES = {}
     SITEURL = '{{cloud_url}}'
+    CLOUD_LABS_URL = '{{cloud_labs_url}}'
     PLUGINS_URL      = '{{plugins_url}}'
     PEDALBOARDS_URL  = '{{pedalboards_url}}'
+    PEDALBOARDS_LABS_URL  = '{{pedalboards_labs_url}}'
     CONTROLCHAIN_URL = '{{controlchain_url}}'
     LV2_PLUGIN_DIR   = '{{lv2_plugin_dir}}'
     VERSION          = '{{version}}'
@@ -193,8 +195,8 @@ $('document').ready(function() {
     if (PREFERENCES['plugins-folded'] == "true") {
         desktop.effectBox.effectBox('toggle')
     }
-    if (PREFERENCES['show-unstable-plugins'] == "true") {
-        $("#cloud-plugins-stable").parent().show()
+    if (PREFERENCES['show-labs-plugins'] == "true") {
+        $("#cloud-plugins-source").parent().show()
     }
     desktop.pedalboardBox.pedalboardBox('initViewMode', PREFERENCES['pb-view-mode'])
 
@@ -701,8 +703,15 @@ $('document').ready(function() {
                     <label for="cloud-plugins-installed">Installed only</label>
                 </div>
                 <div class="control-group mod-hidden">
-                    <input type="checkbox" name="unstable" id="cloud-plugins-stable" />
-                    <label for="cloud-plugins-stable">Show beta plugins</label>
+                    <div class="switch" id="cloud-plugins-source">
+                      <input type="radio" id="cloud-radio-official" name="plugins-source" value="official" checked="checked">
+                      <label for="official">Official</label>
+                      <input type="radio" id="cloud-radio-labs" name="plugins-source" value="labs">
+                      <label for="labs">Labs</label>
+                      <span class="toggle-outside">
+                        <span class="toggle-inside"></span>
+                      </span>
+                    </div>
                 </div>
                 <ul class="categories list list-unstyled">
                     <li id="cloud-plugin-tab-All">All</li>
