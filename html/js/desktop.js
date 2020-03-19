@@ -840,6 +840,7 @@ function Desktop(elements) {
             url: SITEURL + '/pedalboards/' + pedalboard_id,
             contentType: 'application/json',
             success: function (resp) {
+                // FIXME replace "stable" cloud property with something else!
                 if (!resp.data.stable && PREFERENCES['show-labs-plugins'] !== "true") {
                     new Notification('error', 'This pedalboard contains one or more community maintained MOD Labs plugins. To load it, you need to enable MOD Labs plugins in <a href="settings">Settings</a> -> Advanced');
                     return;
