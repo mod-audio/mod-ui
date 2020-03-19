@@ -71,6 +71,7 @@
 @import 'variables.less';
 @import 'cloud_plugins.less';
 @import 'banks.less';
+@import 'file_manager.less';
 @import 'pedalboards.less';
 @import 'nprogress.less';
 @import 'addressings.less';
@@ -337,6 +338,20 @@ hr.dotted {
       background-position: -135px bottom;
     }
   }
+  #mod-file-manager {
+    background-image: url(../img/menu-icons-sprite.png);
+    background-position: -180px top;
+    background-repeat: no-repeat;
+    transition: all 0.33s;
+    &:hover {
+      background-color: #000;
+      background-position: -180px bottom;
+    }
+    &.selected {
+      background-color: #000;
+      background-position: -180px bottom;
+    }
+  }
   #banks-saving {
     margin: 21px 0 0 6px;
     font-size: 10px;
@@ -503,7 +518,8 @@ hr.dotted {
 header#pedalboard-actions,
 #bank-library header,
 #cloud-plugins-library header,
-#pedalboards-library header {
+#pedalboards-library header,
+#file-manager-library header {
   display: block;
   left: 0;
   height: 45px;

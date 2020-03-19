@@ -1061,6 +1061,12 @@ class ServerWebSocket(websocket.WebSocketHandler):
             value = float(data[2])
             SESSION.ws_parameter_set(port, value, self)
 
+        elif cmd == "patch_param_set":
+            inst  = data[1]
+            uri   = data[2]
+            value = " ".join(data[3:])
+            SESSION.ws_patch_parameter_set(inst, uri, value, self)
+
         elif cmd == "plugin_pos":
             inst = data[1]
             x    = float(data[2])
@@ -1952,6 +1958,83 @@ class TokensSave(JsonRequestHandler):
 
         self.write(True)
 
+class FilesList(JsonRequestHandler):
+    complete_audiofile_exts = (
+        # through libsndfile
+        "aif", "aifc", "aiff", "au", "bwf", "flac", "htk", "iff", "mat4", "mat5", "oga", "ogg",
+        "paf", "pvf", "pvf5", "sd2", "sf", "snd", "svx", "vcc", "w64", "wav", "xi",
+        # extra through ffmpeg
+        "3g2", "3gp", "aac", "ac3", "amr", "ape", "mp2", "mp3", "mpc", "wma",
+    )
+
+    hq_audiofile_exts = (
+        "aif", "aifc", "aiff", ".flac", ".w64", ".wav",
+    )
+
+    @classmethod
+    def _get_dir_and_extensions_for_filetype(kls, filetype):
+        if filetype == "audiofiles":
+            return ("Audio Files", kls.complete_audiofile_exts)
+
+        elif filetype == "audioloops":
+            return ("Audio Loops", kls.complete_audiofile_exts)
+
+        elif filetype == "audiosamples":
+            return ("Audio Samples", kls.complete_audiofile_exts)
+
+        elif filetype == "h2drumkit":
+            return ("Hydrogen Drumkits", ("h2drumkit",))
+
+        elif filetype == "ir":
+            return ("Impulse Responses", kls.hq_audiofile_exts)
+
+        elif filetype == "midi":
+            return ("MIDI Files", (".mid", ".midi"))
+
+        elif filetype == "sf2":
+            return ("SoundFonts", (".sf2", ".sf3"))
+
+        elif filetype == "sfz":
+            return ("SFZ Instruments", (".sfz",))
+
+        else:
+            return (None, ())
+
+    def prepare(self):
+        if "application/json" not in self.request.headers.get("Content-Type"):
+            raise web.HTTPError(501, 'Content-Type != "application/json"')
+
+        data = json.loads(self.request.body.decode("utf-8", errors="ignore"))
+
+        filetypes = data.get('types', None)
+        if filetypes is None:
+            filetypes = (data.get('type', None),)
+            if filetypes is None:
+                raise web.HTTPError(501, "Missing type")
+
+        self.filetypes = filetypes
+
+    def post(self):
+        retfiles = []
+
+        for filetype in self.filetypes:
+            datadir, extensions = self._get_dir_and_extensions_for_filetype(filetype)
+
+            if datadir is None:
+                continue
+
+            for root, dirs, files in os.walk(os.path.join("/data/user-files", datadir)):
+                for name in tuple(name for name in sorted(files) if name.lower().endswith(extensions)):
+                    retfiles.append({
+                        'fullname': os.path.join(root, name),
+                        'basename': name,
+                    })
+
+        self.write({
+            'ok': True,
+            'files': retfiles,
+        })
+
 settings = {'log_function': lambda handler: None} if not LOG else {}
 
 application = web.Application(
@@ -2046,6 +2129,9 @@ application = web.Application(
             (r"/tokens/delete", TokensDelete),
             (r"/tokens/get", TokensGet),
             (r"/tokens/save/?", TokensSave),
+
+            # file listing etc
+            (r"/files/list/?", FilesList),
 
             (r"/reset/?", DashboardClean),
 

@@ -28,6 +28,7 @@
 #include "lv2/lv2plug.in/ns/ext/atom/atom.h"
 #include "lv2/lv2plug.in/ns/ext/midi/midi.h"
 #include "lv2/lv2plug.in/ns/ext/morph/morph.h"
+#include "lv2/lv2plug.in/ns/ext/patch/patch.h"
 #include "lv2/lv2plug.in/ns/ext/port-props/port-props.h"
 #include "lv2/lv2plug.in/ns/ext/presets/presets.h"
 #include "lv2/lv2plug.in/ns/extensions/units/units.h"
@@ -67,6 +68,10 @@ LilvNode* lilv_new_file_uri2(LilvWorld* world, const char*, const char* path)
 #define lilv_free(x) free(x)
 #define lilv_file_uri_parse(x,y) lilv_file_uri_parse2(x,y)
 #define lilv_new_file_uri(x,y,z) lilv_new_file_uri2(x,y,z)
+#endif
+
+#ifndef LV2_CORE__Parameter
+#define LV2_CORE__Parameter LV2_CORE_PREFIX "Parameter" // http://lv2plug.in/ns/lv2core#Parameter
 #endif
 
 // our lilv world
@@ -125,6 +130,7 @@ static const bool kAllowRegularCV = getenv("MOD_UI_ALLOW_REGULAR_CV") != nullptr
         { nullptr, nullptr },                        \
         { nullptr, nullptr }                         \
     },                                               \
+    nullptr,                                         \
     nullptr                                          \
 }
 
@@ -229,6 +235,7 @@ struct NamespaceDefinitions {
     LilvNode* const rdf_type;
     LilvNode* const rdfs_comment;
     LilvNode* const rdfs_label;
+    LilvNode* const rdfs_range;
     LilvNode* const lv2core_designation;
     LilvNode* const lv2core_index;
     LilvNode* const lv2core_microVersion;
@@ -250,6 +257,8 @@ struct NamespaceDefinitions {
     LilvNode* const mod_release;
     LilvNode* const mod_builder;
     LilvNode* const mod_buildEnvironment;
+    LilvNode* const mod_fileTypes;
+    LilvNode* const mod_supportedExtensions;
     LilvNode* const modlicense_interface;
     LilvNode* const modgui_gui;
     LilvNode* const modgui_resourcesDirectory;
@@ -271,6 +280,7 @@ struct NamespaceDefinitions {
     LilvNode* const atom_Sequence;
     LilvNode* const midi_MidiEvent;
     LilvNode* const pprops_rangeSteps;
+    LilvNode* const patch_writable;
     LilvNode* const pset_Preset;
     LilvNode* const units_render;
     LilvNode* const units_symbol;
@@ -283,6 +293,7 @@ struct NamespaceDefinitions {
           rdf_type                 (lilv_new_uri(W, LILV_NS_RDF    "type"              )),
           rdfs_comment             (lilv_new_uri(W, LILV_NS_RDFS   "comment"           )),
           rdfs_label               (lilv_new_uri(W, LILV_NS_RDFS   "label"             )),
+          rdfs_range               (lilv_new_uri(W, LILV_NS_RDFS   "range"             )),
           lv2core_designation      (lilv_new_uri(W, LILV_NS_LV2    "designation"       )),
           lv2core_index            (lilv_new_uri(W, LILV_NS_LV2    "index"             )),
           lv2core_microVersion     (lilv_new_uri(W, LILV_NS_LV2    "microVersion"      )),
@@ -304,6 +315,8 @@ struct NamespaceDefinitions {
           mod_release              (lilv_new_uri(W, LILV_NS_MOD    "releaseNumber"     )),
           mod_builder              (lilv_new_uri(W, LILV_NS_MOD    "builderVersion"    )),
           mod_buildEnvironment     (lilv_new_uri(W, LILV_NS_MOD    "buildEnvironment"  )),
+          mod_fileTypes            (lilv_new_uri(W, LILV_NS_MOD    "fileTypes"         )),
+          mod_supportedExtensions  (lilv_new_uri(W, LILV_NS_MOD    "supportedExtensions")),
           modlicense_interface     (lilv_new_uri(W, MOD_LICENSE__interface             )),
           modgui_gui               (lilv_new_uri(W, LILV_NS_MODGUI "gui"               )),
           modgui_resourcesDirectory(lilv_new_uri(W, LILV_NS_MODGUI "resourcesDirectory")),
@@ -325,6 +338,7 @@ struct NamespaceDefinitions {
           atom_Sequence            (lilv_new_uri(W, LV2_ATOM__Sequence                 )),
           midi_MidiEvent           (lilv_new_uri(W, LV2_MIDI__MidiEvent                )),
           pprops_rangeSteps        (lilv_new_uri(W, LV2_PORT_PROPS__rangeSteps         )),
+          patch_writable           (lilv_new_uri(W, LV2_PATCH__writable                )),
           pset_Preset              (lilv_new_uri(W, LV2_PRESETS__Preset                )),
           units_render             (lilv_new_uri(W, LV2_UNITS__render                  )),
           units_symbol             (lilv_new_uri(W, LV2_UNITS__symbol                  )),
@@ -338,6 +352,7 @@ struct NamespaceDefinitions {
         lilv_node_free(rdf_type);
         lilv_node_free(rdfs_comment);
         lilv_node_free(rdfs_label);
+        lilv_node_free(rdfs_range);
         lilv_node_free(lv2core_designation);
         lilv_node_free(lv2core_index);
         lilv_node_free(lv2core_microVersion);
@@ -359,6 +374,8 @@ struct NamespaceDefinitions {
         lilv_node_free(mod_release);
         lilv_node_free(mod_builder);
         lilv_node_free(mod_buildEnvironment);
+        lilv_node_free(mod_fileTypes);
+        lilv_node_free(mod_supportedExtensions);
         lilv_node_free(modlicense_interface);
         lilv_node_free(modgui_gui);
         lilv_node_free(modgui_resourcesDirectory);
@@ -380,6 +397,7 @@ struct NamespaceDefinitions {
         lilv_node_free(atom_Sequence);
         lilv_node_free(midi_MidiEvent);
         lilv_node_free(pprops_rangeSteps);
+        lilv_node_free(patch_writable);
         lilv_node_free(pset_Preset);
         lilv_node_free(units_render);
         lilv_node_free(units_symbol);
@@ -2374,6 +2392,142 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
     }
 
     // --------------------------------------------------------------------------------------------------------
+    // parameters
+
+    if (LilvNodes* const patches = lilv_plugin_get_value(p, ns.patch_writable))
+    {
+        if (unsigned int count = lilv_nodes_size(patches))
+        {
+            PluginParameter* const params = new PluginParameter[count+1];
+            memset(params, 0, sizeof(PluginParameter) * (count+1));
+
+            count = 0;
+            LILV_FOREACH(nodes, itpatches, patches)
+            {
+                const LilvNode* const patch = lilv_nodes_get(patches, itpatches);
+
+                LilvNode* const typeNode = lilv_world_get(W, patch, ns.rdf_type, nullptr);
+
+                if (typeNode == nullptr)
+                    continue;
+
+                if (strcmp(lilv_node_as_uri(typeNode), LV2_CORE__Parameter) != 0)
+                {
+                    lilv_node_free(typeNode);
+                    continue;
+                }
+
+                LilvNode* const rangeNode = lilv_world_get(W, patch, ns.rdfs_range, nullptr);
+
+                if (rangeNode == nullptr)
+                {
+                    lilv_node_free(typeNode);
+                    continue;
+                }
+
+                LilvNode* const labelNode = lilv_world_get(W, patch, ns.rdfs_label, nullptr);
+
+                if (labelNode == nullptr)
+                {
+                    lilv_node_free(rangeNode);
+                    lilv_node_free(typeNode);
+                    continue;
+                }
+
+                PluginParameter param;
+                memset(&param, 0, sizeof(PluginParameter));
+
+                param.valid = true;
+                param.uri   = strdup(lilv_node_as_uri(patch));
+                param.label = strdup(lilv_node_as_string(labelNode));
+                param.type  = strdup(lilv_node_as_string(rangeNode));
+
+                if (LilvNode* const fileTypesNode = lilv_world_get(W, patch, ns.mod_fileTypes, nullptr))
+                {
+                    if (char* const fileTypes = strdup(lilv_node_as_string(fileTypesNode)))
+                    {
+                        const size_t fileTypesLen = strlen(fileTypes);
+                        uint fileTypesCount = 1;
+
+                        // count number of items
+                        for (size_t i=0; i<fileTypesLen; ++i)
+                        {
+                            if (fileTypes[i] == ',')
+                                ++fileTypesCount;
+                        }
+
+                        const char** const fileTypesArray = new const char*[fileTypesCount+1U];
+                        memset(fileTypesArray, 0, sizeof(const char*)*(fileTypesCount+1U));
+
+                        // assign data, reusing fileTypes string pointer
+                        fileTypesCount = 0;
+                        fileTypesArray[0] = fileTypes;
+
+                        for (size_t i=0; i<fileTypesLen; ++i)
+                        {
+                            if (fileTypes[i] == ',')
+                            {
+                                fileTypes[i] = '\0';
+                                fileTypesArray[++fileTypesCount] = &fileTypes[i+1];
+                            }
+                        }
+
+                        param.fileTypes = fileTypesArray;
+                    }
+
+                    lilv_node_free(fileTypesNode);
+                }
+
+                if (LilvNode* const supportedExtensionsNode = lilv_world_get(W, patch, ns.mod_supportedExtensions, nullptr))
+                {
+                    if (char* const supportedExtensions = strdup(lilv_node_as_string(supportedExtensionsNode)))
+                    {
+                        const size_t supportedExtensionsLen = strlen(supportedExtensions);
+                        uint supportedExtensionsCount = 1;
+
+                        // count number of items
+                        for (size_t i=0; i<supportedExtensionsLen; ++i)
+                        {
+                            if (supportedExtensions[i] == ',')
+                                ++supportedExtensionsCount;
+                        }
+
+                        const char** const supportedExtensionsArray = new const char*[supportedExtensionsCount+1U];
+                        memset(supportedExtensionsArray, 0, sizeof(const char*)*(supportedExtensionsCount+1U));
+
+                        // assign data, reusing supportedExtensions string pointer
+                        supportedExtensionsCount = 0;
+                        supportedExtensionsArray[0] = supportedExtensions;
+
+                        for (size_t i=0; i<supportedExtensionsLen; ++i)
+                        {
+                            if (supportedExtensions[i] == ',')
+                            {
+                                supportedExtensions[i] = '\0';
+                                supportedExtensionsArray[++supportedExtensionsCount] = &supportedExtensions[i+1];
+                            }
+                        }
+
+                        param.supportedExtensions = supportedExtensionsArray;
+                    }
+
+                    lilv_node_free(supportedExtensionsNode);
+                }
+
+                lilv_node_free(labelNode);
+                lilv_node_free(rangeNode);
+                lilv_node_free(typeNode);
+
+                params[count++] = param;
+            }
+
+            info.parameters = params;
+        }
+
+        lilv_nodes_free(patches);
+    }
+
+    // --------------------------------------------------------------------------------------------------------
     // presets
 
     _place_preset_info(info, p, ns.pset_Preset, ns.rdfs_label);
@@ -2738,6 +2892,27 @@ static void _clear_plugin_info(PluginInfo& info)
         for (int i=0; info.ports.midi.output[i].valid; ++i)
             _clear_port_info(info.ports.midi.output[i]);
         delete[] info.ports.midi.output;
+    }
+
+    if (info.parameters != nullptr)
+    {
+        for (int i=0; info.parameters[i].valid; ++i)
+        {
+            free((void*)info.parameters[i].uri);
+            free((void*)info.parameters[i].label);
+            free((void*)info.parameters[i].type);
+            if (info.parameters[i].fileTypes != nullptr)
+            {
+                free((void*)info.parameters[i].fileTypes[0]);
+                delete[] info.parameters[i].fileTypes;
+            }
+            if (info.parameters[i].supportedExtensions != nullptr)
+            {
+                free((void*)info.parameters[i].supportedExtensions[0]);
+                delete[] info.parameters[i].supportedExtensions;
+            }
+        }
+        delete[] info.parameters;
     }
 
     if (info.presets != nullptr)
