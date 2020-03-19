@@ -44,9 +44,7 @@ JqueryClass('cloudPluginBox', {
             info: null,
             isMainWindow: true,
             windowName: "Plugin Store",
-
             pluginsData: {},
-
         }, options)
 
         self.data(options)
@@ -224,16 +222,16 @@ JqueryClass('cloudPluginBox', {
             indexed = {}
             index[plugin.uri] = indexed
         }
-		// Let's store all data safely, while modifying the given object
-		// to have all available data
+        // Let's store all data safely, while modifying the given object
+        // to have all available data
         $.extend(indexed, plugin)
-		$.extend(plugin, indexed)
+        $.extend(plugin, indexed)
     },
 
-	rebuildSearchIndex: function () {
-		var plugins = Object.values($(this).data('pluginsData'))
+    rebuildSearchIndex: function () {
+        var plugins = Object.values($(this).data('pluginsData'))
         desktop.resetPluginIndexer(plugins.filter(function(plugin) { return !!plugin.installedVersion }))
-	},
+    },
 
     // search cloud and local plugins, show all but prefer cloud
     searchAll: function (url, query, customRenderCallback) {
@@ -308,6 +306,7 @@ JqueryClass('cloudPluginBox', {
                     cplugin.buildEnvironment = lplugin.buildEnvironment
 
                     self.cloudPluginBox('checkLocalScreenshot', cplugin)
+
                 } else {
                     cplugin.installedVersion = null // if set to [0, 0, 0, 0], it appears as intalled on cloudplugininfo
                     cplugin.status = 'blocked'
@@ -358,7 +357,7 @@ JqueryClass('cloudPluginBox', {
                 $('#cloud_install_all').removeClass("disabled").css({color:'white'})
                 $('#cloud_update_all').removeClass("disabled").css({color:'white'})
             }
-			self.cloudPluginBox('rebuildSearchIndex')
+            self.cloudPluginBox('rebuildSearchIndex')
         }
 
         // get list of shopify commercial plugins
@@ -431,6 +430,7 @@ JqueryClass('cloudPluginBox', {
                 }
                 lplugins[uri] = pluginData
             }
+
             results.local = $.extend(true, {}, lplugins) // deep copy instead of link/reference
             renderResults()
         }
@@ -529,7 +529,7 @@ JqueryClass('cloudPluginBox', {
                 $('#cloud_install_all').removeClass("disabled").css({color:'white'})
                 $('#cloud_update_all').removeClass("disabled").css({color:'white'})
             }
-			self.cloudPluginBox('rebuildSearchIndex')
+            self.cloudPluginBox('rebuildSearchIndex')
         }
 
         // cloud search
@@ -886,7 +886,7 @@ JqueryClass('cloudPluginBox', {
             if (plugin.latestVersion) {
                 // removing a plugin available on cloud, keep its store item
                 plugin.status = 'blocked'
-				plugin.demo = false
+                plugin.demo = false
                 plugin.bundle_name = bundle
                 delete plugin.bundles
                 plugin.installedVersion = null

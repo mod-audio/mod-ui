@@ -468,6 +468,7 @@ JqueryClass('effectBox', {
                 if (plugin.ports.control.input.length == 0) {
                     info.find('.plugin-controlports').hide()
                 }
+
                 // hide cv inputs table if none available
                 if (!plugin.ports.cv || (plugin.ports.cv && plugin.ports.cv.input && plugin.ports.cv.input.length == 0)) {
                     info.find('.plugin-cvinputs').hide()
