@@ -51,6 +51,8 @@ function Desktop(elements) {
         cloudPluginBox: $('<div>'),
         cloudPluginBoxTrigger: $('<div>'),
         pedalboardTrigger: $('<div>'),
+        fileManagerBox: $('<div>'),
+        fileManagerBoxTrigger: $('<div>'),
         pedalboardBox: $('<div>'),
         pedalboardBoxTrigger: $('<div>'),
         bankBox: $('<div>'),
@@ -725,6 +727,8 @@ function Desktop(elements) {
                                                 elements.pedalboardBoxTrigger)
     this.bankBox = self.makeBankBox(elements.bankBox,
                                     elements.bankBoxTrigger)
+    this.fileManagerBox = self.makeFileManagerBox(elements.fileManagerBox,
+                                                  elements.fileManagerBoxTrigger)
 
     this.getPluginsData = function (uris, callback) {
         $.ajax({
@@ -1306,6 +1310,7 @@ function Desktop(elements) {
     elements.pedalboardBoxTrigger.statusTooltip()
     elements.bankBoxTrigger.statusTooltip()
     elements.cloudPluginBoxTrigger.statusTooltip()
+    elements.fileManagerBoxTrigger.statusTooltip()
 
     this.upgradeWindow = elements.upgradeWindow.upgradeWindow({
         icon: elements.upgradeIcon,
@@ -1525,6 +1530,10 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
 
         pluginParameterChange: function (port, value) {
             ws.send(sprintf("param_set %s %f", port, value))
+        },
+
+        pluginPatchParameterChange: function (instance, uri, value) {
+            ws.send(sprintf("patch_param_set %s %s %s", instance, uri, value))
         },
 
         pluginMove: function (instance, x, y) {
@@ -1753,6 +1762,14 @@ Desktop.prototype.makeBankBox = function (el, trigger) {
                 cache: false,
             })
         }
+    })
+}
+
+Desktop.prototype.makeFileManagerBox = function (el, trigger) {
+    var self = this
+    el.fileManagerBox({
+        trigger: trigger,
+        windowManager: this.windowManager,
     })
 }
 

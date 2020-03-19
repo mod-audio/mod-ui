@@ -410,7 +410,8 @@ body > .mod-settings.mod-window-visible {
     width:160px;
 }
 
-.mod-presets {
+.mod-presets,
+.mod-file-list {
     width: 320px !important;
 }
 .radio-preset {

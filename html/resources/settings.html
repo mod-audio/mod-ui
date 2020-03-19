@@ -49,6 +49,19 @@
             </div>
             <!-- END PRESET LIST -->
 
+            {{#effect.parameters}}
+            {{#path}}
+            <div class="mod-enumerated mod-file-list">
+                <span class="mod-enumerated-title">{{label}}</span>
+                <div class="mod-enumerated-list" mod-role="input-parameter" mod-parameter-uri="{{uri}}" mod-widget="custom-parameter-select">
+                    {{#files}}
+                    <div mod-role="enumeration-option" mod-parameter-value="{{fullname}}">{{basename}}</div>
+                    {{/files}}
+                </div>
+            </div>
+            {{/path}}
+            {{/effect.parameters}}
+
             {{#effect.ports.control.input}}
             {{#enumeration}}
             <div class="mod-enumerated">
