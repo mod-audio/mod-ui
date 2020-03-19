@@ -256,7 +256,7 @@ JqueryClass('cloudPluginBox', {
 
                 // NOTE backwards compatibility, to be removed once cloud updates itself and rebuilds all plugins
                 if (cplugin.buildEnvironment === undefined) {
-                    cplugin.buildEnvironment = (url === CLOUD_LABS_URL || !cplugin.stable) ? "labs" : "prod"
+                    cplugin.buildEnvironment = url === CLOUD_LABS_URL ? "labs" : "prod"
                 }
 
                 cplugin.latestVersion = [cplugin.builder_version || 0, cplugin.minorVersion, cplugin.microVersion, cplugin.release_number]
@@ -301,11 +301,6 @@ JqueryClass('cloudPluginBox', {
                 lplugin = results.local[uri]
                 lplugin.status = 'installed'
                 lplugin.latestVersion = null
-                if (!cloudReached) {
-                    // We don't know if the plugin is stable or not,
-                    // let's not assume it's beta
-                    lplugin.stable = true;
-                }
                 self.cloudPluginBox('checkLocalScreenshot', lplugin)
                 if (lplugin.licensed) {
                     if (lplugin.licensed > 0) {
@@ -431,7 +426,6 @@ JqueryClass('cloudPluginBox', {
                 }
 
                 if (cplugin) {
-                    lplugin.stable        = cplugin.stable
                     lplugin.latestVersion = [cplugin.builder_version || 0, cplugin.minorVersion, cplugin.microVersion, cplugin.release_number]
 
                     if (compareVersions(lplugin.installedVersion, lplugin.latestVersion) >= 0) {
@@ -441,7 +435,6 @@ JqueryClass('cloudPluginBox', {
                     }
                 } else {
                     lplugin.latestVersion = null
-                    lplugin.stable = !cloudReached
                     lplugin.status = 'installed'
                 }
 
@@ -466,7 +459,6 @@ JqueryClass('cloudPluginBox', {
                     lplugin.thumbnail_href  = "/resources/pedals/default-thumbnail.png"
                 }
                 self.cloudPluginBox('synchronizePluginData', lplugin)
-
                 plugins.push(lplugin)
             }
 
@@ -704,7 +696,6 @@ JqueryClass('cloudPluginBox', {
             status: plugin.status,
             brand : plugin.brand,
             label : plugin.label,
-            stable: !!(plugin.stable || !cloudReached),
             buildEnvironment: plugin.buildEnvironment,
         }
 
@@ -907,7 +898,6 @@ JqueryClass('cloudPluginBox', {
                 brand : plugin.brand,
                 name  : plugin.name,
                 label : plugin.label,
-                stable: !!plugin.stable,
                 ports : plugin.ports,
                 plugin_href: PLUGINS_URL + '/' + btoa(plugin.uri),
                 pedalboard_href: desktop.getPedalboardHref(plugin.uri),
