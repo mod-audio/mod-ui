@@ -302,14 +302,6 @@ JqueryClass('cloudPluginBox', {
                 lplugin.status = 'installed'
                 lplugin.latestVersion = null
                 self.cloudPluginBox('checkLocalScreenshot', lplugin)
-                if (lplugin.licensed) {
-                    if (lplugin.licensed > 0) {
-                        lplugin.licensed = true;
-                    } else {
-                        lplugin.licensed = false;
-                        lplugin.demo = true;
-                    }
-                }
                 self.cloudPluginBox('synchronizePluginData', lplugin)
                 plugins.push(lplugin)
             }
@@ -436,15 +428,6 @@ JqueryClass('cloudPluginBox', {
                 } else {
                     lplugin.latestVersion = null
                     lplugin.status = 'installed'
-                }
-
-                if (lplugin.licensed) {
-                    if (lplugin.licensed > 0) {
-                        lplugin.licensed = true;
-                    } else {
-                        lplugin.licensed = false;
-                        lplugin.demo = true;
-                    }
                 }
 
                 // we're showing installed only, so prefer to show installed modgui screenshot
