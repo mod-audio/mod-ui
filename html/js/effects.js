@@ -364,8 +364,8 @@ JqueryClass('effectBox', {
             thumbnail_href: (plugin.gui && plugin.gui.thumbnail)
                           ? ("/effect/image/thumbnail.png?uri=" + uri + "&v=" + ver)
                           :  "/resources/pedals/default-thumbnail.png",
-            licensed: plugin.licensed,
-            demo: plugin.licensed < 0
+            licensed: plugin.licensed > 0,
+            demo: plugin.licensed < 0,
         }
 
         var div = document.createElement("div");
