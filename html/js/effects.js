@@ -350,7 +350,7 @@ JqueryClass('effectBox', {
         renderNextPlugin(0)
     },
 
-    renderPlugin: function (plugin, container) {
+    renderPlugin: function (plugin, container, replace) {
         var self = $(this)
         if (container.length == 0)
             return
@@ -389,7 +389,17 @@ JqueryClass('effectBox', {
             self.effectBox('showPluginInfo', plugin)
         })
 
-        container.append(rendered)
+        if (replace) {
+            rendered.insertAfter(replace)
+            replace.remove()
+        } else {
+            container.append(rendered)
+        }
+
+        var index = self.data('index')
+        if (!index[plugin.uri])
+            index[plugin.uri] = []
+        index[plugin.uri].push([plugin, rendered, container])
     },
 
     showPluginInfo: function (plugin) {
@@ -442,77 +452,81 @@ JqueryClass('effectBox', {
                 pedalboard_href: desktop.getPedalboardHref(plugin.uri),
             };
 
-            var info = $(Mustache.render(TEMPLATES.cloudplugin_info, metadata))
+            var render = function(metadata) {
+                var info = $(Mustache.render(TEMPLATES.cloudplugin_info, metadata))
 
-            // hide install etc buttons
-            info.find('.js-remove').hide()
-            info.find('.js-install').hide()
-            info.find('.js-upgrade').hide()
-            info.find('.js-latest-version').hide()
+                // hide install etc buttons
+                info.find('.js-remove').hide()
+                info.find('.js-install').hide()
+                info.find('.js-upgrade').hide()
+                info.find('.js-latest-version').hide()
 
-            // hide control ports table if none available
-            if (plugin.ports.control.input.length == 0) {
-                info.find('.plugin-controlports').hide()
-            }
-
-            // hide cv inputs table if none available
-            if (!plugin.ports.cv || (plugin.ports.cv && plugin.ports.cv.input && plugin.ports.cv.input.length == 0)) {
-                info.find('.plugin-cvinputs').hide()
-            }
-
-            // hide cv ouputs ports table if none available
-            if (!plugin.ports.cv || (plugin.ports.cv && plugin.ports.cv.output && plugin.ports.cv.output.length == 0)) {
-                info.find('.plugin-cvoutputs').hide()
-            }
-
-            info.find('.favorite-button').on('click', function () {
-                var isFavorite = $(this).hasClass('favorite'),
-                    widget = $(this)
-
-                $.ajax({
-                    url: '/favorites/' + (isFavorite ? 'remove' : 'add'),
-                    type: 'POST',
-                    data: {
-                        uri: plugin.uri,
-                    },
-                    success: function (ok) {
-                        if (! ok) {
-                            console.log("favorite action failed")
-                            return
-                        }
-
-                        if (isFavorite) {
-                            // was favorite, not anymore
-                            widget.removeClass('favorite');
-                            remove_from_array(FAVORITES, plugin.uri)
-                            self.find('#effect-content-Favorites').find('[mod-uri="'+escape(plugin.uri)+'"]').remove()
-
-                        } else {
-                            // was not favorite, now is
-                            widget.addClass('favorite');
-                            FAVORITES.push(plugin.uri)
-                            self.effectBox('renderPlugin', plugin, self.find('#effect-content-Favorites'))
-                        }
-
-                        self.find('#effect-tab-Favorites').html('Favorites (' + FAVORITES.length + ')')
-                    },
-                    cache: false,
-                    dataType: 'json'
-                })
-            });
-
-            info.window({
-                windowName: "Plugin Info",
-                windowManager: self.data('windowManager'),
-                close: function () {
-                    info.remove()
-                    self.data('info', null)
+                // hide control ports table if none available
+                if (plugin.ports.control.input.length == 0) {
+                    info.find('.plugin-controlports').hide()
                 }
-            })
 
-            info.appendTo($('body'))
-            info.window('open')
-            self.data('info', info)
+                // hide cv inputs table if none available
+                if (!plugin.ports.cv || (plugin.ports.cv && plugin.ports.cv.input && plugin.ports.cv.input.length == 0)) {
+                    info.find('.plugin-cvinputs').hide()
+                }
+
+                // hide cv ouputs ports table if none available
+                if (!plugin.ports.cv || (plugin.ports.cv && plugin.ports.cv.output && plugin.ports.cv.output.length == 0)) {
+                    info.find('.plugin-cvoutputs').hide()
+                }
+
+                info.find('.favorite-button').on('click', function () {
+                    var isFavorite = $(this).hasClass('favorite'),
+                        widget = $(this)
+
+                    $.ajax({
+                        url: '/favorites/' + (isFavorite ? 'remove' : 'add'),
+                        type: 'POST',
+                        data: {
+                            uri: plugin.uri,
+                        },
+                        success: function (ok) {
+                            if (! ok) {
+                                console.log("favorite action failed")
+                                return
+                            }
+
+                            if (isFavorite) {
+                                // was favorite, not anymore
+                                widget.removeClass('favorite');
+                                remove_from_array(FAVORITES, plugin.uri)
+                                self.find('#effect-content-Favorites').find('[mod-uri="'+escape(plugin.uri)+'"]').remove()
+
+                            } else {
+                                // was not favorite, now is
+                                widget.addClass('favorite');
+                                FAVORITES.push(plugin.uri)
+                                self.effectBox('renderPlugin', plugin, self.find('#effect-content-Favorites'))
+                            }
+
+                            self.find('#effect-tab-Favorites').html('Favorites (' + FAVORITES.length + ')')
+                        },
+                        cache: false,
+                        dataType: 'json'
+                    })
+                });
+
+                info.window({
+                    windowName: "Plugin Info",
+                    windowManager: self.data('windowManager'),
+                    close: function () {
+                        info.remove()
+                        self.data('info', null)
+                    }
+                })
+
+                info.appendTo($('body'))
+                info.window('open')
+                self.data('info', info)
+            }
+
+            render(metadata)
         }
 
         if (plugin.bundles) {
@@ -549,6 +563,7 @@ JqueryClass('effectBox', {
             }
         });
         self.effectBox('resetShift')
+        self.data('index', {})
             //$('#js-effect-info').hide()
     },
 

@@ -18,7 +18,6 @@
 // add this to plugin data when cloud fails
 function getDummyPluginData() {
     return $.extend(true, {}, {
-        bundles: [""],
         ports: {
             control: {
                 input: []
@@ -26,7 +25,6 @@ function getDummyPluginData() {
         },
     })
 }
-
 
 JqueryClass('cloudPluginBox', {
     init: function (options) {
@@ -45,7 +43,8 @@ JqueryClass('cloudPluginBox', {
             },
             info: null,
             isMainWindow: true,
-            windowName: "Plugin Store"
+            windowName: "Plugin Store",
+            pluginsData: {},
         }, options)
 
         self.data(options)
@@ -129,6 +128,8 @@ JqueryClass('cloudPluginBox', {
         }
 
         self.window(options)
+
+        return self
     },
 
     setCategory: function (category) {
@@ -214,6 +215,24 @@ JqueryClass('cloudPluginBox', {
         return self.cloudPluginBox('searchAll', url, query, customRenderCallback)
     },
 
+    synchronizePluginData: function (plugin) {
+        var index = $(this).data('pluginsData')
+        indexed = index[plugin.uri]
+        if (indexed == null) {
+            indexed = {}
+            index[plugin.uri] = indexed
+        }
+        // Let's store all data safely, while modifying the given object
+        // to have all available data
+        $.extend(indexed, plugin)
+        $.extend(plugin, indexed)
+    },
+
+    rebuildSearchIndex: function () {
+        var plugins = Object.values($(this).data('pluginsData'))
+        desktop.resetPluginIndexer(plugins.filter(function(plugin) { return !!plugin.installedVersion }))
+    },
+
     // search cloud and local plugins, show all but prefer cloud
     searchAll: function (url, query, customRenderCallback) {
         var self = $(this)
@@ -222,6 +241,9 @@ JqueryClass('cloudPluginBox', {
             cloudReached = false
 
         renderResults = function () {
+            if (results.local == null || results.cloud == null)
+                return
+
             var plugins = []
 
             for (var i in results.cloud) {
@@ -270,6 +292,7 @@ JqueryClass('cloudPluginBox', {
                         cplugin.thumbnail_href  = "/resources/pedals/default-thumbnail.png"
                     }
                 }
+                self.cloudPluginBox('synchronizePluginData', cplugin)
                 plugins.push(cplugin)
             }
 
@@ -278,7 +301,21 @@ JqueryClass('cloudPluginBox', {
                 lplugin = results.local[uri]
                 lplugin.status = 'installed'
                 lplugin.latestVersion = null
+                if (!cloudReached) {
+                    // We don't know if the plugin is stable or not,
+                    // let's not assume it's beta
+                    lplugin.stable = true;
+                }
                 self.cloudPluginBox('checkLocalScreenshot', lplugin)
+                if (lplugin.licensed) {
+                    if (lplugin.licensed > 0) {
+                        lplugin.licensed = true;
+                    } else {
+                        lplugin.licensed = false;
+                        lplugin.demo = true;
+                    }
+                }
+                self.cloudPluginBox('synchronizePluginData', lplugin)
                 plugins.push(lplugin)
             }
 
@@ -293,19 +330,21 @@ JqueryClass('cloudPluginBox', {
                 $('#cloud_install_all').removeClass("disabled").css({color:'white'})
                 $('#cloud_update_all').removeClass("disabled").css({color:'white'})
             }
+            self.cloudPluginBox('rebuildSearchIndex')
         }
 
         // cloud search
+        var cloudResults
         $.ajax({
             method: 'GET',
             url: url + "/lv2/plugins",
             data: query,
             success: function (plugins) {
                 cloudReached = true
-                results.cloud = plugins
+                cloudResults = plugins
             },
             error: function () {
-                results.cloud = []
+                cloudResults = []
             },
             complete: function () {
                 $.ajax({
@@ -316,11 +355,11 @@ JqueryClass('cloudPluginBox', {
                     },
                     error: function () {
                         results.featured = []
+                        $('.featured-plugins').hide()
                     },
                     complete: function () {
-                        if (results.local != null) {
-                            renderResults()
-                        }
+                        results.cloud = cloudResults;
+                        renderResults()
                     },
                     cache: false,
                     dataType: 'json'
@@ -333,22 +372,21 @@ JqueryClass('cloudPluginBox', {
         // local search
         if (query.text)
         {
-            var allplugins = desktop.pluginIndexerData
             var lplugins   = {}
 
             var ret = desktop.pluginIndexer.search(query.text)
             for (var i in ret) {
                 var uri = ret[i].ref
-                if (! allplugins[uri]) {
+                var pluginData = self.data('pluginsData')[uri]
+                if (! pluginData) {
                     console.log("ERROR: Plugin '" + uri + "' was not previously cached, cannot show it")
                     continue
                 }
-                lplugins[uri] = allplugins[uri]
+                lplugins[uri] = pluginData
             }
 
             results.local = $.extend(true, {}, lplugins) // deep copy instead of link/reference
-            if (results.cloud != null)
-                renderResults()
+            renderResults()
         }
         else
         {
@@ -363,11 +401,9 @@ JqueryClass('cloudPluginBox', {
                         plugin.installedVersion = [plugin.builder, plugin.minorVersion, plugin.microVersion, plugin.release]
                         allplugins[plugin.uri] = plugin
                     }
-                    desktop.resetPluginIndexer(allplugins)
 
                     results.local = $.extend(true, {}, allplugins) // deep copy instead of link/reference
-                    if (results.cloud != null)
-                        renderResults()
+                    renderResults()
                 },
                 cache: false,
                 dataType: 'json'
@@ -405,8 +441,17 @@ JqueryClass('cloudPluginBox', {
                     }
                 } else {
                     lplugin.latestVersion = null
-                    lplugin.stable = false
+                    lplugin.stable = !cloudReached
                     lplugin.status = 'installed'
+                }
+
+                if (lplugin.licensed) {
+                    if (lplugin.licensed > 0) {
+                        lplugin.licensed = true;
+                    } else {
+                        lplugin.licensed = false;
+                        lplugin.demo = true;
+                    }
                 }
 
                 // we're showing installed only, so prefer to show installed modgui screenshot
@@ -420,6 +465,7 @@ JqueryClass('cloudPluginBox', {
                     lplugin.screenshot_href = "/resources/pedals/default-screenshot.png"
                     lplugin.thumbnail_href  = "/resources/pedals/default-thumbnail.png"
                 }
+                self.cloudPluginBox('synchronizePluginData', lplugin)
 
                 plugins.push(lplugin)
             }
@@ -435,6 +481,7 @@ JqueryClass('cloudPluginBox', {
                 $('#cloud_install_all').removeClass("disabled").css({color:'white'})
                 $('#cloud_update_all').removeClass("disabled").css({color:'white'})
             }
+            self.cloudPluginBox('rebuildSearchIndex')
         }
 
         // cloud search
@@ -446,6 +493,8 @@ JqueryClass('cloudPluginBox', {
                 // index by uri, needed later to check its latest version
                 var cplugins = {}
                 for (var i in plugins) {
+                    delete plugins[i].installedVersion
+                    delete plugins[i].bundles
                     cplugins[plugins[i].uri] = plugins[i]
                 }
                 cloudReached = true
@@ -465,17 +514,17 @@ JqueryClass('cloudPluginBox', {
         // local search
         if (query.text)
         {
-            var allplugins = desktop.pluginIndexerData
             var lplugins   = []
 
             var ret = desktop.pluginIndexer.search(query.text)
             for (var i in ret) {
                 var uri = ret[i].ref
-                if (! allplugins[uri]) {
+                var pluginData = self.data('pluginsData')[uri]
+                if (! pluginData) {
                     console.log("ERROR: Plugin '" + uri + "' was not previously cached, cannot show it")
                     continue
                 }
-                lplugins.push(allplugins[uri])
+                lplugins.push(pluginData)
             }
 
             results.local = $.extend(true, {}, lplugins) // deep copy instead of link/reference
@@ -494,7 +543,6 @@ JqueryClass('cloudPluginBox', {
                         plugin.installedVersion = [plugin.builder || 0, plugin.minorVersion, plugin.microVersion, plugin.release]
                         allplugins[plugin.uri] = plugin
                     }
-                    desktop.resetPluginIndexer(allplugins)
 
                     results.local = plugins
                     if (results.cloud != null)
@@ -576,6 +624,7 @@ JqueryClass('cloudPluginBox', {
 				img.css('opacity', 1)
 			};
 		}
+
 		if (!self.data('featuredInitialized')) {
 			var featuredCanvas = $('.carousel')
 			for (var i in featured) {
@@ -656,15 +705,13 @@ JqueryClass('cloudPluginBox', {
             brand : plugin.brand,
             label : plugin.label,
             stable: !!(plugin.stable || !cloudReached),
-            demo: !!plugin.demo, // FIXME
-            featured: plugin.featured,
-            buildEnvironment: plugin.buildEnvironment
+            buildEnvironment: plugin.buildEnvironment,
         }
 
         var template = featured ? TEMPLATES.featuredplugin : TEMPLATES.cloudplugin
         var rendered = $(Mustache.render(template, plugin_data))
         rendered.click(function () {
-            self.cloudPluginBox('showPluginInfo', plugin)
+            self.cloudPluginBox('showPluginInfo', plugin.uri)
         })
 
         return rendered
@@ -749,7 +796,7 @@ JqueryClass('cloudPluginBox', {
 
         for (var i in installed) {
             uri    = installed[i]
-            plugin = self.data('pluginsDict')[uri]
+            plugin = self.data('pluginsData')[uri]
 
             if (! plugin) {
                 continue
@@ -778,7 +825,7 @@ JqueryClass('cloudPluginBox', {
                 $('#effect-tab-Favorites').html('Favorites (' + FAVORITES.length + ')')
             }
 
-            plugin  = self.data('pluginsDict')[uri]
+            plugin  = self.data('pluginsData')[uri]
             oldElem = self.find('.cloud-plugin[mod-uri="'+escape(uri)+'"]')
 
             if (plugin.latestVersion) {
@@ -786,7 +833,7 @@ JqueryClass('cloudPluginBox', {
                 plugin.status = 'blocked'
                 plugin.bundle_name = bundle
                 delete plugin.bundles
-                delete plugin.installedVersion
+                plugin.installedVersion = null
 
                 newElem = self.cloudPluginBox('renderPlugin', plugin, true)
                 oldElem.replaceWith(newElem)
@@ -804,7 +851,7 @@ JqueryClass('cloudPluginBox', {
                 categories['All'] -= 1
 
                 // remove it from store
-                delete self.data('pluginsDict')[uri]
+                delete self.data('pluginsData')[uri]
                 oldElem.remove()
             }
         }
@@ -812,9 +859,10 @@ JqueryClass('cloudPluginBox', {
         self.cloudPluginBox('setCategoryCount', categories)
     },
 
-    showPluginInfo: function (plugin) {
+    showPluginInfo: function (uri) {
         var self = $(this)
-        var uri  = escape(plugin.uri)
+
+        var plugin = self.data('pluginsData')[uri]
 
         var cloudChecked = false
         var localChecked = false
@@ -848,6 +896,7 @@ JqueryClass('cloudPluginBox', {
             var metadata = {
                 author: plugin.author,
                 uri: plugin.uri,
+                escaped_uri: escape(plugin.uri),
                 thumbnail_href: plugin.thumbnail_href,
                 screenshot_href: plugin.screenshot_href,
                 category: category || "None",
@@ -860,7 +909,6 @@ JqueryClass('cloudPluginBox', {
                 label : plugin.label,
                 stable: !!plugin.stable,
                 ports : plugin.ports,
-                demo  : !!plugin.demo, // FIXME
                 plugin_href: PLUGINS_URL + '/' + btoa(plugin.uri),
                 pedalboard_href: desktop.getPedalboardHref(plugin.uri),
             };
@@ -871,7 +919,6 @@ JqueryClass('cloudPluginBox', {
                 info.remove()
                 self.data('info', null)
             }
-
             info = $(Mustache.render(TEMPLATES.cloudplugin_info, metadata))
 
             // hide control ports table if none available
@@ -965,6 +1012,8 @@ JqueryClass('cloudPluginBox', {
                 },
                 error: function () {
                     // assume not installed
+                    plugin.installedVersion = null
+                    plugin.installed_version = null
                     localChecked = true
                     showInfo()
                 },

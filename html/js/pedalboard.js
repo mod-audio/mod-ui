@@ -1370,6 +1370,7 @@ JqueryClass('pedalboard', {
 
         pluginGui.render(instance, function (icon, settings) {
             obj.icon = icon
+            icon.attr('mod-uri', escape(pluginData.uri));
 
             self.data('plugins')[instance] = icon
 
@@ -1801,7 +1802,7 @@ JqueryClass('pedalboard', {
 
         var connMgr = self.data('connectionManager')
 
-         connMgr.iterate(function(jack) {
+        connMgr.iterate(function(jack) {
             self.pedalboard('destroyJack', jack);
         })
 
@@ -2224,7 +2225,7 @@ JqueryClass('pedalboard', {
         // It gives us a pretty good result
         var deltaX = xo - xi - 50
         if (deltaX < 0) {
-            deltaX = 8.5 * (deltaX / 6) ^ 0.8
+            deltaX = 8.5 * (deltaX / 6) // ^ 0.8
         } else {
             deltaX /= 1.5
         }

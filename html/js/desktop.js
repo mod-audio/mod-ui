@@ -675,7 +675,7 @@ function Desktop(elements) {
             }),
             success: function (resp) {
                 if (! resp.result) {
-					callback(false)
+                    callback(false)
                     return
                 }
                 callback(true)
@@ -1296,15 +1296,15 @@ function Desktop(elements) {
         }
     })
 
-	elements.settingsIcon.click(function() {
-		document.location.href = '/settings';
-	})
+    elements.settingsIcon.click(function() {
+        document.location.href = '/settings';
+    })
 
-	elements.settingsIcon.statusTooltip()
-	elements.pedalboardTrigger.statusTooltip()
-	elements.pedalboardBoxTrigger.statusTooltip()
-	elements.bankBoxTrigger.statusTooltip()
-	elements.cloudPluginBoxTrigger.statusTooltip()
+    elements.settingsIcon.statusTooltip()
+    elements.pedalboardTrigger.statusTooltip()
+    elements.pedalboardBoxTrigger.statusTooltip()
+    elements.bankBoxTrigger.statusTooltip()
+    elements.cloudPluginBoxTrigger.statusTooltip()
 
     this.upgradeWindow = elements.upgradeWindow.upgradeWindow({
         icon: elements.upgradeIcon,
