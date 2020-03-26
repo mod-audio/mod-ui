@@ -256,7 +256,7 @@ JqueryClass('cloudPluginBox', {
 
                 // NOTE backwards compatibility, to be removed once cloud updates itself and rebuilds all plugins
                 if (cplugin.buildEnvironment === undefined) {
-                    cplugin.buildEnvironment = url === CLOUD_LABS_URL ? "labs" : "prod"
+                    cplugin.buildEnvironment = (url === CLOUD_LABS_URL || !cplugin.stable) ? "labs" : "prod"
                 }
 
                 cplugin.latestVersion = [cplugin.builder_version || 0, cplugin.minorVersion, cplugin.microVersion, cplugin.release_number]
@@ -749,7 +749,7 @@ JqueryClass('cloudPluginBox', {
             licensed: plugin.licensed,
             featured: plugin.featured,
             coming: plugin.coming,
-            buildEnvironment: plugin.buildEnvironment,
+            build_env: plugin.buildEnvironment,
         }
 
         var template = featured ? TEMPLATES.featuredplugin : TEMPLATES.cloudplugin
@@ -972,6 +972,8 @@ JqueryClass('cloudPluginBox', {
                 demo  : !!plugin.demo,
                 licensed: plugin.licensed,
                 coming: plugin.coming,
+                build_env_uppercase: (plugin.buildEnvironment || "LOCAL").toUpperCase(),
+                show_build_env: plugin.buildEnvironment !== "prod",
             };
 
             var info = self.data('info')

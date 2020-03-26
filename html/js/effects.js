@@ -452,6 +452,8 @@ JqueryClass('effectBox', {
                 favorite_class: FAVORITES.indexOf(plugin.uri) >= 0 ? "favorite" : "",
                 plugin_href: PLUGINS_URL + '/' + btoa(plugin.uri),
                 pedalboard_href: desktop.getPedalboardHref(plugin.uri),
+                build_env_uppercase: (plugin.buildEnvironment || "LOCAL").toUpperCase(),
+                show_build_env: plugin.buildEnvironment !== "prod",
             };
 
             var render = function(metadata) {

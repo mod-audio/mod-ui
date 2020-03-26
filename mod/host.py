@@ -2017,7 +2017,7 @@ class Host(object):
             for port in info['ports']['cv']['output']:
                 cv_port_uri = CV_OPTION + instance + '/' + port['symbol']
                 try:
-                    yield gen.Task(self.cv_addressing_plugin_port_remove, cv_port_uri)
+                    yield gen.Task(self.cv_addressing_plugin_port_remove_gen_helper, cv_port_uri)
                 except Exception as e:
                     logging.exception(e)
 
@@ -2392,7 +2392,7 @@ class Host(object):
     def snapshot_disable(self, callback):
         self.snapshot_clear()
         self.pedalboard_modified = True
-        self.address(PEDALBOARD_INSTANCE, ":presets", kNullAddressURI, "---", 0, 0, 0, 0, {}, callback)
+        self.unaddress(PEDALBOARD_INSTANCE, ":presets", True, callback)
 
     def snapshot_save(self):
         idx = self.current_pedalboard_snapshot_id
@@ -3746,7 +3746,7 @@ _:b%i
 
         # First, unadress BPM port if switching to Link or MIDI sync mode
         if mode in (Profile.TRANSPORT_SOURCE_MIDI_SLAVE, Profile.TRANSPORT_SOURCE_ABLETON_LINK):
-            self.address(PEDALBOARD_INSTANCE, ":bpm", kNullAddressURI, "---", 0.0, 0.0, 0.0, 0, {}, unaddress_bpm_callback)
+            self.unaddress(PEDALBOARD_INSTANCE, ":bpm", True, unaddress_bpm_callback)
         else:
             unaddress_bpm_callback(True)
 
@@ -4079,7 +4079,9 @@ _:b%i
                 callback(True)
                 return
 
-        if self.addressings.is_hmi_actuator(actuator_uri) and not self.hmi.initialized:
+        is_hmi_actuator = self.addressings.is_hmi_actuator(actuator_uri)
+
+        if is_hmi_actuator and not self.hmi.initialized:
             print("WARNING: Cannot address to HMI at this point")
             callback(False)
             return
@@ -4137,7 +4139,7 @@ _:b%i
                 callback(False)
                 return
             if needsValueChange:
-                if actuator_uri != kBpmURI:
+                if actuator_uri != kBpmURI and is_hmi_actuator:
                     hw_id = self.addressings.hmi_uri2hw_map[actuator_uri]
                     try:
                         yield gen.Task(self.hmi_parameter_set, hw_id, value)
@@ -4170,6 +4172,9 @@ _:b%i
             # group actuator addressing has already been loaded previously
             callback(True)
 
+    def unaddress(self, instance, portsymbol, send_hmi, callback):
+        self.address(instance, portsymbol, kNullAddressURI, "---", 0.0, 0.0, 0.0, 0, {}, callback, True, send_hmi)
+
     def check_available_pages(self, page):
         send_hmi_available_pages = False
         available_pages = self.addressings.available_pages.copy()
@@ -4201,6 +4206,10 @@ _:b%i
             self.addressings.cv_addressings[uri] = { 'name': name, 'addrs': [] }
         return self.addr_task_get_plugin_cv_port_op_mode(uri)
 
+    def cv_addressing_plugin_port_remove_gen_helper(self, uri, callback):
+        self.cv_addressing_plugin_port_remove(uri, callback)
+
+    @gen.coroutine
     def cv_addressing_plugin_port_remove(self, uri, callback):
         if uri not in self.addressings.cv_addressings:
             callback(False)
@@ -4208,17 +4217,10 @@ _:b%i
 
         # Unadress everything that was assigned to this plugin cv port
         addressings = self.addressings.cv_addressings[uri]
-        numLeftToUnaddress = len(addressings['addrs'])
 
-        def remove_callback(ok):
-            if ok:
-                del self.addressings.cv_addressings[uri]
-            numLeftToUnaddress -= 1
-            if numLeftToUnaddress == 0:
-                callback(True)
-
-        if numLeftToUnaddress == 0:
-            remove_callback(True)
+        if len(addressings['addrs']) == 0:
+            del self.addressings.cv_addressings[uri]
+            callback(True)
             return
 
         for addressing in addressings['addrs']:
@@ -4226,11 +4228,20 @@ _:b%i
                 instance_id = addressing['instance_id']
                 port        = addressing['port']
                 instance    = self.mapper.get_instance(instance_id)
-                self.address(instance, port, kNullAddressURI, "---", 0.0, 0.0, 0.0, 0, {}, remove_callback)
             except Exception as e:
                 callback(False)
                 logging.exception(e)
                 return
+
+            try:
+                yield gen.Task(self.unaddress, instance, port, False)
+            except Exception as e:
+                callback(False)
+                logging.exception(e)
+                return
+
+        del self.addressings.cv_addressings[uri]
+        callback(True)
 
     # -----------------------------------------------------------------------------------------------------------------
     # HMI callbacks, called by HMI via serial
