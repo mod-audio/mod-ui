@@ -256,7 +256,7 @@ JqueryClass('cloudPluginBox', {
 
                 // NOTE backwards compatibility, to be removed once cloud updates itself and rebuilds all plugins
                 if (cplugin.buildEnvironment === undefined) {
-                    cplugin.buildEnvironment = url === CLOUD_LABS_URL ? "labs" : "prod"
+                    cplugin.buildEnvironment = (url === CLOUD_LABS_URL || !cplugin.stable) ? "labs" : "prod"
                 }
 
                 cplugin.latestVersion = [cplugin.builder_version || 0, cplugin.minorVersion, cplugin.microVersion, cplugin.release_number]
