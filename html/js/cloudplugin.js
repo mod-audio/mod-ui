@@ -679,7 +679,7 @@ JqueryClass('cloudPluginBox', {
             status: plugin.status,
             brand : plugin.brand,
             label : plugin.label,
-            buildEnvironment: plugin.buildEnvironment,
+            build_env: plugin.buildEnvironment,
         }
 
         var template = featured ? TEMPLATES.featuredplugin : TEMPLATES.cloudplugin
@@ -884,6 +884,8 @@ JqueryClass('cloudPluginBox', {
                 ports : plugin.ports,
                 plugin_href: PLUGINS_URL + '/' + btoa(plugin.uri),
                 pedalboard_href: desktop.getPedalboardHref(plugin.uri),
+                build_env_uppercase: (plugin.buildEnvironment || "LOCAL").toUpperCase(),
+                show_build_env: plugin.buildEnvironment !== "prod",
             };
 
             var info = self.data('info')
