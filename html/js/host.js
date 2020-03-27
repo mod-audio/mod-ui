@@ -317,7 +317,11 @@ $('document').ready(function() {
                 plugins[instance] = {} // register plugin
 
                 $.ajax({
-                    url: '/effect/get?uri=' + escape(uri),
+                    url: '/effect/get',
+                    data: {
+                        uri: uri,
+                        version: VERSION,
+                    },
                     success: function (pluginData) {
                         var instancekey = '[mod-instance="' + instance + '"]'
 

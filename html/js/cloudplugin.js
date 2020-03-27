@@ -1066,7 +1066,8 @@ JqueryClass('cloudPluginBox', {
             $.ajax({
                 url: "/effect/get",
                 data: {
-                    uri: plugin.uri
+                    uri: plugin.uri,
+                    version: VERSION,
                 },
                 success: function (pluginData) {
                     // delete cloud specific fields just in case
