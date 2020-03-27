@@ -701,7 +701,8 @@ JqueryClass('pedalboard', {
                 $.ajax({
                     url: '/effect/get',
                     data: {
-                        uri: pluginData.uri
+                        uri: pluginData.uri,
+                        version: VERSION,
                     },
                     success: function (plugin) {
                         new GUI(plugin, options).renderDummyIcon(function (icon) {
