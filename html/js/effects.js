@@ -556,7 +556,8 @@ JqueryClass('effectBox', {
             $.ajax({
                 url: "/effect/get",
                 data: {
-                    uri: plugin.uri
+                    uri: plugin.uri,
+                    version: VERSION,
                 },
                 success: function (pluginData) {
                     plugin = $.extend(plugin, pluginData)

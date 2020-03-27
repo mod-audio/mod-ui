@@ -4216,14 +4216,14 @@ _:b%i
             return
 
         # Unadress everything that was assigned to this plugin cv port
-        addressings = self.addressings.cv_addressings[uri]
+        addressings_addrs = self.addressings.cv_addressings[uri]['addrs'].copy()
 
-        if len(addressings['addrs']) == 0:
+        if len(addressings_addrs) == 0:
             del self.addressings.cv_addressings[uri]
             callback(True)
             return
 
-        for addressing in addressings['addrs']:
+        for addressing in addressings_addrs:
             try:
                 instance_id = addressing['instance_id']
                 port        = addressing['port']
