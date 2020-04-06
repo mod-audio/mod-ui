@@ -58,3 +58,12 @@ And now you are ready to start the webserver::
 
 Setting the environment variables is needed when developing on a PC.
 Open your browser and point to http://localhost:8888/.
+
+Docker
+------
+
+You can also use the docker to start an environment. First set the user and group in the `docker-compose`, then::
+
+    $ docker-compose up
+
+Open your browser and point to http://localhost:8888/.

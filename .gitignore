@@ -37,3 +37,6 @@ utils/test
 *node_modules/
 .idea
 *.egg-info
+
+.cache
+.pedalboards/
