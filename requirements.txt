@@ -1,4 +1,4 @@
-Pillow==6.2.0
+Pillow==6.2.2
 pyserial==3.0
 pystache==0.5.4
 tornado==4.3
