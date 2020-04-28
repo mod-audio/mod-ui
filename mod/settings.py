@@ -53,8 +53,6 @@ LAST_STATE_JSON_FILE = os.environ.get('MOD_LAST_STATE_JSON', join(DATA_DIR, 'las
 PREFERENCES_JSON_FILE = os.environ.get('MOD_PREFERENCES_JSON', join(DATA_DIR, 'prefs.json'))
 USER_ID_JSON_FILE = os.environ.get('MOD_USER_ID_JSON', join(DATA_DIR, 'user-id.json'))
 
-KEYS_PATH = os.environ.get('MOD_KEYS_PATH', join(DATA_DIR, 'keys'))
-
 # It's mandatory KEYS_PATH ends with / and is in MOD_KEYS_PATH,
 # so utils_lilv.so can properly access it
 if not KEYS_PATH.endswith('/'):

@@ -24,7 +24,6 @@ import sys
 import time
 
 from base64 import b64decode, b64encode
-from datetime import timedelta
 from signal import signal, SIGUSR1, SIGUSR2
 from tornado import gen, iostream, web, websocket
 from tornado.escape import squeeze, url_escape, xhtml_escape
@@ -949,26 +948,18 @@ class EffectPresetLoad(JsonRequestHandler):
         uri = self.get_argument('uri')
 
         abort_catcher = SESSION.host.abort_previous_loading_progress("web EffectPresetLoad")
-        ok = yield gen.Task(SESSION.host.preset_load_gen_helper, instance, uri, False, abort_catcher)
+        ok = yield gen.Task(SESSION.host.preset_load, instance, uri, abort_catcher)
 
         if not ok:
             self.write(False)
-            return
-        if not SESSION.hmi.initialized:
-            self.write(True)
             return
 
         instance_id = SESSION.host.mapper.get_id_without_creating(instance)
         data = SESSION.host.addressings.get_presets_as_options(instance_id)
         value, maximum, options, spreset = data
 
-        try:
-            ok = yield gen.with_timeout(timedelta(seconds=10),
-                                        gen.Task(SESSION.host.paramhmi_set, instance, ":presets", value))
-        except gen.TimeoutError:
-            self.write(False)
-        else:
-            self.write(ok)
+        ok = yield gen.Task(SESSION.host.paramhmi_set, instance, ":presets", value)
+        self.write(ok)
 
 class EffectParameterSet(JsonRequestHandler):
     @web.asynchronous
@@ -979,13 +970,8 @@ class EffectParameterSet(JsonRequestHandler):
             return
         data = json.loads(self.request.body.decode("utf-8", errors="ignore"))
         symbol, instance, portsymbol, value = data.rsplit("/",3)
-        try:
-            ok = yield gen.with_timeout(timedelta(seconds=5),
-                                        gen.Task(SESSION.host.paramhmi_set, instance, portsymbol, value))
-        except gen.TimeoutError:
-            self.write(False)
-        else:
-            self.write(True)
+        ok = yield gen.Task(SESSION.host.paramhmi_set, instance, portsymbol, value)
+        self.write(True)
 
 class EffectPresetSaveNew(JsonRequestHandler):
     @web.asynchronous
@@ -1709,16 +1695,11 @@ class Ping(JsonRequestHandler):
     @web.asynchronous
     @gen.engine
     def get(self):
-        start = end = time.time()
-
-        try:
-            online = yield gen.with_timeout(timedelta(seconds=5),
-                                            gen.Task(SESSION.web_ping))
-        except gen.TimeoutError:
-            online = True
+        start  = end = time.time()
+        online = yield gen.Task(SESSION.web_ping)
 
         if online:
-            end = time.time()
+            end  = time.time()
             resp = {
                 'ihm_online': online,
                 'ihm_time'  : int((end - start) * 1000) or 1,

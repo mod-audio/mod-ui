@@ -44,9 +44,7 @@ JqueryClass('cloudPluginBox', {
             info: null,
             isMainWindow: true,
             windowName: "Plugin Store",
-
             pluginsData: {},
-
         }, options)
 
         self.data(options)
@@ -207,10 +205,8 @@ JqueryClass('cloudPluginBox', {
         // hide/show featured plugins if searching/not searching
         self.cloudPluginBox('toggleFeaturedPlugins')
         var url = SITEURL
-        if (self.find('input:radio[name=plugins-source]:checked').val() === 'official') {
-            query.stable = "true"
-        } else {
-          url = CLOUD_LABS_URL
+        if (self.find('input:radio[name=plugins-source]:checked').val() === 'labs') {
+            url = CLOUD_LABS_URL
         }
 
         if (self.find('input:checkbox[name=installed]:checked').length)
@@ -226,16 +222,16 @@ JqueryClass('cloudPluginBox', {
             indexed = {}
             index[plugin.uri] = indexed
         }
-		// Let's store all data safely, while modifying the given object
-		// to have all available data
+        // Let's store all data safely, while modifying the given object
+        // to have all available data
         $.extend(indexed, plugin)
-		$.extend(plugin, indexed)
+        $.extend(plugin, indexed)
     },
 
-	rebuildSearchIndex: function () {
-		var plugins = Object.values($(this).data('pluginsData'))
+    rebuildSearchIndex: function () {
+        var plugins = Object.values($(this).data('pluginsData'))
         desktop.resetPluginIndexer(plugins.filter(function(plugin) { return !!plugin.installedVersion }))
-	},
+    },
 
     // search cloud and local plugins, show all but prefer cloud
     searchAll: function (url, query, customRenderCallback) {
@@ -249,13 +245,19 @@ JqueryClass('cloudPluginBox', {
                 return
 
             var plugins = []
+
             for (var i in results.cloud) {
                 cplugin = results.cloud[i]
                 lplugin = results.local[cplugin.uri]
 
-				// Attention: O(N^2), N being the number of published plugins
-                if (results.featured)
+                if (results.featured) {
                     cplugin.featured = results.featured.filter(function (ft) { return ft.uri === cplugin.uri })[0]
+                }
+
+                // NOTE backwards compatibility, to be removed once cloud updates itself and rebuilds all plugins
+                if (cplugin.buildEnvironment === undefined) {
+                    cplugin.buildEnvironment = (url === CLOUD_LABS_URL || !cplugin.stable) ? "labs" : "prod"
+                }
 
                 cplugin.latestVersion = [cplugin.builder_version || 0, cplugin.minorVersion, cplugin.microVersion, cplugin.release_number]
                 if (desktop.licenseManager && cplugin.mod_license === 'paid_perpetual') {
@@ -305,6 +307,7 @@ JqueryClass('cloudPluginBox', {
                     cplugin.buildEnvironment = lplugin.buildEnvironment
 
                     self.cloudPluginBox('checkLocalScreenshot', cplugin)
+
                 } else {
                     cplugin.installedVersion = null // if set to [0, 0, 0, 0], it appears as intalled on cloudplugininfo
                     cplugin.status = 'blocked'
@@ -316,33 +319,26 @@ JqueryClass('cloudPluginBox', {
                         cplugin.thumbnail_href  = "/resources/pedals/default-thumbnail.png"
                     }
                 }
-
                 self.cloudPluginBox('synchronizePluginData', cplugin)
                 plugins.push(cplugin)
             }
 
-            if (! self.find('#cloud-plugins-source').is(':visible') || ! query.stable) {
-                for (var uri in results.local) {
-                    lplugin = results.local[uri]
-                    lplugin.status = 'installed'
-                    lplugin.latestVersion = null
-                    if (!cloudReached) {
-                        // We don't know if the plugin is stable or not,
-                        // let's not assume it's beta
-                        lplugin.stable = true;
+            // for all the other plugins that are not in the cloud
+            for (var uri in results.local) {
+                lplugin = results.local[uri]
+                lplugin.status = 'installed'
+                lplugin.latestVersion = null
+                self.cloudPluginBox('checkLocalScreenshot', lplugin)
+                if (lplugin.licensed) {
+                    if (lplugin.licensed > 0) {
+                        lplugin.licensed = true;
+                    } else {
+                        lplugin.licensed = false;
+                        lplugin.demo = true;
                     }
-                    self.cloudPluginBox('checkLocalScreenshot', lplugin)
-                    if (lplugin.licensed) {
-                        if (lplugin.licensed > 0) {
-                            lplugin.licensed = true;
-                        } else {
-                            lplugin.licensed = false;
-                            lplugin.demo = true;
-                        }
-                    }
-					self.cloudPluginBox('synchronizePluginData', lplugin)
-                    plugins.push(lplugin)
                 }
+                self.cloudPluginBox('synchronizePluginData', lplugin)
+                plugins.push(lplugin)
             }
 
             if (customRenderCallback) {
@@ -356,7 +352,7 @@ JqueryClass('cloudPluginBox', {
                 $('#cloud_install_all').removeClass("disabled").css({color:'white'})
                 $('#cloud_update_all').removeClass("disabled").css({color:'white'})
             }
-			self.cloudPluginBox('rebuildSearchIndex')
+            self.cloudPluginBox('rebuildSearchIndex')
         }
 
         // get list of shopify commercial plugins
@@ -376,7 +372,6 @@ JqueryClass('cloudPluginBox', {
             results.shopify = {}
             renderResults();
         });
-        
 
         // cloud search
         var cloudResults
@@ -429,6 +424,7 @@ JqueryClass('cloudPluginBox', {
                 }
                 lplugins[uri] = pluginData
             }
+
             results.local = $.extend(true, {}, lplugins) // deep copy instead of link/reference
             renderResults()
         }
@@ -475,7 +471,6 @@ JqueryClass('cloudPluginBox', {
                 }
 
                 if (cplugin) {
-                    lplugin.stable        = cplugin.stable
                     lplugin.latestVersion = [cplugin.builder_version || 0, cplugin.minorVersion, cplugin.microVersion, cplugin.release_number]
 
                     if (compareVersions(lplugin.installedVersion, lplugin.latestVersion) >= 0) {
@@ -488,7 +483,6 @@ JqueryClass('cloudPluginBox', {
                     }
                 } else {
                     lplugin.latestVersion = null
-                    lplugin.stable = !cloudReached
                     lplugin.status = 'installed'
                 }
 
@@ -527,7 +521,7 @@ JqueryClass('cloudPluginBox', {
                 $('#cloud_install_all').removeClass("disabled").css({color:'white'})
                 $('#cloud_update_all').removeClass("disabled").css({color:'white'})
             }
-			self.cloudPluginBox('rebuildSearchIndex')
+            self.cloudPluginBox('rebuildSearchIndex')
         }
 
         // cloud search
@@ -750,13 +744,12 @@ JqueryClass('cloudPluginBox', {
             status: plugin.status,
             brand : plugin.brand,
             label : plugin.label,
-            stable: !!(plugin.stable || !cloudReached),
             demo: !!plugin.demo,
             price: plugin.price,
             licensed: plugin.licensed,
             featured: plugin.featured,
             coming: plugin.coming,
-            buildEnvironment: plugin.buildEnvironment
+            build_env: plugin.buildEnvironment,
         }
 
         var template = featured ? TEMPLATES.featuredplugin : TEMPLATES.cloudplugin
@@ -884,7 +877,7 @@ JqueryClass('cloudPluginBox', {
             if (plugin.latestVersion) {
                 // removing a plugin available on cloud, keep its store item
                 plugin.status = 'blocked'
-				plugin.demo = false
+                plugin.demo = false
                 plugin.bundle_name = bundle
                 delete plugin.bundles
                 plugin.installedVersion = null
@@ -970,7 +963,6 @@ JqueryClass('cloudPluginBox', {
                 brand : plugin.brand,
                 name  : plugin.name,
                 label : plugin.label,
-                stable: !!plugin.stable,
                 ports : plugin.ports,
                 plugin_href: PLUGINS_URL + '/' + btoa(plugin.uri),
                 pedalboard_href: desktop.getPedalboardHref(plugin.uri),
@@ -980,6 +972,8 @@ JqueryClass('cloudPluginBox', {
                 demo  : !!plugin.demo,
                 licensed: plugin.licensed,
                 coming: plugin.coming,
+                build_env_uppercase: (plugin.buildEnvironment || "LOCAL").toUpperCase(),
+                show_build_env: plugin.buildEnvironment !== "prod",
             };
 
             var info = self.data('info')

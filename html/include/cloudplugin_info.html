@@ -19,12 +19,12 @@
           {{/coming}}
             <div class="span10 offset1 clearfix">
                 <figure class="screenshot">
-                  {{#demo}}
+                    {{#demo}}
                     <div class="demo-plugin demo-mask" title="This plugin is for demo purposes only and shall not be used live or in a studio"></div>
-                  {{/demo}}
-                  {{^stable}}
-                    <div class="beta">BETA</div>
-                  {{/stable}}
+                    {{/demo}}
+                    {{#show_build_env}}
+                    <div class="beta">{{build_env_uppercase}}</div>
+                    {{/show_build_env}}
                     <img src="{{screenshot_href}}">
                 </figure>
 
@@ -58,7 +58,7 @@
                             </button>
                             </td>
                             {{#shopify_id}}
-                            <td>&nbsp;</td>    
+                            <td>&nbsp;</td>
                             <td><div class="buy-button" id='product-component-{{shopify_id}}'></div></td>
                             {{/shopify_id}}
                             </tr></table>

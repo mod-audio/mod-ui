@@ -364,8 +364,8 @@ JqueryClass('effectBox', {
             thumbnail_href: (plugin.gui && plugin.gui.thumbnail)
                           ? ("/effect/image/thumbnail.png?uri=" + uri + "&v=" + ver)
                           :  "/resources/pedals/default-thumbnail.png",
-            licensed: plugin.licensed,
-            demo: plugin.licensed < 0
+            licensed: plugin.licensed > 0,
+            demo: plugin.licensed < 0,
         }
 
         var div = document.createElement("div");
@@ -449,10 +449,11 @@ JqueryClass('effectBox', {
                 demo  : plugin.licensed < 0,
                 licensed: plugin.licensed > 0,
                 installed: true,
-                stable: true, // we don't know if it's stable or not, better to say it is
                 favorite_class: FAVORITES.indexOf(plugin.uri) >= 0 ? "favorite" : "",
                 plugin_href: PLUGINS_URL + '/' + btoa(plugin.uri),
                 pedalboard_href: desktop.getPedalboardHref(plugin.uri),
+                build_env_uppercase: (plugin.buildEnvironment || "LOCAL").toUpperCase(),
+                show_build_env: plugin.buildEnvironment !== "prod",
             };
 
             var render = function(metadata) {
@@ -468,6 +469,7 @@ JqueryClass('effectBox', {
                 if (plugin.ports.control.input.length == 0) {
                     info.find('.plugin-controlports').hide()
                 }
+
                 // hide cv inputs table if none available
                 if (!plugin.ports.cv || (plugin.ports.cv && plugin.ports.cv.input && plugin.ports.cv.input.length == 0)) {
                     info.find('.plugin-cvinputs').hide()
@@ -546,7 +548,6 @@ JqueryClass('effectBox', {
                     }
                 })
             }
-
         }
 
         if (plugin.bundles) {
