@@ -1011,16 +1011,17 @@ class Host(object):
     def send_hmi_boot(self, callback):
         display_brightness = self.prefs.get("display-brightness", DEFAULT_DISPLAY_BRIGHTNESS, int, DISPLAY_BRIGHTNESS_VALUES)
         quick_bypass_mode = self.prefs.get("quick-bypass-mode", DEFAULT_QUICK_BYPASS_MODE, int, QUICK_BYPASS_MODE_VALUES)
-        master_chan_mode = self.profile.get_master_volume_channel_mode()
-        master_chan_is_mode_2 = master_chan_mode == Profile.MASTER_VOLUME_CHANNEL_MODE_2
 
         def send_boot(_):
-            data = "boot {} {} {} {} {} {}".format(display_brightness,
-                                                   quick_bypass_mode,
-                                                   int(self.current_tuner_mute),
-                                                   self.profile.get_index(),
-                                                   master_chan_mode,
-                                                   get_master_volume(master_chan_is_mode_2))
+            data = "boot {} {} {} {}".format(display_brightness,
+                                             quick_bypass_mode,
+                                             int(self.current_tuner_mute),
+                                             self.profile.get_index())
+
+            if self.descriptor.get('hmi_set_master_vol', False):
+                master_chan_mode = self.profile.get_master_volume_channel_mode()
+                master_chan_is_mode_2 = master_chan_mode == Profile.MASTER_VOLUME_CHANNEL_MODE_2
+                data += " {} {}".format(master_chan_mode, get_master_volume(master_chan_is_mode_2))
 
             if self.descriptor.get('pages_cb', False):
                 pages = self.addressings.available_pages
