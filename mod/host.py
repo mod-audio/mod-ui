@@ -703,8 +703,8 @@ class Host(object):
                 return
 
         if atype == Addressings.ADDRESSING_TYPE_CC:
-            # FIXME not supported yet, this line never gets reached
-            pass
+            return self.send_modified("cc_value_set %d %s %f" % (data['instance_id'], data['port'], data['value']),
+                                      callback, datatype='boolean')
 
         # Everything else has nothing
         callback(True)
@@ -1837,7 +1837,7 @@ class Host(object):
 
         current_addressing = plugin_data['addressings'].get(portsymbol, None)
 
-        # Not addressed, not need to send control_set to the HMI
+        # Not addressed, no need to go further
         if current_addressing is None:
             if callback is not None:
                 callback(True)
@@ -1849,8 +1849,17 @@ class Host(object):
                 callback(True)
             return
 
-        actuator_uri = current_addressing['actuator_uri']
-        if self.addressings.get_actuator_type(actuator_uri) != Addressings.ADDRESSING_TYPE_HMI:
+        actuator_uri  = current_addressing['actuator_uri']
+        actuator_type = self.addressings.get_actuator_type(actuator_uri)
+
+        # update value
+        current_addressing['value'] = float(value)
+
+        if actuator_type == Addressings.ADDRESSING_TYPE_CC:
+            return self.send_modified("cc_value_set %d %s %f" % (instance_id, portsymbol, current_addressing['value']),
+                                      callback, datatype='boolean')
+
+        if actuator_type != Addressings.ADDRESSING_TYPE_HMI:
             if callback is not None:
                 callback(True)
             return
@@ -1858,9 +1867,6 @@ class Host(object):
         addressings       = self.addressings.hmi_addressings[actuator_uri]
         addressings_addrs = addressings['addrs']
         group_actuators   = self.addressings.get_group_actuators(actuator_uri)
-
-        # update value
-        current_addressing['value'] = float(value)
 
         # If not currently displayed on HMI screen, then we do not need to set the new value
         if self.addressings.pages_cb:
@@ -1912,7 +1918,7 @@ class Host(object):
             if current_addressing['hmitype'] & HMI_ADDRESSING_TYPE_ENUMERATION:
                 self.addressings.hmi_load_current(actuator_uri, callback)
             else:
-                self.hmi.control_set(hw_id, float(value), callback)
+                self.hmi.control_set(hw_id, current_addressing['value'], callback)
 
     def add_plugin(self, instance, uri, x, y, callback):
         instance_id = self.mapper.get_id(instance)
