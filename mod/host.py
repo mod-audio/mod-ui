@@ -67,7 +67,8 @@ from modtools.tempo import (
 )
 from mod.settings import (
     APP, LOG, DEFAULT_PEDALBOARD, LV2_PEDALBOARDS_DIR, PEDALBOARD_INSTANCE, PEDALBOARD_INSTANCE_ID, PEDALBOARD_URI,
-    TUNER_URI, TUNER_INSTANCE_ID, TUNER_INPUT_PORT, TUNER_MONITOR_PORT, HMI_TIMEOUT, UNTITLED_PEDALBOARD_NAME,
+    TUNER_URI, TUNER_INSTANCE_ID, TUNER_INPUT_PORT, TUNER_MONITOR_PORT, HMI_TIMEOUT,
+    UNTITLED_PEDALBOARD_NAME, DEFAULT_SNAPSHOT_NAME,
     MIDI_BEAT_CLOCK_SENDER_URI, MIDI_BEAT_CLOCK_SENDER_INSTANCE_ID, MIDI_BEAT_CLOCK_SENDER_OUTPUT_PORT
 )
 from mod.tuner import find_freqnotecents
@@ -2401,14 +2402,16 @@ class Host(object):
         self.pedalboard_snapshots.append(preset)
 
         self.current_pedalboard_snapshot_id = len(self.pedalboard_snapshots)-1
+
         return self.current_pedalboard_snapshot_id
 
-    def snapshot_rename(self, idx, title):
+    def snapshot_rename(self, idx, name):
         if idx < 0 or idx >= len(self.pedalboard_snapshots) or self.pedalboard_snapshots[idx] is None:
             return False
 
         self.pedalboard_modified = True
-        self.pedalboard_snapshots[idx]['name'] = title
+        self.pedalboard_snapshots[idx]['name'] = name
+
         return True
 
     def snapshot_remove(self, idx):
@@ -2533,6 +2536,22 @@ class Host(object):
         if not is_hmi_snapshot:
             # TODO: change to pedal_snapshot?
             self.msg_callback("pedal_preset %d" % idx)
+
+            if not from_hmi:
+                try:
+                    yield gen.Task(self.paramhmi_set, 'pedalboard', ":presets", idx)
+                except Exception as e:
+                    logging.exception(e)
+
+            if self.descriptor.get('hmi_set_ss_name', False):
+                finalname = (self.snapshot_name() or DEFAULT_SNAPSHOT_NAME)[:31].upper()
+                if from_hmi:
+                    self.hmi.send("s_ssn {0}".format(finalname), None)
+                else:
+                    try:
+                        yield gen.Task(self.hmi.send, "s_ssn {0}".format(finalname))
+                    except Exception as e:
+                        logging.exception(e)
 
         # callback must be last action
         callback(True)
@@ -4391,6 +4410,10 @@ _:b%i
             self.processing_pending_flag = False
             self.send_notmodified("feature_enable processing 1")
 
+        def load_finish_with_ssname_callback(_):
+            name = self.snapshot_name() or DEFAULT_SNAPSHOT_NAME
+            self.hmi.send("s_ssn {0}".format(name[:31].upper()), load_finish_callback)
+
         def pb_host_loaded_callback(_):
             print("NOTE: Loading of %i:%i finished" % (bank_id, pedalboard_id))
 
@@ -4407,7 +4430,11 @@ _:b%i
             else:
             # No, so just set title if needed and we are done
                 if self.descriptor.get('hmi_set_pb_name', False):
-                    self.hmi.send("s_pbn {0}".format(self.pedalboard_name[:31].upper()), load_finish_callback)
+                    if self.descriptor.get('hmi_set_ss_name', False):
+                        cb = load_finish_with_ssname_callback
+                    else:
+                        cb = load_finish_callback
+                    self.hmi.send("s_pbn {0}".format(self.pedalboard_name[:31].upper()), cb)
                 else:
                     load_finish_callback(True)
 
@@ -5328,8 +5355,23 @@ _:b%i
 
     @gen.coroutine
     def hmi_set_pb_name(self, name):
-        if self.descriptor.get('hmi_set_pb_name', False):
+        if self.hmi.initialized and self.descriptor.get('hmi_set_pb_name', False):
             yield gen.Task(self.hmi.send, "s_pbn {0}".format(name[:31].upper()))
+
+    def hmi_clear_ss_name(self, callback):
+        if self.hmi.initialized and self.descriptor.get('hmi_set_ss_name', False):
+            self.hmi.send("s_ssn {0}".format(DEFAULT_SNAPSHOT_NAME[:31].upper()), callback)
+        else:
+            callback(True)
+
+    def hmi_report_ss_name_if_current(self, idx, callback):
+        if (self.hmi.initialized and
+            self.current_pedalboard_snapshot_id == idx and
+            self.descriptor.get('hmi_set_ss_name', False)):
+            name = self.snapshot_name() or DEFAULT_SNAPSHOT_NAME
+            self.hmi.send("s_ssn {0}".format(name[:31].upper()), callback)
+        else:
+            callback(True)
 
     # -----------------------------------------------------------------------------------------------------------------
     # JACK stuff
