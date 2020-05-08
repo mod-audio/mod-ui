@@ -1386,6 +1386,7 @@ class SnapshotDisable(JsonRequestHandler):
     @gen.engine
     def post(self):
         yield gen.Task(SESSION.host.snapshot_disable)
+        yield gen.Task(SESSION.host.hmi_clear_ss_name)
         self.write(True)
 
 class SnapshotSave(JsonRequestHandler):
@@ -1394,9 +1395,13 @@ class SnapshotSave(JsonRequestHandler):
         self.write(ok)
 
 class SnapshotSaveAs(JsonRequestHandler):
+    @web.asynchronous
+    @gen.engine
     def get(self):
         title = self.get_argument('title')
         idx   = SESSION.host.snapshot_saveas(title)
+
+        yield gen.Task(SESSION.host.hmi_report_ss_name_if_current, idx)
 
         self.write({
             'ok': idx is not None,
@@ -1404,10 +1409,15 @@ class SnapshotSaveAs(JsonRequestHandler):
         })
 
 class SnapshotRename(JsonRequestHandler):
+    @web.asynchronous
+    @gen.engine
     def get(self):
         idx   = int(self.get_argument('id'))
         title = self.get_argument('title')
         ok    = SESSION.host.snapshot_rename(idx, title)
+
+        yield gen.Task(SESSION.host.hmi_report_ss_name_if_current, idx)
+
         self.write(ok)
 
 class SnapshotRemove(JsonRequestHandler):
