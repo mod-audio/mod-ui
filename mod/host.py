@@ -576,17 +576,9 @@ class Host(object):
             unit  = '"%s"' % data['unit'].replace('"', '')
             optionsData = []
 
-            rmaximum = data['maximum']
-            rvalue   = data['value']
-
             if data['options']:
-                currentNum = 0
-
                 for o in data['options']:
-                    optdata    = '"%s" %f' % (o[1].replace('"', ''), float(o[0]))
-                    optdataLen = len(optdata)
-
-                    currentNum += 1
+                    optdata = '"%s" %f' % (o[1].replace('"', ''), float(o[0]))
                     optionsData.append(optdata)
 
             options = "%d %s" % (len(optionsData), " ".join(optionsData))
@@ -597,9 +589,9 @@ class Host(object):
                                                                                       actuator[0], # device id
                                                                                       actuator[1], # actuator id
                                                                                       label,
-                                                                                      rvalue,
+                                                                                      data['value'],
                                                                                       data['minimum'],
-                                                                                      rmaximum,
+                                                                                      data['maximum'],
                                                                                       data['steps'],
                                                                                       unit,
                                                                                       options
