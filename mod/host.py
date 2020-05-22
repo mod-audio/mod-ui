@@ -581,27 +581,12 @@ class Host(object):
 
             if data['options']:
                 currentNum = 0
-                numBytesFree = 1024-128
 
                 for o in data['options']:
-                    if currentNum > 50:
-                        if rvalue >= currentNum:
-                            rvalue = 0
-                        rmaximum = currentNum
-                        break
-
                     optdata    = '"%s" %f' % (o[1].replace('"', ''), float(o[0]))
                     optdataLen = len(optdata)
 
-                    if numBytesFree-optdataLen-2 < 0:
-                        print("WARNING: Preventing sending too many options to addressing (stopped at %i)" % currentNum)
-                        if rvalue >= currentNum:
-                            rvalue = 0.0
-                        rmaximum = currentNum
-                        break
-
                     currentNum += 1
-                    numBytesFree -= optdataLen+1
                     optionsData.append(optdata)
 
             options = "%d %s" % (len(optionsData), " ".join(optionsData))
