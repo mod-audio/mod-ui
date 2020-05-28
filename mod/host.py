@@ -270,8 +270,8 @@ class Host(object):
         self.transport_sync    = "none"
         self.last_data_finish_msg = 0.0
         self.last_data_finish_handle = None
-        self.last_true_bypass_left = None
-        self.last_true_bypass_right = None
+        self.last_true_bypass_left = True
+        self.last_true_bypass_right = True
         self.abort_progress_catcher = {}
         self.processing_pending_flag = False
         self.init_plugins_data()
@@ -1569,7 +1569,7 @@ class Host(object):
                                                            self.transport_bpb,
                                                            self.transport_bpm,
                                                            self.transport_sync))
-        websocket.write_message("truebypass %i %i" % (get_truebypass_value(False), get_truebypass_value(True)))
+        websocket.write_message("truebypass %i %i" % (self.last_true_bypass_left, self.last_true_bypass_right))
         websocket.write_message("loading_start %d %d" % (self.pedalboard_empty, self.pedalboard_modified))
         websocket.write_message("size %d %d" % (self.pedalboard_size[0], self.pedalboard_size[1]))
 
