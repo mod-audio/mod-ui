@@ -427,6 +427,34 @@ const char* const* get_jack_hardware_ports(const bool isAudio, bool isOutput)
     if (ports == nullptr)
         return nullptr;
 
+    // v1.9 special case: force stereo outputs on duox-rk3399
+    if (isAudio && isOutput)
+    {
+        for (int i=0; ports[i] != nullptr; ++i)
+        {
+            if (ports[i+1] == nullptr)
+                break;
+            if (std::strcmp(ports[i], "system:playback_3") != 0)
+                continue;
+            if (std::strcmp(ports[i+1], "system:playback_4") != 0)
+                continue;
+
+            if (ports[i+2] != nullptr && ports[i+3] != nullptr)
+            {
+                ports[i+0] = ports[i+2];
+                ports[i+1] = ports[i+3];
+                ports[i+2] = nullptr;
+                ports[i+3] = nullptr;
+            }
+            else
+            {
+                ports[i+0] = nullptr;
+                ports[i+1] = nullptr;
+            }
+            break;
+        }
+    }
+
     gPortListRet = ports;
 
     return ports;
