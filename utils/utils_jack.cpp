@@ -55,8 +55,8 @@ static std::vector<std::string> gUnregisteredPorts;
 static snd_mixer_t* gAlsaMixer = nullptr;
 static snd_mixer_elem_t* gAlsaControlLeft  = nullptr;
 static snd_mixer_elem_t* gAlsaControlRight = nullptr;
-static bool gLastAlsaValueLeft  = false;
-static bool gLastAlsaValueRight = false;
+static bool gLastAlsaValueLeft  = true;
+static bool gLastAlsaValueRight = true;
 
 static JackBufSizeChanged     jack_bufsize_changed_cb = nullptr;
 static JackPortAppeared       jack_port_appeared_cb   = nullptr;
@@ -171,15 +171,11 @@ bool init_jack(void)
             {
                 snd_mixer_selem_id_set_index(sid, 0);
                 snd_mixer_selem_id_set_name(sid, ALSA_CONTROL_BYPASS_LEFT);
-
-                if ((gAlsaControlLeft = snd_mixer_find_selem(gAlsaMixer, sid)) != nullptr)
-                    gLastAlsaValueLeft = _get_alsa_switch_value(gAlsaControlLeft);
+                gAlsaControlLeft = snd_mixer_find_selem(gAlsaMixer, sid);
 
                 snd_mixer_selem_id_set_index(sid, 0);
                 snd_mixer_selem_id_set_name(sid, ALSA_CONTROL_BYPASS_RIGHT);
-
-                if ((gAlsaControlRight = snd_mixer_find_selem(gAlsaMixer, sid)) != nullptr)
-                    gLastAlsaValueRight = _get_alsa_switch_value(gAlsaControlRight);
+                gAlsaControlRight = snd_mixer_find_selem(gAlsaMixer, sid);
 
                 snd_mixer_selem_id_free(sid);
             }
@@ -559,16 +555,10 @@ void init_bypass(void)
         return;
 
     if (gAlsaControlLeft != nullptr)
-    {
-        gLastAlsaValueLeft = false;
         snd_mixer_selem_set_playback_switch_all(gAlsaControlLeft, 0);
-    }
 
     if (gAlsaControlRight != nullptr)
-    {
-        gLastAlsaValueRight = false;
         snd_mixer_selem_set_playback_switch_all(gAlsaControlRight, 0);
-    }
 
     snd_mixer_selem_id_t* sid;
     if (snd_mixer_selem_id_malloc(&sid) == 0)

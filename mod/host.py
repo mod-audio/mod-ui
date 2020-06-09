@@ -67,7 +67,8 @@ from modtools.tempo import (
 )
 from mod.settings import (
     APP, LOG, DEFAULT_PEDALBOARD, LV2_PEDALBOARDS_DIR, PEDALBOARD_INSTANCE, PEDALBOARD_INSTANCE_ID, PEDALBOARD_URI,
-    TUNER_URI, TUNER_INSTANCE_ID, TUNER_INPUT_PORT, TUNER_MONITOR_PORT, HMI_TIMEOUT, UNTITLED_PEDALBOARD_NAME,
+    TUNER_URI, TUNER_INSTANCE_ID, TUNER_INPUT_PORT, TUNER_MONITOR_PORT, HMI_TIMEOUT,
+    UNTITLED_PEDALBOARD_NAME, DEFAULT_SNAPSHOT_NAME,
     MIDI_BEAT_CLOCK_SENDER_URI, MIDI_BEAT_CLOCK_SENDER_INSTANCE_ID, MIDI_BEAT_CLOCK_SENDER_OUTPUT_PORT
 )
 from mod.tuner import find_freqnotecents
@@ -269,8 +270,8 @@ class Host(object):
         self.transport_sync    = "none"
         self.last_data_finish_msg = 0.0
         self.last_data_finish_handle = None
-        self.last_true_bypass_left = None
-        self.last_true_bypass_right = None
+        self.last_true_bypass_left = True
+        self.last_true_bypass_right = True
         self.abort_progress_catcher = {}
         self.processing_pending_flag = False
         self.init_plugins_data()
@@ -702,8 +703,8 @@ class Host(object):
                 return
 
         if atype == Addressings.ADDRESSING_TYPE_CC:
-            # FIXME not supported yet, this line never gets reached
-            pass
+            return self.send_modified("cc_value_set %d %s %f" % (data['instance_id'], data['port'], data['value']),
+                                      callback, datatype='boolean')
 
         # Everything else has nothing
         callback(True)
@@ -1010,16 +1011,17 @@ class Host(object):
     def send_hmi_boot(self, callback):
         display_brightness = self.prefs.get("display-brightness", DEFAULT_DISPLAY_BRIGHTNESS, int, DISPLAY_BRIGHTNESS_VALUES)
         quick_bypass_mode = self.prefs.get("quick-bypass-mode", DEFAULT_QUICK_BYPASS_MODE, int, QUICK_BYPASS_MODE_VALUES)
-        master_chan_mode = self.profile.get_master_volume_channel_mode()
-        master_chan_is_mode_2 = master_chan_mode == Profile.MASTER_VOLUME_CHANNEL_MODE_2
 
         def send_boot(_):
-            data = "boot {} {} {} {} {} {}".format(display_brightness,
-                                                   quick_bypass_mode,
-                                                   int(self.current_tuner_mute),
-                                                   self.profile.get_index(),
-                                                   master_chan_mode,
-                                                   get_master_volume(master_chan_is_mode_2))
+            data = "boot {} {} {} {}".format(display_brightness,
+                                             quick_bypass_mode,
+                                             int(self.current_tuner_mute),
+                                             self.profile.get_index())
+
+            if self.descriptor.get('hmi_set_master_vol', False):
+                master_chan_mode = self.profile.get_master_volume_channel_mode()
+                master_chan_is_mode_2 = master_chan_mode == Profile.MASTER_VOLUME_CHANNEL_MODE_2
+                data += " {} {}".format(master_chan_mode, get_master_volume(master_chan_is_mode_2))
 
             if self.descriptor.get('pages_cb', False):
                 pages = self.addressings.available_pages
@@ -1130,21 +1132,13 @@ class Host(object):
         else:
             pedalboard_id = 0
 
-        def cb_migi_ss_prgch(_):
-            midi_ss_prgch = self.profile.get_midi_prgch_channel("snapshot")
-            if midi_ss_prgch >= 1 and midi_ss_prgch <= 16:
-                self.send_notmodified("monitor_midi_program %d 1" % (midi_ss_prgch-1),
-                                      callback, datatype='boolean')
-            else:
-                callback(True)
-
         def cb_migi_pb_prgch(_):
             midi_pb_prgch = self.profile.get_midi_prgch_channel("pedalboard")
             if midi_pb_prgch >= 1 and midi_pb_prgch <= 16:
                 self.send_notmodified("monitor_midi_program %d 1" % (midi_pb_prgch-1),
-                                      cb_migi_ss_prgch, datatype='boolean')
+                                      callback, datatype='boolean')
             else:
-                cb_migi_ss_prgch(True)
+                callback(True)
 
         def cb_footswitches(_):
             self.setNavigateWithFootswitches(True, cb_migi_pb_prgch)
@@ -1162,8 +1156,6 @@ class Host(object):
         midi_pb_prgch, midi_ss_prgch = self.profile.get_midi_prgch_channels()
         if midi_pb_prgch >= 1 and midi_pb_prgch <= 16:
             self.send_notmodified("monitor_midi_program %d 0" % (midi_pb_prgch-1))
-        if midi_ss_prgch >= 1 and midi_ss_prgch <= 16:
-            self.send_notmodified("monitor_midi_program %d 0" % (midi_ss_prgch-1))
 
         self.allpedalboards = []
         self.banks = []
@@ -1567,7 +1559,7 @@ class Host(object):
                                                            self.transport_bpb,
                                                            self.transport_bpm,
                                                            self.transport_sync))
-        websocket.write_message("truebypass %i %i" % (get_truebypass_value(False), get_truebypass_value(True)))
+        websocket.write_message("truebypass %i %i" % (self.last_true_bypass_left, self.last_true_bypass_right))
         websocket.write_message("loading_start %d %d" % (self.pedalboard_empty, self.pedalboard_modified))
         websocket.write_message("size %d %d" % (self.pedalboard_size[0], self.pedalboard_size[1]))
 
@@ -1835,7 +1827,7 @@ class Host(object):
 
         current_addressing = plugin_data['addressings'].get(portsymbol, None)
 
-        # Not addressed, not need to send control_set to the HMI
+        # Not addressed, no need to go further
         if current_addressing is None:
             if callback is not None:
                 callback(True)
@@ -1847,8 +1839,17 @@ class Host(object):
                 callback(True)
             return
 
-        actuator_uri = current_addressing['actuator_uri']
-        if self.addressings.get_actuator_type(actuator_uri) != Addressings.ADDRESSING_TYPE_HMI:
+        actuator_uri  = current_addressing['actuator_uri']
+        actuator_type = self.addressings.get_actuator_type(actuator_uri)
+
+        # update value
+        current_addressing['value'] = float(value)
+
+        if actuator_type == Addressings.ADDRESSING_TYPE_CC:
+            return self.send_modified("cc_value_set %d %s %f" % (instance_id, portsymbol, current_addressing['value']),
+                                      callback, datatype='boolean')
+
+        if actuator_type != Addressings.ADDRESSING_TYPE_HMI:
             if callback is not None:
                 callback(True)
             return
@@ -1856,9 +1857,6 @@ class Host(object):
         addressings       = self.addressings.hmi_addressings[actuator_uri]
         addressings_addrs = addressings['addrs']
         group_actuators   = self.addressings.get_group_actuators(actuator_uri)
-
-        # update value
-        current_addressing['value'] = float(value)
 
         # If not currently displayed on HMI screen, then we do not need to set the new value
         if self.addressings.pages_cb:
@@ -1910,7 +1908,7 @@ class Host(object):
             if current_addressing['hmitype'] & HMI_ADDRESSING_TYPE_ENUMERATION:
                 self.addressings.hmi_load_current(actuator_uri, callback)
             else:
-                self.hmi.control_set(hw_id, float(value), callback)
+                self.hmi.control_set(hw_id, current_addressing['value'], callback)
 
     def add_plugin(self, instance, uri, x, y, callback):
         instance_id = self.mapper.get_id(instance)
@@ -2413,14 +2411,16 @@ class Host(object):
         self.pedalboard_snapshots.append(preset)
 
         self.current_pedalboard_snapshot_id = len(self.pedalboard_snapshots)-1
+
         return self.current_pedalboard_snapshot_id
 
-    def snapshot_rename(self, idx, title):
+    def snapshot_rename(self, idx, name):
         if idx < 0 or idx >= len(self.pedalboard_snapshots) or self.pedalboard_snapshots[idx] is None:
             return False
 
         self.pedalboard_modified = True
-        self.pedalboard_snapshots[idx]['name'] = title
+        self.pedalboard_snapshots[idx]['name'] = name
+
         return True
 
     def snapshot_remove(self, idx):
@@ -2545,6 +2545,22 @@ class Host(object):
         if not is_hmi_snapshot:
             # TODO: change to pedal_snapshot?
             self.msg_callback("pedal_preset %d" % idx)
+
+            if not from_hmi:
+                try:
+                    yield gen.Task(self.paramhmi_set, 'pedalboard', ":presets", idx)
+                except Exception as e:
+                    logging.exception(e)
+
+            if self.descriptor.get('hmi_set_ss_name', False):
+                finalname = (self.snapshot_name() or DEFAULT_SNAPSHOT_NAME)[:31].upper()
+                if from_hmi:
+                    self.hmi.send("s_ssn {0}".format(finalname), None)
+                else:
+                    try:
+                        yield gen.Task(self.hmi.send, "s_ssn {0}".format(finalname))
+                    except Exception as e:
+                        logging.exception(e)
 
         # callback must be last action
         callback(True)
@@ -4403,6 +4419,10 @@ _:b%i
             self.processing_pending_flag = False
             self.send_notmodified("feature_enable processing 1")
 
+        def load_finish_with_ssname_callback(_):
+            name = self.snapshot_name() or DEFAULT_SNAPSHOT_NAME
+            self.hmi.send("s_ssn {0}".format(name[:31].upper()), load_finish_callback)
+
         def pb_host_loaded_callback(_):
             print("NOTE: Loading of %i:%i finished" % (bank_id, pedalboard_id))
 
@@ -4419,7 +4439,11 @@ _:b%i
             else:
             # No, so just set title if needed and we are done
                 if self.descriptor.get('hmi_set_pb_name', False):
-                    self.hmi.send("s_pbn {0}".format(self.pedalboard_name[:31].upper()), load_finish_callback)
+                    if self.descriptor.get('hmi_set_ss_name', False):
+                        cb = load_finish_with_ssname_callback
+                    else:
+                        cb = load_finish_callback
+                    self.hmi.send("s_pbn {0}".format(self.pedalboard_name[:31].upper()), cb)
                 else:
                     load_finish_callback(True)
 
@@ -5340,8 +5364,23 @@ _:b%i
 
     @gen.coroutine
     def hmi_set_pb_name(self, name):
-        if self.descriptor.get('hmi_set_pb_name', False):
+        if self.hmi.initialized and self.descriptor.get('hmi_set_pb_name', False):
             yield gen.Task(self.hmi.send, "s_pbn {0}".format(name[:31].upper()))
+
+    def hmi_clear_ss_name(self, callback):
+        if self.hmi.initialized and self.descriptor.get('hmi_set_ss_name', False):
+            self.hmi.send("s_ssn {0}".format(DEFAULT_SNAPSHOT_NAME[:31].upper()), callback)
+        else:
+            callback(True)
+
+    def hmi_report_ss_name_if_current(self, idx, callback):
+        if (self.hmi.initialized and
+            self.current_pedalboard_snapshot_id == idx and
+            self.descriptor.get('hmi_set_ss_name', False)):
+            name = self.snapshot_name() or DEFAULT_SNAPSHOT_NAME
+            self.hmi.send("s_ssn {0}".format(name[:31].upper()), callback)
+        else:
+            callback(True)
 
     # -----------------------------------------------------------------------------------------------------------------
     # JACK stuff
