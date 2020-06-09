@@ -1120,21 +1120,13 @@ class Host(object):
         else:
             pedalboard_id = 0
 
-        def cb_migi_ss_prgch(_):
-            midi_ss_prgch = self.profile.get_midi_prgch_channel("snapshot")
-            if midi_ss_prgch >= 1 and midi_ss_prgch <= 16:
-                self.send_notmodified("monitor_midi_program %d 1" % (midi_ss_prgch-1),
-                                      callback, datatype='boolean')
-            else:
-                callback(True)
-
         def cb_migi_pb_prgch(_):
             midi_pb_prgch = self.profile.get_midi_prgch_channel("pedalboard")
             if midi_pb_prgch >= 1 and midi_pb_prgch <= 16:
                 self.send_notmodified("monitor_midi_program %d 1" % (midi_pb_prgch-1),
-                                      cb_migi_ss_prgch, datatype='boolean')
+                                      callback, datatype='boolean')
             else:
-                cb_migi_ss_prgch(True)
+                callback(True)
 
         def cb_footswitches(_):
             self.setNavigateWithFootswitches(True, cb_migi_pb_prgch)
@@ -1152,8 +1144,6 @@ class Host(object):
         midi_pb_prgch, midi_ss_prgch = self.profile.get_midi_prgch_channels()
         if midi_pb_prgch >= 1 and midi_pb_prgch <= 16:
             self.send_notmodified("monitor_midi_program %d 0" % (midi_pb_prgch-1))
-        if midi_ss_prgch >= 1 and midi_ss_prgch <= 16:
-            self.send_notmodified("monitor_midi_program %d 0" % (midi_ss_prgch-1))
 
         self.banks = []
         self.allpedalboards = []
