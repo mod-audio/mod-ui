@@ -595,8 +595,13 @@ JqueryClass('cloudPluginBox', {
         var plugin, render
 		var factory = function(img) {
 			return function() {
-				img.css('padding-top', (parseInt((img.parent().height()-img.height())/2))+'px');
-				img.css('opacity', 1)
+			    img.css('opacity', 1)
+                            var top = (parseInt((img.parent().height()-img.height())/2))+'px'
+                            // We need to put a padding in image, but slick creates clones of the
+                            // element to use on carousel, so we need padding in all clones
+                            var uri = img.parent().parent().parent().parent().attr('mod-uri')
+                            var clones = $('div.slick-slide[mod-uri="'+uri+'"][mod-role="cloud-plugin"]')
+                            clones.find('img').css('padding-top', top);
 			};
 		}
 
