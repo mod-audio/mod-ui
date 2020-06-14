@@ -8,7 +8,7 @@ import sys, tornado, time, socket
 #from tornado import web, options
 
 s = socket.socket()
-s.connect(os.getenv['MOD_HOST_ADDR'], 5555)
+s.connect(os.environ['MOD_HOST_ADDR'], 5555)
 #s.settimeout(0.2)
 
 fh = open(sys.argv[1])

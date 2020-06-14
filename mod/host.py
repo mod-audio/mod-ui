@@ -221,7 +221,7 @@ class Host(object):
         self.prefs = prefs
         self.msg_callback = msg_callback
 
-        self.addr = ("mod-host", 5555)
+        self.addr = (os.environ['MOD_HOST_ADDR'], 5555)
         self.readsock = None
         self.writesock = None
         self.crashed = False
