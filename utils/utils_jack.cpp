@@ -1,6 +1,6 @@
 /*
  * MOD-UI utilities
- * Copyright (C) 2015-2019 Filipe Coelho <falktx@falktx.com>
+ * Copyright (C) 2015-2020 Filipe Coelho <falktx@falktx.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -439,18 +439,10 @@ const char* const* get_jack_hardware_ports(const bool isAudio, bool isOutput)
             if (std::strcmp(ports[i+1], "system:playback_4") != 0)
                 continue;
 
-            if (ports[i+2] != nullptr && ports[i+3] != nullptr)
-            {
-                ports[i+0] = ports[i+2];
-                ports[i+1] = ports[i+3];
-                ports[i+2] = nullptr;
-                ports[i+3] = nullptr;
-            }
-            else
-            {
-                ports[i+0] = nullptr;
-                ports[i+1] = nullptr;
-            }
+            for (int j=i+2; ports[j] != nullptr; ++i, ++j)
+                ports[i] = ports[j];
+
+            ports[i] = nullptr;
             break;
         }
     }
