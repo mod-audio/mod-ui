@@ -276,7 +276,11 @@ class Host(object):
         self.processing_pending_flag = False
         self.init_plugins_data()
 
-        if APP and os.getenv("MOD_LIVE_ISO") is not None:
+
+	     if os.getenv("USE_STANDARD_JACK_OUTPUTS") is not None:
+            self.jack_hwin_prefix  = "system:playback_"
+            self.jack_hwout_prefix = "system:capture_"	  
+        else if APP and os.getenv("MOD_LIVE_ISO") is not None:
             self.jack_hwin_prefix  = "system:playback_"
             self.jack_hwout_prefix = "system:capture_"
         else:
