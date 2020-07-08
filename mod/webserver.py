@@ -579,6 +579,24 @@ class SystemExeChange(JsonRequestHandler):
         lv2_cleanup()
         lv2_init()
 
+class SystemCleanup(JsonRequestHandler):
+    @gen.coroutine
+    def post(self):
+        banks = self.get_arguments('banks') == 'true'
+        pedalboards = self.get_arguments('pedalboards') == 'true'
+        plugins = self.get_arguments('plugins') == 'true'
+
+        if banks:
+            pass # placeholder
+
+        if pedalboards:
+            pass # placeholder
+
+        if plugins:
+            pass #placeholder
+
+        self.write(True)
+
 class UpdateDownload(MultiPartFileReceiver):
     destination_dir = "/tmp/os-update"
 
@@ -1989,6 +2007,7 @@ application = web.Application(
             (r"/system/info", SystemInfo),
             (r"/system/prefs", SystemPreferences),
             (r"/system/exechange", SystemExeChange),
+            (r"/system/cleanup", SystemCleanup),
 
             (r"/update/download/", UpdateDownload),
             (r"/update/begin", UpdateBegin),
