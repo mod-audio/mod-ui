@@ -339,6 +339,29 @@ function create_or_delete_file(path, create) {
     })
 }
 
+function cleanup(banks, pedalboards, plugins, callback) {
+    $.ajax({
+        url: '/system/cleanup',
+        method: 'POST',
+        data: {
+            banks: banks,
+            pedalboards: pedalboards,
+            plugins: plugins,
+        },
+        success: function (resp) {
+            if (callback) {
+                callback(resp)
+            }
+        },
+        error: function (resp) {
+            console.log("error", resp)
+            alert("An error occurred: " + resp)
+        },
+        cache: false,
+        dataType: 'json'
+    })
+}
+
 $('document').ready(function() {
     var self = this
 
@@ -672,6 +695,52 @@ $('document').ready(function() {
     })
 
     // ----------------------------------------------------------------------------------------------------------------
+    // --- Cleanup
+
+    $("#button-action-delete").attr('disabled', true)
+
+    var deleteEnabled = function() {
+        var ok = $("#prefs-delete-confirm").val().toUpperCase() == "DELETE";
+        var banks = !!$("#prefs-delete-banks").prop('checked');
+        var pedalboards = !!$("#prefs-delete-pedalboards").prop('checked');
+        var plugins = !!$("#prefs-delete-plugins").prop('checked');
+        var title = '';
+        if (!banks && !pedalboards && !plugins) {
+            title = "You need to check at least one checkbox above";
+        } else if (!ok) {
+            title = 'You need type "Delete" on the input above to confirm data removal';
+        }
+        $("#button-action-delete").attr('disabled', !ok || (!banks && !pedalboards && !plugins));
+        $("#button-action-delete").attr('title', title);
+    }
+
+    $("#prefs-delete-confirm").change(deleteEnabled);
+    $("#prefs-delete-confirm").keyup(deleteEnabled);
+    $("#prefs-delete-banks").click(deleteEnabled);
+    $("#prefs-delete-pedalboards").click(deleteEnabled);
+    $("#prefs-delete-plugins").click(deleteEnabled);
+    deleteEnabled();
+
+    $("#button-action-delete").click(function() {
+        cleanup(
+            $("#prefs-delete-banks").prop('checked'),
+            $("#prefs-delete-pedalboards").prop('checked'),
+            $("#prefs-delete-plugins").prop('checked'),
+            function(ok) {
+                if (ok) {
+                    alert("data deleted!")
+                    $("#prefs-delete-banks").prop('checked', false)
+                    $("#prefs-delete-pedalboards").prop('checked', false)
+                    $("#prefs-delete-plugins").prop('checked', false)
+                    $("#prefs-delete-confirm").val('')
+                    deleteEnabled();
+                } else {
+                    alert("Operation on device returned an error status")
+                }
+            }
+        )
+    });
+    // ----------------------------------------------------------------------------------------------------------------
     // --- Device Updates
 
     var deviceUpdatesRespDev, deviceUpdatesRespVer
@@ -765,7 +834,7 @@ $('document').ready(function() {
             <div id="tab-basic" class="add-bank selected">Basic</div>
             <div id="tab-advanced" class="add-bank">Advanced</div>
             <div id="tab-device-updates" class="add-bank mod-hidden">Device Updates</div>
-            <!--<div id="tab-dangerous" class="add-bank">Dangerous</div>-->
+            <div id="tab-dangerous" class="add-bank">Dangerous</div>
             <a href="/" id="go-back"><span class="icon-return"></span>Go back</a>
         </div>
         <!-- END BANK|SETTINGS-LIST -->
@@ -963,18 +1032,28 @@ $('document').ready(function() {
             <div class="settings-page-content">
                 <h1>Cleanup</h1>
                 <form class="form">
+                    <p>
+                        Here you can cleanup user data. This will wipe everything and the device won't work properly until
+                        new items are created.
+                    </p>
                     <label>
-                        <input type="checkbox" autocomplete="off" id="prefs-delete-banks"> Banks</input>
+                        <input type="checkbox" autocomplete="off" id="prefs-delete-banks"> Delete all Banks</input>
                     </label>
                     <br/>
                     <label>
-                        <input type="checkbox" autocomplete="off" id="prefs-delete-pedalboards"> Pedalboards</input>
+                        <input type="checkbox" autocomplete="off" id="prefs-delete-pedalboards"> Delete all Pedalboards</input>
                     </label>
                     <br/>
                     <label>
-                        <input type="checkbox" autocomplete="off" id="prefs-delete-plugins"> Plugins</input>
+                        <input type="checkbox" autocomplete="off" id="prefs-delete-plugins"> Delete all Plugins</input>
                     </label>
-                    <br/>
+                    <br/><br/>
+                    <label>
+                        This will PERMANENTLY DELETE USER DATA and is IRREVERSIBLE.<br/>
+                        To confirm, please type the word "DELETE": &nbsp;
+                        <input type="text" id="prefs-delete-confirm" size="10" style="text-transform: uppercase" />
+                    </label>
+                    <br/><br/>
                     <label>
                         <input type="button" id="button-action-delete" value="Delete"></input>
                     </label>
