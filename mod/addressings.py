@@ -70,16 +70,16 @@ class Addressings(object):
         self._task_set_available_pages = None
         self.addr_task_get_plugin_cv_port_op_mode = None
 
+        self.cchain = ControlChainDeviceListener(self.cc_hardware_added,
+                                                 self.cc_hardware_removed,
+                                                 self.cc_actuator_added)
+
         # First addressings/pedalboard load flag
         self.first_load = True
 
         # Flag and callbacks for Control Chain waiting
-        self.waiting_for_cc = True
+        self.waiting_for_cc = not self.cchain.initialized
         self.waiting_for_cc_cbs = []
-
-        self.cchain = ControlChainDeviceListener(self.cc_hardware_added,
-                                                 self.cc_hardware_removed,
-                                                 self.cc_actuator_added)
 
     # -----------------------------------------------------------------------------------------------------------------
 
