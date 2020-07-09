@@ -269,6 +269,29 @@ function refresh_device_updates(respDev, respVer) {
     })
 }
 
+function show_blocker (action) {
+    var block = $('<div class="screen-disconnected blocker">');
+    var text;
+
+    if (action == "delete") {
+        text = 'Deleting data, please wait...';
+    } else if (action == "reflash") {
+        text = 'Flashing controller, please wait...';
+    } else if (action == "export") {
+        text = 'Exporting data, please wait...';
+    } else if (action == "import") {
+        text = 'Import data, please wait...<br/>This might take a few minutes.';
+    } else {
+        text = 'Please wait..'
+    }
+
+    block.html('<p>' + text + '</p>')
+    block.css('overflow', 'hidden')
+
+    $('body').append(block)
+    return block
+}
+
 function config_set(key, value) {
     $.ajax({
         url: '/config/set',
@@ -282,6 +305,29 @@ function config_set(key, value) {
         },
         error: function (resp) {
             console.log("error", resp)
+        },
+        cache: false,
+        dataType: 'json'
+    })
+}
+
+function system_cleanup(banks, pedalboards, plugins, callback) {
+    $.ajax({
+        url: '/system/cleanup',
+        method: 'POST',
+        data: {
+            banks: banks ? 1 : 0,
+            pedalboards: pedalboards ? 1 : 0,
+            plugins: plugins ? 1 : 0,
+        },
+        success: function (resp) {
+            if (callback) {
+                callback(resp)
+            }
+        },
+        error: function (resp) {
+            console.log("error", resp)
+            alert("An error occurred: " + resp)
         },
         cache: false,
         dataType: 'json'
@@ -336,29 +382,6 @@ function create_or_delete_file(path, create) {
         'type'  : 'filecreate',
         'path'  : path,
         'create': create ? 1 : 0,
-    })
-}
-
-function cleanup(banks, pedalboards, plugins, callback) {
-    $.ajax({
-        url: '/system/cleanup',
-        method: 'POST',
-        data: {
-            banks: banks,
-            pedalboards: pedalboards,
-            plugins: plugins,
-        },
-        success: function (resp) {
-            if (callback) {
-                callback(resp)
-            }
-        },
-        error: function (resp) {
-            console.log("error", resp)
-            alert("An error occurred: " + resp)
-        },
-        cache: false,
-        dataType: 'json'
     })
 }
 
@@ -569,22 +592,8 @@ $('document').ready(function() {
     // ----------------------------------------------------------------------------------------------------------------
     // --- Backup & Restore
 
-    function show_blocker (exporting) {
-        var block = $('<div class="screen-disconnected blocker">')
-
-        if (exporting) {
-            block.html('<p>Exporting data, please wait...</p>')
-        } else {
-            block.html('<p>Import data, please wait...<br/>This might take a few minutes.</p>')
-        }
-        block.css('overflow', 'hidden')
-
-        $('body').append(block)
-        return block
-    }
-
     $("#button-action-backup-export").click(function () {
-        var block = show_blocker(true),
+        var block = show_blocker("export"),
             pConfigs = $("#prefs-backup-configs").prop("checked") ? '1' : '0',
             pPlugins = $("#prefs-backup-plugins").prop("checked") ? '1' : '0'
 
@@ -604,7 +613,7 @@ $('document').ready(function() {
             return
         }
 
-        var block = show_blocker(false),
+        var block = show_blocker("import"),
             pConfigs = $("#prefs-backup-configs").prop("checked") ? '1' : '0',
             pPlugins = $("#prefs-backup-plugins").prop("checked") ? '1' : '0'
 
@@ -722,24 +731,27 @@ $('document').ready(function() {
     deleteEnabled();
 
     $("#button-action-delete").click(function() {
-        cleanup(
-            $("#prefs-delete-banks").prop('checked'),
-            $("#prefs-delete-pedalboards").prop('checked'),
-            $("#prefs-delete-plugins").prop('checked'),
-            function(ok) {
-                if (ok) {
-                    alert("data deleted!")
-                    $("#prefs-delete-banks").prop('checked', false)
-                    $("#prefs-delete-pedalboards").prop('checked', false)
-                    $("#prefs-delete-plugins").prop('checked', false)
-                    $("#prefs-delete-confirm").val('')
-                    deleteEnabled();
-                } else {
-                    alert("Operation on device returned an error status")
-                }
+        var banks = !!$("#prefs-delete-banks").prop('checked');
+        var pedalboards = !!$("#prefs-delete-pedalboards").prop('checked');
+        var plugins = !!$("#prefs-delete-plugins").prop('checked');
+
+        var block = show_blocker("delete");
+
+        system_cleanup(banks, pedalboards, plugins, function (resp) {
+            if (resp.ok) {
+                setTimeout(function () {
+                    block.html('<p>Delete operation complete!</p>')
+
+                    var re = $("<div class='button icon'>Reload</div>").appendTo(block);
+                    re.css("background-image", "url(img/icons/25/reload.png)");
+                    re.click(function () { location.reload(); });
+                }, 1000)
+            } else {
+                block.html('<p>Delete operation failed!<br/>' + resp.error + '</p>')
             }
-        )
+        })
     });
+
     // ----------------------------------------------------------------------------------------------------------------
     // --- Device Updates
 

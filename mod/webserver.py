@@ -35,7 +35,9 @@ from uuid import uuid4
 from mod.profile import Profile
 from mod.settings import (APP, LOG, DEV_API,
                           HTML_DIR, DOWNLOAD_TMP_DIR, DEVICE_KEY, DEVICE_WEBSERVER_PORT,
-                          CLOUD_HTTP_ADDRESS, CLOUD_LABS_HTTP_ADDRESS, PLUGINS_HTTP_ADDRESS, PEDALBOARDS_HTTP_ADDRESS, CONTROLCHAIN_HTTP_ADDRESS,
+                          CLOUD_HTTP_ADDRESS, CLOUD_LABS_HTTP_ADDRESS,
+                          PLUGINS_HTTP_ADDRESS, PEDALBOARDS_HTTP_ADDRESS, CONTROLCHAIN_HTTP_ADDRESS,
+                          BANKS_JSON_FILE,
                           LV2_PLUGIN_DIR, LV2_PEDALBOARDS_DIR, IMAGE_VERSION,
                           UPDATE_CC_FIRMWARE_FILE, UPDATE_MOD_OS_FILE, USING_256_FRAMES_FILE,
                           DEFAULT_ICON_TEMPLATE, DEFAULT_SETTINGS_TEMPLATE, DEFAULT_ICON_IMAGE,
@@ -171,6 +173,18 @@ def install_package(filename, callback):
         install_bundles_in_tmp_dir(callback)
 
     run_command(['tar','zxf', filename], DOWNLOAD_TMP_DIR, end_untar_pkgs)
+
+@gen.coroutine
+def restart_services(restartJACK2, restartUI):
+    cmd = ["systemctl", "restart"]
+    if restartJACK2:
+        cmd.append("jack2")
+    if restartUI:
+        cmd.append("mod-ui")
+    yield gen.Task(run_command, cmd, None)
+    reset_get_all_pedalboards_cache()
+    lv2_cleanup()
+    lv2_init()
 
 @gen.coroutine
 def start_restore():
@@ -480,7 +494,7 @@ class SystemExeChange(JsonRequestHandler):
                     'error': error,
                 })
                 if resp[0] == 0:
-                    IOLoop.instance().add_callback(self.restart_services)
+                    IOLoop.instance().add_callback(restart_services, True, False)
                 return
 
             else:
@@ -570,30 +584,44 @@ class SystemExeChange(JsonRequestHandler):
         os.sync()
         yield gen.Task(run_command, ["reboot"], None)
 
-    @gen.coroutine
-    def restart_services(self):
-        yield gen.Task(run_command, ["systemctl", "restart", "jack2"], None)
-        reset_get_all_pedalboards_cache()
-        lv2_cleanup()
-        lv2_init()
-
 class SystemCleanup(JsonRequestHandler):
     @gen.coroutine
     def post(self):
-        banks = self.get_arguments('banks') == 'true'
-        pedalboards = self.get_arguments('pedalboards') == 'true'
-        plugins = self.get_arguments('plugins') == 'true'
+        banks       = bool(int(self.get_argument('banks')))
+        pedalboards = bool(int(self.get_argument('pedalboards')))
+        plugins     = bool(int(self.get_argument('plugins')))
+
+        stuffToDelete = []
 
         if banks:
-            pass # placeholder
+            stuffToDelete.append(BANKS_JSON_FILE)
 
         if pedalboards:
-            pass # placeholder
+            stuffToDelete.append(LV2_PEDALBOARDS_DIR)
 
         if plugins:
-            pass #placeholder
+            stuffToDelete.append(LV2_PLUGIN_DIR)
 
-        self.write(True)
+        if not stuffToDelete:
+            self.write({
+                'ok'   : False,
+                'error': "Nothing to delete",
+            })
+            return
+
+        if plugins:
+            yield gen.Task(run_command, ["systemctl", "stop", "jack2"], None)
+
+        yield gen.Task(run_command, ["rm", "-rf"] + stuffToDelete, None)
+        os.sync()
+
+        self.write({
+            'ok'   : True,
+            'error': "",
+        })
+
+        restartJACK2 = pedalboards or plugins
+        IOLoop.instance().add_callback(restart_services, restartJACK2, True)
 
 class UpdateDownload(MultiPartFileReceiver):
     destination_dir = "/tmp/os-update"
