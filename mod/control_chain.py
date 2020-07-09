@@ -7,12 +7,11 @@ import socket
 from tornado import gen, iostream, ioloop
 from mod import symbolify
 
-CC_MODE_TOGGLE    = 0x01
-CC_MODE_TRIGGER   = 0x02
-CC_MODE_OPTIONS   = 0x04
-CC_MODE_REAL      = 0x10
-CC_MODE_INTEGER   = 0x20
-CC_MODE_TAP_TEMPO = 0x40
+CC_MODE_TOGGLE  = 0x01
+CC_MODE_TRIGGER = 0x02
+CC_MODE_OPTIONS = 0x04
+CC_MODE_REAL    = 0x10
+CC_MODE_INTEGER = 0x20
 
 # ---------------------------------------------------------------------------------------------------------------------
 
@@ -258,7 +257,7 @@ class ControlChainDeviceListener(object):
                     'name' : "%s%s:%s" % (dev['label'], dev_label_suffix, actuator['name']),
                     'modes': modes_str,
                     'steps': [],
-                    'feedback': 'protocol' in dev and tuple(int(v) for v in dev['protocol'].split(".")) >= (0,6),
+                    'feedback': False,
                     'max_assigns': actuator['max_assignments'],
                 }
                 self.act_added_cb(dev_id, actuator['id'], metadata)
