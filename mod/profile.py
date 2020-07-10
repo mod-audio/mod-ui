@@ -9,7 +9,7 @@ try:
 except:
     from commands import getoutput
 
-from tornado import ioloop
+from tornado.ioloop import IOLoop
 
 from mod import TextFileFlusher, safe_json_load
 from mod.settings import APP, DATA_DIR
@@ -226,7 +226,7 @@ class Profile(object):
                 pass
 
         fill_in_mixer_values(self.values, self.platform)
-        ioloop.IOLoop.instance().add_callback(self.apply_first)
+        IOLoop.instance().add_callback(self.apply_first)
 
     # -----------------------------------------------------------------------------------------------------------------
     # tools

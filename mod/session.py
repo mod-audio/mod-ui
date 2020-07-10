@@ -18,7 +18,8 @@
 import os, time, logging, json
 
 from datetime import timedelta
-from tornado import iostream, ioloop, gen
+from tornado import iostream, gen
+from tornado.ioloop import IOLoop
 
 from mod import safe_json_load, TextFileFlusher
 from mod.bank import get_last_bank_and_pedalboard
@@ -67,7 +68,6 @@ class UserPreferences(object):
 class Session(object):
     def __init__(self):
         logging.basicConfig(level=(logging.DEBUG if LOG else logging.WARNING))
-        self.ioloop = ioloop.IOLoop.instance()
 
         self.prefs = UserPreferences()
         self.player = Player()
@@ -290,7 +290,7 @@ class Session(object):
             callback()
 
         def schedule_stop():
-            self.ioloop.add_timeout(timedelta(seconds=0.5), stop)
+            IOLoop.instance().add_timeout(timedelta(seconds=0.5), stop)
 
         self.host.mute()
         self.player.play(self.recordhandle, schedule_stop)

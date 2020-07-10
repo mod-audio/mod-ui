@@ -4,7 +4,8 @@
 import json
 import os
 import socket
-from tornado import gen, iostream, ioloop
+from tornado import gen, iostream
+from tornado.ioloop import IOLoop
 from mod import symbolify
 
 CC_MODE_TOGGLE  = 0x01
@@ -64,7 +65,7 @@ class ControlChainDeviceListener(object):
             return
 
         self.initialized_cb = callback
-        ioloop.IOLoop.instance().call_later(10, self.wait_init_timeout)
+        IOLoop.instance().call_later(10, self.wait_init_timeout)
 
     def wait_init_timeout(self):
         if self.initialized:
@@ -97,7 +98,7 @@ class ControlChainDeviceListener(object):
         for dev_id, (dev_uri, label, labelsuffix, version) in hw_versions.items():
             self.hw_removed_cb(dev_id, dev_uri, label+labelsuffix, version)
 
-        ioloop.IOLoop.instance().call_later(2, self.restart_if_crashed)
+        IOLoop.instance().call_later(2, self.restart_if_crashed)
 
     def set_initialized(self):
         print("Control Chain initialized")
