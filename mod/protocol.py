@@ -15,6 +15,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+PLUGIN_LOG_TRACE   = 0
+PLUGIN_LOG_NOTE    = 1
+PLUGIN_LOG_WARNING = 2
+PLUGIN_LOG_ERROR   = 3
+
 class ProtocolError(Exception):
     ERRORS = {
         "-1"  : "ERR_INSTANCE_INVALID",
