@@ -61,8 +61,9 @@ def check_environment():
     # create temp dirs
     if not os.path.exists(DOWNLOAD_TMP_DIR):
         os.makedirs(DOWNLOAD_TMP_DIR)
-    if not os.path.exists(PEDALBOARD_TMP_DIR):
-        os.makedirs(PEDALBOARD_TMP_DIR)
+    if os.path.exists(PEDALBOARD_TMP_DIR):
+        shutil.rmtree(PEDALBOARD_TMP_DIR)
+    os.makedirs(PEDALBOARD_TMP_DIR)
 
     # remove temp files
     for path in (CAPTURE_PATH, PLAYBACK_PATH, UPDATE_CC_FIRMWARE_FILE):
