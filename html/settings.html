@@ -385,6 +385,25 @@ function create_or_delete_file(path, create) {
     })
 }
 
+function reflash(callback) {
+    $.ajax({
+        url: '/system/reflash',
+        method: 'POST',
+        data: {},
+        success: function (resp) {
+            if (callback) {
+                callback(resp)
+            }
+        },
+        error: function (resp) {
+            console.log("error", resp)
+            alert("An error occurred: " + resp)
+        },
+        cache: false,
+        dataType: 'json'
+    })
+}
+
 $('document').ready(function() {
     var self = this
 
@@ -717,7 +736,7 @@ $('document').ready(function() {
         if (!banks && !pedalboards && !plugins) {
             title = "You need to check at least one checkbox above";
         } else if (!ok) {
-            title = 'You need type "Delete" on the input above to confirm data removal';
+            title = 'You need type "DELETE" on the input above to confirm data removal';
         }
         $("#button-action-delete").attr('disabled', !ok || (!banks && !pedalboards && !plugins));
         $("#button-action-delete").attr('title', title);
@@ -751,6 +770,40 @@ $('document').ready(function() {
             }
         })
     });
+
+    // ----------------------------------------------------------------------------------------------------------------
+    // --- HMI Reflash
+
+    $("#button-action-reflash").attr('disabled', true)
+
+    var reflashEnabled = function() {
+        var ok = $("#prefs-reflash-confirm").val().toUpperCase() == "REFLASH";
+        var title = '';
+        if (!ok) {
+            title = 'You need type "REFLASH" on the input above to confirm HMI reflash';
+        }
+        $("#button-action-reflash").attr('disabled', !ok);
+        $("#button-action-reflash").attr('title', title);
+    }
+
+    $("#prefs-reflash-confirm").change(reflashEnabled);
+    $("#prefs-reflash-confirm").keyup(reflashEnabled);
+    reflashEnabled();
+
+    $("#button-action-reflash").click(function() {
+        reflash(
+            function(ok) {
+                if (ok) {
+                    alert("hmi reflashed!")
+                    $("#prefs-reflash-confirm").val('')
+                    reflashEnabled();
+                } else {
+                    alert("Operation on device returned an error status")
+                }
+            }
+        )
+    });
+
 
     // ----------------------------------------------------------------------------------------------------------------
     // --- Device Updates
@@ -1065,11 +1118,27 @@ $('document').ready(function() {
                         To confirm, please type the word "DELETE": &nbsp;
                         <input type="text" id="prefs-delete-confirm" size="10" style="text-transform: uppercase" />
                     </label>
-                    <br/><br/>
+                    <br/>
                     <label>
                         <input type="button" id="button-action-delete" value="Delete"></input>
                     </label>
+                    <br/>
                 </form>
+
+                <h1>HMI Reflash</h1>
+                <form class="form">
+                    <p>NEED TEXT HERE. How does the firmware gets uploaded to the device? In which situation this is needed?</p>
+                    <br/>
+                    <label>
+                        NEED TEXT HERE. What are the risks involved? THIS CAN BRICK THE DEVICE, right? <br/>
+                        To confirm, please type the word "REFLASH": &nbsp;
+                        <input type="text" id="prefs-reflash-confirm" size="10" style="text-transform: uppercase" />
+                    </label>
+                    <br/>
+                    <label>
+                        <input type="button" id="button-action-reflash" value="Reflash"></input>
+                    </label>
+                    <br/>
             </div>
         </div>
         <!-- SETTINGS PAGE (DANGEROUS) -->
