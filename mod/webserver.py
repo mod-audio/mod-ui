@@ -623,6 +623,11 @@ class SystemCleanup(JsonRequestHandler):
         restartJACK2 = pedalboards or plugins
         IOLoop.instance().add_callback(restart_services, restartJACK2, True)
 
+class SystemHMIReflash(JsonRequestHandler):
+    @gen.coroutine
+    def post(self):
+        self.write(True)
+
 class UpdateDownload(MultiPartFileReceiver):
     destination_dir = "/tmp/os-update"
 
@@ -2071,6 +2076,7 @@ application = web.Application(
             (r"/system/prefs", SystemPreferences),
             (r"/system/exechange", SystemExeChange),
             (r"/system/cleanup", SystemCleanup),
+            (r"/system/reflash", SystemHMIReflash),
 
             (r"/update/download/", UpdateDownload),
             (r"/update/begin", UpdateBegin),
