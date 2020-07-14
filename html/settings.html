@@ -353,12 +353,13 @@ function system_exechange(data, callback) {
     })
 }
 
-function enable_service(name, enable, inverted) {
+function enable_service(name, enable, inverted, persistent) {
     system_exechange({
-        'type'    : 'service',
-        'name'    : name,
-        'enable'  : enable ? 1 : 0,
-        'inverted': inverted ? 1 : 0,
+        'type'      : 'service',
+        'name'      : name,
+        'enable'    : enable ? 1 : 0,
+        'inverted'  : inverted ? 1 : 0,
+        'persistent': persistent ? 1 : 0,
     })
 }
 
@@ -382,25 +383,6 @@ function create_or_delete_file(path, create) {
         'type'  : 'filecreate',
         'path'  : path,
         'create': create ? 1 : 0,
-    })
-}
-
-function reflash(callback) {
-    $.ajax({
-        url: '/system/reflash',
-        method: 'POST',
-        data: {},
-        success: function (resp) {
-            if (callback) {
-                callback(resp)
-            }
-        },
-        error: function (resp) {
-            console.log("error", resp)
-            alert("An error occurred: " + resp)
-        },
-        cache: false,
-        dataType: 'json'
     })
 }
 
@@ -704,15 +686,15 @@ $('document').ready(function() {
     // --- Services
 
     $("#prefs-service-mod-peakmeter").click(function () {
-        enable_service("mod-peakmeter", !$(this).prop("checked"), true)
+        enable_service("mod-peakmeter", !$(this).prop("checked"), true, true)
     })
 
     $("#prefs-service-mod-sdk").click(function () {
-        enable_service("mod-sdk", $(this).prop("checked"))
+        enable_service("mod-sdk", $(this).prop("checked"), false, true)
     })
 
     $("#prefs-service-netmanager").click(function () {
-        enable_service("netmanager", $(this).prop("checked"))
+        enable_service("netmanager", $(this).prop("checked"), false, true)
     })
 
     // ----------------------------------------------------------------------------------------------------------------
@@ -780,7 +762,7 @@ $('document').ready(function() {
         var ok = $("#prefs-reflash-confirm").val().toUpperCase() == "REFLASH";
         var title = '';
         if (!ok) {
-            title = 'You need type "REFLASH" on the input above to confirm HMI reflash';
+            title = 'You need type "REFLASH" on the input above to confirm Controller reflash';
         }
         $("#button-action-reflash").attr('disabled', !ok);
         $("#button-action-reflash").attr('title', title);
@@ -791,17 +773,19 @@ $('document').ready(function() {
     reflashEnabled();
 
     $("#button-action-reflash").click(function() {
-        reflash(
-            function(ok) {
-                if (ok) {
-                    alert("hmi reflashed!")
-                    $("#prefs-reflash-confirm").val('')
-                    reflashEnabled();
-                } else {
-                    alert("Operation on device returned an error status")
-                }
-            }
-        )
+        var block = show_blocker("reflash");
+
+        // NOTE; we cant really check when it is done since we need to stop ourselves in order to flash HMI
+        // So we fake it, giving a reasonable amount of time for the operation to complete
+        setTimeout(function () {
+            block.html('<p>Controller reflash complete!</p>')
+
+            var re = $("<div class='button icon'>Reload</div>").appendTo(block);
+            re.css("background-image", "url(img/icons/25/reload.png)");
+            re.click(function () { location.reload(); });
+        }, 45000);
+
+        enable_service("hmi-update", true, false, false);
     });
 
 
@@ -1125,7 +1109,7 @@ $('document').ready(function() {
                     <br/>
                 </form>
 
-                <h1>HMI Reflash</h1>
+                <h1>Controller Reflash</h1>
                 <form class="form">
                     <p>NEED TEXT HERE. How does the firmware gets uploaded to the device? In which situation this is needed?</p>
                     <br/>
