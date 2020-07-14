@@ -545,11 +545,12 @@ class SystemExeChange(JsonRequestHandler):
                 os.remove(filename)
 
         elif etype == "service":
-            name     = self.get_argument('name')
-            enable   = bool(int(self.get_argument('enable')))
-            inverted = bool(int(self.get_argument('inverted')))
+            name       = self.get_argument('name')
+            enable     = bool(int(self.get_argument('enable')))
+            inverted   = bool(int(self.get_argument('inverted')))
+            persistent = bool(int(self.get_argument('persistent')))
 
-            if name not in ("mod-peakmeter", "mod-sdk", "netmanager"):
+            if name not in ("hmi-update", "mod-peakmeter", "mod-sdk", "netmanager"):
                 self.write(False)
                 return
 
@@ -563,12 +564,13 @@ class SystemExeChange(JsonRequestHandler):
             else:
                 servicename = name
 
-            if enable:
-                with open(checkname, 'wb') as fh:
-                    fh.write(b"")
-            else:
-                if os.path.exists(checkname):
-                    os.remove(checkname)
+            if persistent:
+                if enable:
+                    with open(checkname, 'wb') as fh:
+                        fh.write(b"")
+                else:
+                    if os.path.exists(checkname):
+                        os.remove(checkname)
 
             if inverted:
                 enable = not enable
@@ -624,11 +626,6 @@ class SystemCleanup(JsonRequestHandler):
 
         restartJACK2 = pedalboards or plugins
         IOLoop.instance().add_callback(restart_services, restartJACK2, True)
-
-class SystemHMIReflash(JsonRequestHandler):
-    @gen.coroutine
-    def post(self):
-        self.write(True)
 
 class UpdateDownload(MultiPartFileReceiver):
     destination_dir = "/tmp/os-update"
@@ -2041,7 +2038,6 @@ application = web.Application(
             (r"/system/prefs", SystemPreferences),
             (r"/system/exechange", SystemExeChange),
             (r"/system/cleanup", SystemCleanup),
-            (r"/system/reflash", SystemHMIReflash),
 
             (r"/update/download/", UpdateDownload),
             (r"/update/begin", UpdateBegin),
