@@ -1224,21 +1224,24 @@ class PedalboardList(JsonRequestHandler):
         self.write(all)
 
 class PedalboardSave(JsonRequestHandler):
+    @web.asynchronous
+    @gen.engine
     def post(self):
         title = self.get_argument('title')
         asNew = bool(int(self.get_argument('asNew')))
 
-        bundlepath, newPB = SESSION.web_save_pedalboard(title, asNew)
+        def saved_cb(ok):
+            self.write({
+                'ok': bundlepath is not None,
+                'bundlepath': bundlepath
+            })
+
+        bundlepath, newPB = SESSION.web_save_pedalboard(title, asNew, saved_cb)
 
         if newPB:
             reset_get_all_pedalboards_cache()
         else:
             update_cached_pedalboard_version(bundlepath)
-
-        self.write({
-            'ok': bundlepath is not None,
-            'bundlepath': bundlepath
-        })
 
 class PedalboardPackBundle(TimelessRequestHandler):
     @web.asynchronous

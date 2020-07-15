@@ -3872,6 +3872,7 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
     LilvNode* const modpedal_width  = lilv_new_uri(w, LILV_NS_MODPEDAL "width");
     LilvNode* const modpedal_height = lilv_new_uri(w, LILV_NS_MODPEDAL "height");
     LilvNode* const modpedal_version = lilv_new_uri(w, LILV_NS_MODPEDAL "version");
+    LilvNode* const modpedal_instanceNumber = lilv_new_uri(w, LILV_NS_MODPEDAL "instanceNumber");
 
     // --------------------------------------------------------------------------------------------------------
     // uri node (ie, "this")
@@ -3941,6 +3942,7 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
                     LilvNode* const x       = lilv_world_get(w, block, ingen_canvasX, nullptr);
                     LilvNode* const y       = lilv_world_get(w, block, ingen_canvasY, nullptr);
                     LilvNode* const preset  = lilv_world_get(w, block, modpedal_preset, nullptr);
+                    LilvNode* const instId  = lilv_world_get(w, block, modpedal_instanceNumber, nullptr);
 
                     PedalboardMidiControl bypassCC = { -1, 0, false, 0.0f, 1.0f };
                     PedalboardPluginPort* ports = nullptr;
@@ -4034,6 +4036,7 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
                     plugs[count++] = {
                         true,
                         enabled != nullptr ? !lilv_node_as_bool(enabled) : true,
+                        instId != nullptr ? lilv_node_as_int(instId) : -1,
                         instance,
                         strdup(uri),
                         bypassCC,
@@ -4435,6 +4438,7 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
     lilv_node_free(modpedal_width);
     lilv_node_free(modpedal_height);
     lilv_node_free(modpedal_version);
+    lilv_node_free(modpedal_instanceNumber);
     lilv_node_free(rdftypenode);
     lilv_world_free(w);
 

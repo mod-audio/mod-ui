@@ -195,7 +195,23 @@ class InstanceIdMapper(object):
         self.id_map[idx] = instance
 
         # ready
-        return self.instance_map[instance]
+        return idx
+
+    # get a numeric id from a string instance
+    # Tries to use a pre-defined id first if possible
+    def get_id_by_number(self, instance, instanceNumber):
+        if instanceNumber < 0:
+            return self.get_id(instance)
+
+        if instanceNumber in self.id_map.keys():
+            return self.get_id(instance)
+
+        self.last_id = max(self.last_id, instanceNumber+1)
+        self.instance_map[instance] = instanceNumber
+        self.id_map[instanceNumber] = instance
+
+        # ready
+        return instanceNumber
 
     def get_id_without_creating(self, instance):
         return self.instance_map[instance]
@@ -851,6 +867,9 @@ class Host(object):
 
         # Remove all plugins, non-waiting
         self.send_notmodified("remove -1")
+
+        # Set directory for temporary data
+        self.send_notmodified("state_tmpdir {}".format(PEDALBOARD_TMP_DIR))
 
         # get current transport data
         data = get_jack_data(True)
@@ -1823,7 +1842,10 @@ class Host(object):
     def reset(self, callback):
         def host_callback(ok):
             self.msg_callback("remove :all")
-            self.send_notmodified("state_load {}".format(PEDALBOARD_TMP_DIR), callback, datatype='boolean')
+            if os.path.exists(PEDALBOARD_TMP_DIR):
+                shutil.rmtree(PEDALBOARD_TMP_DIR)
+            os.makedirs(PEDALBOARD_TMP_DIR)
+            callback(ok)
 
         self.bank_id = 0
         self.connections = []
@@ -2765,9 +2787,10 @@ class Host(object):
             self.bank_id = 0
             try:
                 bundlepath = DEFAULT_PEDALBOARD
-                pb = get_pedalboard_info(DEFAULT_PEDALBOARD)
+                isDefault = True
+                pb = get_pedalboard_info(bundlepath)
             except:
-                bundlepath = PEDALBOARD_TMP_DIR
+                bundlepath = ""
                 pb = {
                     'title': "",
                     'width': 0,
@@ -2948,14 +2971,15 @@ class Host(object):
                                                      self.transport_bpm,
                                                      self.transport_sync))
 
-        self.load_pb_snapshots(pb['plugins'], bundlepath)
+        if bundlepath:
+            self.load_pb_snapshots(pb['plugins'], bundlepath)
         self.load_pb_plugins(pb['plugins'], instances, rinstances)
         self.load_pb_connections(pb['connections'], mappedOldMidiIns, mappedOldMidiOuts,
                                                     mappedNewMidiIns, mappedNewMidiOuts)
 
-        self.send_notmodified("state_load {}".format(bundlepath))
-
-        self.addressings.load(bundlepath, instances, skippedPortAddressings, abort_catcher)
+        if bundlepath:
+            self.send_notmodified("state_load {}".format(bundlepath))
+            self.addressings.load(bundlepath, instances, skippedPortAddressings, abort_catcher)
 
         if abort_catcher is not None and abort_catcher.get('abort', False):
             print("WARNING: Abort triggered during PB load request 2, caller:", abort_catcher['caller'])
@@ -3028,7 +3052,7 @@ class Host(object):
                 continue
 
             instance    = "/graph/%s" % p['instance']
-            instance_id = self.mapper.get_id(instance)
+            instance_id = self.mapper.get_id_by_number(instance, p['instanceNumber'])
 
             instances[p['instance']] = (instance_id, p['uri'])
             rinstances[instance_id]  = instance
@@ -3192,7 +3216,7 @@ class Host(object):
                     if aliasname1 in port_alias or aliasname2 in port_alias:
                         port_conns.append((port_from, port_to))
 
-    def save(self, title, asNew):
+    def save(self, title, asNew, callback):
         titlesym = symbolify(title)[:16]
 
         # Save over existing bundlepath
@@ -3223,27 +3247,24 @@ class Host(object):
                 if not os.path.exists(lv2path):
                     os.mkdir(lv2path)
 
-            # move stuff to new folder if needed
-            if self.pedalboard_path == PEDALBOARD_TMP_DIR and os.path.exists(self.pedalboard_path):
-                shutil.move(self.pedalboard_path, bundlepath)
-                os.mkdir(self.pedalboard_path)
-            else:
-                os.mkdir(bundlepath)
+            os.mkdir(bundlepath)
 
             self.pedalboard_path = bundlepath
             newPedalboard = True
-
-        # ask host to save any needed extra state
-        self.send_notmodified("state_save {}".format(bundlepath))
 
         # save ttl
         self.pedalboard_name     = title
         self.pedalboard_empty    = False
         self.pedalboard_modified = False
         self.save_state_to_ttl(bundlepath, title, titlesym)
-
         save_last_bank_and_pedalboard(0, bundlepath)
-        os.sync()
+
+        def state_saved_cb(ok):
+            os.sync()
+            callback(True)
+
+        # ask host to save any needed extra state
+        self.send_notmodified("state_save {}".format(bundlepath), state_saved_cb, datatype='boolean')
 
         return bundlepath, newPedalboard
 
@@ -3368,6 +3389,7 @@ _:b%i
     mod:releaseNumber %i ;
     lv2:port <%s> ;
     lv2:prototype <%s> ;
+    pedal:instanceNumber %i ;
     pedal:preset <%s> ;
     a ingen:Block .
 """ % (instance, pluginData['x'], pluginData['y'], "false" if pluginData['bypassed'] else "true",
@@ -3381,8 +3403,7 @@ _:b%i
                                                                                           info['ports']['midi']['input']+
                                                                                           info['ports']['midi']['output']+
                                                                                           [{'symbol': ":bypass"}]))),
-       pluginData['uri'],
-       pluginData['preset'])
+       pluginData['uri'], instance_id, pluginData['preset'])
 
             # audio input
             for port in info['ports']['audio']['input']:
