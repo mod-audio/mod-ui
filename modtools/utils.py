@@ -324,6 +324,7 @@ class PedalboardPlugin(Structure):
     _fields_ = [
         ("valid", c_bool),
         ("bypassed", c_bool),
+        ("instanceNumber", c_int),
         ("instance", c_char_p),
         ("uri", c_char_p),
         ("bypassCC", PedalboardMidiControl),

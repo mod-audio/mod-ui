@@ -200,6 +200,7 @@ typedef struct {
 typedef struct {
     bool valid;
     bool bypassed;
+    int instanceNumber;
     const char* instance;
     const char* uri;
     PedalboardMidiControl bypassCC;

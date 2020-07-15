@@ -60,7 +60,7 @@ if not KEYS_PATH.endswith('/'):
 os.environ['MOD_KEYS_PATH'] = KEYS_PATH
 
 DOWNLOAD_TMP_DIR = os.environ.get('MOD_DOWNLOAD_TMP_DIR', '/tmp/mod-ui')
-PEDALBOARD_TMP_DIR = os.environ.get('MOD_PEDALBOARD_TMP_DIR', join(DATA_DIR, 'tmp.pedalboard'))
+PEDALBOARD_TMP_DIR = os.environ.get('MOD_PEDALBOARD_TMP_DIR', join(DATA_DIR, 'pedalboard-tmp-data'))
 
 LV2_PLUGIN_DIR = os.path.expanduser("~/.lv2/")
 LV2_PEDALBOARDS_DIR = os.path.expanduser("~/.pedalboards/")
