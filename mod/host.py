@@ -1626,6 +1626,13 @@ class Host(object):
 
         if crashed:
             self.init_jack()
+            # Setup a few things as done in `init_host`, but without waiting
+            midi_pb_prgch, midi_ss_prgch = self.profile.get_midi_prgch_channels()
+            if midi_pb_prgch >= 1 and midi_pb_prgch <= 16:
+                self.send_notmodified("monitor_midi_program %d 1" % (midi_pb_prgch-1))
+            if midi_ss_prgch >= 1 and midi_ss_prgch <= 16:
+                self.send_notmodified("monitor_midi_program %d 1" % (midi_ss_prgch-1))
+            self.send_notmodified("state_tmpdir {}".format(PEDALBOARD_TMP_DIR))
             self.send_notmodified("transport %i %f %f" % (self.transport_rolling, self.transport_bpb, self.transport_bpm))
             self.addressings.cchain.restart_if_crashed()
 
