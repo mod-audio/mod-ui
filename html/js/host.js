@@ -33,16 +33,33 @@ $('document').ready(function() {
 
     ws.onmessage = function (evt) {
         var data = evt.data
-        var cmd  = data.split(" ",1)
+        var cmd = data.split(" ",1)
 
         if (!cmd.length) {
             return
         }
 
-        var cmd = cmd[0]
+        cmd = cmd[0];
+
+        // these first commands do not have any arguments
+        if (cmd == "ping") {
+            ws.send("pong")
+            return
+        }
+        if (cmd == "stop") {
+            desktop.blockUI()
+            return
+        }
+        if (cmd == "cc-device-updated") {
+            desktop.ccDeviceUpdateFinished()
+            return
+        }
+
+        // everything from here onwards has at least 1 argument
+        data = data.substr(cmd.length+1);
 
         if (cmd == "stats") {
-            data        = data.substr(cmd.length+1).split(" ",2)
+            data        = data.split(" ",2)
             var cpuLoad = parseFloat(data[0])
             var xruns   = parseInt(data[1])
 
@@ -71,13 +88,8 @@ $('document').ready(function() {
             return
         }
 
-        if (cmd == "ping") {
-            ws.send("pong")
-            return
-        }
-
         if (cmd == "sys_stats") {
-            data        = data.substr(cmd.length+1).split(" ",3)
+            data        = data.split(" ",3)
             var memload = parseFloat(data[0])
             var cpufreq = data[1]
             var cputemp = data[2]
@@ -93,7 +105,7 @@ $('document').ready(function() {
         }
 
         if (cmd == "param_set") {
-            data         = data.substr(cmd.length+1).split(" ",3)
+            data         = data.split(" ",3)
             var instance = data[0]
             var symbol   = data[1]
             var value    = parseFloat(data[2])
@@ -103,7 +115,7 @@ $('document').ready(function() {
         }
 
         if (cmd == "output_set") {
-            data         = data.substr(cmd.length+1).split(" ",3)
+            data         = data.split(" ",3)
             var instance = data[0]
             var symbol   = data[1]
             var value    = parseFloat(data[2])
@@ -112,7 +124,7 @@ $('document').ready(function() {
         }
 
         if (cmd == "output_atom") {
-            data         = data.substr(cmd.length+1).split(" ",3)
+            data         = data.split(" ",3)
             var instance = data[0]
             var symbol   = data[1]
             var atom     = data[2]
@@ -121,7 +133,7 @@ $('document').ready(function() {
         }
 
         if (cmd == "transport") {
-            data         = data.substr(cmd.length+1).split(" ",4)
+            data         = data.split(" ",4)
             var rolling  = parseInt(data[0]) != 0
             var bpb      = parseFloat(data[1])
             var bpm      = parseFloat(data[2])
@@ -131,7 +143,7 @@ $('document').ready(function() {
         }
 
         if (cmd == "preset") {
-            data         = data.substr(cmd.length+1).split(" ",2)
+            data         = data.split(" ",2)
             var instance = data[0]
             var value    = data[1]
             if (value == "null") {
@@ -142,7 +154,7 @@ $('document').ready(function() {
         }
 
         if (cmd == "pedal_preset") {
-            var index = parseInt(data.substr(cmd.length+1))
+            var index = parseInt(data)
 
             $.ajax({
                 url: '/snapshot/name',
@@ -164,7 +176,7 @@ $('document').ready(function() {
         }
 
         if (cmd == "hw_map") {
-            data         = data.substr(cmd.length+1).split(" ", 12)
+            data         = data.split(" ", 12)
             var instance = data[0]
             var symbol   = data[1]
             var actuator = data[2]
@@ -176,7 +188,7 @@ $('document').ready(function() {
             var dividers = JSON.parse(data[8].replace(/'/g, '"'))
             var page     = data[9]
             if (page != null) {
-              page = parseInt(page)
+                page = parseInt(page)
             }
             var group = data[10]
             var feedback = parseInt(data[11]) == 1
@@ -197,7 +209,7 @@ $('document').ready(function() {
         }
 
         if (cmd == "cv_map") {
-          data         = data.substr(cmd.length+1).split(" ", 12)
+          data         = data.split(" ", 12)
           var instance = data[0]
           var symbol   = data[1]
           var actuator = data[2]
@@ -218,7 +230,7 @@ $('document').ready(function() {
         }
 
         if (cmd == "midi_map") {
-            data         = data.substr(cmd.length+1).split(" ",6)
+            data         = data.split(" ",6)
             var instance = data[0]
             var symbol   = data[1]
             var channel  = parseInt(data[2])
@@ -236,7 +248,7 @@ $('document').ready(function() {
         }
 
         if (cmd == "connect") {
-            data        = data.substr(cmd.length+1).split(" ",2)
+            data        = data.split(" ",2)
             var source  = data[0]
             var target  = data[1]
             var connMgr = desktop.pedalboard.data("connectionManager")
@@ -285,7 +297,7 @@ $('document').ready(function() {
         }
 
         if (cmd == "disconnect") {
-            data        = data.substr(cmd.length+1).split(" ",2)
+            data        = data.split(" ",2)
             var source  = data[0]
             var target  = data[1]
             var connMgr = desktop.pedalboard.data("connectionManager")
@@ -304,7 +316,7 @@ $('document').ready(function() {
         }
 
         if (cmd == "add") {
-            data         = data.substr(cmd.length+1).split(" ",5)
+            data         = data.split(" ",5)
             var instance = data[0]
             var uri      = data[1]
             var x        = parseFloat(data[2])
@@ -345,7 +357,7 @@ $('document').ready(function() {
         }
 
         if (cmd == "remove") {
-            var instance = data.substr(cmd.length+1)
+            var instance = data
 
             if (instance == ":all") {
                 desktop.pedalboard.pedalboard('resetData')
@@ -356,7 +368,7 @@ $('document').ready(function() {
         }
 
         if (cmd == "add_cv_port") {
-          data         = data.substr(cmd.length+1).split(" ", 3)
+          data         = data.split(" ", 3)
           var instance = data[0]
           var name     = data[1].replace(/_/g," ")
           var operationalMode = data[2]
@@ -365,7 +377,7 @@ $('document').ready(function() {
         }
 
         if (cmd == "add_hw_port") {
-            data         = data.substr(cmd.length+1).split(" ",5)
+            data         = data.split(" ",5)
             var instance = data[0]
             var type     = data[1]
             var isOutput = parseInt(data[2]) == 0 // reversed
@@ -390,25 +402,25 @@ $('document').ready(function() {
         }
 
         if (cmd == "remove_hw_port") {
-            var port = data.substr(cmd.length+1)
+            var port = data
             desktop.pedalboard.pedalboard('removeItemFromCanvas', port)
             return
         }
 
         if (cmd == "act_add") {
-            var metadata = JSON.parse(atob(data.substr(cmd.length+1)))
+            var metadata = JSON.parse(atob(data))
             desktop.hardwareManager.addActuator(metadata)
             return
         }
 
         if (cmd == "act_del") {
-            var uri = data.substr(cmd.length+1)
+            var uri = data
             desktop.hardwareManager.removeActuator(uri)
             return
         }
 
         if (cmd == "hw_add") {
-            data        = data.substr(cmd.length+1).split(" ",4)
+            data        = data.split(" ",4)
             var dev_uri = data[0]
             var label   = data[1].replace(/_/g," ")
             var lsuffix = data[2].replace(/_/g," ")
@@ -419,7 +431,7 @@ $('document').ready(function() {
         }
 
         if (cmd == "hw_rem") {
-            data        = data.substr(cmd.length+1).split(" ",3)
+            data        = data.split(" ",3)
             var dev_uri = data[0]
             var label   = data[1].replace(/_/g," ")
             var version = data[2]
@@ -428,7 +440,7 @@ $('document').ready(function() {
         }
 
         if (cmd == "loading_start") {
-            data     = data.substr(cmd.length+1).split(" ",2)
+            data     = data.split(" ",2)
             empty    = parseInt(data[0]) != 0
             modified = parseInt(data[1]) != 0
             pb_loading = true
@@ -437,7 +449,7 @@ $('document').ready(function() {
         }
 
         if (cmd == "loading_end") {
-            var presetId = parseInt(data.substr(cmd.length+1))
+            var presetId = parseInt(data)
 
             $.ajax({
                 url: '/snapshot/name',
@@ -470,7 +482,7 @@ $('document').ready(function() {
         }
 
         if (cmd == "size") {
-            data       = data.substr(cmd.length+1).split(" ",2)
+            data       = data.split(" ",2)
             var width  = data[0]
             var height = data[1]
             // TODO
@@ -478,7 +490,7 @@ $('document').ready(function() {
         }
 
         if (cmd == "truebypass") {
-            data      = data.substr(cmd.length+1).split(" ",2)
+            data      = data.split(" ",2)
             var left  = parseInt(data[0]) != 0
             var right = parseInt(data[1]) != 0
 
@@ -487,30 +499,37 @@ $('document').ready(function() {
             return
         }
 
-        if (cmd == "stop") {
-            desktop.blockUI()
+        if (cmd == "log") {
+            cmd       = data.split(" ",1)
+            var ltype = parseInt(cmd[0])
+            var lmsg  = data.substr(cmd.length+1);
+
+            if (ltype == 0) {
+                console.debug(lmsg);
+            } else if (ltype == 1) {
+                console.log(lmsg);
+            } else if (ltype == 2) {
+                console.warn(lmsg);
+            } else if (ltype == 3) {
+                console.error(lmsg);
+            }
             return
         }
 
         if (cmd == "rescan") {
-            var resp = JSON.parse(atob(data.substr(cmd.length+1)))
+            var resp = JSON.parse(atob(data))
             desktop.updatePluginList(resp.installed, resp.removed)
             return
         }
 
-        if (cmd == "cc-device-updated") {
-            desktop.ccDeviceUpdateFinished()
-            return
-        }
-
         if (cmd == "load-pb-remote") {
-            var pedalboard_id = data.substr(cmd.length+1)
+            var pedalboard_id = data
             desktop.loadRemotePedalboard(pedalboard_id)
             return
         }
 
         if (cmd == "bufsize") {
-            var bufsize = data.substr(cmd.length+1)
+            var bufsize = data
             $("#mod-buffersize").text(bufsize+" frames")
             return
         }

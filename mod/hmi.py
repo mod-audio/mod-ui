@@ -18,7 +18,7 @@
 
 from datetime import timedelta
 from tornado.iostream import BaseIOStream, StreamClosedError
-from tornado import ioloop
+from tornado.ioloop import IOLoop
 
 from mod import get_hardware_actuators, get_hardware_descriptor, get_nearest_valid_scalepoint_value
 from mod.protocol import Protocol, ProtocolError, process_resp
@@ -87,7 +87,6 @@ class HMI(object):
         self.flush_io = None
         self.last_write_time = 0
         self.timeout = timeout # in seconds
-        self.ioloop = ioloop.IOLoop.instance()
         self.reinit_cb = reinit_cb
         self.hw_desc = get_hardware_descriptor()
         hw_actuators = self.hw_desc.get('actuators', [])
@@ -100,6 +99,7 @@ class HMI(object):
 
     # this can be overriden by subclasses to avoid any connection in DEV mode
     def init(self, callback):
+        ioloop = IOLoop.instance()
         try:
             sp = None
             try:
@@ -121,13 +121,13 @@ class HMI(object):
         # calls ping until ok is received
         def ping_callback(ok):
             if self.ping_io is not None:
-                self.ioloop.remove_timeout(self.ping_io)
+                ioloop.remove_timeout(self.ping_io)
                 self.ping_io = None
 
             if ok:
                 self.clear(clear_callback)
             else:
-                self.ioloop.call_later(1, call_ping)
+                ioloop.call_later(1, call_ping)
 
         def call_ping():
             sp.flushInput()
@@ -136,12 +136,14 @@ class HMI(object):
             self.queue_idle = True
 
             self.ping(ping_callback)
-            self.ping_io = self.ioloop.call_later(1, call_ping)
+            self.ping_io = ioloop.call_later(1, call_ping)
 
         call_ping()
         self.checker()
 
     def checker(self, data=None):
+        ioloop = IOLoop.instance()
+
         if data is not None and data != b'\0':
             self.last_write_time = 0
             logging.debug('[hmi] received <- %s', data)
@@ -155,7 +157,7 @@ class HMI(object):
                 # reset timeout checks when a message is received
                 self.need_flush = 0
                 if self.flush_io is not None:
-                    self.ioloop.remove_timeout(self.flush_io)
+                    ioloop.remove_timeout(self.flush_io)
                     self.flush_io = None
 
                 if msg.is_resp():
@@ -190,8 +192,8 @@ class HMI(object):
 
         if self.need_flush != 0:
             if self.flush_io is not None:
-                self.ioloop.remove_timeout(self.flush_io)
-            self.flush_io = self.ioloop.call_later(self.timeout/2, self.flush)
+                ioloop.remove_timeout(self.flush_io)
+            self.flush_io = ioloop.call_later(self.timeout/2, self.flush)
 
         try:
             self.sp.read_until(b'\0', self.checker)
@@ -264,7 +266,7 @@ class HMI(object):
             elif self.last_write_time != 0 and time.time() - self.last_write_time > self.timeout:
                 logging.warn("[hmi] no response for %ds, giving up", self.timeout)
                 if self.flush_io is not None:
-                    self.ioloop.remove_timeout(self.flush_io)
+                    IOLoop.instance().remove_timeout(self.flush_io)
                     self.flush_io = None
                 self.flush(True)
 

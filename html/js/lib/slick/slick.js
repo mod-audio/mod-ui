@@ -1697,7 +1697,7 @@
 
             if (_.options.accessibility === true) {
                 _.initADA();
-                
+
                 if (_.options.focusOnChange) {
                     var $currentSlide = $(_.$slides.get(_.currentSlide));
                     $currentSlide.attr('tabindex', 0).focus();
@@ -2319,13 +2319,11 @@
                 }
 
                 if (index === 0) {
-
                     allSlides
-                        .eq(allSlides.length - 1 - _.options.slidesToShow)
+                        .eq(allSlides.length - 2 - _.options.slidesToShow)
                         .addClass('slick-center');
 
                 } else if (index === _.slideCount - 1) {
-
                     allSlides
                         .eq(_.options.slidesToShow)
                         .addClass('slick-center');
@@ -2333,7 +2331,6 @@
                 }
 
             }
-
             _.$slides
                 .eq(index)
                 .addClass('slick-center');
