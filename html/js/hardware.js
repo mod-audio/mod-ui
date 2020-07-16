@@ -45,7 +45,7 @@ function create_midi_cc_uri (channel, controller) {
 }
 
 function startsWith (value, pattern) {
-    return value.indexOf(pattern) === 0;
+    return value != null && value.indexOf(pattern) === 0;
 };
 
 function is_control_chain_uri (uri) {
