@@ -1082,8 +1082,9 @@ $('document').ready(function() {
                 <h1>Cleanup</h1>
                 <form class="form">
                     <p>
-                        Here you can cleanup user data. This will wipe everything and the device won't work properly until
-                        new items are created.
+                        <b>Delete selected user data from the device.</b><br /><br />
+                        This will PERMANENTLY DELETE the selected USER DATA. This action is IRREVERSIBLE.
+                        The device won't work properly until new items are created or installed.
                     </p>
                     <label>
                         <input type="checkbox" autocomplete="off" id="prefs-delete-banks"> Delete all Banks</input>
@@ -1098,7 +1099,6 @@ $('document').ready(function() {
                     </label>
                     <br/><br/>
                     <label>
-                        This will PERMANENTLY DELETE USER DATA and is IRREVERSIBLE.<br/>
                         To confirm, please type the word "DELETE": &nbsp;
                         <input type="text" id="prefs-delete-confirm" size="10" style="text-transform: uppercase" />
                     </label>
@@ -1109,12 +1109,17 @@ $('document').ready(function() {
                     <br/>
                 </form>
 
-                <h1>Controller Reflash</h1>
+                <h1>Reflash controller</h1>
                 <form class="form">
-                    <p>NEED TEXT HERE. How does the firmware gets uploaded to the device? In which situation this is needed?</p>
+                    <p>
+                        <b>Reinstall the firmware for the controller board.</b><br /><br />
+                        This option is here for support reasons; If the power to your device was cut while installing the controller firmware,
+                        your device may end up in a state where the controller is not fully functional.<br /><br />
+                        While the reflashing is happening, please DO NOT DISCONNECT THE POWER to the device. <br />
+                        There is a RISK OF BRICKING THE DEVICE if the power is cut.
+                    </p>
                     <br/>
                     <label>
-                        NEED TEXT HERE. What are the risks involved? THIS CAN BRICK THE DEVICE, right? <br/>
                         To confirm, please type the word "REFLASH": &nbsp;
                         <input type="text" id="prefs-reflash-confirm" size="10" style="text-transform: uppercase" />
                     </label>
