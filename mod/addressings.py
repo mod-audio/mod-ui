@@ -22,6 +22,7 @@ HMI_ADDRESSING_TYPE_TOGGLED      = 0x20
 HMI_ADDRESSING_TYPE_LOGARITHMIC  = 0x40
 HMI_ADDRESSING_TYPE_INTEGER      = 0x80
 HMI_ADDRESSING_TYPE_REVERSE_ENUM = 0x100
+HMI_ADDRESSING_TYPE_MOMENTARY_SW = 0x200
 
 HMI_ACTUATOR_TYPE_FOOTSWITCH = 1
 HMI_ACTUATOR_TYPE_KNOB       = 2
@@ -264,13 +265,16 @@ class Addressings(object):
                     else: # cannot address more because we've reached the max nb of pages for current actuator
                         break
 
+                coloured = addr.get('coloured', False)
+                momentary = addr.get('momentary', False)
                 operational_mode = addr.get('operational_mode', '=')
 
                 curvalue = self._task_get_port_value(instance_id, portsymbol)
                 group = addr.get('group', None)
                 addrdata = self.add(instance_id, plugin_uri, portsymbol, actuator_uri,
                                     addr['label'], addr['minimum'], addr['maximum'], addr['steps'], curvalue,
-                                    addr.get('tempo'), addr.get('dividers'), page, group, operational_mode)
+                                    addr.get('tempo'), addr.get('dividers'), page, group,
+                                    coloured, momentary, operational_mode)
 
                 if addrdata is not None:
                     stored_addrdata = addrdata.copy()
@@ -442,7 +446,9 @@ class Addressings(object):
                     'tempo'   : addr.get('tempo'),
                     'dividers': addr.get('dividers'),
                     'page'    : addr.get('page'),
-                    'group'   : addr.get('group')
+                    'group'   : addr.get('group'),
+                    'coloured': addr.get('coloured', False),
+                    'momentary': addr.get('momentary', False),
                 })
             addressings[uri] = addrs2
 
@@ -526,44 +532,49 @@ class Addressings(object):
                         group_mappings.append({'uri': group, 'page': addr.get('page')})
                         send_hw_map = False # Register harware group mapping only once
                 if addr.get('group') is None or send_hw_map:
-                    msg_callback("hw_map %s %s %s %f %f %d %s %s %s %s %s 1" % (instances[addr['instance_id']],
-                                                                          addr['port'],
-                                                                          addr_uri,
-                                                                          addr['minimum'],
-                                                                          addr['maximum'],
-                                                                          addr['steps'],
-                                                                          addr['label'].replace(" ","_"),
-                                                                          addr.get('tempo'),
-                                                                          dividers,
-                                                                          page,
-                                                                          group))
+                    args = (instances[addr['instance_id']],
+                            addr['port'],
+                            addr_uri,
+                            addr['minimum'],
+                            addr['maximum'],
+                            addr['steps'],
+                            addr['label'].replace(" ","_"),
+                            addr.get('tempo'),
+                            dividers,
+                            page,
+                            group,
+                            int(addr.get('coloured')),
+                            int(addr.get('momentary')))
+                    msg_callback("hw_map %s %s %s %f %f %d %s %s %s %s %s 1 %d %d" % args)
 
         # Virtual addressings (/bpm)
         for uri, addrs in self.virtual_addressings.items():
             for addr in addrs:
                 dividers = "{0}".format(addr.get('dividers', "null")).replace(" ", "").replace("None", "null")
                 page = "{0}".format(addr.get('page', "null")).replace("None", "null")
-                msg_callback("hw_map %s %s %s %f %f %d %s %s %s %s 1" % (instances[addr['instance_id']],
-                                                                      addr['port'],
-                                                                      uri,
-                                                                      addr['minimum'],
-                                                                      addr['maximum'],
-                                                                      addr['steps'],
-                                                                      addr['label'].replace(" ","_"),
-                                                                      addr.get('tempo'),
-                                                                      dividers,
-                                                                      page))
+                args = (instances[addr['instance_id']],
+                        addr['port'],
+                        uri,
+                        addr['minimum'],
+                        addr['maximum'],
+                        addr['steps'],
+                        addr['label'].replace(" ","_"),
+                        addr.get('tempo'),
+                        dividers,
+                        page)
+                msg_callback("hw_map %s %s %s %f %f %d %s %s %s %s 1 0 0" % args)
 
         # Control Chain
         for uri, addrs in self.cc_addressings.items():
             for addr in addrs:
-                msg_callback("hw_map %s %s %s %f %f %d %s False null 0" % (instances[addr['instance_id']],
-                                                                           addr['port'],
-                                                                           uri,
-                                                                           addr['minimum'],
-                                                                           addr['maximum'],
-                                                                           addr['steps'],
-                                                                           addr['label'].replace(" ","_")))
+                args = (instances[addr['instance_id']],
+                        addr['port'],
+                        uri,
+                        addr['minimum'],
+                        addr['maximum'],
+                        addr['steps'],
+                        addr['label'].replace(" ","_"))
+                msg_callback("hw_map %s %s %s %f %f %d %s False null 0 0 0" % args)
 
         # MIDI
         for uri, addrs in self.midi_addressings.items():
@@ -590,7 +601,8 @@ class Addressings(object):
 
     # -----------------------------------------------------------------------------------------------------------------
 
-    def add(self, instance_id, plugin_uri, portsymbol, actuator_uri, label, minimum, maximum, steps, value, tempo=False, dividers=None, page=None, group=None, operational_mode=None):
+    def add(self, instance_id, plugin_uri, portsymbol, actuator_uri, label, minimum, maximum, steps, value,
+            tempo=False, dividers=None, page=None, group=None, coloured=None, momentary=None, operational_mode=None):
         actuator_type = self.get_actuator_type(actuator_uri)
         if actuator_type not in (self.ADDRESSING_TYPE_HMI, self.ADDRESSING_TYPE_CC, self.ADDRESSING_TYPE_BPM, self.ADDRESSING_TYPE_CV):
             print("ERROR: Trying to address the wrong way, stop!")
@@ -670,6 +682,8 @@ class Addressings(object):
             'dividers'    : dividers,
             'page'        : page,
             'group'       : group,
+            'coloured'    : coloured,
+            'momentary'   : momentary,
             'operational_mode': operational_mode,
         }
 
@@ -685,6 +699,11 @@ class Addressings(object):
             else:
                 if "toggled" in pprops:
                     hmitype = HMI_ADDRESSING_TYPE_TOGGLED
+                    if momentary:
+                        print("sending with momentary flag")
+                        hmitype |= HMI_ADDRESSING_TYPE_MOMENTARY_SW
+                    else:
+                        print("sending without momentary flag")
                 elif "integer" in pprops:
                     hmitype = HMI_ADDRESSING_TYPE_INTEGER
                 else:
@@ -700,6 +719,12 @@ class Addressings(object):
 
                 if tempo or "enumeration" in pprops and len(port_info["scalePoints"]) > 0:
                     hmitype |= HMI_ADDRESSING_TYPE_ENUMERATION
+                    if coloured:
+                        # FIXME? not defined yet if we reuse the flag
+                        print("sending with coloured flag")
+                        hmitype |= HMI_ADDRESSING_TYPE_MOMENTARY_SW
+                    else:
+                        print("sending without coloured flag")
 
             # first actuator in group should have reverse enum hmi type
             if group is not None:

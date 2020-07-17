@@ -449,11 +449,15 @@ function HardwareManager(options) {
       // Set unipolar mode based on default cv port ranges or current addressing
       if (typeInputVal === cvOption) {
         var cvPort = self.cvOutputPorts.find(function (port) { return port.uri === cvUri })
-        var operationalMode = cvPort.defaultOperationalMode
-        if (firstOpen && currentAddressing && currentAddressing.uri && isCvUri(currentAddressing.uri) && currentAddressing.operationalMode) {
-          operationalMode = currentAddressing.operationalMode
+        if (cvPort) {
+          var operationalMode = cvPort.defaultOperationalMode
+          if (firstOpen && currentAddressing && currentAddressing.uri &&
+              isCvUri(currentAddressing.uri) && currentAddressing.operationalMode)
+          {
+            operationalMode = currentAddressing.operationalMode
+          }
+          form.find('select[name=cv-op-mode]').val(operationalMode)
         }
-        form.find('select[name=cv-op-mode]').val(operationalMode)
       }
     }
 
@@ -786,6 +790,9 @@ function HardwareManager(options) {
             }
         }
 
+        form.find('select[name=led-color-mode]').val(currentAddressing.coloured ? 1 : 0)
+        form.find('select[name=momentary-sw-mode]').val(currentAddressing.momentary ? 1 : 0)
+
         self.buildSensibilityOptions(sensibility, port, currentAddressing.steps)
 
         self.buildDeviceTable(deviceTable, currentAddressing, actuators, hmiPageInput, hmiUriInput,
@@ -814,6 +821,8 @@ function HardwareManager(options) {
               label,
               pname,
               sensibility,
+              ledColourMode,
+              momentarySwMode,
               tempo,
               divider,
               dividerOptions,
@@ -866,6 +875,8 @@ function HardwareManager(options) {
                   label,
                   pname,
                   sensibility,
+                  ledColourMode,
+                  momentarySwMode,
                   tempo,
                   divider,
                   dividerOptions,
@@ -892,6 +903,8 @@ function HardwareManager(options) {
       dividerValue,
       dividerOptions,
       page,
+      colouredValue,
+      momentarySwValue,
       operationalModeValue,
       form
       ) {
@@ -922,6 +935,8 @@ function HardwareManager(options) {
             dividers: dividerValue,
             feedback: actuator.feedback === false ? false : true, // backwards compatible, true by default
             page: page || null,
+            coloured: colouredValue,
+            momentary: momentarySwValue,
             operationalMode: operationalModeValue,
         }
 
@@ -956,6 +971,10 @@ function HardwareManager(options) {
 
                 // remove data needed by the server, useless for us
                 delete addressing.value
+
+                // convert some values to boolean
+                addressing.coloured = !!addressing.coloured
+                addressing.momentary = !!addressing.momentary
 
                 // now save
                 self.addressingsByPortSymbol[instanceAndSymbol] = actuator.uri
@@ -996,6 +1015,8 @@ function HardwareManager(options) {
       label,
       pname,
       sensibility,
+      ledColourMode,
+      momentarySwMode,
       tempo,
       divider,
       dividerOptions,
@@ -1057,6 +1078,8 @@ function HardwareManager(options) {
         var labelValue = label.val() || pname
         var sensibilityValue = sensibility.val()
         var dividerValue = divider.val() ? parseFloat(divider.val()): divider.val()
+        var colouredValue = parseInt(ledColourMode.val())
+        var momentarySwValue = parseInt(momentarySwMode.val())
         var operationalModeValue = operationalMode.val()
 
         // if changing from midi-learn, unlearn first
@@ -1098,6 +1121,8 @@ function HardwareManager(options) {
                     dividerValue,
                     dividerOptions,
                     page,
+                    colouredValue,
+                    momentarySwValue,
                     operationalModeValue,
                     form
                   );
@@ -1122,6 +1147,8 @@ function HardwareManager(options) {
             dividerValue,
             dividerOptions,
             page,
+            colouredValue,
+            momentarySwValue,
             operationalModeValue,
             form
           );
@@ -1130,7 +1157,7 @@ function HardwareManager(options) {
 
     this.addHardwareMapping = function (instance, portSymbol, actuator_uri,
                                         label, minimum, maximum, steps,
-                                        tempo, dividers, page, group, feedback) {
+                                        tempo, dividers, page, group, feedback, coloured, momentary) {
         var instanceAndSymbol = instance+"/"+portSymbol
         self.addressingsByActuator  [actuator_uri].push(instanceAndSymbol)
         self.addressingsByPortSymbol[instanceAndSymbol] = actuator_uri
@@ -1144,9 +1171,11 @@ function HardwareManager(options) {
             dividers: dividers,
             feedback: feedback,
             page    : page,
-            group   : group
+            group   : group,
+            coloured: coloured,
+            momentary: momentary
         }
-        // disable this control
+        // disable this control if needed
         options.setEnabled(instance, portSymbol, false, feedback, true)
     }
 

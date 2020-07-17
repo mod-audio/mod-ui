@@ -176,7 +176,7 @@ $('document').ready(function() {
         }
 
         if (cmd == "hw_map") {
-            data         = data.split(" ", 12)
+            data         = data.split(" ", 14)
             var instance = data[0]
             var symbol   = data[1]
             var actuator = data[2]
@@ -192,6 +192,8 @@ $('document').ready(function() {
             }
             var group = data[10]
             var feedback = parseInt(data[11]) == 1
+            var coloured = parseInt(data[12]) == 1
+            var momentary = parseInt(data[13]) == 1
 
             desktop.hardwareManager.addHardwareMapping(instance,
                                                        symbol,
@@ -204,7 +206,9 @@ $('document').ready(function() {
                                                        dividers,
                                                        page,
                                                        group,
-                                                       feedback)
+                                                       feedback,
+                                                       coloured,
+                                                       momentary)
             return
         }
 
