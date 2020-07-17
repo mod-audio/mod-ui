@@ -334,13 +334,45 @@ function HardwareManager(options) {
       form.find('input[name=max]').prop('disabled', disabled)
     }
 
-    this.toggleSensibility = function (port, select, actuators, actuatorUri) {
-      var currentActuator = actuators[actuatorUri]
-      if (currentActuator && currentActuator.steps.length === 0) {
-        select.parent().parent().hide()
-      } else if (!((port.properties.indexOf("integer") >= 0 || port.properties.indexOf("toggled") >= 0 || port.properties.indexOf("trigger") >= 0)
-        && port.symbol != ":bypass" && port.symbol != ":presets")) {
-        select.parent().parent().show()
+    this.portSupportsSensibility = function(port) {
+      if (port.properties.indexOf("integer") >= 0)
+        return false;
+      if (port.properties.indexOf("toggled") >= 0)
+        return false;
+      if (port.properties.indexOf("trigger") >= 0)
+        return false;
+      if (port.symbol == ":bypass")
+        return false;
+      if (port.symbol == ":presets")
+        return false;
+      return true;
+    }
+
+    this.toggleAdvancedItemsVisibility = function (port, sensibility, ledColourMode, momentarySwMode, currentActuator) {
+      if (currentActuator && currentActuator.steps.length !== 0 && this.portSupportsSensibility(port)) {
+        sensibility.parent().parent().show()
+      } else {
+        sensibility.parent().parent().hide()
+      }
+
+      if (currentActuator && currentActuator.modes.indexOf(":colouredlist:") >= 0 &&
+          port.properties.indexOf("enumeration") >= 0)
+      {
+        ledColourMode.parent().parent().show()
+      }
+      else
+      {
+        ledColourMode.parent().parent().hide()
+      }
+
+      if (currentActuator && currentActuator.modes.indexOf(":momentarytoggle:") >= 0 &&
+          port.properties.indexOf("enumeration") < 0)
+      {
+        momentarySwMode.parent().parent().show()
+      }
+      else
+      {
+        momentarySwMode.parent().parent().hide()
       }
     }
 
@@ -425,7 +457,8 @@ function HardwareManager(options) {
       }
     }
 
-    this.buildDeviceTable = function (deviceTable, currentAddressing, actuators, hmiPageInput, hmiUriInput, sensibility, port) {
+    this.buildDeviceTable = function (deviceTable, currentAddressing, actuators, hmiPageInput, hmiUriInput,
+                                      sensibility, ledColourMode, momentarySwMode, port) {
       var table = $('<table/>').addClass('hmi-table')
       var groupTable = $('<table/>').addClass('hmi-table')
       var row, cell, uri, uriAddressings, usedAddressings, addressing, groupActuator, groupAddressings
@@ -571,9 +604,9 @@ function HardwareManager(options) {
         deviceTable.find('td').removeClass('selected')
         $(this).addClass('selected')
 
-        if (actuatorUri) {
-         self.toggleSensibility(port, sensibility, actuators, actuatorUri)
-       }
+        self.toggleAdvancedItemsVisibility(port,
+                                           sensibility, ledColourMode, momentarySwMode,
+                                           actuators[actuatorUri])
       })
     }
 
@@ -601,6 +634,8 @@ function HardwareManager(options) {
         var hmiUriInput = form.find('input[name=hmi-uri]')
         var deviceTable = form.find('.device-table')
         var sensibility = form.find('select[name=steps]')
+        var ledColourMode = form.find('select[name=led-color-mode]')
+        var momentarySwMode = form.find('select[name=momentary-sw-mode]')
         var operationalMode = form.find('select[name=cv-op-mode]')
 
         // Create selectable buttons to choose addressings type and show relevant dynamic content
@@ -710,7 +745,8 @@ function HardwareManager(options) {
 
             actuators = self.availableActuators(instance, port, this.checked)
             deviceTable.empty()
-            self.buildDeviceTable(deviceTable, currentAddressing, actuators, hmiPageInput, hmiUriInput, sensibility, port)
+            self.buildDeviceTable(deviceTable, currentAddressing, actuators, hmiPageInput, hmiUriInput,
+                                  sensibility, ledColourMode, momentarySwMode, port)
           })
           dividerOptions = self.buildDividerOptions(divider, port, currentAddressing.dividers)
         }
@@ -752,12 +788,13 @@ function HardwareManager(options) {
 
         self.buildSensibilityOptions(sensibility, port, currentAddressing.steps)
 
-        self.buildDeviceTable(deviceTable, currentAddressing, actuators, hmiPageInput, hmiUriInput, sensibility, port)
+        self.buildDeviceTable(deviceTable, currentAddressing, actuators, hmiPageInput, hmiUriInput,
+                              sensibility, ledColourMode, momentarySwMode, port)
 
-        // Hide sensibility if current addressing actuator does not support it
-        if (currentAddressing && currentAddressing['uri']) {
-          self.toggleSensibility(port, sensibility, actuators, currentAddressing['uri'])
-        }
+        // Hide advanced settings options if current addressing actuator does not support them
+        self.toggleAdvancedItemsVisibility(port,
+                                           sensibility, ledColourMode, momentarySwMode,
+                                           actuators[currentAddressing['uri']])
 
         form.find('.js-save').click(function () {
             if ($(this).hasClass('disabled')) {
