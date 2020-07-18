@@ -245,7 +245,7 @@ class CachedJsonRequestHandler(JsonRequestHandler):
         self.set_header("Expires", "Mon, 31 Dec 2035 12:00:00 gmt")
 
 class RemoteRequestHandler(JsonRequestHandler):
-    def set_default_headers(self):
+    def get_origin(self):
         if 'Origin' not in self.request.headers.keys():
             return
         origin = self.request.headers['Origin']
@@ -257,7 +257,12 @@ class RemoteRequestHandler(JsonRequestHandler):
             return
         if domain != "moddevices.com" and not domain.endswith(".moddevices.com"):
             return
-        self.set_header("Access-Control-Allow-Origin", origin)
+        return origin
+
+    def set_default_headers(self):
+        origin = self.get_origin()
+        if origin:
+            self.set_header("Access-Control-Allow-Origin", origin)
 
 class SimpleFileReceiver(JsonRequestHandler):
     @property
@@ -337,7 +342,7 @@ class MultiPartFileReceiver(JsonRequestHandler):
     def process_file(self, basename, callback=lambda:None):
         """to be overriden"""
 
-class SystemInfo(JsonRequestHandler):
+class SystemInfo(RemoteRequestHandler):
     def get(self):
         hwdesc = get_hardware_descriptor()
         uname  = os.uname()
@@ -629,8 +634,18 @@ class ControlChainCancel(JsonRequestHandler):
         os.remove(UPDATE_CC_FIRMWARE_FILE)
         self.write(True)
 
-class EffectInstaller(SimpleFileReceiver):
+class EffectInstaller(SimpleFileReceiver, RemoteRequestHandler):
     destination_dir = DOWNLOAD_TMP_DIR
+
+    def set_default_headers(self):
+        origin = self.get_origin()
+        if origin:
+            self.set_header("Access-Control-Allow-Origin", origin)
+            self.set_header("Access-Control-Allow-Methods", "OPTIONS, POST")
+            self.set_header("Access-Control-Allow-Headers", "Content-Type")
+
+    def options(self):
+        self.set_header("Access-Control-Allow-Methods", "OPTIONS, POST")
 
     @web.asynchronous
     @gen.engine
