@@ -33,7 +33,9 @@
                     <input type="hidden" name="hmi-page" type="number">
                     <input type="hidden" name="hmi-uri">
                   </div>
-                  <span class="dynamic-field midi-learn-hint" style="display: none;">To map this parameter to your MIDI controller, press "save" and move the desired control on your MIDI device.</span>
+                  <span class="dynamic-field midi-learn-hint" style="display: none;">
+                    To map this parameter to your MIDI controller, press "save" and move the desired control on your MIDI device.
+                  </span>
                   <span class="dynamic-field midi-learn-custom" style="display: none;">
                     This parameter is currently mapped to <span class="midi-custom-uri"></span>.
                     In order to map this parameter to a different MIDI control, press "save" and move the desired control on your MIDI device.
@@ -54,7 +56,8 @@
                   </div>
                   <span class="dynamic-field no-cv" style="display: none;">
                     To add a Control Voltage addressing source,
-                    press the "Manage CV Ports" button in the top-bar of the Pedalboard Constructor and check the box that appears next to the Control Voltage output jack of a plugin.
+                    press the "Manage CV Ports" button in the top-bar of the Pedalboard Constructor
+                    and check the box that appears next to the Control Voltage output jack of a plugin.
                   </span>
                   <div class="dynamic-field cv-select form-group clearfix" style="display: none;">
                     <div class="mod-controls" style="width: 100%">
@@ -83,7 +86,25 @@
                           <input class="form-control" name="min" type="number"/><span>&ndash;</span><input class="form-control" name="max" type="number"/>
                       </div>
                   </div>
-                  <div class="sensibility form-group clearfix">
+                  <div class="led-colour form-group clearfix">
+                      <label>LED Colour</label>
+                      <div class="mod-controls mod-range">
+                          <select class="form-control" name="led-color-mode">
+                            <option value="0">Static</option>
+                            <option value="1">Cycle</option>
+                          </select>
+                      </div>
+                  </div>
+                  <div class="momentary-sw form-group clearfix">
+                      <label>Mode</label>
+                      <div class="mod-controls mod-range">
+                          <select class="form-control" name="momentary-sw-mode">
+                            <option value="0">Latching</option>
+                            <option value="1">Momentary</option>
+                          </select>
+                      </div>
+                  </div>
+                  <div class="sensitivity form-group clearfix">
                       <label>Sensitivity</label>
                       <div class="mod-controls mod-range">
                           <select class="form-control" name="steps"></select>

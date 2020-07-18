@@ -45,7 +45,7 @@ function create_midi_cc_uri (channel, controller) {
 }
 
 function startsWith (value, pattern) {
-    return value.indexOf(pattern) === 0;
+    return value != null && value.indexOf(pattern) === 0;
 };
 
 function is_control_chain_uri (uri) {
@@ -286,7 +286,7 @@ function HardwareManager(options) {
         return filteredDividers
     }
 
-    this.buildSensibilityOptions = function (select, port, curStep) {
+    this.buildSensitivityOptions = function (select, port, curStep) {
         select.children().remove()
 
         if (port.properties.indexOf("integer") >= 0 || port.properties.indexOf("toggled") >= 0 || port.properties.indexOf("trigger") >= 0) {
@@ -334,13 +334,45 @@ function HardwareManager(options) {
       form.find('input[name=max]').prop('disabled', disabled)
     }
 
-    this.toggleSensibility = function (port, select, actuators, actuatorUri) {
-      var currentActuator = actuators[actuatorUri]
-      if (currentActuator && currentActuator.steps.length === 0) {
-        select.parent().parent().hide()
-      } else if (!((port.properties.indexOf("integer") >= 0 || port.properties.indexOf("toggled") >= 0 || port.properties.indexOf("trigger") >= 0)
-        && port.symbol != ":bypass" && port.symbol != ":presets")) {
-        select.parent().parent().show()
+    this.portSupportsSensitivity = function(port) {
+      if (port.properties.indexOf("integer") >= 0)
+        return false;
+      if (port.properties.indexOf("toggled") >= 0)
+        return false;
+      if (port.properties.indexOf("trigger") >= 0)
+        return false;
+      if (port.symbol == ":bypass")
+        return false;
+      if (port.symbol == ":presets")
+        return false;
+      return true;
+    }
+
+    this.toggleAdvancedItemsVisibility = function (port, sensitivity, ledColourMode, momentarySwMode, currentActuator) {
+      if (currentActuator && currentActuator.steps.length !== 0 && this.portSupportsSensitivity(port)) {
+        sensitivity.parent().parent().show()
+      } else {
+        sensitivity.parent().parent().hide()
+      }
+
+      if (currentActuator && currentActuator.modes.indexOf(":colouredlist:") >= 0 &&
+          port.properties.indexOf("enumeration") >= 0)
+      {
+        ledColourMode.parent().parent().show()
+      }
+      else
+      {
+        ledColourMode.parent().parent().hide()
+      }
+
+      if (currentActuator && currentActuator.modes.indexOf(":momentarytoggle:") >= 0 &&
+          port.properties.indexOf("enumeration") < 0)
+      {
+        momentarySwMode.parent().parent().show()
+      }
+      else
+      {
+        momentarySwMode.parent().parent().hide()
       }
     }
 
@@ -392,10 +424,10 @@ function HardwareManager(options) {
 
       // Hide/show extended specific content
       if (typeInputVal === kMidiLearnURI || typeInputVal.lastIndexOf(kMidiCustomPrefixURI, 0) === 0 || typeInputVal === cvOption) {
-        form.find('.sensibility').css({ display: "none" })
+        form.find('.sensitivity').css({ display: "none" })
         self.disableMinMaxSteps(form, false)
       } else {
-        form.find('.sensibility').css({ display: "block" })
+        form.find('.sensitivity').css({ display: "block" })
       }
 
       if (typeInputVal === kMidiLearnURI || typeInputVal.lastIndexOf(kMidiCustomPrefixURI, 0) === 0 || typeInputVal === ccOption || typeInputVal === cvOption) {
@@ -417,15 +449,20 @@ function HardwareManager(options) {
       // Set unipolar mode based on default cv port ranges or current addressing
       if (typeInputVal === cvOption) {
         var cvPort = self.cvOutputPorts.find(function (port) { return port.uri === cvUri })
-        var operationalMode = cvPort.defaultOperationalMode
-        if (firstOpen && currentAddressing && currentAddressing.uri && isCvUri(currentAddressing.uri) && currentAddressing.operationalMode) {
-          operationalMode = currentAddressing.operationalMode
+        if (cvPort) {
+          var operationalMode = cvPort.defaultOperationalMode
+          if (firstOpen && currentAddressing && currentAddressing.uri &&
+              isCvUri(currentAddressing.uri) && currentAddressing.operationalMode)
+          {
+            operationalMode = currentAddressing.operationalMode
+          }
+          form.find('select[name=cv-op-mode]').val(operationalMode)
         }
-        form.find('select[name=cv-op-mode]').val(operationalMode)
       }
     }
 
-    this.buildDeviceTable = function (deviceTable, currentAddressing, actuators, hmiPageInput, hmiUriInput, sensibility, port) {
+    this.buildDeviceTable = function (deviceTable, currentAddressing, actuators, hmiPageInput, hmiUriInput,
+                                      sensitivity, ledColourMode, momentarySwMode, port) {
       var table = $('<table/>').addClass('hmi-table')
       var groupTable = $('<table/>').addClass('hmi-table')
       var row, cell, uri, uriAddressings, usedAddressings, addressing, groupActuator, groupAddressings
@@ -571,9 +608,9 @@ function HardwareManager(options) {
         deviceTable.find('td').removeClass('selected')
         $(this).addClass('selected')
 
-        if (actuatorUri) {
-         self.toggleSensibility(port, sensibility, actuators, actuatorUri)
-       }
+        self.toggleAdvancedItemsVisibility(port,
+                                           sensitivity, ledColourMode, momentarySwMode,
+                                           actuators[actuatorUri])
       })
     }
 
@@ -600,7 +637,9 @@ function HardwareManager(options) {
         var hmiPageInput = form.find('input[name=hmi-page]')
         var hmiUriInput = form.find('input[name=hmi-uri]')
         var deviceTable = form.find('.device-table')
-        var sensibility = form.find('select[name=steps]')
+        var sensitivity = form.find('select[name=steps]')
+        var ledColourMode = form.find('select[name=led-color-mode]')
+        var momentarySwMode = form.find('select[name=momentary-sw-mode]')
         var operationalMode = form.find('select[name=cv-op-mode]')
 
         // Create selectable buttons to choose addressings type and show relevant dynamic content
@@ -710,7 +749,8 @@ function HardwareManager(options) {
 
             actuators = self.availableActuators(instance, port, this.checked)
             deviceTable.empty()
-            self.buildDeviceTable(deviceTable, currentAddressing, actuators, hmiPageInput, hmiUriInput, sensibility, port)
+            self.buildDeviceTable(deviceTable, currentAddressing, actuators, hmiPageInput, hmiUriInput,
+                                  sensitivity, ledColourMode, momentarySwMode, port)
           })
           dividerOptions = self.buildDividerOptions(divider, port, currentAddressing.dividers)
         }
@@ -733,10 +773,10 @@ function HardwareManager(options) {
             min.attr("step", step)
             max.attr("step", step)
 
-            // Hide sensibility and tempo options for MIDI
+            // Hide sensitivity and tempo options for MIDI
             var act = typeInput.val()
             if (act === kMidiLearnURI || act.lastIndexOf(kMidiCustomPrefixURI, 0) === 0 || act === cvOption) {
-                form.find('.sensibility').css({ display: "none" })
+                form.find('.sensitivity').css({ display: "none" })
                 form.find('.tempo').css({ display: "none" })
             }
             // Hide tempo option for CC or CV
@@ -750,14 +790,18 @@ function HardwareManager(options) {
             }
         }
 
-        self.buildSensibilityOptions(sensibility, port, currentAddressing.steps)
+        form.find('select[name=led-color-mode]').val(currentAddressing.coloured ? 1 : 0)
+        form.find('select[name=momentary-sw-mode]').val(currentAddressing.momentary ? 1 : 0)
 
-        self.buildDeviceTable(deviceTable, currentAddressing, actuators, hmiPageInput, hmiUriInput, sensibility, port)
+        self.buildSensitivityOptions(sensitivity, port, currentAddressing.steps)
 
-        // Hide sensibility if current addressing actuator does not support it
-        if (currentAddressing && currentAddressing['uri']) {
-          self.toggleSensibility(port, sensibility, actuators, currentAddressing['uri'])
-        }
+        self.buildDeviceTable(deviceTable, currentAddressing, actuators, hmiPageInput, hmiUriInput,
+                              sensitivity, ledColourMode, momentarySwMode, port)
+
+        // Hide advanced settings options if current addressing actuator does not support them
+        self.toggleAdvancedItemsVisibility(port,
+                                           sensitivity, ledColourMode, momentarySwMode,
+                                           actuators[currentAddressing['uri']])
 
         form.find('.js-save').click(function () {
             if ($(this).hasClass('disabled')) {
@@ -776,7 +820,9 @@ function HardwareManager(options) {
               max,
               label,
               pname,
-              sensibility,
+              sensitivity,
+              ledColourMode,
+              momentarySwMode,
               tempo,
               divider,
               dividerOptions,
@@ -828,7 +874,9 @@ function HardwareManager(options) {
                   max,
                   label,
                   pname,
-                  sensibility,
+                  sensitivity,
+                  ledColourMode,
+                  momentarySwMode,
                   tempo,
                   divider,
                   dividerOptions,
@@ -850,11 +898,13 @@ function HardwareManager(options) {
       minv,
       maxv,
       labelValue,
-      sensibilityValue,
+      sensitivityValue,
       tempoValue,
       dividerValue,
       dividerOptions,
       page,
+      colouredValue,
+      momentarySwValue,
       operationalModeValue,
       form
       ) {
@@ -880,11 +930,13 @@ function HardwareManager(options) {
             minimum: minv,
             maximum: maxv,
             value  : port.value,
-            steps  : sensibilityValue,
+            steps  : sensitivityValue,
             tempo  : tempoValue,
             dividers: dividerValue,
             feedback: actuator.feedback === false ? false : true, // backwards compatible, true by default
             page: page || null,
+            coloured: colouredValue,
+            momentary: momentarySwValue,
             operationalMode: operationalModeValue,
         }
 
@@ -919,6 +971,10 @@ function HardwareManager(options) {
 
                 // remove data needed by the server, useless for us
                 delete addressing.value
+
+                // convert some values to boolean
+                addressing.coloured = !!addressing.coloured
+                addressing.momentary = !!addressing.momentary
 
                 // now save
                 self.addressingsByPortSymbol[instanceAndSymbol] = actuator.uri
@@ -958,7 +1014,9 @@ function HardwareManager(options) {
       max,
       label,
       pname,
-      sensibility,
+      sensitivity,
+      ledColourMode,
+      momentarySwMode,
       tempo,
       divider,
       dividerOptions,
@@ -1018,8 +1076,10 @@ function HardwareManager(options) {
         }
 
         var labelValue = label.val() || pname
-        var sensibilityValue = sensibility.val()
+        var sensitivityValue = sensitivity.val()
         var dividerValue = divider.val() ? parseFloat(divider.val()): divider.val()
+        var colouredValue = parseInt(ledColourMode.val())
+        var momentarySwValue = parseInt(momentarySwMode.val())
         var operationalModeValue = operationalMode.val()
 
         // if changing from midi-learn, unlearn first
@@ -1030,7 +1090,7 @@ function HardwareManager(options) {
                 minimum: minv,
                 maximum: maxv,
                 value  : port.value,
-                steps  : sensibilityValue,
+                steps  : sensitivityValue,
             }
             options.address(instanceAndSymbol, addressing, function (ok) {
                 if (!ok) {
@@ -1056,11 +1116,13 @@ function HardwareManager(options) {
                     minv,
                     maxv,
                     labelValue,
-                    sensibilityValue,
+                    sensitivityValue,
                     tempoValue,
                     dividerValue,
                     dividerOptions,
                     page,
+                    colouredValue,
+                    momentarySwValue,
                     operationalModeValue,
                     form
                   );
@@ -1080,11 +1142,13 @@ function HardwareManager(options) {
             minv,
             maxv,
             labelValue,
-            sensibilityValue,
+            sensitivityValue,
             tempoValue,
             dividerValue,
             dividerOptions,
             page,
+            colouredValue,
+            momentarySwValue,
             operationalModeValue,
             form
           );
@@ -1093,7 +1157,7 @@ function HardwareManager(options) {
 
     this.addHardwareMapping = function (instance, portSymbol, actuator_uri,
                                         label, minimum, maximum, steps,
-                                        tempo, dividers, page, group, feedback) {
+                                        tempo, dividers, page, group, feedback, coloured, momentary) {
         var instanceAndSymbol = instance+"/"+portSymbol
         self.addressingsByActuator  [actuator_uri].push(instanceAndSymbol)
         self.addressingsByPortSymbol[instanceAndSymbol] = actuator_uri
@@ -1107,9 +1171,11 @@ function HardwareManager(options) {
             dividers: dividers,
             feedback: feedback,
             page    : page,
-            group   : group
+            group   : group,
+            coloured: coloured,
+            momentary: momentary
         }
-        // disable this control
+        // disable this control if needed
         options.setEnabled(instance, portSymbol, false, feedback, true)
     }
 

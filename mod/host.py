@@ -4079,13 +4079,16 @@ _:b%i
     # Addressing (public stuff)
 
     @gen.coroutine
-    def address(self, instance, portsymbol, actuator_uri, label, minimum, maximum, value, steps, extras, callback, not_param_set=False, send_hmi=True):
+    def address(self, instance, portsymbol, actuator_uri, label, minimum, maximum, value, steps, extras, callback,
+                not_param_set=False, send_hmi=True):
         instance_id = self.mapper.get_id(instance)
         pluginData  = self.plugins.get(instance_id, None)
 
         tempo = extras.get('tempo', False)
         dividers = extras.get('dividers', None)
         page = extras.get('page', None)
+        coloured = bool(int(extras.get('coloured', '0')))
+        momentary = bool(int(extras.get('momentary', '0')))
         operational_mode = extras.get('operational_mode', '=')
 
         if pluginData is None:
@@ -4242,7 +4245,8 @@ _:b%i
             addressing['actuator_uri'] = actuator_uri
         else:
             addressing = self.addressings.add(instance_id, pluginData['uri'], portsymbol, actuator_uri,
-                                              label, minimum, maximum, steps, value, tempo, dividers, page, None, operational_mode)
+                                              label, minimum, maximum, steps, value, tempo, dividers, page, None,
+                                              coloured, momentary, operational_mode)
 
             if addressing is None:
                 callback(False)
@@ -4869,7 +4873,7 @@ _:b%i
         label = data['label']
 
         if data.get('group', None) is not None:
-            if data['hmitype'] & 0x100: # HMI_ADDRESSING_TYPE_REVERSE_ENUM
+            if data['hmitype'] & HMI_ADDRESSING_TYPE_REVERSE_ENUM:
                 prefix = "- "
             else:
                 prefix = "+ "

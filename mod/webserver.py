@@ -36,7 +36,9 @@ from uuid import uuid4
 from mod.profile import Profile
 from mod.settings import (APP, LOG, DEV_API,
                           HTML_DIR, DOWNLOAD_TMP_DIR, DEVICE_KEY, DEVICE_WEBSERVER_PORT,
-                          CLOUD_HTTP_ADDRESS, CLOUD_LABS_HTTP_ADDRESS, PLUGINS_HTTP_ADDRESS, PEDALBOARDS_HTTP_ADDRESS, CONTROLCHAIN_HTTP_ADDRESS,
+                          CLOUD_HTTP_ADDRESS, CLOUD_LABS_HTTP_ADDRESS,
+                          PLUGINS_HTTP_ADDRESS, PEDALBOARDS_HTTP_ADDRESS, CONTROLCHAIN_HTTP_ADDRESS,
+                          BANKS_JSON_FILE,
                           LV2_PLUGIN_DIR, LV2_PEDALBOARDS_DIR, IMAGE_VERSION,
                           UPDATE_CC_FIRMWARE_FILE, UPDATE_MOD_OS_FILE, USING_256_FRAMES_FILE,
                           DEFAULT_ICON_TEMPLATE, DEFAULT_SETTINGS_TEMPLATE, DEFAULT_ICON_IMAGE,
@@ -173,6 +175,18 @@ def install_package(filename, callback):
         install_bundles_in_tmp_dir(callback)
 
     run_command(['tar','zxf', filename], DOWNLOAD_TMP_DIR, end_untar_pkgs)
+
+@gen.coroutine
+def restart_services(restartJACK2, restartUI):
+    cmd = ["systemctl", "restart"]
+    if restartJACK2:
+        cmd.append("jack2")
+    if restartUI:
+        cmd.append("mod-ui")
+    yield gen.Task(run_command, cmd, None)
+    reset_get_all_pedalboards_cache()
+    lv2_cleanup()
+    lv2_init()
 
 @gen.coroutine
 def start_restore():
@@ -482,7 +496,7 @@ class SystemExeChange(JsonRequestHandler):
                     'error': error,
                 })
                 if resp[0] == 0:
-                    IOLoop.instance().add_callback(self.restart_services)
+                    IOLoop.instance().add_callback(restart_services, True, False)
                 return
 
             else:
@@ -531,11 +545,12 @@ class SystemExeChange(JsonRequestHandler):
                 os.remove(filename)
 
         elif etype == "service":
-            name     = self.get_argument('name')
-            enable   = bool(int(self.get_argument('enable')))
-            inverted = bool(int(self.get_argument('inverted')))
+            name       = self.get_argument('name')
+            enable     = bool(int(self.get_argument('enable')))
+            inverted   = bool(int(self.get_argument('inverted')))
+            persistent = bool(int(self.get_argument('persistent')))
 
-            if name not in ("mod-peakmeter", "mod-sdk", "netmanager"):
+            if name not in ("hmi-update", "mod-peakmeter", "mod-sdk", "netmanager"):
                 self.write(False)
                 return
 
@@ -549,12 +564,13 @@ class SystemExeChange(JsonRequestHandler):
             else:
                 servicename = name
 
-            if enable:
-                with open(checkname, 'wb') as fh:
-                    fh.write(b"")
-            else:
-                if os.path.exists(checkname):
-                    os.remove(checkname)
+            if persistent:
+                if enable:
+                    with open(checkname, 'wb') as fh:
+                        fh.write(b"")
+                else:
+                    if os.path.exists(checkname):
+                        os.remove(checkname)
 
             if inverted:
                 enable = not enable
@@ -572,12 +588,44 @@ class SystemExeChange(JsonRequestHandler):
         os.sync()
         yield gen.Task(run_command, ["reboot"], None)
 
+class SystemCleanup(JsonRequestHandler):
     @gen.coroutine
-    def restart_services(self):
-        yield gen.Task(run_command, ["systemctl", "restart", "jack2"], None)
-        reset_get_all_pedalboards_cache()
-        lv2_cleanup()
-        lv2_init()
+    def post(self):
+        banks       = bool(int(self.get_argument('banks')))
+        pedalboards = bool(int(self.get_argument('pedalboards')))
+        plugins     = bool(int(self.get_argument('plugins')))
+
+        stuffToDelete = []
+
+        if banks:
+            stuffToDelete.append(BANKS_JSON_FILE)
+
+        if pedalboards:
+            stuffToDelete.append(LV2_PEDALBOARDS_DIR)
+
+        if plugins:
+            stuffToDelete.append(LV2_PLUGIN_DIR)
+
+        if not stuffToDelete:
+            self.write({
+                'ok'   : False,
+                'error': "Nothing to delete",
+            })
+            return
+
+        if plugins:
+            yield gen.Task(run_command, ["systemctl", "stop", "jack2"], None)
+
+        yield gen.Task(run_command, ["rm", "-rf"] + stuffToDelete, None)
+        os.sync()
+
+        self.write({
+            'ok'   : True,
+            'error': "",
+        })
+
+        restartJACK2 = pedalboards or plugins
+        IOLoop.instance().add_callback(restart_services, restartJACK2, True)
 
 class UpdateDownload(MultiPartFileReceiver):
     destination_dir = "/tmp/os-update"
@@ -933,12 +981,15 @@ class EffectParameterAddress(JsonRequestHandler):
         tempo   = data.get('tempo', False)
         dividers = data.get('dividers', None)
         page = data.get('page', None)
+        coloured = data.get('coloured', None)
+        momentary = data.get('momentary', None)
         operational_mode = data.get('operationalMode', None)
 
         if page is not None:
             page = int(page)
 
-        ok = yield gen.Task(SESSION.web_parameter_address, port, uri, label, minimum, maximum, value, steps, tempo, dividers, page, operational_mode)
+        ok = yield gen.Task(SESSION.web_parameter_address, port, uri, label, minimum, maximum, value,
+                            steps, tempo, dividers, page, coloured, momentary, operational_mode)
 
         self.write(ok)
 
@@ -1009,9 +1060,12 @@ class EffectPresetSaveNew(JsonRequestHandler):
                 tempo = presets.get('tempo', False)
                 dividers = presets.get('dividers', None)
                 page = presets.get('page', None)
+                coloured = data.get('coloured', None)
+                momentary = data.get('momentary', None)
                 operational_mode = presets.get('operationalMode', None)
 
-                ok = yield gen.Task(SESSION.web_parameter_address, port, actuator_uri, label, minimum, maximum, value, steps, tempo, dividers, page, operational_mode)
+                ok = yield gen.Task(SESSION.web_parameter_address, port, actuator_uri, label, minimum, maximum, value,
+                                    steps, tempo, dividers, page, coloured, momentary, operational_mode)
 
 
 class EffectPresetSaveReplace(JsonRequestHandler):
@@ -1038,8 +1092,11 @@ class EffectPresetSaveReplace(JsonRequestHandler):
                 tempo = presets.get('tempo', False)
                 dividers = presets.get('dividers', None)
                 page = presets.get('page', None)
+                coloured = data.get('coloured', None)
+                momentary = data.get('momentary', None)
                 operational_mode = presets.get('operationalMode', None)
-                ok = yield gen.Task(SESSION.web_parameter_address, port, actuator_uri, label, minimum, maximum, value, steps, tempo, dividers, page, operational_mode)
+                ok = yield gen.Task(SESSION.web_parameter_address, port, actuator_uri, label, minimum, maximum, value,
+                                    steps, tempo, dividers, page, coloured, momentary, operational_mode)
 
 
 class EffectPresetDelete(JsonRequestHandler):
@@ -2075,6 +2132,7 @@ application = web.Application(
             (r"/system/info", SystemInfo),
             (r"/system/prefs", SystemPreferences),
             (r"/system/exechange", SystemExeChange),
+            (r"/system/cleanup", SystemCleanup),
 
             (r"/update/download/", UpdateDownload),
             (r"/update/begin", UpdateBegin),
