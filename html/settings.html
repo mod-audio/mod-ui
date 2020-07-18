@@ -269,6 +269,29 @@ function refresh_device_updates(respDev, respVer) {
     })
 }
 
+function show_blocker (action) {
+    var block = $('<div class="screen-disconnected blocker">');
+    var text;
+
+    if (action == "delete") {
+        text = 'Deleting data, please wait...';
+    } else if (action == "reflash") {
+        text = 'Flashing controller, please wait...';
+    } else if (action == "export") {
+        text = 'Exporting data, please wait...';
+    } else if (action == "import") {
+        text = 'Import data, please wait...<br/>This might take a few minutes.';
+    } else {
+        text = 'Please wait..'
+    }
+
+    block.html('<p>' + text + '</p>')
+    block.css('overflow', 'hidden')
+
+    $('body').append(block)
+    return block
+}
+
 function config_set(key, value) {
     $.ajax({
         url: '/config/set',
@@ -282,6 +305,29 @@ function config_set(key, value) {
         },
         error: function (resp) {
             console.log("error", resp)
+        },
+        cache: false,
+        dataType: 'json'
+    })
+}
+
+function system_cleanup(banks, pedalboards, plugins, callback) {
+    $.ajax({
+        url: '/system/cleanup',
+        method: 'POST',
+        data: {
+            banks: banks ? 1 : 0,
+            pedalboards: pedalboards ? 1 : 0,
+            plugins: plugins ? 1 : 0,
+        },
+        success: function (resp) {
+            if (callback) {
+                callback(resp)
+            }
+        },
+        error: function (resp) {
+            console.log("error", resp)
+            alert("An error occurred: " + resp)
         },
         cache: false,
         dataType: 'json'
@@ -307,12 +353,13 @@ function system_exechange(data, callback) {
     })
 }
 
-function enable_service(name, enable, inverted) {
+function enable_service(name, enable, inverted, persistent) {
     system_exechange({
-        'type'    : 'service',
-        'name'    : name,
-        'enable'  : enable ? 1 : 0,
-        'inverted': inverted ? 1 : 0,
+        'type'      : 'service',
+        'name'      : name,
+        'enable'    : enable ? 1 : 0,
+        'inverted'  : inverted ? 1 : 0,
+        'persistent': persistent ? 1 : 0,
     })
 }
 
@@ -546,22 +593,8 @@ $('document').ready(function() {
     // ----------------------------------------------------------------------------------------------------------------
     // --- Backup & Restore
 
-    function show_blocker (exporting) {
-        var block = $('<div class="screen-disconnected blocker">')
-
-        if (exporting) {
-            block.html('<p>Exporting data, please wait...</p>')
-        } else {
-            block.html('<p>Import data, please wait...<br/>This might take a few minutes.</p>')
-        }
-        block.css('overflow', 'hidden')
-
-        $('body').append(block)
-        return block
-    }
-
     $("#button-action-backup-export").click(function () {
-        var block = show_blocker(true),
+        var block = show_blocker("export"),
             pConfigs = $("#prefs-backup-configs").prop("checked") ? '1' : '0',
             pPlugins = $("#prefs-backup-plugins").prop("checked") ? '1' : '0'
 
@@ -581,7 +614,7 @@ $('document').ready(function() {
             return
         }
 
-        var block = show_blocker(false),
+        var block = show_blocker("import"),
             pConfigs = $("#prefs-backup-configs").prop("checked") ? '1' : '0',
             pPlugins = $("#prefs-backup-plugins").prop("checked") ? '1' : '0'
 
@@ -653,15 +686,15 @@ $('document').ready(function() {
     // --- Services
 
     $("#prefs-service-mod-peakmeter").click(function () {
-        enable_service("mod-peakmeter", !$(this).prop("checked"), true)
+        enable_service("mod-peakmeter", !$(this).prop("checked"), true, true)
     })
 
     $("#prefs-service-mod-sdk").click(function () {
-        enable_service("mod-sdk", $(this).prop("checked"))
+        enable_service("mod-sdk", $(this).prop("checked"), false, true)
     })
 
     $("#prefs-service-netmanager").click(function () {
-        enable_service("netmanager", $(this).prop("checked"))
+        enable_service("netmanager", $(this).prop("checked"), false, true)
     })
 
     // ----------------------------------------------------------------------------------------------------------------
@@ -670,6 +703,91 @@ $('document').ready(function() {
     $("#prefs-workarounds-autorestart-hmi").click(function () {
         create_or_delete_file("autorestart-hmi", $(this).prop("checked"), true)
     })
+
+    // ----------------------------------------------------------------------------------------------------------------
+    // --- Cleanup
+
+    $("#button-action-delete").attr('disabled', true)
+
+    var deleteEnabled = function() {
+        var ok = $("#prefs-delete-confirm").val().toUpperCase() == "DELETE";
+        var banks = !!$("#prefs-delete-banks").prop('checked');
+        var pedalboards = !!$("#prefs-delete-pedalboards").prop('checked');
+        var plugins = !!$("#prefs-delete-plugins").prop('checked');
+        var title = '';
+        if (!banks && !pedalboards && !plugins) {
+            title = "You need to check at least one checkbox above";
+        } else if (!ok) {
+            title = 'You need type "DELETE" on the input above to confirm data removal';
+        }
+        $("#button-action-delete").attr('disabled', !ok || (!banks && !pedalboards && !plugins));
+        $("#button-action-delete").attr('title', title);
+    }
+
+    $("#prefs-delete-confirm").change(deleteEnabled);
+    $("#prefs-delete-confirm").keyup(deleteEnabled);
+    $("#prefs-delete-banks").click(deleteEnabled);
+    $("#prefs-delete-pedalboards").click(deleteEnabled);
+    $("#prefs-delete-plugins").click(deleteEnabled);
+    deleteEnabled();
+
+    $("#button-action-delete").click(function() {
+        var banks = !!$("#prefs-delete-banks").prop('checked');
+        var pedalboards = !!$("#prefs-delete-pedalboards").prop('checked');
+        var plugins = !!$("#prefs-delete-plugins").prop('checked');
+
+        var block = show_blocker("delete");
+
+        system_cleanup(banks, pedalboards, plugins, function (resp) {
+            if (resp.ok) {
+                setTimeout(function () {
+                    block.html('<p>Delete operation complete!</p>')
+
+                    var re = $("<div class='button icon'>Reload</div>").appendTo(block);
+                    re.css("background-image", "url(img/icons/25/reload.png)");
+                    re.click(function () { location.reload(); });
+                }, 1000)
+            } else {
+                block.html('<p>Delete operation failed!<br/>' + resp.error + '</p>')
+            }
+        })
+    });
+
+    // ----------------------------------------------------------------------------------------------------------------
+    // --- HMI Reflash
+
+    $("#button-action-reflash").attr('disabled', true)
+
+    var reflashEnabled = function() {
+        var ok = $("#prefs-reflash-confirm").val().toUpperCase() == "REFLASH";
+        var title = '';
+        if (!ok) {
+            title = 'You need type "REFLASH" on the input above to confirm Controller reflash';
+        }
+        $("#button-action-reflash").attr('disabled', !ok);
+        $("#button-action-reflash").attr('title', title);
+    }
+
+    $("#prefs-reflash-confirm").change(reflashEnabled);
+    $("#prefs-reflash-confirm").keyup(reflashEnabled);
+    reflashEnabled();
+
+    $("#button-action-reflash").click(function() {
+        var block = show_blocker("reflash");
+
+        // NOTE; we cant really check when it is done since we need to stop ourselves in order to flash HMI
+        // So we fake it, giving a reasonable amount of time for the operation to complete
+        setTimeout(function () {
+            block.html('<p>Controller reflash complete!</p>')
+
+            var re = $("<div class='button icon'>Reload</div>").appendTo(block);
+            re.css("background-image", "url(img/icons/25/reload.png)");
+            re.click(function () { location.reload(); });
+        }, 45000);
+
+        enable_service("hmi-update", true, false, false);
+    });
+
 
     // ----------------------------------------------------------------------------------------------------------------
     // --- Device Updates
@@ -765,7 +883,7 @@ $('document').ready(function() {
             <div id="tab-basic" class="add-bank selected">Basic</div>
             <div id="tab-advanced" class="add-bank">Advanced</div>
             <div id="tab-device-updates" class="add-bank mod-hidden">Device Updates</div>
-            <!--<div id="tab-dangerous" class="add-bank">Dangerous</div>-->
+            <div id="tab-dangerous" class="add-bank">Dangerous</div>
             <a href="/" id="go-back"><span class="icon-return"></span>Go back</a>
         </div>
         <!-- END BANK|SETTINGS-LIST -->
@@ -963,22 +1081,53 @@ $('document').ready(function() {
             <div class="settings-page-content">
                 <h1>Cleanup</h1>
                 <form class="form">
+                    <p>
+                        <b>Delete selected user data from the device.</b><br /><br />
+                        This will PERMANENTLY DELETE the selected USER DATA. This action is IRREVERSIBLE.
+                        The device won't work properly until new items are created or installed.
+                    </p>
                     <label>
-                        <input type="checkbox" autocomplete="off" id="prefs-delete-banks"> Banks</input>
+                        <input type="checkbox" autocomplete="off" id="prefs-delete-banks"> Delete all Banks</input>
                     </label>
                     <br/>
                     <label>
-                        <input type="checkbox" autocomplete="off" id="prefs-delete-pedalboards"> Pedalboards</input>
+                        <input type="checkbox" autocomplete="off" id="prefs-delete-pedalboards"> Delete all Pedalboards</input>
                     </label>
                     <br/>
                     <label>
-                        <input type="checkbox" autocomplete="off" id="prefs-delete-plugins"> Plugins</input>
+                        <input type="checkbox" autocomplete="off" id="prefs-delete-plugins"> Delete all Plugins</input>
+                    </label>
+                    <br/><br/>
+                    <label>
+                        To confirm, please type the word "DELETE": &nbsp;
+                        <input type="text" id="prefs-delete-confirm" size="10" style="text-transform: uppercase" />
                     </label>
                     <br/>
                     <label>
                         <input type="button" id="button-action-delete" value="Delete"></input>
                     </label>
+                    <br/>
                 </form>
+
+                <h1>Reflash controller</h1>
+                <form class="form">
+                    <p>
+                        <b>Reinstall the firmware for the controller board.</b><br /><br />
+                        This option is here for support reasons; If the power to your device was cut while installing the controller firmware,
+                        your device may end up in a state where the controller is not fully functional.<br /><br />
+                        While the reflashing is happening, please DO NOT DISCONNECT THE POWER to the device. <br />
+                        There is a RISK OF BRICKING THE DEVICE if the power is cut.
+                    </p>
+                    <br/>
+                    <label>
+                        To confirm, please type the word "REFLASH": &nbsp;
+                        <input type="text" id="prefs-reflash-confirm" size="10" style="text-transform: uppercase" />
+                    </label>
+                    <br/>
+                    <label>
+                        <input type="button" id="button-action-reflash" value="Reflash"></input>
+                    </label>
+                    <br/>
             </div>
         </div>
         <!-- SETTINGS PAGE (DANGEROUS) -->
