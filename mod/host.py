@@ -4065,8 +4065,8 @@ _:b%i
         tempo = extras.get('tempo', False)
         dividers = extras.get('dividers', None)
         page = extras.get('page', None)
-        coloured = bool(int(extras.get('coloured', '0')))
-        momentary = bool(int(extras.get('momentary', '0')))
+        coloured = bool(int(extras.get('coloured', None) or 0))
+        momentary = bool(int(extras.get('momentary', None) or 0))
         operational_mode = extras.get('operational_mode', '=')
 
         if pluginData is None:
