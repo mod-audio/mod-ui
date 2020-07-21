@@ -447,6 +447,7 @@ class SystemExeChange(JsonRequestHandler):
     @gen.coroutine
     def post(self):
         etype = self.get_argument('type')
+        finished = False
 
         if etype == "command":
             cmd = self.get_argument('cmd').split(" ",1)
@@ -575,12 +576,17 @@ class SystemExeChange(JsonRequestHandler):
                 enable = not enable
 
             if enable:
+                if name == "hmi-update":
+                    self.write(True)
+                    finished = True
                 yield gen.Task(run_command, ["systemctl", "start", servicename], None)
+
             else:
                 yield gen.Task(run_command, ["systemctl", "stop", servicename], None)
 
-        os.sync()
-        self.write(True)
+        if not finished:
+            os.sync()
+            self.write(True)
 
     @gen.coroutine
     def reboot(self):
