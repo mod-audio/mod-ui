@@ -2084,13 +2084,13 @@ class FilesList(JsonRequestHandler):
 
     @classmethod
     def _get_dir_and_extensions_for_filetype(kls, filetype):
-        if filetype == "audiofiles":
+        if filetype == "audiofile":
             return ("Audio Files", kls.complete_audiofile_exts)
 
-        elif filetype == "audioloops":
+        elif filetype == "audioloop":
             return ("Audio Loops", kls.complete_audiofile_exts)
 
-        elif filetype == "audiosamples":
+        elif filetype == "audiosample":
             return ("Audio Samples", kls.complete_audiofile_exts)
 
         elif filetype == "h2drumkit":
@@ -2115,17 +2115,13 @@ class FilesList(JsonRequestHandler):
         if "application/json" not in self.request.headers.get("Content-Type"):
             raise web.HTTPError(501, 'Content-Type != "application/json"')
 
-        data = json.loads(self.request.body.decode("utf-8", errors="ignore"))
-
-        filetypes = data.get('types', None)
+        filetypes = self.get_argument('types', None)
         if filetypes is None:
-            filetypes = (data.get('type', None),)
-            if filetypes is None:
-                raise web.HTTPError(501, "Missing type")
+            raise web.HTTPError(501, "Missing types")
 
-        self.filetypes = filetypes
+        self.filetypes = filetypes.split(",")
 
-    def post(self):
+    def get(self):
         retfiles = []
 
         for filetype in self.filetypes:

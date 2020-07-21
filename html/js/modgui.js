@@ -38,6 +38,26 @@ function shouldSkipPort(port) {
     return false;
 }
 
+function loadFileTypesList(parameter, callback) {
+    $.ajax({
+        url: '/files/list',
+        contentType: 'application/json',
+        data: {
+            'types': parameter.fileTypes.join(","),
+        },
+        success: function (data) {
+            parameter.files = (parameter.files || []).concat(data.files);
+            parameter.path = true;
+            callback()
+        },
+        error: function () {
+            callback()
+        },
+        cache: false,
+        dataType: 'json',
+    })
+}
+
 function loadDependencies(gui, effect, dummy, callback) { //source, effect, bundle, callback) {
     var iconLoaded = true
     var settingsLoaded = true
@@ -162,32 +182,21 @@ function loadDependencies(gui, effect, dummy, callback) { //source, effect, bund
     }
 
     if (effect.parameters.length != 0) {
+        var numPathParametersHandled = 0,
+            numPathParametersTotal = 0;
+
         for (var i in effect.parameters) {
             var parameter = effect.parameters[i]
 
-            if (parameter.type === "http://lv2plug.in/ns/ext/atom#Path") {
-                filelistLoaded = false
-                $.ajax({
-                    url: '/files/list',
-                    contentType: 'application/json',
-                    method: 'POST',
-                    data: JSON.stringify(
-                        // FIXME IR as fallback for now
-                        parameter.fileTypes.length !== 0
-                        ? { 'types': parameter.fileTypes }
-                        : { 'type': 'ir' }
-                    ),
-                    success: function (data) {
-                        parameter.files = data.files
+            if (parameter.type === "http://lv2plug.in/ns/ext/atom#Path" && parameter.fileTypes.length !== 0) {
+                filelistLoaded = false;
+                ++numPathParametersTotal;
+
+                loadFileTypesList(parameter, function() {
+                    if (++numPathParametersHandled == numPathParametersTotal) {
                         filelistLoaded = true
                         cb()
-                    },
-                    error: function () {
-                        filelistLoaded = true
-                        cb()
-                    },
-                    cache: false,
-                    dataType: 'json',
+                    }
                 })
             }
         }
@@ -1262,15 +1271,6 @@ function GUI(effect, options) {
         else
         {
             data.effect.all_control_in_ports = []
-        }
-
-        // handle parameter types
-        for (var i in data.effect.parameters) {
-            var parameter = data.effect.parameters[i]
-
-            if (parameter.type === "http://lv2plug.in/ns/ext/atom#Path") {
-                parameter.path = true;
-            }
         }
 
         if (isSDK) {
