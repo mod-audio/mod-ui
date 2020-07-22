@@ -42,7 +42,10 @@ from mod import (
   read_file_contents, safe_json_load, symbolify,
   TextFileFlusher
 )
-from mod.addressings import Addressings, HMI_ADDRESSING_TYPE_ENUMERATION, HMI_ADDRESSING_TYPE_REVERSE_ENUM
+from mod.addressings import (
+    Addressings,
+    HMI_ADDRESSING_TYPE_ENUMERATION, HMI_ADDRESSING_TYPE_REVERSE_ENUM, HMI_ADDRESSING_TYPE_MOMENTARY_SW,
+)
 from mod.bank import list_banks, get_last_bank_and_pedalboard, save_last_bank_and_pedalboard
 from mod.hmi import Menu, HMI_ADDRESSING_FLAG_PAGINATED, HMI_ADDRESSING_FLAG_WRAP_AROUND, HMI_ADDRESSING_FLAG_PAGE_END
 from mod.profile import Profile, apply_mixer_values
@@ -4604,10 +4607,13 @@ _:b%i
             return
 
         pluginData = self.plugins[instance_id]
+        port_addressing = pluginData['addressings'].get(portsymbol, None)
+        save_port_value = (port_addressing.get('hmitype', 0x0) & HMI_ADDRESSING_TYPE_MOMENTARY_SW) == 0x0
 
         if portsymbol == ":bypass":
             bypassed = bool(value)
-            pluginData['bypassed'] = bypassed
+            if save_port_value:
+                pluginData['bypassed'] = bypassed
 
             self.send_modified("bypass %d %d" % (instance_id, int(bypassed)), callback, datatype='boolean')
             self.msg_callback("param_set %s :bypass %f" % (instance, 1.0 if bypassed else 0.0))
@@ -4617,8 +4623,10 @@ _:b%i
                 return
 
             value = 0.0 if bypassed else 1.0
-            pluginData['ports'][enabled_symbol] = value
             self.msg_callback("param_set %s %s %f" % (instance, enabled_symbol, value))
+
+            if save_port_value:
+                pluginData['ports'][enabled_symbol] = value
 
         elif portsymbol == ":presets":
             value = int(value)
@@ -4626,7 +4634,6 @@ _:b%i
                 callback(False)
                 return
 
-            port_addressing = pluginData['addressings'].get(portsymbol, None)
             if port_addressing is None:
                 callback(False)
                 return
@@ -4681,7 +4688,6 @@ _:b%i
                 callback(False)
                 return
 
-            port_addressing = pluginData['addressings'].get(portsymbol, None)
             if port_addressing:
                 if port_addressing.get('hmitype', 0x0) & HMI_ADDRESSING_TYPE_ENUMERATION:
                     value = get_nearest_valid_scalepoint_value(value, port_addressing['options'])[1]
@@ -4711,7 +4717,8 @@ _:b%i
                         if not ok:
                             callback(False)
                             return
-                        pluginData['ports'][portsymbol] = port_value
+                        if save_port_value:
+                            pluginData['ports'][portsymbol] = port_value
                         self.send_modified("param_set %d %s %f" % (instance_id, portsymbol, port_value), callback, datatype='boolean')
                         self.msg_callback("param_set %s %s %f" % (instance, portsymbol, port_value))
 
@@ -4745,12 +4752,8 @@ _:b%i
                     # NOTE: we cannot wait for HMI callback while giving a response to HMI
                     self.control_set_other_group_actuator(group_actuators, hw_id, port_addressing, value, None)
 
-                    pluginData['ports'][portsymbol] = value
-                    self.send_modified("param_set %d %s %f" % (instance_id, portsymbol, value), callback, datatype='boolean')
-                    self.msg_callback("param_set %s %s %f" % (instance, portsymbol, value))
-                    return
-
-            pluginData['ports'][portsymbol] = value
+            if save_port_value:
+                pluginData['ports'][portsymbol] = value
             self.send_modified("param_set %d %s %f" % (instance_id, portsymbol, value), callback, datatype='boolean')
             self.msg_callback("param_set %s %s %f" % (instance, portsymbol, value))
 
