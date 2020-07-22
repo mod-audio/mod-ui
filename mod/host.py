@@ -42,7 +42,10 @@ from mod import (
   read_file_contents, safe_json_load, symbolify,
   TextFileFlusher
 )
-from mod.addressings import Addressings, HMI_ADDRESSING_TYPE_ENUMERATION, HMI_ADDRESSING_TYPE_REVERSE_ENUM
+from mod.addressings import (
+    Addressings,
+    HMI_ADDRESSING_TYPE_ENUMERATION, HMI_ADDRESSING_TYPE_REVERSE_ENUM, HMI_ADDRESSING_TYPE_MOMENTARY_SW,
+)
 from mod.bank import list_banks, get_last_bank_and_pedalboard, save_last_bank_and_pedalboard
 from mod.hmi import Menu, HMI_ADDRESSING_FLAG_PAGINATED, HMI_ADDRESSING_FLAG_WRAP_AROUND, HMI_ADDRESSING_FLAG_PAGE_END
 from mod.profile import Profile, apply_mixer_values
@@ -1036,31 +1039,44 @@ class Host(object):
         display_brightness = self.prefs.get("display-brightness", DEFAULT_DISPLAY_BRIGHTNESS, int, DISPLAY_BRIGHTNESS_VALUES)
         quick_bypass_mode = self.prefs.get("quick-bypass-mode", DEFAULT_QUICK_BYPASS_MODE, int, QUICK_BYPASS_MODE_VALUES)
 
-        def send_boot(_):
-            data = "boot {} {} {} {}".format(display_brightness,
+        bootdata = "boot {} {} {} {}".format(display_brightness,
                                              quick_bypass_mode,
                                              int(self.current_tuner_mute),
                                              self.profile.get_index())
 
-            if self.descriptor.get('hmi_set_master_vol', False):
-                master_chan_mode = self.profile.get_master_volume_channel_mode()
-                master_chan_is_mode_2 = master_chan_mode == Profile.MASTER_VOLUME_CHANNEL_MODE_2
-                data += " {} {}".format(master_chan_mode, get_master_volume(master_chan_is_mode_2))
+        if self.descriptor.get('hmi_set_master_vol', False):
+            master_chan_mode = self.profile.get_master_volume_channel_mode()
+            master_chan_is_mode_2 = master_chan_mode == Profile.MASTER_VOLUME_CHANNEL_MODE_2
+            bootdata += " {} {}".format(master_chan_mode, get_master_volume(master_chan_is_mode_2))
 
-            if self.descriptor.get('pages_cb', False):
-                pages = self.addressings.available_pages
-                data += " {} {} {}".format(pages[0], pages[1], pages[2])
+        if self.descriptor.get('pages_cb', False):
+            pages = self.addressings.available_pages
+            bootdata += " {} {} {}".format(pages[0], pages[1], pages[2])
 
-            if self.descriptor.get('hmi_set_pb_name', False):
-                pname = self.pedalboard_name or UNTITLED_PEDALBOARD_NAME
-                data += " {}".format(pname)
+        # we will dispatch all messages in reverse order, terminating in "boot"
+        msgs = [bootdata]
 
-            self.hmi.send(data, callback)
+        if self.descriptor.get('hmi_set_pb_name', False):
+            pbname = self.pedalboard_name[:31].upper()
+            msgs.append("s_pbn {0}".format(pbname))
+
+        if self.descriptor.get('hmi_set_ss_name', False):
+            ssname = (self.snapshot_name() or DEFAULT_SNAPSHOT_NAME)[:31].upper()
+            msgs.append("s_ssn {0}".format(ssname))
 
         if self.isBankFootswitchNavigationOn():
-            self.hmi.send("mc {} 1".format(Menu.FOOTSWITCH_NAVEG_ID), send_boot)
-        else:
-            send_boot(True)
+            msgs.append("mc {} 1".format(Menu.FOOTSWITCH_NAVEG_ID))
+
+        def send_boot_msg(_):
+            try:
+                msg = msgs.pop(len(msgs)-1)
+            except IndexError:
+                callback(True)
+                return
+            else:
+                self.hmi.send(msg, send_boot_msg)
+
+        send_boot_msg(None)
 
     @gen.coroutine
     def reconnect_hmi(self, hmi):
@@ -4613,10 +4629,13 @@ _:b%i
             return
 
         pluginData = self.plugins[instance_id]
+        port_addressing = pluginData['addressings'].get(portsymbol, None)
+        save_port_value = (port_addressing.get('hmitype', 0x0) & HMI_ADDRESSING_TYPE_MOMENTARY_SW) == 0x0
 
         if portsymbol == ":bypass":
             bypassed = bool(value)
-            pluginData['bypassed'] = bypassed
+            if save_port_value:
+                pluginData['bypassed'] = bypassed
 
             self.send_modified("bypass %d %d" % (instance_id, int(bypassed)), callback, datatype='boolean')
             self.msg_callback("param_set %s :bypass %f" % (instance, 1.0 if bypassed else 0.0))
@@ -4626,8 +4645,10 @@ _:b%i
                 return
 
             value = 0.0 if bypassed else 1.0
-            pluginData['ports'][enabled_symbol] = value
             self.msg_callback("param_set %s %s %f" % (instance, enabled_symbol, value))
+
+            if save_port_value:
+                pluginData['ports'][enabled_symbol] = value
 
         elif portsymbol == ":presets":
             value = int(value)
@@ -4635,7 +4656,6 @@ _:b%i
                 callback(False)
                 return
 
-            port_addressing = pluginData['addressings'].get(portsymbol, None)
             if port_addressing is None:
                 callback(False)
                 return
@@ -4690,7 +4710,6 @@ _:b%i
                 callback(False)
                 return
 
-            port_addressing = pluginData['addressings'].get(portsymbol, None)
             if port_addressing:
                 if port_addressing.get('hmitype', 0x0) & HMI_ADDRESSING_TYPE_ENUMERATION:
                     value = get_nearest_valid_scalepoint_value(value, port_addressing['options'])[1]
@@ -4720,7 +4739,8 @@ _:b%i
                         if not ok:
                             callback(False)
                             return
-                        pluginData['ports'][portsymbol] = port_value
+                        if save_port_value:
+                            pluginData['ports'][portsymbol] = port_value
                         self.send_modified("param_set %d %s %f" % (instance_id, portsymbol, port_value), callback, datatype='boolean')
                         self.msg_callback("param_set %s %s %f" % (instance, portsymbol, port_value))
 
@@ -4754,12 +4774,8 @@ _:b%i
                     # NOTE: we cannot wait for HMI callback while giving a response to HMI
                     self.control_set_other_group_actuator(group_actuators, hw_id, port_addressing, value, None)
 
-                    pluginData['ports'][portsymbol] = value
-                    self.send_modified("param_set %d %s %f" % (instance_id, portsymbol, value), callback, datatype='boolean')
-                    self.msg_callback("param_set %s %s %f" % (instance, portsymbol, value))
-                    return
-
-            pluginData['ports'][portsymbol] = value
+            if save_port_value:
+                pluginData['ports'][portsymbol] = value
             self.send_modified("param_set %d %s %f" % (instance_id, portsymbol, value), callback, datatype='boolean')
             self.msg_callback("param_set %s %s %f" % (instance, portsymbol, value))
 
