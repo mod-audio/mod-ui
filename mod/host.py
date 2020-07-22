@@ -1036,31 +1036,44 @@ class Host(object):
         display_brightness = self.prefs.get("display-brightness", DEFAULT_DISPLAY_BRIGHTNESS, int, DISPLAY_BRIGHTNESS_VALUES)
         quick_bypass_mode = self.prefs.get("quick-bypass-mode", DEFAULT_QUICK_BYPASS_MODE, int, QUICK_BYPASS_MODE_VALUES)
 
-        def send_boot(_):
-            data = "boot {} {} {} {}".format(display_brightness,
+        bootdata = "boot {} {} {} {}".format(display_brightness,
                                              quick_bypass_mode,
                                              int(self.current_tuner_mute),
                                              self.profile.get_index())
 
-            if self.descriptor.get('hmi_set_master_vol', False):
-                master_chan_mode = self.profile.get_master_volume_channel_mode()
-                master_chan_is_mode_2 = master_chan_mode == Profile.MASTER_VOLUME_CHANNEL_MODE_2
-                data += " {} {}".format(master_chan_mode, get_master_volume(master_chan_is_mode_2))
+        if self.descriptor.get('hmi_set_master_vol', False):
+            master_chan_mode = self.profile.get_master_volume_channel_mode()
+            master_chan_is_mode_2 = master_chan_mode == Profile.MASTER_VOLUME_CHANNEL_MODE_2
+            bootdata += " {} {}".format(master_chan_mode, get_master_volume(master_chan_is_mode_2))
 
-            if self.descriptor.get('pages_cb', False):
-                pages = self.addressings.available_pages
-                data += " {} {} {}".format(pages[0], pages[1], pages[2])
+        if self.descriptor.get('pages_cb', False):
+            pages = self.addressings.available_pages
+            bootdata += " {} {} {}".format(pages[0], pages[1], pages[2])
 
-            if self.descriptor.get('hmi_set_pb_name', False):
-                pname = self.pedalboard_name or UNTITLED_PEDALBOARD_NAME
-                data += " {}".format(pname)
+        # we will dispatch all messages in reverse order, terminating in "boot"
+        msgs = [bootdata]
 
-            self.hmi.send(data, callback)
+        if self.descriptor.get('hmi_set_pb_name', False):
+            pbname = self.pedalboard_name[:31].upper()
+            msgs.append("s_pbn {0}".format(pbname))
+
+        if self.descriptor.get('hmi_set_ss_name', False):
+            ssname = (self.snapshot_name() or DEFAULT_SNAPSHOT_NAME)[:31].upper()
+            msgs.append("s_ssn {0}".format(ssname))
 
         if self.isBankFootswitchNavigationOn():
-            self.hmi.send("mc {} 1".format(Menu.FOOTSWITCH_NAVEG_ID), send_boot)
-        else:
-            send_boot(True)
+            msgs.append("mc {} 1".format(Menu.FOOTSWITCH_NAVEG_ID))
+
+        def send_boot_msg(_):
+            try:
+                msg = msgs.pop(len(msgs)-1)
+            except IndexError:
+                callback(True)
+                return
+            else:
+                self.hmi.send(msg, send_boot_msg)
+
+        send_boot_msg(None)
 
     @gen.coroutine
     def reconnect_hmi(self, hmi):
