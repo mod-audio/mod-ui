@@ -173,27 +173,22 @@ function HardwareManager(options) {
         var properties = port.properties
         var available  = []
 
-        if (properties.indexOf("toggled") >= 0) {
-            available.push("toggled")
-        }
-
-        if (properties.indexOf("enumeration") >= 0) {
+        // prevent some properties from going together
+        if (properties.indexOf("trigger") >= 0) {
+            available.push("trigger")
+        } else if (properties.indexOf("enumeration") >= 0) {
             available.push("enumeration")
+        } else if (properties.indexOf("toggled") >= 0) {
+            available.push("toggled")
+        } else if (properties.indexOf("integer") >= 0) {
+            available.push("integer")
         } else {
-            // prevent enumeration together with integer or float
-            if (properties.indexOf("toggled") >= 0) {
-                // handled above
-            } else if (properties.indexOf("integer") >= 0) {
-                available.push("integer")
-            } else {
-                available.push("float")
-            }
+            available.push("float")
         }
 
         if (properties.indexOf("logarithmic") >= 0)
             available.push("logarithmic")
-        if (properties.indexOf("trigger") >= 0)
-            available.push("trigger")
+
         if (port.symbol === ":bpm" && properties.indexOf("tapTempo") >= 0 && kTapTempoUnits.indexOf(port.units.symbol.toLowerCase()) >= 0)
             available.push("taptempo")
 
@@ -366,7 +361,8 @@ function HardwareManager(options) {
       }
 
       if (currentActuator && currentActuator.modes.indexOf(":momentarytoggle:") >= 0 &&
-          port.properties.indexOf("enumeration") < 0)
+          port.properties.indexOf("enumeration") < 0 &&
+          port.properties.indexOf("trigger") < 0)
       {
         momentarySwMode.parent().parent().show()
       }
@@ -380,7 +376,9 @@ function HardwareManager(options) {
     this.showDynamicField = function (form, typeInputVal, currentAddressing, port, cvUri, firstOpen) {
       // Hide all then show the relevant content
       form.find('.dynamic-field').hide()
-      if (typeInputVal === kMidiLearnURI) {
+
+      if (typeInputVal === kMidiLearnURI)
+      {
         form.find('.midi-learn-hint').show()
         if (currentAddressing && currentAddressing.uri && currentAddressing.uri.lastIndexOf(kMidiCustomPrefixURI, 0) === 0) {
           form.find('.midi-learn-hint').hide()
@@ -388,9 +386,13 @@ function HardwareManager(options) {
           form.find('.midi-custom-uri').text(midiCustomLabel)
           form.find('.midi-learn-custom').show()
         }
-      } else if (typeInputVal === deviceOption) {
+      }
+      else if (typeInputVal === deviceOption)
+      {
         form.find('.device-table').show()
-      } else if (typeInputVal === ccOption) {
+      }
+      else if (typeInputVal === ccOption)
+      {
         var ccActuatorSelect = form.find('select[name=cc-actuator]')
         if (ccActuatorSelect.children('option').length) {
           form.find('.cc-select').show()
@@ -399,7 +401,9 @@ function HardwareManager(options) {
         } else {
           form.find('.no-cc').show()
         }
-      } else if (typeInputVal === cvOption) {
+      }
+      else if (typeInputVal === cvOption)
+      {
         if (self.cvOutputPorts.length) {
           form.find('.cv-select').show()
         } else {
@@ -423,16 +427,25 @@ function HardwareManager(options) {
       }
 
       // Hide/show extended specific content
-      if (typeInputVal === kMidiLearnURI || typeInputVal.lastIndexOf(kMidiCustomPrefixURI, 0) === 0 || typeInputVal === cvOption) {
+      if (typeInputVal === kNullAddressURI ||
+          typeInputVal === kMidiLearnURI || typeInputVal.lastIndexOf(kMidiCustomPrefixURI, 0) === 0 ||
+          typeInputVal === cvOption ||
+          ! this.portSupportsSensitivity(port))
+      {
         form.find('.sensitivity').css({ display: "none" })
         self.disableMinMaxSteps(form, false)
-      } else {
+      }
+      else
+      {
         form.find('.sensitivity').css({ display: "block" })
       }
 
-      if (typeInputVal === kMidiLearnURI || typeInputVal.lastIndexOf(kMidiCustomPrefixURI, 0) === 0 || typeInputVal === ccOption || typeInputVal === cvOption) {
+      if (typeInputVal === kMidiLearnURI || typeInputVal.lastIndexOf(kMidiCustomPrefixURI, 0) === 0 || typeInputVal === ccOption || typeInputVal === cvOption)
+      {
         form.find('.tempo').css({ display: "none" })
-      } else if (hasTempoRelatedDynamicScalePoints(port)) {
+      }
+      else if (hasTempoRelatedDynamicScalePoints(port))
+      {
         form.find('.tempo').css({ display: "block" })
         if (form.find('input[name=tempo]').prop("checked")) {
           self.disableMinMaxSteps(form, true)
@@ -466,7 +479,9 @@ function HardwareManager(options) {
       var table = $('<table/>').addClass('hmi-table')
       var groupTable = $('<table/>').addClass('hmi-table')
       var row, cell, uri, uriAddressings, usedAddressings, addressing, groupActuator, groupAddressings
-      if (PAGES_CB && PAGES_NB > 0) {
+
+      if (PAGES_CB && PAGES_NB > 0)
+      {
         // build header row
         var headerRow = $('<tr/>')
         for (var i = 1; i <= PAGES_NB; i++) {
@@ -540,7 +555,9 @@ function HardwareManager(options) {
             }
           }
         }
-      } else {
+      }
+      else
+      {
         for (var actuatorUri in actuators) {
           row = $('<tr/>')
           usedAddressings = self.addressingsByActuator[actuatorUri]
@@ -1078,8 +1095,8 @@ function HardwareManager(options) {
         var labelValue = label.val() || pname
         var sensitivityValue = sensitivity.val()
         var dividerValue = divider.val() ? parseFloat(divider.val()): divider.val()
-        var colouredValue = parseInt(ledColourMode.val())
-        var momentarySwValue = parseInt(momentarySwMode.val())
+        var colouredValue = ledColourMode.is(':visible') ? parseInt(ledColourMode.val()) : 0
+        var momentarySwValue = momentarySwMode.is(':visible') ? parseInt(momentarySwMode.val()) : 0
         var operationalModeValue = operationalMode.val()
 
         // if changing from midi-learn, unlearn first
