@@ -1057,7 +1057,7 @@ class Host(object):
         msgs = [bootdata]
 
         if self.descriptor.get('hmi_set_pb_name', False):
-            pbname = self.pedalboard_name[:31].upper()
+            pbname = (self.pedalboard_name or UNTITLED_PEDALBOARD_NAME)[:31].upper()
             msgs.append("s_pbn {0}".format(pbname))
 
         if self.descriptor.get('hmi_set_ss_name', False):
