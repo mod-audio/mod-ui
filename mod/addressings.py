@@ -543,8 +543,8 @@ class Addressings(object):
                             dividers,
                             page,
                             group,
-                            int(addr.get('coloured')),
-                            int(addr.get('momentary')))
+                            int(addr.get('coloured', False)),
+                            int(addr.get('momentary', False)))
                     msg_callback("hw_map %s %s %s %f %f %d %s %s %s %s %s 1 %d %d" % args)
 
         # Virtual addressings (/bpm)
@@ -692,6 +692,8 @@ class Addressings(object):
 
             if portsymbol == ":bypass":
                 hmitype = HMI_ADDRESSING_TYPE_BYPASS
+                if momentary:
+                    hmitype |= HMI_ADDRESSING_TYPE_MOMENTARY_SW
 
             elif portsymbol == ":presets":
                 hmitype = HMI_ADDRESSING_TYPE_ENUMERATION|HMI_ADDRESSING_TYPE_INTEGER
@@ -700,10 +702,7 @@ class Addressings(object):
                 if "toggled" in pprops:
                     hmitype = HMI_ADDRESSING_TYPE_TOGGLED
                     if momentary:
-                        print("sending with momentary flag")
                         hmitype |= HMI_ADDRESSING_TYPE_MOMENTARY_SW
-                    else:
-                        print("sending without momentary flag")
                 elif "integer" in pprops:
                     hmitype = HMI_ADDRESSING_TYPE_INTEGER
                 else:
