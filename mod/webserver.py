@@ -2096,9 +2096,6 @@ class FilesList(JsonRequestHandler):
             return (None, ())
 
     def prepare(self):
-        if "application/json" not in self.request.headers.get("Content-Type"):
-            raise web.HTTPError(501, 'Content-Type != "application/json"')
-
         filetypes = self.get_argument('types', None)
         if filetypes is None:
             raise web.HTTPError(501, "Missing types")

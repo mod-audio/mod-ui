@@ -202,6 +202,9 @@ function Desktop(elements) {
             }
             return Mustache.render(TEMPLATES.addressing, context)
         },
+        isApp: function() {
+            return self.isApp;
+        },
     })
 
     this.pedalPresets = new SnapshotsManager({
@@ -728,6 +731,8 @@ function Desktop(elements) {
     this.setupApp = function () {
         self.isApp = true
         $('#mod-bank').hide()
+        $('#mod-file-manager').hide()
+        $('#mod-settings').hide()
         $('#pedalboards-library').find('a').hide()
     }
 

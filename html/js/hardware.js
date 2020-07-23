@@ -91,6 +91,9 @@ function HardwareManager(options) {
         // Renders the address html template
         renderForm: function (instance, port) {},
 
+        // Running as mod-app
+        isApp: function () { return false },
+
     }, options)
 
     this.beatsPerMinutePort = {
@@ -300,22 +303,22 @@ function HardwareManager(options) {
             return
         }
 
-        var options = {
+        var soptions = {
             17: 'Low',
             33: 'Medium',
-            65: 'High'
+            65: 'High',
         }
         var def = 33
 
         if (port.rangeSteps) {
             def = port.rangeSteps
-            options[def] = 'Default'
+            soptions[def] = 'Default'
         }
 
-        var steps, label, keys = Object.keys(options).sort()
+        var steps, label, keys = Object.keys(soptions).sort()
         for (var i in keys) {
             steps  = keys[i]
-            label  = options[steps]
+            label  = soptions[steps]
             label += ' (' + steps + ' steps)'
             $('<option>').attr('value', steps).html(label).appendTo(select)
         }
@@ -661,7 +664,8 @@ function HardwareManager(options) {
 
         // Create selectable buttons to choose addressings type and show relevant dynamic content
         var typeInputVal = kNullAddressURI
-        if (currentAddressing && currentAddressing.uri) {
+        if (currentAddressing && currentAddressing.uri)
+        {
           if (currentAddressing.uri == kMidiLearnURI || currentAddressing.uri.lastIndexOf(kMidiCustomPrefixURI, 0) === 0) {
             typeInputVal = kMidiLearnURI
           } else if (startsWith(currentAddressing.uri, deviceOption)) {
@@ -671,24 +675,40 @@ function HardwareManager(options) {
           } else if (currentAddressing.uri !== kBpmURI){
             typeInputVal = ccOption
           }
+
+          // restore values
+          ledColourMode.val(currentAddressing.coloured ? 1 : 0)
+          momentarySwMode.val(currentAddressing.momentary ? 1 : 0)
         }
+        else
+        {
+          // If there is no addressing made yet, try to set some good defaults
+          ledColourMode.val(port.properties.indexOf("preferColouredListByDefault") >= 0 ? 1 : 0)
+          momentarySwMode.val(port.properties.indexOf("preferMomentaryToggleByDefault") >= 0 ? 1 : 0)
+        }
+
         typeInput.val(typeInputVal)
 
         var actuators = self.availableActuators(instance, port, currentAddressing.tempo)
         var typeOptions = [kNullAddressURI, deviceOption, kMidiLearnURI, ccOption, cvOption]
         var i = 0
         typeSelect.find('option').unwrap().each(function() {
-            var btn = $('<div class="btn js-type" data-value="'+typeOptions[i]+'">'+$(this).text()+'</div>')
-            if($(btn).attr('data-value') == typeInput.val()) {
+            var btn = $('<div class="btn js-type" data-value="'+typeOptions[i]+'">'+$(this).text()+'</div>');
+            var jbtn = $(btn);
+            if(jbtn.attr('data-value') == typeInput.val()) {
               btn.addClass('selected')
             }
+            // Hide Device tab under mod-app
+            if (jbtn.attr('data-value') === deviceOption && options.isApp()) {
+              jbtn.hide()
+            }
             // Hide MIDI tab if not available
-            if ($(btn).attr('data-value') === kMidiLearnURI && !actuators[kMidiLearnURI]) {
-              $(btn).hide()
+            else if (jbtn.attr('data-value') === kMidiLearnURI && !actuators[kMidiLearnURI]) {
+              jbtn.hide()
             }
             // Hide CV tab if not available
-            if ($(btn).attr('data-value') === cvOption && !self.isCvAvailable(port)) {
-              $(btn).hide()
+            else if (jbtn.attr('data-value') === cvOption && !self.isCvAvailable(port)) {
+              jbtn.hide()
             }
             $(this).replaceWith(btn)
             i++
@@ -806,9 +826,6 @@ function HardwareManager(options) {
               form.find('.cv-op-mode').css({ display: "none" })
             }
         }
-
-        form.find('select[name=led-color-mode]').val(currentAddressing.coloured ? 1 : 0)
-        form.find('select[name=momentary-sw-mode]').val(currentAddressing.momentary ? 1 : 0)
 
         self.buildSensitivityOptions(sensitivity, port, currentAddressing.steps)
 
