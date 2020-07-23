@@ -41,7 +41,6 @@ function shouldSkipPort(port) {
 function loadFileTypesList(parameter, callback) {
     $.ajax({
         url: '/files/list',
-        contentType: 'application/json',
         data: {
             'types': parameter.fileTypes.join(","),
         },
