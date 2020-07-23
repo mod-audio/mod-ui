@@ -202,6 +202,9 @@ function Desktop(elements) {
             }
             return Mustache.render(TEMPLATES.addressing, context)
         },
+        isApp: function() {
+            return self.isApp;
+        },
     })
 
     this.pedalPresets = new SnapshotsManager({
