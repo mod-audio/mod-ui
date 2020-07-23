@@ -664,7 +664,8 @@ function HardwareManager(options) {
 
         // Create selectable buttons to choose addressings type and show relevant dynamic content
         var typeInputVal = kNullAddressURI
-        if (currentAddressing && currentAddressing.uri) {
+        if (currentAddressing && currentAddressing.uri)
+        {
           if (currentAddressing.uri == kMidiLearnURI || currentAddressing.uri.lastIndexOf(kMidiCustomPrefixURI, 0) === 0) {
             typeInputVal = kMidiLearnURI
           } else if (startsWith(currentAddressing.uri, deviceOption)) {
@@ -674,7 +675,18 @@ function HardwareManager(options) {
           } else if (currentAddressing.uri !== kBpmURI){
             typeInputVal = ccOption
           }
+
+          // restore values
+          ledColourMode.val(currentAddressing.coloured ? 1 : 0)
+          momentarySwMode.val(currentAddressing.momentary ? 1 : 0)
         }
+        else
+        {
+          // If there is no addressing made yet, try to set some good defaults
+          ledColourMode.val(port.properties.indexOf("preferColouredListByDefault") >= 0 ? 1 : 0)
+          momentarySwMode.val(port.properties.indexOf("preferMomentaryToggleByDefault") >= 0 ? 1 : 0)
+        }
+
         typeInput.val(typeInputVal)
 
         var actuators = self.availableActuators(instance, port, currentAddressing.tempo)
@@ -814,9 +826,6 @@ function HardwareManager(options) {
               form.find('.cv-op-mode').css({ display: "none" })
             }
         }
-
-        form.find('select[name=led-color-mode]').val(currentAddressing.coloured ? 1 : 0)
-        form.find('select[name=momentary-sw-mode]').val(currentAddressing.momentary ? 1 : 0)
 
         self.buildSensitivityOptions(sensitivity, port, currentAddressing.steps)
 
