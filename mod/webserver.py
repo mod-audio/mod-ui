@@ -1199,6 +1199,10 @@ class PackageUninstall(JsonRequestHandler):
 
         for bundlepath in bundles:
             if os.path.exists(bundlepath) and os.path.isdir(bundlepath):
+                if not os.path.abspath(bundlepath).startswith(LV2_PLUGIN_DIR):
+                    error = "bundlepath '{}' is not in LV2_PATH".format(bundlepath)
+                    break
+
                 resp, data = yield gen.Task(SESSION.host.remove_bundle, bundlepath, True)
 
                 if resp:
