@@ -1,6 +1,6 @@
 /*
  * MOD-UI utilities
- * Copyright (C) 2015-2016 Filipe Coelho <falktx@falktx.com>
+ * Copyright (C) 2015-2020 Filipe Coelho <falktx@falktx.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -650,6 +650,7 @@ void _fill_bundles_for_plugin(std::list<std::string>& bundles, const LilvPlugin*
             if (std::find(bundles.begin(), bundles.end(), bundlestr) == bundles.end())
                 bundles.push_back(bundlestr);
         }
+        lilv_nodes_free(presetnodes);
     }
 }
 
@@ -4052,6 +4053,7 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
                     lilv_node_free(y);
                     lilv_node_free(proto);
                     lilv_node_free(preset);
+                    lilv_node_free(instId);
                 }
             }
 
