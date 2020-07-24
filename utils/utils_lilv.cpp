@@ -598,7 +598,7 @@ void _fill_bundles_for_plugin(std::list<std::string>& bundles, const LilvPlugin*
                 continue;
 
             bundlepath = dirname(lilvparsed);
-            if (bundlepath == nullptr)
+            if (bundlepath == nullptr || strcmp(bundlepath, ".") == 0)
             {
                 lilv_free(lilvparsed);
                 continue;
@@ -633,7 +633,7 @@ void _fill_bundles_for_plugin(std::list<std::string>& bundles, const LilvPlugin*
                 continue;
 
             bundlepath = dirname(lilvparsed);
-            if (bundlepath == nullptr)
+            if (bundlepath == nullptr || strcmp(bundlepath, ".") == 0)
             {
                 lilv_free(lilvparsed);
                 continue;
