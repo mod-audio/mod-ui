@@ -39,15 +39,15 @@ from mod.mod_protocol import (
     CMD_DUO_BANK_CONFIG,
     CMD_RESPONSE,
     CMD_RESTORE,
+    FLAG_CONTROL_REVERSE_ENUM,
+    FLAG_PAGINATION_PAGE_UP,
+    FLAG_PAGINATION_WRAP_AROUND,
+    FLAG_PAGINATION_INITIAL_REQ,
 )
 
 import logging
 import serial
 import time
-
-HMI_ADDRESSING_FLAG_PAGINATED   = 0x1
-HMI_ADDRESSING_FLAG_WRAP_AROUND = 0x2
-HMI_ADDRESSING_FLAG_PAGE_END    = 0x4
 
 class Menu(object):
     # implemented
@@ -350,7 +350,7 @@ class HMI(object):
         hmi_set_index = self.hw_desc.get('hmi_set_index', False)
 
         if data.get('group', None) is not None:
-            if var_type & 0x100: # HMI_ADDRESSING_TYPE_REVERSE_ENUM
+            if var_type & FLAG_CONTROL_REVERSE_ENUM:
                 prefix = "- "
             else:
                 prefix = "+ "
@@ -387,11 +387,11 @@ class HMI(object):
 
             flags = 0x0
             if startIndex != 0 or endIndex != numOpts:
-                flags |= HMI_ADDRESSING_FLAG_PAGINATED
+                flags |= FLAG_PAGINATION_PAGE_UP
             if data.get('group', None) is None:
-                flags |= HMI_ADDRESSING_FLAG_WRAP_AROUND
+                flags |= FLAG_PAGINATION_WRAP_AROUND
             if endIndex == numOpts:
-                flags |= HMI_ADDRESSING_FLAG_PAGE_END
+                flags |= FLAG_PAGINATION_INITIAL_REQ
 
             for i in range(startIndex, endIndex):
                 option = options[i]

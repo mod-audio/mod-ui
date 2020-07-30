@@ -41,15 +41,11 @@ from mod import (
     TextFileFlusher,
     get_hardware_descriptor, get_nearest_valid_scalepoint_value, read_file_contents, safe_json_load, symbolify
 )
-from mod.addressings import (
-    HMI_ADDRESSING_TYPE_ENUMERATION, HMI_ADDRESSING_TYPE_REVERSE_ENUM, HMI_ADDRESSING_TYPE_MOMENTARY_SW,
-    Addressings,
-)
+from mod.addressings import Addressings
 from mod.bank import (
     list_banks, get_last_bank_and_pedalboard, save_last_bank_and_pedalboard,
 )
 from mod.hmi import (
-    HMI_ADDRESSING_FLAG_PAGINATED, HMI_ADDRESSING_FLAG_WRAP_AROUND, HMI_ADDRESSING_FLAG_PAGE_END,
     Menu,
 )
 from mod.mod_protocol import (
@@ -74,6 +70,10 @@ from mod.mod_protocol import (
     BANK_FUNC_NONE,
     BANK_FUNC_PEDALBOARD_NEXT,
     BANK_FUNC_PEDALBOARD_PREV,
+    FLAG_CONTROL_ENUMERATION,
+    FLAG_CONTROL_TRIGGER,
+    FLAG_CONTROL_REVERSE_ENUM,
+    FLAG_CONTROL_MOMENTARY,
     FLAG_PAGINATION_PAGE_UP,
     FLAG_PAGINATION_WRAP_AROUND,
     FLAG_PAGINATION_INITIAL_REQ,
@@ -728,7 +728,7 @@ class Host(object):
         if atype == Addressings.ADDRESSING_TYPE_HMI:
             if not self.hmi.initialized:
                 return callback(False)
-            if data['hmitype'] & HMI_ADDRESSING_TYPE_ENUMERATION:
+            if data['hmitype'] & FLAG_CONTROL_ENUMERATION:
                 options = tuple(o[0] for o in data['options'])
                 try:
                     value = options.index(data['value'])
@@ -2009,7 +2009,7 @@ class Host(object):
 
         else:
             hw_id = self.addressings.hmi_uri2hw_map[actuator_uri]
-            if current_addressing['hmitype'] & HMI_ADDRESSING_TYPE_ENUMERATION:
+            if current_addressing['hmitype'] & FLAG_CONTROL_ENUMERATION:
                 self.addressings.hmi_load_current(actuator_uri, callback)
             else:
                 self.hmi.control_set(hw_id, current_addressing['value'], callback)
@@ -4626,7 +4626,7 @@ _:b%i
 
         pluginData = self.plugins[instance_id]
         port_addressing = pluginData['addressings'].get(portsymbol, None)
-        save_port_value = (port_addressing.get('hmitype', 0x0) & HMI_ADDRESSING_TYPE_MOMENTARY_SW) == 0x0
+        save_port_value = (port_addressing.get('hmitype', 0x0) & (FLAG_CONTROL_TRIGGER|FLAG_CONTROL_MOMENTARY)) == 0x0
 
         if portsymbol == ":bypass":
             bypassed = bool(value)
@@ -4707,7 +4707,7 @@ _:b%i
                 return
 
             if port_addressing:
-                if port_addressing.get('hmitype', 0x0) & HMI_ADDRESSING_TYPE_ENUMERATION:
+                if port_addressing.get('hmitype', 0x0) & FLAG_CONTROL_ENUMERATION:
                     value = get_nearest_valid_scalepoint_value(value, port_addressing['options'])[1]
 
                 group_actuators = self.addressings.get_group_actuators(port_addressing['actuator_uri'])
@@ -4791,9 +4791,9 @@ _:b%i
                 group_actuator = next((act for act in self.addressings.hw_actuators if act['uri'] == addressing_data['group']), None)
                 if group_actuator is not None:
                     if group_actuator['group'].index(group_actuator_uri) == 0:
-                        addressing_data['hmitype'] |= HMI_ADDRESSING_TYPE_REVERSE_ENUM
+                        addressing_data['hmitype'] |= FLAG_CONTROL_REVERSE_ENUM
                     else:
-                        addressing_data['hmitype'] &= ~HMI_ADDRESSING_TYPE_REVERSE_ENUM
+                        addressing_data['hmitype'] &= ~FLAG_CONTROL_REVERSE_ENUM
                 self.addressings.load_addr(group_actuator_uri, addressing_data, callback)
                 return
         callback(True)
@@ -4868,11 +4868,11 @@ _:b%i
 
         flags = 0x0
         if startIndex != 0 or endIndex != numOpts:
-            flags |= HMI_ADDRESSING_FLAG_PAGINATED
+            flags |= FLAG_SCALEPOINT_PAGINATED
         if data.get('group', None) is None:
-            flags |= HMI_ADDRESSING_FLAG_WRAP_AROUND
+            flags |= FLAG_SCALEPOINT_WRAP_AROUND
         if endIndex == numOpts:
-            flags |= HMI_ADDRESSING_FLAG_PAGE_END
+            flags |= FLAG_SCALEPOINT_END_PAGE
 
         for i in range(startIndex, endIndex):
             option = options[i]
@@ -4885,7 +4885,7 @@ _:b%i
         label = data['label']
 
         if data.get('group', None) is not None:
-            if data['hmitype'] & HMI_ADDRESSING_TYPE_REVERSE_ENUM:
+            if data['hmitype'] & FLAG_CONTROL_REVERSE_ENUM:
                 prefix = "- "
             else:
                 prefix = "+ "
