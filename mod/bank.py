@@ -15,12 +15,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import os, json
+import json
+import os
 from mod import safe_json_load, TextFileFlusher
 from mod.settings import BANKS_JSON_FILE, LAST_STATE_JSON_FILE
 
 # return list of banks
-def list_banks(brokenpedalbundles = [], shouldSave = True):
+def list_banks(brokenpedalbundles = (), shouldSave = True):
     banks = safe_json_load(BANKS_JSON_FILE, list)
 
     if len(banks) == 0:

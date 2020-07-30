@@ -1,4 +1,5 @@
-# coding: utf-8
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 
 # Copyright 2012-2013 AGR Audio, Industria e Comercio LTDA. <contato@moddevices.com>
 #
@@ -15,17 +16,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import logging
+import time
+import serial
 
-from datetime import timedelta
 from tornado.iostream import BaseIOStream, StreamClosedError
 from tornado.ioloop import IOLoop
 
-from mod import get_hardware_actuators, get_hardware_descriptor, get_nearest_valid_scalepoint_value
+from mod import get_hardware_descriptor, get_nearest_valid_scalepoint_value
 from mod.protocol import Protocol, ProtocolError, process_resp
-
-import logging
-import serial
-import time
 
 HMI_ADDRESSING_FLAG_PAGINATED   = 0x1
 HMI_ADDRESSING_FLAG_WRAP_AROUND = 0x2
@@ -64,7 +63,12 @@ class SerialIOStream(BaseIOStream):
         except serial.SerialTimeoutException:
             return 0
 
-    def read_from_fd(self):
+    # FIXME tornado 5.0 changed this function
+    """
+        Interface redesigned to take a buffer and return a number
+        of bytes instead of a freshly-allocated object.
+    """
+    def read_from_fd(self, buf=None):
         try:
             r = self.sp.read(self.read_chunk_size)
         except:
@@ -74,7 +78,7 @@ class SerialIOStream(BaseIOStream):
             return None
         return r
 
-class HMI(object):
+class HMI():
     def __init__(self, port, baud_rate, timeout, init_cb, reinit_cb):
         self.sp = None
         self.port = port
@@ -86,6 +90,7 @@ class HMI(object):
         self.need_flush = 0 # 0 means False, otherwise use it as counter
         self.flush_io = None
         self.last_write_time = 0
+        self.ping_io = None
         self.timeout = timeout # in seconds
         self.reinit_cb = reinit_cb
         self.hw_desc = get_hardware_descriptor()
@@ -209,7 +214,7 @@ class HMI(object):
             return
 
         # FUCK!
-        logging.warn("[hmi] flushing queue as workaround now: %d in queue", len(self.queue))
+        logging.warning("[hmi] flushing queue as workaround now: %d in queue", len(self.queue))
         self.sp.sp.flush()
         self.sp.sp.flushInput()
         self.sp.sp.flushOutput()
@@ -235,7 +240,7 @@ class HMI(object):
             return
 
         try:
-            msg, callback, datatype = self.queue[0] # fist msg on the queue
+            msg = self.queue[0][0] # fist msg on the queue
         except IndexError:
             logging.debug("[hmi] queue is empty, nothing to do")
             self.queue_idle = True
@@ -264,7 +269,7 @@ class HMI(object):
                 self.need_flush = len(self.queue)
 
             elif self.last_write_time != 0 and time.time() - self.last_write_time > self.timeout:
-                logging.warn("[hmi] no response for %ds, giving up", self.timeout)
+                logging.warning("[hmi] no response for %ds, giving up", self.timeout)
                 if self.flush_io is not None:
                     IOLoop.instance().remove_timeout(self.flush_io)
                     self.flush_io = None

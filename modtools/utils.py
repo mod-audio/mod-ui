@@ -1,8 +1,16 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from ctypes import *
 import os
+
+from ctypes import (
+    c_int, c_int8, c_int16, c_int32, c_int64, c_uint, c_uint8, c_uint16, c_uint32, c_uint64, c_long, c_longlong,
+    c_float, c_double, c_longdouble,
+    c_bool, c_char_p, c_void_p,
+    cdll,
+    Structure,
+    CFUNCTYPE, POINTER,
+)
 
 # ------------------------------------------------------------------------------------------------------------
 # Convert a ctypes c_char_p into a python string
@@ -89,7 +97,9 @@ def structPtrPtrToList(structPtr):
 # ------------------------------------------------------------------------------------------------------------
 # Convert a ctypes value into a python one
 
-c_int_types      = (c_int, c_int8, c_int16, c_int32, c_int64, c_uint, c_uint8, c_uint16, c_uint32, c_uint64, c_long, c_longlong)
+c_int_types      = (c_int, c_int8, c_int16, c_int32, c_int64,
+                    c_uint, c_uint8, c_uint16, c_uint32, c_uint64,
+                    c_long, c_longlong)
 c_float_types    = (c_float, c_double, c_longdouble)
 c_intp_types     = tuple(POINTER(i) for i in c_int_types)
 c_floatp_types   = tuple(POINTER(i) for i in c_float_types)
@@ -98,14 +108,13 @@ c_structp_types  = () # redefined below
 c_structpp_types = () # redefined below
 
 def toPythonType(value, attr):
+    # pylint: disable=too-many-return-statements
     #if value is None:
         #return ""
     if isinstance(value, (bool, int, float)):
         return value
     if isinstance(value, bytes):
         return charPtrToString(value)
-    if isinstance(value, c_intp_types) or isinstance(value, c_floatp_types):
-        return numPtrToList(value)
     if isinstance(value, POINTER(c_char_p)):
         return charPtrPtrToStringList(value)
     if isinstance(value, c_struct_types):
@@ -114,6 +123,8 @@ def toPythonType(value, attr):
         return structPtrToList(value)
     if isinstance(value, c_structpp_types):
         return structPtrPtrToList(value)
+    if isinstance(value, c_intp_types + c_floatp_types):
+        return numPtrToList(value)
     print("..............", attr, ".....................", value, ":", type(value))
     return value
 
@@ -671,6 +682,7 @@ _allpedalboards = None
 
 # get all available pedalboards (ie, plugins with pedalboard type)
 def get_all_pedalboards():
+    # pylint: disable=global-statement
     global _allpedalboards
     if _allpedalboards is None:
         _allpedalboards = structPtrPtrToList(utils.get_all_pedalboards())
@@ -678,11 +690,13 @@ def get_all_pedalboards():
 
 # handy function to reset our last call value
 def reset_get_all_pedalboards_cache():
+    # pylint: disable=global-statement
     global _allpedalboards
     _allpedalboards = None
 
 # handy function to update cached pedalboard version
 def update_cached_pedalboard_version(bundle):
+    # pylint: disable=global-statement
     global _allpedalboards
     if _allpedalboards is None:
         return
@@ -824,10 +838,10 @@ def get_master_volume(right):
 # ------------------------------------------------------------------------------------------------------------
 # callbacks
 
-global bufSizeChangedCb, portAppearedCb, portDeletedCb, trueBypassChangedCb
 bufSizeChangedCb = portAppearedCb = portDeletedCb = trueBypassChangedCb = None
 
 def set_util_callbacks(bufSizeChanged, portAppeared, portDeleted, trueBypassChanged):
+    # pylint: disable=global-statement
     global bufSizeChangedCb, portAppearedCb, portDeletedCb, trueBypassChangedCb
     bufSizeChangedCb    = JackBufSizeChanged(bufSizeChanged)
     portAppearedCb      = JackPortAppeared(portAppeared)

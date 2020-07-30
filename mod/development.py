@@ -41,7 +41,7 @@ class FakeHMI(HMI):
         else:
             callback(0)
 
-class FakeSocket(object):
+class FakeSocket():
     def write(self, data):
         return
 

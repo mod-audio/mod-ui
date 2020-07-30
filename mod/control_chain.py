@@ -6,7 +6,6 @@ import os
 import socket
 from tornado import gen, iostream
 from tornado.ioloop import IOLoop
-from mod import symbolify
 
 CC_MODE_TOGGLE    = 0x01
 CC_MODE_TRIGGER   = 0x02
@@ -17,18 +16,19 @@ CC_MODE_TAP_TEMPO = 0x40
 
 # ---------------------------------------------------------------------------------------------------------------------
 
-class ControlChainDeviceListener(object):
+class ControlChainDeviceListener():
     socket_path = "/tmp/control-chain.sock"
 
-    def __init__(self, hw_added_cb, hw_removed_cb, act_added_cb):
+    def __init__(self, hw_added_fn, hw_removed_fn, act_added_fn):
         self.crashed        = False
         self.idle           = False
         self.initialized    = False
         self.initialized_cb = None
-        self.hw_added_cb    = hw_added_cb
-        self.hw_removed_cb  = hw_removed_cb
-        self.act_added_cb   = act_added_cb
+        self.hw_added_cb    = hw_added_fn
+        self.hw_removed_cb  = hw_removed_fn
+        self.act_added_cb   = act_added_fn
         self.hw_versions    = {}
+        self.socket         = None
         self.write_queue    = []
 
         self.start()
@@ -272,7 +272,6 @@ class ControlChainDeviceListener(object):
 
 if __name__ == "__main__":
     from tornado.web import Application
-    from tornado.ioloop import IOLoop
 
     def hw_added_cb(dev_id, dev_uri, label, labelsuffix, version):
         print("hw_added_cb", dev_uri, label, labelsuffix, version)

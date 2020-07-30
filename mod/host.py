@@ -28,14 +28,17 @@ by yourself:
 This will start the mainloop and will handle the callbacks and the async functions
 """
 
+import json
+import logging
+import os
+import shutil
+import socket
+
 from base64 import b64encode
 from collections import OrderedDict
-from datetime import timedelta
 from random import randint
 from tornado import gen, iostream
 from tornado.ioloop import IOLoop, PeriodicCallback
-import os, json, socket, time, logging
-import shutil
 
 from mod import (
   get_hardware_descriptor, get_nearest_valid_scalepoint_value,
@@ -53,6 +56,18 @@ from mod.protocol import (
     PLUGIN_LOG_TRACE, PLUGIN_LOG_NOTE, PLUGIN_LOG_WARNING, PLUGIN_LOG_ERROR,
     Protocol, ProtocolError, process_resp
 )
+from mod.settings import (
+    APP, DEFAULT_PEDALBOARD, LV2_PEDALBOARDS_DIR,
+    PEDALBOARD_INSTANCE, PEDALBOARD_INSTANCE_ID, PEDALBOARD_URI, PEDALBOARD_TMP_DIR,
+    TUNER_URI, TUNER_INSTANCE_ID, TUNER_INPUT_PORT, TUNER_MONITOR_PORT, HMI_TIMEOUT,
+    UNTITLED_PEDALBOARD_NAME, DEFAULT_SNAPSHOT_NAME,
+    MIDI_BEAT_CLOCK_SENDER_URI, MIDI_BEAT_CLOCK_SENDER_INSTANCE_ID, MIDI_BEAT_CLOCK_SENDER_OUTPUT_PORT
+)
+from mod.tuner import find_freqnotecents
+from modtools.tempo import (
+    convert_seconds_to_port_value_equivalent,
+    get_port_value
+)
 from modtools.utils import (
     charPtrToString,
     is_bundle_loaded, add_bundle_to_lilv_world, remove_bundle_from_lilv_world, rescan_plugin_presets,
@@ -68,19 +83,6 @@ from modtools.utils import (
     set_util_callbacks, kPedalboardTimeAvailableBPB,
     kPedalboardTimeAvailableBPM, kPedalboardTimeAvailableRolling
 )
-from modtools.tempo import (
-    convert_seconds_to_port_value_equivalent,
-    get_divider_options,
-    get_port_value
-)
-from mod.settings import (
-    APP, LOG, DEFAULT_PEDALBOARD, LV2_PEDALBOARDS_DIR,
-    PEDALBOARD_INSTANCE, PEDALBOARD_INSTANCE_ID, PEDALBOARD_URI, PEDALBOARD_TMP_DIR,
-    TUNER_URI, TUNER_INSTANCE_ID, TUNER_INPUT_PORT, TUNER_MONITOR_PORT, HMI_TIMEOUT,
-    UNTITLED_PEDALBOARD_NAME, DEFAULT_SNAPSHOT_NAME,
-    MIDI_BEAT_CLOCK_SENDER_URI, MIDI_BEAT_CLOCK_SENDER_INSTANCE_ID, MIDI_BEAT_CLOCK_SENDER_OUTPUT_PORT
-)
-from mod.tuner import find_freqnotecents
 
 BANK_CONFIG_NOTHING         = 0
 BANK_CONFIG_TRUE_BYPASS     = 1
@@ -136,14 +138,13 @@ HW_CV_PREFIX = CV_OPTION + '/graph/' + CV_PREFIX
 
 def midi_port_alias_to_name(alias, withSpaces):
     space = " " if withSpaces else "_"
-    if False:
-        # for alsa-raw midi option
-        return alias.split("-",5)[-1].replace("-",space).replace(";",".")
-    else:
-        # for alsa-seq midi option
-        return alias.split(":",1)[-1].replace("-",space).replace(";",".")\
-          .replace("/midi_capture_",space+"MIDI"+space)\
-          .replace("/midi_playback_",space+"MIDI"+space)
+    ## for alsa-raw midi option
+    #return alias.split("-",5)[-1].replace("-",space).replace(";",".")
+
+    # for alsa-seq midi option
+    return alias.split(":",1)[-1].replace("-",space).replace(";",".")\
+      .replace("/midi_capture_",space+"MIDI"+space)\
+      .replace("/midi_playback_",space+"MIDI"+space)
 
 def get_all_good_and_bad_pedalboards():
     allpedals  = get_all_pedalboards()
@@ -168,7 +169,8 @@ def get_all_good_and_bad_pedalboards():
     return goodpedals, badbundles
 
 # class to map between numeric ids and string instances
-class InstanceIdMapper(object):
+class InstanceIdMapper():
+    # pylint: disable=attribute-defined-outside-init
     def __init__(self):
         self.clear()
 
@@ -220,10 +222,10 @@ class InstanceIdMapper(object):
         return self.instance_map[instance]
 
     # get a string instance from a numeric id
-    def get_instance(self, id):
-        return self.id_map[id]
+    def get_instance(self, idx):
+        return self.id_map[idx]
 
-class Host(object):
+class Host():
     DESIGNATIONS_INDEX_ENABLED   = 0
     DESIGNATIONS_INDEX_FREEWHEEL = 1
     DESIGNATIONS_INDEX_BPB       = 2
@@ -236,10 +238,6 @@ class Host(object):
     HMI_SNAPSHOTS_RIGHT  = 0 - (HMI_SNAPSHOTS_OFFSET + 1)
 
     def __init__(self, hmi, prefs, msg_callback):
-        if False:
-            from mod.hmi import HMI
-            hmi = HMI()
-
         self.hmi = hmi
         self.prefs = prefs
         self.msg_callback = msg_callback
@@ -547,7 +545,7 @@ class Host(object):
         name = charPtrToString(name)
         removed_conns = self.remove_port_from_connections(name)
 
-        for port_symbol, port_alias, port_conns in self.midiports:
+        for port_symbol, _, port_conns in self.midiports:
             if name == port_symbol or (";" in port_symbol and name in port_symbol.split(";",1)):
                 port_conns += removed_conns
                 break
@@ -589,11 +587,11 @@ class Host(object):
         if atype == Addressings.ADDRESSING_TYPE_HMI:
             if send_hmi and self.hmi.initialized:
                 actuator_uri = self.addressings.hmi_hw2uri_map[actuator]
-                return self.hmi.control_add(data, actuator, actuator_uri, callback)
-            else:
-                if callback is not None:
-                    callback(True)
+                self.hmi.control_add(data, actuator, actuator_uri, callback)
                 return
+            if callback is not None:
+                callback(True)
+            return
 
         if atype == Addressings.ADDRESSING_TYPE_CC:
             label = '"%s"' % data['label'].replace('"', '')
@@ -631,27 +629,30 @@ class Host(object):
             options = "%d %s" % (len(optionsData), " ".join(optionsData))
             options = options.strip()
 
-            return self.send_notmodified("cc_map %d %s %d %d %s %f %f %f %i %s %s" % (data['instance_id'],
-                                                                                      data['port'],
-                                                                                      actuator[0], # device id
-                                                                                      actuator[1], # actuator id
-                                                                                      label,
-                                                                                      rvalue,
-                                                                                      data['minimum'],
-                                                                                      rmaximum,
-                                                                                      data['steps'],
-                                                                                      unit,
-                                                                                      options
-                                                                                      ), callback, datatype='boolean')
+            self.send_notmodified("cc_map %d %s %d %d %s %f %f %f %i %s %s" % (data['instance_id'],
+                                                                               data['port'],
+                                                                               actuator[0], # device id
+                                                                               actuator[1], # actuator id
+                                                                               label,
+                                                                               rvalue,
+                                                                               data['minimum'],
+                                                                               rmaximum,
+                                                                               data['steps'],
+                                                                               unit,
+                                                                               options
+                                                                               ), callback, datatype='boolean')
+            return
 
         if atype == Addressings.ADDRESSING_TYPE_MIDI:
-            return self.send_notmodified("midi_map %d %s %i %i %f %f" % (data['instance_id'],
-                                                                         data['port'],
-                                                                         data['midichannel'],
-                                                                         data['midicontrol'],
-                                                                         data['minimum'],
-                                                                         data['maximum'],
-                                                                         ), callback, datatype='boolean')
+            self.send_notmodified("midi_map %d %s %i %i %f %f" % (data['instance_id'],
+                                                                  data['port'],
+                                                                  data['midichannel'],
+                                                                  data['midicontrol'],
+                                                                  data['minimum'],
+                                                                  data['maximum'],
+                                                                  ), callback, datatype='boolean')
+            return
+
         if atype == Addressings.ADDRESSING_TYPE_BPM:
             if callback is not None:
                 callback(True)
@@ -659,13 +660,14 @@ class Host(object):
 
         if atype == Addressings.ADDRESSING_TYPE_CV:
             source_port_name = self.get_jack_source_port_name(actuator)
-            return self.send_notmodified("cv_map %d %s %s %f %f %s" % (data['instance_id'],
-                                                                       data['port'],
-                                                                       source_port_name,
-                                                                       data['minimum'],
-                                                                       data['maximum'],
-                                                                       data['operational_mode']
-                                                                       ), callback, datatype='boolean')
+            self.send_notmodified("cv_map %d %s %s %f %f %s" % (data['instance_id'],
+                                                                data['port'],
+                                                                source_port_name,
+                                                                data['minimum'],
+                                                                data['maximum'],
+                                                                data['operational_mode']
+                                                                ), callback, datatype='boolean')
+            return
 
         print("ERROR: Invalid addressing requested for", actuator)
         callback(False)
@@ -675,20 +677,23 @@ class Host(object):
         if atype == Addressings.ADDRESSING_TYPE_HMI:
             self.pedalboard_modified = True
             if send_hmi:
-                return self.hmi.control_rm(hw_ids, callback)
-            else:
-                if callback is not None:
-                    callback(True)
+                self.hmi.control_rm(hw_ids, callback)
                 return
+            if callback is not None:
+                callback(True)
+            return
 
         if atype == Addressings.ADDRESSING_TYPE_CC:
-            return self.send_modified("cc_unmap %d %s" % (instance_id, portsymbol), callback, datatype='boolean')
+            self.send_modified("cc_unmap %d %s" % (instance_id, portsymbol), callback, datatype='boolean')
+            return
 
         if atype == Addressings.ADDRESSING_TYPE_MIDI:
-            return self.send_modified("midi_unmap %d %s" % (instance_id, portsymbol), callback, datatype='boolean')
+            self.send_modified("midi_unmap %d %s" % (instance_id, portsymbol), callback, datatype='boolean')
+            return
 
         if atype == Addressings.ADDRESSING_TYPE_CV:
-            return self.send_modified("cv_unmap %d %s" % (instance_id, portsymbol), callback, datatype='boolean')
+            self.send_modified("cv_unmap %d %s" % (instance_id, portsymbol), callback, datatype='boolean')
+            return
 
         if atype == Addressings.ADDRESSING_TYPE_BPM:
             if callback is not None:
@@ -702,7 +707,8 @@ class Host(object):
     def addr_task_set_value(self, atype, actuator, data, callback, send_hmi=True):
         if atype == Addressings.ADDRESSING_TYPE_HMI:
             if not self.hmi.initialized:
-                return callback(False)
+                callback(False)
+                return
             if data['hmitype'] & HMI_ADDRESSING_TYPE_ENUMERATION:
                 options = tuple(o[0] for o in data['options'])
                 try:
@@ -717,18 +723,18 @@ class Host(object):
                 logging.error("[host] addr_task_set_value called with an enumeration %s", actuator_uri)
                 self.addressings.hmi_load_current(actuator_uri, callback)
                 return
-            else:
-                value = data['value']
+            value = data['value']
             if send_hmi:
-                return self.hmi.control_set(actuator, value, callback)
-            else:
-                if callback is not None:
-                    callback(True)
+                self.hmi.control_set(actuator, value, callback)
                 return
+            if callback is not None:
+                callback(True)
+            return
 
         if atype == Addressings.ADDRESSING_TYPE_CC:
-            return self.send_modified("cc_value_set %d %s %f" % (data['instance_id'], data['port'], data['value']),
-                                      callback, datatype='boolean')
+            self.send_modified("cc_value_set %d %s %f" % (data['instance_id'], data['port'], data['value']),
+                               callback, datatype='boolean')
+            return
 
         # Everything else has nothing
         callback(True)
@@ -785,7 +791,7 @@ class Host(object):
         self.msg_callback("act_add " + b64encode(json.dumps(metadata).encode("utf-8")).decode("utf-8"))
 
     def addr_task_act_removed(self, uri):
-        for instance_id, pluginData in self.plugins.items():
+        for pluginData in self.plugins.values():
             relevant_ports = []
             for portsymbol, addressing in pluginData['addressings'].items():
                 if addressing['actuator_uri'] == uri:
@@ -799,7 +805,8 @@ class Host(object):
 
     def addr_task_set_available_pages(self, pages, callback):
         if self.hmi.initialized:
-            return self.hmi.set_available_pages(pages, callback)
+            self.hmi.set_available_pages(pages, callback)
+            return
         print("WARNING: Trying to send available pages, HMI not initialized")
         callback(False)
         return
@@ -813,6 +820,7 @@ class Host(object):
         if port_info:
             maximum = port_info['ranges']['maximum']
             minimum = port_info['ranges']['minimum']
+            # pylint: disable=chained-comparison
             if minimum < 0 and maximum <= 0: # unipolar-
                 return "-"
             if minimum < 0 and maximum > 0: # bipolar
@@ -827,7 +835,7 @@ class Host(object):
     def ping_hmi(self):
         if self.hmi_ping_io is not None:
             IOLoop.instance().remove_timeout(self.hmi_ping_io)
-        self.hmi_ping_io = self.ioloop.call_later(5, self.ping_hmi)
+        self.hmi_ping_io = IOLoop.instance().call_later(5, self.ping_hmi)
         self.hmi.ping(None)
 
     def ping_hmi_start(self):
@@ -845,6 +853,7 @@ class Host(object):
             callback(True)
             return
 
+        # pylint: disable=attribute-defined-outside-init
         def retry():
             if (self.hmi.initialized and self.profile_applied) or self._attemptNumber >= 20:
                 print("HMI initialized FINAL", self._attemptNumber, self.hmi.initialized)
@@ -901,9 +910,9 @@ class Host(object):
 
         # Setup MIDI program navigation
         midi_pb_prgch, midi_ss_prgch = self.profile.get_midi_prgch_channels()
-        if midi_pb_prgch >= 1 and midi_pb_prgch <= 16:
+        if 1 <= midi_pb_prgch <= 16:
             self.send_notmodified("monitor_midi_program %d 1" % (midi_pb_prgch-1))
-        if midi_ss_prgch >= 1 and midi_ss_prgch <= 16:
+        if 1 <= midi_ss_prgch <= 16:
             self.send_notmodified("monitor_midi_program %d 1" % (midi_ss_prgch-1))
 
         # Wait for all mod-host messages to be processed
@@ -1036,8 +1045,10 @@ class Host(object):
         IOLoop.instance().call_later(5, self.reconnect_jack)
 
     def send_hmi_boot(self, callback):
-        display_brightness = self.prefs.get("display-brightness", DEFAULT_DISPLAY_BRIGHTNESS, int, DISPLAY_BRIGHTNESS_VALUES)
-        quick_bypass_mode = self.prefs.get("quick-bypass-mode", DEFAULT_QUICK_BYPASS_MODE, int, QUICK_BYPASS_MODE_VALUES)
+        display_brightness = self.prefs.get("display-brightness",
+                                            DEFAULT_DISPLAY_BRIGHTNESS, int, DISPLAY_BRIGHTNESS_VALUES)
+        quick_bypass_mode = self.prefs.get("quick-bypass-mode",
+                                           DEFAULT_QUICK_BYPASS_MODE, int, QUICK_BYPASS_MODE_VALUES)
 
         bootdata = "boot {} {} {} {}".format(display_brightness,
                                              quick_bypass_mode,
@@ -1139,7 +1150,7 @@ class Host(object):
         bank_id, pedalboard = get_last_bank_and_pedalboard()
 
         # report pedalboard and banks
-        if pedalboard and os.path.exists(pedalboard) and bank_id > 0 and bank_id <= len(self.banks):
+        if pedalboard and os.path.exists(pedalboard) and 0 < bank_id <= len(self.banks):
             bank = self.banks[bank_id-1]
             pedalboards = bank['pedalboards']
 
@@ -1174,7 +1185,7 @@ class Host(object):
 
         def cb_migi_pb_prgch(_):
             midi_pb_prgch = self.profile.get_midi_prgch_channel("pedalboard")
-            if midi_pb_prgch >= 1 and midi_pb_prgch <= 16:
+            if 1 <= midi_pb_prgch <= 16:
                 self.send_notmodified("monitor_midi_program %d 1" % (midi_pb_prgch-1),
                                       callback, datatype='boolean')
             else:
@@ -1193,8 +1204,8 @@ class Host(object):
             cb_migi_pb_prgch(True)
 
     def start_session(self, callback):
-        midi_pb_prgch, midi_ss_prgch = self.profile.get_midi_prgch_channels()
-        if midi_pb_prgch >= 1 and midi_pb_prgch <= 16:
+        midi_pb_prgch = self.profile.get_midi_prgch_channel('pedalboard')
+        if 1 <= midi_pb_prgch <= 16:
             self.send_notmodified("monitor_midi_program %d 0" % (midi_pb_prgch-1))
 
         self.allpedalboards = []
@@ -1298,7 +1309,8 @@ class Host(object):
                             value = int(pluginData['mapPresets'][value].replace("file:///",""))
                             yield gen.Task(self.snapshot_load_gen_helper, value, False, abort_catcher)
                         else:
-                            yield gen.Task(self.preset_load_gen_helper, instance, pluginData['mapPresets'][value], False, abort_catcher)
+                            yield gen.Task(self.preset_load_gen_helper,
+                                           instance, pluginData['mapPresets'][value], False, abort_catcher)
                     except Exception as e:
                         logging.exception(e)
 
@@ -1388,7 +1400,7 @@ class Host(object):
                 else:
                     pedalboards = self.allpedalboards
 
-                if program >= 0 and program < len(pedalboards):
+                if 0 <= program < len(pedalboards):
                     while self.next_hmi_pedalboard_loading:
                         yield gen.sleep(0.25)
                     try:
@@ -1644,12 +1656,14 @@ class Host(object):
             self.init_jack()
             # Setup a few things as done in `init_host`, but without waiting
             midi_pb_prgch, midi_ss_prgch = self.profile.get_midi_prgch_channels()
-            if midi_pb_prgch >= 1 and midi_pb_prgch <= 16:
+            if 1 <= midi_pb_prgch <= 16:
                 self.send_notmodified("monitor_midi_program %d 1" % (midi_pb_prgch-1))
-            if midi_ss_prgch >= 1 and midi_ss_prgch <= 16:
+            if 1 <= midi_ss_prgch <= 16:
                 self.send_notmodified("monitor_midi_program %d 1" % (midi_ss_prgch-1))
             self.send_notmodified("state_tmpdir {}".format(PEDALBOARD_TMP_DIR))
-            self.send_notmodified("transport %i %f %f" % (self.transport_rolling, self.transport_bpb, self.transport_bpm))
+            self.send_notmodified("transport %i %f %f" % (self.transport_rolling,
+                                                          self.transport_bpb,
+                                                          self.transport_bpm))
             self.addressings.cchain.restart_if_crashed()
 
             if self.transport_sync == "link":
@@ -1658,7 +1672,7 @@ class Host(object):
                 self.set_midi_clock_slave_enabled()
 
         midiports = []
-        for port_id, port_alias, _ in self.midiports:
+        for port_id, _, _2 in self.midiports:
             if ";" in port_id:
                 inp, outp = port_id.split(";",1)
                 midiports.append(inp)
@@ -1924,8 +1938,9 @@ class Host(object):
         current_addressing['value'] = float(value)
 
         if actuator_type == Addressings.ADDRESSING_TYPE_CC:
-            return self.send_modified("cc_value_set %d %s %f" % (instance_id, portsymbol, current_addressing['value']),
-                                      callback, datatype='boolean')
+            self.send_modified("cc_value_set %d %s %f" % (instance_id, portsymbol, current_addressing['value']),
+                               callback, datatype='boolean')
+            return
 
         if actuator_type != Addressings.ADDRESSING_TYPE_HMI:
             if callback is not None:
@@ -1971,12 +1986,12 @@ class Host(object):
                 if not ok:
                     callback(False)
                     return
-                hw_id2 = self.addressings.hmi_uri2hw_map[group_actuators[1]]
+                #hw_id2 = self.addressings.hmi_uri2hw_map[group_actuators[1]]
                 #self.hmi.control_set(hw_id2, float(value), callback)
                 #self.hmi.control_add(current_addressing, hw_id2, group_actuators[1], callback)
                 self.addressings.hmi_load_current(group_actuators[1], callback)
 
-            hw_id1 = self.addressings.hmi_uri2hw_map[group_actuators[0]]
+            #hw_id1 = self.addressings.hmi_uri2hw_map[group_actuators[0]]
             #self.hmi.control_set(hw_id1, float(value), set_2nd_hmi_value)
             #self.hmi.control_add(current_addressing, hw_id1, group_actuators[0], set_2nd_hmi_value)
             self.addressings.hmi_load_current(group_actuators[0], set_2nd_hmi_value)
@@ -2105,7 +2120,7 @@ class Host(object):
         used_hmi_actuators = []
         used_hw_ids = []
 
-        for symbol in [symbol for symbol in pluginData['addressings'].keys()]:
+        for symbol in pluginData['addressings'].keys().copy():
             addressing    = pluginData['addressings'].pop(symbol)
             actuator_uri  = addressing['actuator_uri']
             actuator_type = self.addressings.get_actuator_type(actuator_uri)
@@ -2119,7 +2134,7 @@ class Host(object):
                     else:
                         self.add_used_actuators(actuator_uri, used_hmi_actuators, used_hw_ids)
 
-            elif actuator_type == Addressings.ADDRESSING_TYPE_CC or actuator_type == Addressings.ADDRESSING_TYPE_CV:
+            elif actuator_type in (Addressings.ADDRESSING_TYPE_CC, Addressings.ADDRESSING_TYPE_CV):
                 try:
                     yield gen.Task(self.addr_task_unaddressing, actuator_type,
                                                                 addressing['instance_id'],
@@ -2157,7 +2172,7 @@ class Host(object):
 
         removed_connections = []
         for ports in self.connections:
-            if ports[0].rsplit("/",1)[0] == instance or ports[1].rsplit("/",1)[0] == instance:
+            if instance in (ports[0].rsplit("/",1)[0], ports[1].rsplit("/",1)[0]):
                 removed_connections.append(ports)
         for ports in removed_connections:
             self.connections.remove(ports)
@@ -2306,7 +2321,8 @@ class Host(object):
                     used_actuators.append(addressing['actuator_uri'])
 
         try:
-            yield gen.Task(self.addressings.load_current_with_callback, used_actuators, (instance_id, ":presets"), True, from_hmi, abort_catcher)
+            yield gen.Task(self.addressings.load_current_with_callback,
+                           used_actuators, (instance_id, ":presets"), True, from_hmi, abort_catcher)
         except Exception as e:
             callback(False)
             logging.exception(e)
@@ -2777,20 +2793,23 @@ class Host(object):
                 print("NOTE: Requested '%s' => '%s' connection doesn't exist" % (port_from, port_to))
 
         if len(self.connections) == 0:
-            return host_callback(False)
+            host_callback(False)
+            return
 
         # If the plugin or port don't exist, assume disconnected
         try:
             port_from_2 = self._fix_host_connection_port(port_from)
         except:
             print("NOTE: Requested '%s' source port doesn't exist, assume disconnected" % port_from)
-            return host_callback(True)
+            host_callback(True)
+            return
 
         try:
             port_to_2 = self._fix_host_connection_port(port_to)
         except:
             print("NOTE: Requested '%s' target port doesn't exist, assume disconnected" % port_to)
-            return host_callback(True)
+            host_callback(True)
+            return
 
         host_callback(disconnect_jack_ports(port_from_2, port_to_2))
 
@@ -2850,7 +2869,7 @@ class Host(object):
             mappedNewMidiOuts = {}
 
         curmidisymbols = []
-        for port_symbol, port_alias, _ in self.midiports:
+        for port_symbol, _, _2 in self.midiports:
             if ";" in port_symbol:
                 ports = port_symbol.split(";", 1)
                 curmidisymbols.append(ports[0].split(":",1)[-1])
@@ -2980,7 +2999,8 @@ class Host(object):
 
         if abort_catcher is not None and abort_catcher.get('abort', False):
             print("WARNING: Abort triggered during PB load request 1, caller:", abort_catcher['caller'])
-            return
+            # TODO check if this return type is correct
+            return None
 
         self.send_notmodified("transport %i %f %f" % (self.transport_rolling,
                                                       self.transport_bpb,
@@ -3003,7 +3023,8 @@ class Host(object):
 
         if abort_catcher is not None and abort_catcher.get('abort', False):
             print("WARNING: Abort triggered during PB load request 2, caller:", abort_catcher['caller'])
-            return
+            # TODO check if this return type is correct
+            return None
 
         self.addressings.add_cv_plugin_ports(self.msg_callback)
         self.addressings.registerMappings(self.msg_callback, rinstances)
@@ -3179,7 +3200,7 @@ class Host(object):
                 mchnnl = port['midiCC']['channel']
                 mctrl  = port['midiCC']['control']
 
-                if mchnnl >= 0 and mchnnl < 16:
+                if 0 <= mchnnl < 16:
                     if port['midiCC']['hasRanges'] and port['midiCC']['maximum'] > port['midiCC']['minimum']:
                         minimum = port['midiCC']['minimum']
                         maximum = port['midiCC']['maximum']
@@ -3231,7 +3252,7 @@ class Host(object):
                 self.msg_callback("connect %s %s" % (port_from, port_to))
 
             elif aliasname1 is not None or aliasname2 is not None:
-                for port_symbol, port_alias, port_conns in self.midiports:
+                for _, port_alias, port_conns in self.midiports:
                     port_alias = port_alias.split(";",1) if ";" in port_alias else [port_alias]
                     if aliasname1 in port_alias or aliasname2 in port_alias:
                         port_conns.append((port_from, port_to))
@@ -3414,6 +3435,7 @@ _:b%i
     a ingen:Block .
 """ % (instance, pluginData['x'], pluginData['y'], "false" if pluginData['bypassed'] else "true",
        info['microVersion'], info['minorVersion'], info['builder'], info['release'],
+       # pylint: disable=line-too-long
        "> ,\n             <".join(tuple("%s/%s" % (instance, port['symbol']) for port in (info['ports']['audio']['input']+
                                                                                           info['ports']['audio']['output']+
                                                                                           info['ports']['control']['input']+
@@ -3755,7 +3777,8 @@ _:b%i
 
         # Blocks (plugins)
         if len(self.plugins) > 0:
-            args = ("> ,\n                <".join(tuple(p['instance'].replace("/graph/","",1) for i, p in self.plugins.items() if i != PEDALBOARD_INSTANCE_ID)))
+            args = ("> ,\n                <".join(tuple(p['instance'].replace("/graph/","",1)
+                                                        for i, p in self.plugins.items() if i != PEDALBOARD_INSTANCE_ID)))
             pbdata += "    ingen:block <%s> ;\n" % args
 
         # Ports
@@ -3834,7 +3857,7 @@ _:b%i
             if not ok:
                 callback(False)
                 return
-            elif mode == Profile.TRANSPORT_SOURCE_INTERNAL:
+            if mode == Profile.TRANSPORT_SOURCE_INTERNAL:
                 self.transport_sync = "none"
                 self.send_notmodified("transport_sync none", host_callback, datatype='boolean')
             elif mode == Profile.TRANSPORT_SOURCE_MIDI_SLAVE:
@@ -4181,9 +4204,8 @@ _:b%i
                 except Exception as e:
                     logging.exception(e)
                 return
-            else:
-                callback(True)
-                return
+            callback(True)
+            return
 
         is_hmi_actuator = self.addressings.is_hmi_actuator(actuator_uri)
 
@@ -4286,13 +4308,11 @@ _:b%i
         send_hmi_available_pages = False
         available_pages = self.addressings.available_pages.copy()
         available_pages[page] = 1 if page == 0 else 0
-        for uri, addrs in self.addressings.hmi_addressings.items():
-            def loop_addr():
-                for addr in addrs['addrs']:
-                    if addr['page'] == page:
-                        available_pages[page] = 1
-                        return
-            loop_addr()
+        for addrs in self.addressings.hmi_addressings.values():
+            for addr in addrs['addrs']:
+                if addr['page'] == page:
+                    available_pages[page] = 1
+                    break
 
         if self.addressings.available_pages != available_pages:
             send_hmi_available_pages = True
@@ -5177,11 +5197,11 @@ _:b%i
         # NOTE: The range in mod-host is [0, 15]
 
         # if nothing is using old snapshot channel, disable monitoring
-        if midi_pb_prgch != channel and midi_ss_prgch >= 1 and midi_ss_prgch <= 16:
+        if midi_pb_prgch != channel and 1 <= midi_ss_prgch <= 16:
             yield gen.Task(self.send_notmodified, "monitor_midi_program %d 1" % (midi_ss_prgch-1))
 
         # enable monitoring for this channel
-        if channel >= 1 and channel <= 16:
+        if 1 <= channel <= 16:
             self.send_notmodified("monitor_midi_program %d 1" % (channel-1), callback)
         else:
             callback(True)
@@ -5211,11 +5231,11 @@ _:b%i
         # NOTE: The range in mod-host is [0, 15]
 
         # if nothing is using old pedalboard channel, disable monitoring
-        if midi_ss_prgch != channel and midi_pb_prgch >= 1 and midi_pb_prgch <= 16:
+        if midi_ss_prgch != channel and 1 <= midi_pb_prgch <= 16:
             yield gen.Task(self.send_notmodified, "monitor_midi_program %d 1" % (midi_pb_prgch-1))
 
         # enable monitoring for this channel
-        if channel >= 1 and channel <= 16:
+        if 1 <= channel <= 16:
             self.send_notmodified("monitor_midi_program %d 1" % (channel-1), callback)
         else:
             callback(True)
@@ -5416,7 +5436,8 @@ _:b%i
 
     def hmi_snapshot_save(self, idx, callback):
         if idx not in (0, 1):
-            return callback(False)
+            callback(False)
+            return
 
         self.hmi_snapshots[idx] = self.snapshot_make("HMI")
         callback(True)
@@ -5567,7 +5588,7 @@ _:b%i
                 self.msg_callback("remove_hw_port /graph/serial_midi_out")
 
             # Remove USB MIDI ports
-            for port_symbol, port_alias, port_conns in self.midiports:
+            for port_symbol, _, _2 in self.midiports:
                 self.remove_port_from_connections(port_symbol)
 
                 if ";" in port_symbol:
@@ -5612,7 +5633,8 @@ _:b%i
             if name.startswith("nooice"):
                 index += 100
 
-            self.msg_callback("add_hw_port /graph/%s midi %i %s %i" % (name.split(":",1)[-1], int(isOutput), title, index))
+            self.msg_callback("add_hw_port /graph/%s midi %i %s %i" % (name.split(":",1)[-1],
+                                                                       int(isOutput), title, index))
 
         def remove_port(name):
             removed_conns = []
@@ -5634,7 +5656,7 @@ _:b%i
 
         # remove
         for i in reversed(range(len(self.midiports))):
-            port_symbol, port_alias, _ = self.midiports[i]
+            port_symbol = self.midiports[i][0]
             if port_symbol in newDevs:
                 continue
 
@@ -5669,8 +5691,7 @@ _:b%i
     def get_jack_source_port_name(self, actuator):
         if actuator.startswith(HW_CV_PREFIX):
             return "mod-spi2jack:" + actuator[len(HW_CV_PREFIX):]
-        else:
-            return self._fix_host_connection_port(actuator.split("/cv")[1])
+        return self._fix_host_connection_port(actuator.split("/cv")[1])
 
     # -----------------------------------------------------------------------------------------------------------------
     # Profile stuff

@@ -44,14 +44,15 @@ def generate_screenshot(bundle_path, callback):
         loop.remove_handler(fileno)
 
         if not os.path.exists(screenshot) or not os.path.exists(thumbnail):
-            return callback()
+            callback()
+            return
 
         callback(thumbnail)
 
     loop.add_handler(proc.stdout.fileno(), proc_callback, 16)
 
 
-class ScreenshotGenerator(object):
+class ScreenshotGenerator():
     def __init__(self):
         self.queue = []
         self.callbacks = {}

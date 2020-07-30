@@ -276,7 +276,7 @@ class RemoteRequestHandler(JsonRequestHandler):
 class SimpleFileReceiver(JsonRequestHandler):
     @property
     def destination_dir(self):
-        raise NotImplemented
+        raise NotImplementedError
 
     @classmethod
     def urls(cls, path):
@@ -308,7 +308,7 @@ class SimpleFileReceiver(JsonRequestHandler):
 class MultiPartFileReceiver(JsonRequestHandler):
     @property
     def destination_dir(self):
-        raise NotImplemented
+        raise NotImplementedError
 
     @classmethod
     def urls(cls, path):
@@ -1579,11 +1579,6 @@ class BankSave(JsonRequestHandler):
         banks = json.loads(self.request.body.decode("utf-8", errors="ignore"))
         save_banks(banks)
         self.write(True)
-
-class HardwareLoad(JsonRequestHandler):
-    def get(self):
-        hardware = SESSION.get_hardware()
-        self.write(hardware)
 
 class TemplateHandler(TimelessRequestHandler):
     @gen.coroutine

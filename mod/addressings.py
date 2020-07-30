@@ -47,7 +47,7 @@ CV_PREFIX = 'cv_'
 CV_OPTION = '/cv'
 HW_CV_PREFIX = CV_OPTION + '/graph/' + CV_PREFIX
 
-class Addressings(object):
+class Addressings():
     ADDRESSING_TYPE_NONE = 0
     ADDRESSING_TYPE_HMI  = 1
     ADDRESSING_TYPE_CC   = 2

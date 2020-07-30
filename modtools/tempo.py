@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
 # List of all subdividers' 'value's and 'label's
 dividers = [{
     'value': 0.333,
@@ -153,7 +156,7 @@ def get_port_value(b, s, port_unit_symbol):
         float: control port value in seconds
     """
     if port_unit_symbol == "BPM":
-        return b / s;
+        return b / s
     return 240 / (b * s)
 
 def convert_equivalent(value, conversion_factor, port_unit_symbol):
@@ -169,12 +172,11 @@ def convert_equivalent(value, conversion_factor, port_unit_symbol):
     """
     if value == 0: # avoid division by zero
         value = 0.001
-    if port_unit_symbol == "s" or port_unit_symbol == "ms" or port_unit_symbol == "min":
+    if port_unit_symbol in ("s", "ms", "min"):
         return conversion_factor * value
-    elif port_unit_symbol == "Hz" or port_unit_symbol == "MHz" or port_unit_symbol == "kHz":
+    if port_unit_symbol in ("Hz", "MHz", "kHz"):
         return conversion_factor / value
-    else:
-        return None
+    return None
 
 def convert_seconds_to_port_value_equivalent(value, port_unit_symbol):
     """Convert value in seconds to control port unit
