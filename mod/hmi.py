@@ -22,6 +22,24 @@ from tornado.ioloop import IOLoop
 
 from mod import get_hardware_actuators, get_hardware_descriptor, get_nearest_valid_scalepoint_value
 from mod.protocol import Protocol, ProtocolError, process_resp
+from mod.mod_protocol import (
+    CMD_PING,
+    CMD_GUI_CONNECTED,
+    CMD_GUI_DISCONNECTED,
+    CMD_INITIAL_STATE,
+    CMD_CONTROL_ADD,
+    CMD_CONTROL_REMOVE,
+    CMD_CONTROL_SET,
+    CMD_PEDALBOARD_CLEAR,
+    CMD_PEDALBOARD_NAME_SET,
+    CMD_SNAPSHOT_NAME_SET,
+    CMD_TUNER,
+    CMD_MENU_ITEM_CHANGE,
+    CMD_DUO_CONTROL_INDEX_SET,
+    CMD_DUO_BANK_CONFIG,
+    CMD_RESPONSE,
+    CMD_RESTORE,
+)
 
 import logging
 import serial
@@ -176,11 +194,11 @@ class HMI(object):
                     def _callback(resp, resp_args=None):
                         resp = 0 if resp else -1
                         if resp_args is None:
-                            self.send_reply("resp %d" % resp)
+                            self.send_reply("%s %d" % (CMD_RESPONSE, resp))
                             logging.debug('[hmi]     sent "resp %s"', resp)
 
                         else:
-                            self.send_reply("resp %d %s" % (resp, resp_args))
+                            self.send_reply("%s %d %s" % (CMD_RESPONSE, resp, resp_args))
                             logging.debug('[hmi]     sent "resp %s %s"', resp, resp_args)
 
                         self.handling_response = False
@@ -253,7 +271,7 @@ class HMI(object):
 
     def reply_protocol_error(self, error):
         #self.send(error) # TODO: proper error handling, needs to be implemented by HMI
-        self.send("resp -1", None)
+        self.send("{} -1".format(CMD_RESPONSE), None)
 
     def send(self, msg, callback, datatype='int'):
         if self.sp is None:
@@ -304,7 +322,7 @@ class HMI(object):
 
         endIndex = min(startIndex+9, numPedals)
 
-        data = 'is %d %d %d %d %d' % (numPedals, startIndex, endIndex, bank_id, pedalboard_id)
+        data = '%s %d %d %d %d %d' % (CMD_INITIAL_STATE, numPedals, startIndex, endIndex, bank_id, pedalboard_id)
 
         for i in range(startIndex, endIndex):
             data += ' "%s" %d' % (pedalboards[i]['title'].replace('"', '')[:31].upper(), i+1)
@@ -312,10 +330,10 @@ class HMI(object):
         self.send(data, callback)
 
     def ui_con(self, callback):
-        self.send("ui_con", callback, 'boolean')
+        self.send(CMD_GUI_CONNECTED, callback, 'boolean')
 
     def ui_dis(self, callback):
-        self.send("ui_dis", callback, 'boolean')
+        self.send(CMD_GUI_DISCONNECTED, callback, 'boolean')
 
     def control_add(self, data, hw_id, actuator_uri, callback):
         # instance_id = data['instance_id']
@@ -399,8 +417,9 @@ class HMI(object):
         if not actuator_uri.startswith("/hmi/footswitch") and hmi_set_index:
             cb = control_add_callback
 
-        self.send('a %d %s %d %s %f %f %f %d %s' %
-                  ( hw_id,
+        self.send('%s %d %s %d %s %f %f %f %d %s' %
+                  ( CMD_CONTROL_ADD,
+                    hw_id,
                     label,
                     var_type,
                     unit,
@@ -413,12 +432,12 @@ class HMI(object):
                   cb, 'boolean')
 
     def control_set_index(self, hw_id, index, n_controllers, callback):
-        self.send('si %d %d %d' % (hw_id, index, n_controllers), callback, 'boolean')
+        self.send('%s %d %d %d' % (CMD_DUO_CONTROL_INDEX_SET, hw_id, index, n_controllers), callback, 'boolean')
 
     def control_set(self, hw_id, value, callback):
         """Set a plug-in's control port value on the HMI."""
         # control_set <hw_id> <value>"""
-        self.send('s %d %f' % (hw_id, value), callback, 'boolean')
+        self.send('%s %d %f' % (CMD_CONTROL_SET, hw_id, value), callback, 'boolean')
 
     def control_rm(self, hw_ids, callback):
         """
@@ -429,16 +448,13 @@ class HMI(object):
 
         ids = "%s" % (" ".join(idsStr))
         ids = ids.strip()
-        self.send('rm %s' % (ids), callback, 'boolean')
+        self.send('%s %s' % (CMD_CONTROL_REMOVE, ids), callback, 'boolean')
 
     def ping(self, callback):
-        self.send('ping', callback, 'boolean')
+        self.send(CMD_PING, callback, 'boolean')
 
     def tuner(self, freq, note, cents, callback):
-        self.send('tu_v %f %s %f' % (freq, note, cents), callback)
-
-    def xrun(self, callback):
-        self.send('xrun', callback)
+        self.send('%s %f %s %f' % (CMD_TUNER, freq, note, cents), callback)
 
     def bank_config(self, hw_id, action, callback):
         """
@@ -450,7 +466,7 @@ class HMI(object):
             2: Pedalboard UP
             3: Pedalboard DOWN
         """
-        self.send('bank_config %d %d' % (hw_id, action), callback, 'boolean')
+        self.send('%s %d %d' % (CMD_DUO_BANK_CONFIG, hw_id, action), callback, 'boolean')
 
     def set_bpm(self, bpm):
         if round(bpm) != self.bpm:
@@ -461,7 +477,7 @@ class HMI(object):
     # new messages
 
     def clear(self, callback):
-        self.send("pb_cl", callback)
+        self.send(CMD_PEDALBOARD_CLEAR, callback)
 
     def set_profile_value(self, key, value, callback):
         # Do not send new bpm value to HMI if its int value is the same
@@ -470,10 +486,10 @@ class HMI(object):
         else:
             if key == Menu.TEMPO_BPM_ID:
                 value = self.bpm # set rounded value for bpm
-            self.send("mc %i %i" % (key, int(value)), callback, 'boolean')
+            self.send("%s %i %i" % (CMD_MENU_ITEM_CHANGE, key, int(value)), callback, 'boolean')
 
     def set_profile_values(self, playback_rolling, values, callback):
-        msg  = "mc"
+        msg  = CMD_MENU_ITEM_CHANGE
         msg += " %i %i" % (Menu.PLAY_STATUS_ID, int(playback_rolling))
         msg += " %i %i" % (Menu.STEREOLINK_INP_ID, int(values['inputStereoLink']))
         msg += " %i %i" % (Menu.STEREOLINK_OUTP_ID, int(values['outputStereoLink']))
@@ -486,7 +502,22 @@ class HMI(object):
 
     # pages is a list of int (1 if page available else 0)
     def set_available_pages(self, pages, callback):
-        msg = "pa"
+        msg = "pa" # FIXME
         for page in pages:
             msg += " %i" % page
         self.send(msg, callback)
+
+    # even newer messages. really need to clean this up later..
+
+    def restore(self, callback=None, datatype='int'):
+        self.send(CMD_RESTORE, callback, datatype)
+
+    # FIXME this message should be generic, most likely
+    def boot(self, bootdata, callback, datatype='int'):
+        self.send("boot {}".format(bootdata), callback, datatype)
+
+    def set_pedalboard_name(self, name, callback):
+        self.send('{} {}'.format(CMD_PEDALBOARD_NAME_SET, name[:31].upper()), callback)
+
+    def set_snapshot_name(self, name, callback):
+        self.send('{} {}'.format(CMD_SNAPSHOT_NAME_SET, name[:31].upper()), callback)

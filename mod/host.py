@@ -38,20 +38,64 @@ import os, json, socket, time, logging
 import shutil
 
 from mod import (
-  get_hardware_descriptor, get_nearest_valid_scalepoint_value,
-  read_file_contents, safe_json_load, symbolify,
-  TextFileFlusher
+    TextFileFlusher,
+    get_hardware_descriptor, get_nearest_valid_scalepoint_value, read_file_contents, safe_json_load, symbolify
 )
 from mod.addressings import (
-    Addressings,
     HMI_ADDRESSING_TYPE_ENUMERATION, HMI_ADDRESSING_TYPE_REVERSE_ENUM, HMI_ADDRESSING_TYPE_MOMENTARY_SW,
+    Addressings,
 )
-from mod.bank import list_banks, get_last_bank_and_pedalboard, save_last_bank_and_pedalboard
-from mod.hmi import Menu, HMI_ADDRESSING_FLAG_PAGINATED, HMI_ADDRESSING_FLAG_WRAP_AROUND, HMI_ADDRESSING_FLAG_PAGE_END
-from mod.profile import Profile, apply_mixer_values
+from mod.bank import (
+    list_banks, get_last_bank_and_pedalboard, save_last_bank_and_pedalboard,
+)
+from mod.hmi import (
+    HMI_ADDRESSING_FLAG_PAGINATED, HMI_ADDRESSING_FLAG_WRAP_AROUND, HMI_ADDRESSING_FLAG_PAGE_END,
+    Menu,
+)
+from mod.mod_protocol import (
+    CMD_BANKS,
+    CMD_PEDALBOARDS,
+    CMD_PEDALBOARD_LOAD,
+    CMD_PEDALBOARD_RESET,
+    CMD_PEDALBOARD_SAVE,
+    CMD_CONTROL_GET,
+    CMD_CONTROL_SET,
+    CMD_CONTROL_PAGE,
+    CMD_TUNER_ON,
+    CMD_TUNER_OFF,
+    CMD_TUNER_INPUT,
+    CMD_PROFILE_LOAD,
+    CMD_PROFILE_STORE,
+    CMD_DUO_FOOT_NAVIG,
+    CMD_DUO_CONTROL_NEXT,
+    CMD_DUOX_NEXT_PAGE,
+    CMD_DUOX_SNAPSHOT_LOAD,
+    CMD_DUOX_SNAPSHOT_SAVE,
+    BANK_FUNC_NONE,
+    BANK_FUNC_PEDALBOARD_NEXT,
+    BANK_FUNC_PEDALBOARD_PREV,
+    FLAG_PAGINATION_PAGE_UP,
+    FLAG_PAGINATION_WRAP_AROUND,
+    FLAG_PAGINATION_INITIAL_REQ,
+    MENU_ID_FOOTSWITCH_NAV,
+)
+from mod.profile import (
+    Profile,
+    apply_mixer_values,
+)
 from mod.protocol import (
     PLUGIN_LOG_TRACE, PLUGIN_LOG_NOTE, PLUGIN_LOG_WARNING, PLUGIN_LOG_ERROR,
-    Protocol, ProtocolError, process_resp
+    Protocol, ProtocolError, process_resp,
+)
+from mod.settings import (
+    APP, LOG, DEFAULT_PEDALBOARD, LV2_PEDALBOARDS_DIR,
+    PEDALBOARD_INSTANCE, PEDALBOARD_INSTANCE_ID, PEDALBOARD_URI, PEDALBOARD_TMP_DIR,
+    TUNER_URI, TUNER_INSTANCE_ID, TUNER_INPUT_PORT, TUNER_MONITOR_PORT, HMI_TIMEOUT,
+    UNTITLED_PEDALBOARD_NAME, DEFAULT_SNAPSHOT_NAME,
+    MIDI_BEAT_CLOCK_SENDER_URI, MIDI_BEAT_CLOCK_SENDER_INSTANCE_ID, MIDI_BEAT_CLOCK_SENDER_OUTPUT_PORT,
+)
+from mod.tuner import (
+    find_freqnotecents,
 )
 from modtools.utils import (
     charPtrToString,
@@ -71,21 +115,8 @@ from modtools.utils import (
 from modtools.tempo import (
     convert_seconds_to_port_value_equivalent,
     get_divider_options,
-    get_port_value
+    get_port_value,
 )
-from mod.settings import (
-    APP, LOG, DEFAULT_PEDALBOARD, LV2_PEDALBOARDS_DIR,
-    PEDALBOARD_INSTANCE, PEDALBOARD_INSTANCE_ID, PEDALBOARD_URI, PEDALBOARD_TMP_DIR,
-    TUNER_URI, TUNER_INSTANCE_ID, TUNER_INPUT_PORT, TUNER_MONITOR_PORT, HMI_TIMEOUT,
-    UNTITLED_PEDALBOARD_NAME, DEFAULT_SNAPSHOT_NAME,
-    MIDI_BEAT_CLOCK_SENDER_URI, MIDI_BEAT_CLOCK_SENDER_INSTANCE_ID, MIDI_BEAT_CLOCK_SENDER_OUTPUT_PORT
-)
-from mod.tuner import find_freqnotecents
-
-BANK_CONFIG_NOTHING         = 0
-BANK_CONFIG_TRUE_BYPASS     = 1
-BANK_CONFIG_PEDALBOARD_UP   = 2
-BANK_CONFIG_PEDALBOARD_DOWN = 3
 
 DISPLAY_BRIGHTNESS_0   = 0
 DISPLAY_BRIGHTNESS_25  = 1
@@ -109,10 +140,6 @@ QUICK_BYPASS_MODE_VALUES = (
 
 DEFAULT_DISPLAY_BRIGHTNESS = DISPLAY_BRIGHTNESS_50
 DEFAULT_QUICK_BYPASS_MODE  = QUICK_BYPASS_MODE_BOTH
-
-HMI_LIST_PAGE_UP     = 1 << 1
-HMI_LIST_WRAP_AROUND = 1 << 2
-HMI_LIST_INITIAL     = 1 << 3
 
 # Special URI for non-addressed controls
 kNullAddressURI = "null"
@@ -382,79 +409,77 @@ class Host(object):
         self.addressings._task_set_available_pages = self.addr_task_set_available_pages
 
         # Register HMI protocol callbacks (they are without arguments here)
-        Protocol.register_cmd_callback("hw_con", self.hmi_hardware_connected)
-        Protocol.register_cmd_callback("hw_dis", self.hmi_hardware_disconnected)
-        Protocol.register_cmd_callback("banks", self.hmi_list_banks)
-        Protocol.register_cmd_callback("pedalboards", self.hmi_list_bank_pedalboards)
-        Protocol.register_cmd_callback("pb", self.hmi_load_bank_pedalboard)
-        Protocol.register_cmd_callback("g", self.hmi_parameter_get)
-        Protocol.register_cmd_callback("s", self.hmi_parameter_set)
-        Protocol.register_cmd_callback("n", self.hmi_parameter_addressing_next)
-        Protocol.register_cmd_callback("ncp", self.hmi_next_control_page)
-        Protocol.register_cmd_callback("pbs", self.hmi_save_current_pedalboard)
-        Protocol.register_cmd_callback("pbr", self.hmi_reset_current_pedalboard)
-        Protocol.register_cmd_callback("tu", self.hmi_tuner)
-        Protocol.register_cmd_callback("tu_i", self.hmi_tuner_input)
-        Protocol.register_cmd_callback("fn", self.hmi_footswitch_navigation)
+        Protocol.register_cmd_callback('ALL', CMD_BANKS, self.hmi_list_banks)
+        Protocol.register_cmd_callback('ALL', CMD_PEDALBOARDS, self.hmi_list_bank_pedalboards)
 
-        Protocol.register_cmd_callback("g_bp", self.hmi_get_truebypass_value)
-        Protocol.register_cmd_callback("s_bp", self.hmi_set_truebypass_value)
-        Protocol.register_cmd_callback("g_qbp", self.hmi_get_quick_bypass_mode)
-        Protocol.register_cmd_callback("s_qbp", self.hmi_set_quick_bypass_mode)
+        Protocol.register_cmd_callback('ALL', CMD_PEDALBOARD_LOAD, self.hmi_load_bank_pedalboard)
+        Protocol.register_cmd_callback('ALL', CMD_PEDALBOARD_RESET, self.hmi_reset_current_pedalboard)
+        Protocol.register_cmd_callback('ALL', CMD_PEDALBOARD_SAVE, self.hmi_save_current_pedalboard)
 
-        Protocol.register_cmd_callback("g_bpm", self.hmi_get_tempo_bpm)
-        Protocol.register_cmd_callback("s_bpm", self.hmi_set_tempo_bpm)
-        Protocol.register_cmd_callback("g_bpb", self.hmi_get_tempo_bpb)
-        Protocol.register_cmd_callback("s_bpb", self.hmi_set_tempo_bpb)
+        Protocol.register_cmd_callback('ALL', CMD_CONTROL_GET, self.hmi_parameter_get)
+        Protocol.register_cmd_callback('ALL', CMD_CONTROL_SET, self.hmi_parameter_set)
+        Protocol.register_cmd_callback('ALL', CMD_CONTROL_PAGE, self.hmi_next_control_page)
 
-        Protocol.register_cmd_callback("g_ssc", self.hmi_get_snapshot_prgch)
-        Protocol.register_cmd_callback("s_ssc", self.hmi_set_snapshot_prgch)
-        Protocol.register_cmd_callback("g_pbc", self.hmi_get_pedalboard_prgch)
-        Protocol.register_cmd_callback("s_pbc", self.hmi_set_pedalboard_prgch)
+        Protocol.register_cmd_callback('ALL', CMD_TUNER_ON, self.hmi_tuner_on)
+        Protocol.register_cmd_callback('ALL', CMD_TUNER_OFF, self.hmi_tuner_off)
+        Protocol.register_cmd_callback('ALL', CMD_TUNER_INPUT, self.hmi_tuner_input)
 
-        Protocol.register_cmd_callback("g_cls", self.hmi_get_clk_src)
-        Protocol.register_cmd_callback("s_cls", self.hmi_set_clk_src)
+        #Protocol.register_cmd_callback('ALL', "g_bp", self.hmi_get_truebypass_value)
+        #Protocol.register_cmd_callback('ALL', "s_bp", self.hmi_set_truebypass_value)
+        #Protocol.register_cmd_callback('ALL', "g_qbp", self.hmi_get_quick_bypass_mode)
+        #Protocol.register_cmd_callback('ALL', "s_qbp", self.hmi_set_quick_bypass_mode)
 
-        Protocol.register_cmd_callback("g_mclk", self.hmi_get_send_midi_clk)
-        Protocol.register_cmd_callback("s_mclk", self.hmi_set_send_midi_clk)
+        #Protocol.register_cmd_callback('ALL', "g_bpm", self.hmi_get_tempo_bpm)
+        #Protocol.register_cmd_callback('ALL', "s_bpm", self.hmi_set_tempo_bpm)
+        #Protocol.register_cmd_callback('ALL', "g_bpb", self.hmi_get_tempo_bpb)
+        #Protocol.register_cmd_callback('ALL', "s_bpb", self.hmi_set_tempo_bpb)
 
-        Protocol.register_cmd_callback("g_p", self.hmi_get_current_profile)
-        Protocol.register_cmd_callback("r_p", self.hmi_retrieve_profile)
-        Protocol.register_cmd_callback("s_p", self.hmi_store_profile)
+        #Protocol.register_cmd_callback('ALL', "g_ssc", self.hmi_get_snapshot_prgch)
+        #Protocol.register_cmd_callback('ALL', "s_ssc", self.hmi_set_snapshot_prgch)
+        #Protocol.register_cmd_callback('ALL', "g_pbc", self.hmi_get_pedalboard_prgch)
+        #Protocol.register_cmd_callback('ALL', "s_pbc", self.hmi_set_pedalboard_prgch)
 
-        Protocol.register_cmd_callback("g_ex", self.hmi_get_exp_cv)
-        Protocol.register_cmd_callback("s_ex", self.hmi_set_exp_cv)
-        Protocol.register_cmd_callback("g_hp", self.hmi_get_hp_cv)
-        Protocol.register_cmd_callback("s_hp", self.hmi_set_hp_cv)
+        #Protocol.register_cmd_callback('ALL', "g_cls", self.hmi_get_clk_src)
+        #Protocol.register_cmd_callback('ALL', "s_cls", self.hmi_set_clk_src)
 
-        Protocol.register_cmd_callback("g_exp_m", self.hmi_get_exp_mode)
-        Protocol.register_cmd_callback("s_exp_m", self.hmi_set_exp_mode)
+        #Protocol.register_cmd_callback('ALL', "g_mclk", self.hmi_get_send_midi_clk)
+        #Protocol.register_cmd_callback('ALL', "s_mclk", self.hmi_set_send_midi_clk)
 
-        Protocol.register_cmd_callback("g_il", self.hmi_get_in_chan_link)
-        Protocol.register_cmd_callback("s_il", self.hmi_set_in_chan_link)
-        Protocol.register_cmd_callback("g_ol", self.hmi_get_out_chan_link)
-        Protocol.register_cmd_callback("s_ol", self.hmi_set_out_chan_link)
+        #Protocol.register_cmd_callback('ALL', "g_p", self.hmi_get_current_profile)
+        Protocol.register_cmd_callback('ALL', CMD_PROFILE_LOAD, self.hmi_retrieve_profile)
+        Protocol.register_cmd_callback('ALL', CMD_PROFILE_STORE, self.hmi_store_profile)
 
-        Protocol.register_cmd_callback("g_br", self.hmi_get_display_brightness)
-        Protocol.register_cmd_callback("s_br", self.hmi_set_display_brightness)
+        #Protocol.register_cmd_callback('ALL', "g_ex", self.hmi_get_exp_cv)
+        #Protocol.register_cmd_callback('ALL', "s_ex", self.hmi_set_exp_cv)
+        #Protocol.register_cmd_callback('ALL', "g_hp", self.hmi_get_hp_cv)
+        #Protocol.register_cmd_callback('ALL', "s_hp", self.hmi_set_hp_cv)
 
-        Protocol.register_cmd_callback("g_mv_c", self.hmi_get_master_volume_channel_mode)
-        Protocol.register_cmd_callback("s_mv_c", self.hmi_set_master_volume_channel_mode)
+        #Protocol.register_cmd_callback('ALL', "g_exp_m", self.hmi_get_exp_mode)
+        #Protocol.register_cmd_callback('ALL', "s_exp_m", self.hmi_set_exp_mode)
 
-        Protocol.register_cmd_callback("g_ps", self.hmi_get_play_status)
-        Protocol.register_cmd_callback("s_ps", self.hmi_set_play_status)
+        #Protocol.register_cmd_callback('ALL', "g_il", self.hmi_get_in_chan_link)
+        #Protocol.register_cmd_callback('ALL', "s_il", self.hmi_set_in_chan_link)
+        #Protocol.register_cmd_callback('ALL', "g_ol", self.hmi_get_out_chan_link)
+        #Protocol.register_cmd_callback('ALL', "s_ol", self.hmi_set_out_chan_link)
 
-        Protocol.register_cmd_callback("g_tum", self.hmi_get_tuner_mute)
-        Protocol.register_cmd_callback("s_tum", self.hmi_set_tuner_mute)
+        #Protocol.register_cmd_callback('ALL', "g_br", self.hmi_get_display_brightness)
+        #Protocol.register_cmd_callback('ALL', "s_br", self.hmi_set_display_brightness)
 
-        Protocol.register_cmd_callback("sl", self.hmi_snapshot_load)
-        Protocol.register_cmd_callback("ss", self.hmi_snapshot_save)
-        Protocol.register_cmd_callback("lp", self.hmi_page_load)
+        #Protocol.register_cmd_callback('ALL', "g_mv_c", self.hmi_get_master_volume_channel_mode)
+        #Protocol.register_cmd_callback('ALL', "s_mv_c", self.hmi_set_master_volume_channel_mode)
 
-        Protocol.register_cmd_callback("am", self.hmi_amixer)
+        #Protocol.register_cmd_callback('ALL', "g_ps", self.hmi_get_play_status)
+        #Protocol.register_cmd_callback('ALL', "s_ps", self.hmi_set_play_status)
 
-        # not used
-        #Protocol.register_cmd_callback("get_pb_name", self.hmi_get_pb_name)
+        #Protocol.register_cmd_callback('ALL', "g_tum", self.hmi_get_tuner_mute)
+        #Protocol.register_cmd_callback('ALL', "s_tum", self.hmi_set_tuner_mute)
+
+        Protocol.register_cmd_callback('DUO', CMD_DUO_FOOT_NAVIG, self.hmi_footswitch_navigation)
+        Protocol.register_cmd_callback('DUO', CMD_DUO_CONTROL_NEXT, self.hmi_parameter_addressing_next)
+
+        Protocol.register_cmd_callback('DUOX', CMD_DUOX_NEXT_PAGE, self.hmi_page_load)
+        Protocol.register_cmd_callback('DUOX', CMD_DUOX_SNAPSHOT_LOAD, self.hmi_snapshot_load)
+        Protocol.register_cmd_callback('DUOX', CMD_DUOX_SNAPSHOT_SAVE, self.hmi_snapshot_save)
 
         if not APP:
             IOLoop.instance().add_callback(self.init_host)
@@ -1039,7 +1064,7 @@ class Host(object):
         display_brightness = self.prefs.get("display-brightness", DEFAULT_DISPLAY_BRIGHTNESS, int, DISPLAY_BRIGHTNESS_VALUES)
         quick_bypass_mode = self.prefs.get("quick-bypass-mode", DEFAULT_QUICK_BYPASS_MODE, int, QUICK_BYPASS_MODE_VALUES)
 
-        bootdata = "boot {} {} {} {}".format(display_brightness,
+        bootdata = "{} {} {} {}".format(display_brightness,
                                              quick_bypass_mode,
                                              int(self.current_tuner_mute),
                                              self.profile.get_index())
@@ -1054,27 +1079,28 @@ class Host(object):
             bootdata += " {} {} {}".format(pages[0], pages[1], pages[2])
 
         # we will dispatch all messages in reverse order, terminating in "boot"
-        msgs = [bootdata]
+        msgs = [(self.hmi.boot, [bootdata])]
 
         if self.descriptor.get('hmi_set_pb_name', False):
-            pbname = (self.pedalboard_name or UNTITLED_PEDALBOARD_NAME)[:31].upper()
-            msgs.append("s_pbn {0}".format(pbname))
+            pbname = self.pedalboard_name or UNTITLED_PEDALBOARD_NAME
+            msgs.append((self.hmi.set_pedalboard_name, [pbname]))
 
         if self.descriptor.get('hmi_set_ss_name', False):
-            ssname = (self.snapshot_name() or DEFAULT_SNAPSHOT_NAME)[:31].upper()
-            msgs.append("s_ssn {0}".format(ssname))
+            ssname = self.snapshot_name() or DEFAULT_SNAPSHOT_NAME
+            msgs.append((self.hmi.set_snapshot_name, [ssname]))
 
         if self.isBankFootswitchNavigationOn():
-            msgs.append("mc {} 1".format(Menu.FOOTSWITCH_NAVEG_ID))
+            msgs.append((self.hmi.set_profile_value, [MENU_ID_FOOTSWITCH_NAV, 1])) # FIXME profile as name is wrong
 
         def send_boot_msg(_):
             try:
-                msg = msgs.pop(len(msgs)-1)
+                func, args = msgs.pop(len(msgs)-1)
             except IndexError:
                 callback(True)
                 return
             else:
-                self.hmi.send(msg, send_boot_msg)
+                args.append(send_boot_msg)
+                func(*args)
 
         send_boot_msg(None)
 
@@ -1118,11 +1144,11 @@ class Host(object):
     def setNavigateWithFootswitches(self, enabled, callback):
         def foot2_callback(_):
             acthw  = self.addressings.hmi_uri2hw_map["/hmi/footswitch2"]
-            cfgact = BANK_CONFIG_PEDALBOARD_UP if enabled else BANK_CONFIG_NOTHING
+            cfgact = BANK_FUNC_PEDALBOARD_NEXT if enabled else BANK_FUNC_NONE
             self.hmi.bank_config(acthw, cfgact, callback)
 
         acthw  = self.addressings.hmi_uri2hw_map["/hmi/footswitch1"]
-        cfgact = BANK_CONFIG_PEDALBOARD_DOWN if enabled else BANK_CONFIG_NOTHING
+        cfgact = BANK_FUNC_PEDALBOARD_PREV if enabled else BANK_FUNC_NONE
         self.hmi.bank_config(acthw, cfgact, foot2_callback)
 
     # -----------------------------------------------------------------------------------------------------------------
@@ -2628,12 +2654,12 @@ class Host(object):
                     logging.exception(e)
 
             if self.descriptor.get('hmi_set_ss_name', False):
-                finalname = (self.snapshot_name() or DEFAULT_SNAPSHOT_NAME)[:31].upper()
+                finalname = (self.snapshot_name() or DEFAULT_SNAPSHOT_NAME)
                 if from_hmi:
-                    self.hmi.send("s_ssn {0}".format(finalname), None)
+                    self.hmi.set_snapshot_name(finalname, None)
                 else:
                     try:
-                        yield gen.Task(self.hmi.send, "s_ssn {0}".format(finalname))
+                        yield gen.Task(self.hmi.set_snapshot_name, finalname)
                     except Exception as e:
                         logging.exception(e)
 
@@ -4353,14 +4379,6 @@ _:b%i
     # -----------------------------------------------------------------------------------------------------------------
     # HMI callbacks, called by HMI via serial
 
-    def hmi_hardware_connected(self, hardware_type, hardware_id, callback):
-        logging.debug("hmi hardware connected")
-        callback(True)
-
-    def hmi_hardware_disconnected(self, hardware_type, hardware_id, callback):
-        logging.debug("hmi hardware disconnected")
-        callback(True)
-
     def hmi_list_banks(self, dir_up, bank_id, callback):
         logging.debug("hmi list banks %d %d", dir_up, bank_id)
 
@@ -4415,9 +4433,9 @@ _:b%i
             callback(False)
             return
 
-        dir_up  = props & HMI_LIST_PAGE_UP
-        wrap    = props & HMI_LIST_WRAP_AROUND
-        initial = props & HMI_LIST_INITIAL
+        dir_up  = props & FLAG_PAGINATION_PAGE_UP
+        wrap    = props & FLAG_PAGINATION_WRAP_AROUND
+        initial = props & FLAG_PAGINATION_INITIAL_REQ
 
         if not initial:
             pedalboard_id += 1 if dir_up else -1
@@ -4512,7 +4530,7 @@ _:b%i
 
         def load_finish_with_ssname_callback(_):
             name = self.snapshot_name() or DEFAULT_SNAPSHOT_NAME
-            self.hmi.send("s_ssn {0}".format(name[:31].upper()), load_finish_callback)
+            self.hmi.set_snapshot_name(name, load_finish_callback)
 
         def pb_host_loaded_callback(_):
             print("NOTE: Loading of %i:%i finished" % (bank_id, pedalboard_id))
@@ -4534,7 +4552,7 @@ _:b%i
                         cb = load_finish_with_ssname_callback
                     else:
                         cb = load_finish_callback
-                    self.hmi.send("s_pbn {0}".format(self.pedalboard_name[:31].upper()), cb)
+                    self.hmi.set_pedalboard_name(self.pedalboard_name, cb)
                 else:
                     load_finish_callback(True)
 
@@ -4813,8 +4831,8 @@ _:b%i
             callback(False)
             return
 
-        dir_up = props & HMI_LIST_PAGE_UP
-        wrap   = props & HMI_LIST_WRAP_AROUND
+        dir_up = props & FLAG_PAGINATION_PAGE_UP
+        wrap   = props & FLAG_PAGINATION_WRAP_AROUND
 
         options = data['options']
         numOpts = len(options)
@@ -4989,12 +5007,6 @@ _:b%i
         self.addressings.load_current(used_actuators, (None, None), False, True, abort_catcher)
 
         callback(True)
-
-    def hmi_tuner(self, status, callback):
-        if status == "on":
-            self.hmi_tuner_on(callback)
-        else:
-            self.hmi_tuner_off(callback)
 
     def hmi_tuner_on(self, callback):
         logging.debug("hmi tuner on")
@@ -5450,21 +5462,14 @@ _:b%i
             callback(False)
             logging.exception(e)
 
-    def hmi_amixer(self, arg1, arg2, arg3, arg4, callback):
-        if not os.path.exists("/usr/bin/mod-amixer"):
-            callback(False)
-            return
-        os.system("/usr/bin/mod-amixer {} {} {} {}".format(arg1, arg2, arg3, arg4))
-        callback(True)
-
     @gen.coroutine
     def hmi_set_pb_name(self, name):
         if self.hmi.initialized and self.descriptor.get('hmi_set_pb_name', False):
-            yield gen.Task(self.hmi.send, "s_pbn {0}".format(name[:31].upper()))
+            yield gen.Task(self.hmi.set_pedalboard_name, name)
 
     def hmi_clear_ss_name(self, callback):
         if self.hmi.initialized and self.descriptor.get('hmi_set_ss_name', False):
-            self.hmi.send("s_ssn {0}".format(DEFAULT_SNAPSHOT_NAME[:31].upper()), callback)
+            self.hmi.set_snapshot_name(DEFAULT_SNAPSHOT_NAME, callback)
         else:
             callback(True)
 
@@ -5473,7 +5478,7 @@ _:b%i
             self.current_pedalboard_snapshot_id == idx and
             self.descriptor.get('hmi_set_ss_name', False)):
             name = self.snapshot_name() or DEFAULT_SNAPSHOT_NAME
-            self.hmi.send("s_ssn {0}".format(name[:31].upper()), callback)
+            self.hmi.set_snapshot_name(name, callback)
         else:
             callback(True)
 
