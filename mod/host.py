@@ -45,9 +45,6 @@ from mod.addressings import Addressings
 from mod.bank import (
     list_banks, get_last_bank_and_pedalboard, save_last_bank_and_pedalboard,
 )
-from mod.hmi import (
-    Menu,
-)
 from mod.mod_protocol import (
     CMD_BANKS,
     CMD_PEDALBOARDS,
@@ -78,6 +75,12 @@ from mod.mod_protocol import (
     FLAG_PAGINATION_WRAP_AROUND,
     FLAG_PAGINATION_INITIAL_REQ,
     MENU_ID_FOOTSWITCH_NAV,
+    MENU_ID_BYPASS1,
+    MENU_ID_BYPASS2,
+    MENU_ID_PLAY_STATUS,
+    MENU_ID_TEMPO,
+    MENU_ID_BEATS_PER_BAR,
+    MENU_ID_MIDI_CLK_SOURCE,
 )
 from mod.profile import (
     Profile,
@@ -584,9 +587,9 @@ class Host(object):
 
         if self.hmi.initialized:
             if self.last_true_bypass_left != left:
-                self.hmi.set_profile_value(Menu.BYPASS_1_ID, int(left), None)
+                self.hmi.set_profile_value(MENU_ID_BYPASS1, int(left), None)
             if self.last_true_bypass_right != right:
-                self.hmi.set_profile_value(Menu.BYPASS_2_ID, int(right), None)
+                self.hmi.set_profile_value(MENU_ID_BYPASS2, int(right), None)
 
         self.last_true_bypass_left = left
         self.last_true_bypass_right = right
@@ -1464,19 +1467,19 @@ class Host(object):
             if self.hmi.initialized:
                 if rolling_changed:
                     try:
-                        yield gen.Task(self.hmi.set_profile_value, Menu.PLAY_STATUS_ID, int(rolling))
+                        yield gen.Task(self.hmi.set_profile_value, MENU_ID_PLAY_STATUS, int(rolling))
                     except Exception as e:
                         logging.exception(e)
 
                 if bpb_changed:
                     try:
-                        yield gen.Task(self.hmi.set_profile_value, Menu.TEMPO_BPB_ID, bpb)
+                        yield gen.Task(self.hmi.set_profile_value, MENU_ID_BEATS_PER_BAR, bpb)
                     except Exception as e:
                         logging.exception(e)
 
                 if bpm_changed:
                     try:
-                        yield gen.Task(self.hmi.set_profile_value, Menu.TEMPO_BPM_ID, bpm)
+                        yield gen.Task(self.hmi.set_profile_value, MENU_ID_TEMPO, bpm)
                     except Exception as e:
                         logging.exception(e)
 
@@ -3851,7 +3854,7 @@ _:b%i
                                                              self.transport_bpm,
                                                              self.transport_sync))
             if sendHMI and self.hmi.initialized:
-                self.hmi.set_profile_value(Menu.SYS_CLK_SOURCE_ID, self.profile.get_transport_source(), callback)
+                self.hmi.set_profile_value(MENU_ID_MIDI_CLK_SOURCE, self.profile.get_transport_source(), callback)
             else:
                 callback(True)
 
@@ -3891,7 +3894,7 @@ _:b%i
 
         if self.hmi.initialized:
             try:
-                yield gen.Task(self.hmi.set_profile_value, Menu.SYS_CLK_SOURCE_ID, Profile.TRANSPORT_SOURCE_ABLETON_LINK)
+                yield gen.Task(self.hmi.set_profile_value, MENU_ID_MIDI_CLK_SOURCE, Profile.TRANSPORT_SOURCE_ABLETON_LINK)
             except Exception as e:
                 logging.exception(e)
 
@@ -3907,7 +3910,7 @@ _:b%i
 
         if self.hmi.initialized:
             try:
-                yield gen.Task(self.hmi.set_profile_value, Menu.SYS_CLK_SOURCE_ID, Profile.TRANSPORT_SOURCE_MIDI_SLAVE)
+                yield gen.Task(self.hmi.set_profile_value, MENU_ID_MIDI_CLK_SOURCE, Profile.TRANSPORT_SOURCE_MIDI_SLAVE)
             except Exception as e:
                 logging.exception(e)
 
@@ -3921,7 +3924,7 @@ _:b%i
 
         if self.hmi.initialized:
             try:
-                yield gen.Task(self.hmi.set_profile_value, Menu.SYS_CLK_SOURCE_ID, Profile.TRANSPORT_SOURCE_INTERNAL)
+                yield gen.Task(self.hmi.set_profile_value, MENU_ID_MIDI_CLK_SOURCE, Profile.TRANSPORT_SOURCE_INTERNAL)
             except Exception as e:
                 logging.exception(e)
 
@@ -3952,7 +3955,7 @@ _:b%i
 
         if sendHMI and self.hmi.initialized:
             try:
-                yield gen.Task(self.hmi.set_profile_value, Menu.TEMPO_BPB_ID, bpb)
+                yield gen.Task(self.hmi.set_profile_value, MENU_ID_BEATS_PER_BAR, bpb)
             except Exception as e:
                 logging.exception(e)
 
@@ -4005,7 +4008,7 @@ _:b%i
 
         if sendHMI and self.hmi.initialized:
             try:
-                yield gen.Task(self.hmi.set_profile_value, Menu.TEMPO_BPM_ID, bpm)
+                yield gen.Task(self.hmi.set_profile_value, MENU_ID_TEMPO, bpm)
             except Exception as e:
                 logging.exception(e)
 
@@ -4036,7 +4039,7 @@ _:b%i
 
         if sendHMI and self.hmi.initialized:
             try:
-                yield gen.Task(self.hmi.set_profile_value, Menu.PLAY_STATUS_ID, int(rolling))
+                yield gen.Task(self.hmi.set_profile_value, MENU_ID_PLAY_STATUS, int(rolling))
             except Exception as e:
                 logging.exception(e)
 
@@ -5696,8 +5699,8 @@ _:b%i
                 logging.exception(e)
 
             try:
-                yield gen.Task(self.hmi.set_profile_value, Menu.TEMPO_BPB_ID, self.transport_bpb)
-                yield gen.Task(self.hmi.set_profile_value, Menu.TEMPO_BPM_ID, self.transport_bpm)
+                yield gen.Task(self.hmi.set_profile_value, MENU_ID_BEATS_PER_BAR, self.transport_bpb)
+                yield gen.Task(self.hmi.set_profile_value, MENU_ID_TEMPO, self.transport_bpm)
             except Exception as e:
                 logging.exception(e)
 

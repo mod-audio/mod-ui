@@ -43,27 +43,20 @@ from mod.mod_protocol import (
     FLAG_PAGINATION_PAGE_UP,
     FLAG_PAGINATION_WRAP_AROUND,
     FLAG_PAGINATION_INITIAL_REQ,
+    MENU_ID_TEMPO,
+    MENU_ID_PLAY_STATUS,
+    MENU_ID_SL_IN,
+    MENU_ID_SL_OUT,
+    MENU_ID_MASTER_VOL_PORT,
+    MENU_ID_MIDI_CLK_SOURCE,
+    MENU_ID_MIDI_CLK_SEND,
+    MENU_ID_SNAPSHOT_PRGCHGE,
+    MENU_ID_PB_PRGCHNGE,
 )
 
 import logging
 import serial
 import time
-
-class Menu(object):
-    # implemented
-    STEREOLINK_INP_ID     = 13
-    STEREOLINK_OUTP_ID    = 23
-    MASTER_VOL_PORT_ID    = 24
-    FOOTSWITCH_NAVEG_ID   = 150
-    BYPASS_1_ID           = 171
-    BYPASS_2_ID           = 172
-    PLAY_STATUS_ID        = 180
-    TEMPO_BPM_ID          = 181
-    TEMPO_BPB_ID          = 182
-    SYS_CLK_SOURCE_ID     = 202
-    MIDI_CLK_SEND_ID      = 203
-    SNAPSHOT_PRGCHGE_ID   = 204
-    PB_PRGCHNGE_ID        = 205
 
 class SerialIOStream(BaseIOStream):
     def __init__(self, sp):
@@ -481,23 +474,23 @@ class HMI(object):
 
     def set_profile_value(self, key, value, callback):
         # Do not send new bpm value to HMI if its int value is the same
-        if key == Menu.TEMPO_BPM_ID and not self.set_bpm(value):
+        if key == MENU_ID_TEMPO and not self.set_bpm(value):
             callback(True)
         else:
-            if key == Menu.TEMPO_BPM_ID:
+            if key == MENU_ID_TEMPO:
                 value = self.bpm # set rounded value for bpm
             self.send("%s %i %i" % (CMD_MENU_ITEM_CHANGE, key, int(value)), callback, 'boolean')
 
     def set_profile_values(self, playback_rolling, values, callback):
         msg  = CMD_MENU_ITEM_CHANGE
-        msg += " %i %i" % (Menu.PLAY_STATUS_ID, int(playback_rolling))
-        msg += " %i %i" % (Menu.STEREOLINK_INP_ID, int(values['inputStereoLink']))
-        msg += " %i %i" % (Menu.STEREOLINK_OUTP_ID, int(values['outputStereoLink']))
-        msg += " %i %i" % (Menu.MASTER_VOL_PORT_ID, int(values['masterVolumeChannelMode']))
-        msg += " %i %i" % (Menu.SYS_CLK_SOURCE_ID, values['transportSource'])
-        msg += " %i %i" % (Menu.MIDI_CLK_SEND_ID, int(values['midiClockSend']))
-        msg += " %i %i" % (Menu.SNAPSHOT_PRGCHGE_ID, values['midiChannelForSnapshotsNavigation'])
-        msg += " %i %i" % (Menu.PB_PRGCHNGE_ID, values['midiChannelForPedalboardsNavigation'])
+        msg += " %i %i" % (MENU_ID_PLAY_STATUS, int(playback_rolling))
+        msg += " %i %i" % (MENU_ID_SL_IN, int(values['inputStereoLink']))
+        msg += " %i %i" % (MENU_ID_SL_OUT, int(values['outputStereoLink']))
+        msg += " %i %i" % (MENU_ID_MASTER_VOL_PORT, int(values['masterVolumeChannelMode']))
+        msg += " %i %i" % (MENU_ID_MIDI_CLK_SOURCE, values['transportSource'])
+        msg += " %i %i" % (MENU_ID_MIDI_CLK_SEND, int(values['midiClockSend']))
+        msg += " %i %i" % (MENU_ID_SNAPSHOT_PRGCHGE, values['midiChannelForSnapshotsNavigation'])
+        msg += " %i %i" % (MENU_ID_PB_PRGCHNGE, values['midiChannelForPedalboardsNavigation'])
         self.send(msg, callback)
 
     # pages is a list of int (1 if page available else 0)
