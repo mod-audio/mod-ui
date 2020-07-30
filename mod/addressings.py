@@ -11,22 +11,19 @@ from mod.control_chain import ControlChainDeviceListener
 from mod.settings import PEDALBOARD_INSTANCE_ID
 from modtools.utils import get_plugin_control_inputs_and_monitored_outputs
 from modtools.tempo import get_divider_options
-
-HMI_ADDRESSING_TYPE_LINEAR       = 0x00
-HMI_ADDRESSING_TYPE_BYPASS       = 0x01
-HMI_ADDRESSING_TYPE_TAP_TEMPO    = 0x02
-HMI_ADDRESSING_TYPE_ENUMERATION  = 0x04 | 0x08 # implies scalepoints
-HMI_ADDRESSING_TYPE_SCALE_POINTS = 0x08
-HMI_ADDRESSING_TYPE_TRIGGER      = 0x10
-HMI_ADDRESSING_TYPE_TOGGLED      = 0x20
-HMI_ADDRESSING_TYPE_LOGARITHMIC  = 0x40
-HMI_ADDRESSING_TYPE_INTEGER      = 0x80
-HMI_ADDRESSING_TYPE_REVERSE_ENUM = 0x100
-HMI_ADDRESSING_TYPE_MOMENTARY_SW = 0x200
-
-HMI_ACTUATOR_TYPE_FOOTSWITCH = 1
-HMI_ACTUATOR_TYPE_KNOB       = 2
-HMI_ACTUATOR_TYPE_POTENTIOMETER = 3
+from mod.mod_protocol import (
+    FLAG_CONTROL_LINEAR,
+    FLAG_CONTROL_BYPASS,
+    FLAG_CONTROL_TAP_TEMPO,
+    FLAG_CONTROL_ENUMERATION,
+    FLAG_CONTROL_SCALE_POINTS,
+    FLAG_CONTROL_TRIGGER,
+    FLAG_CONTROL_TOGGLED,
+    FLAG_CONTROL_LOGARITHMIC,
+    FLAG_CONTROL_INTEGER,
+    FLAG_CONTROL_REVERSE_ENUM,
+    FLAG_CONTROL_MOMENTARY,
+)
 
 # use pitchbend as midi cc, with an invalid MIDI controller number
 MIDI_PITCHBEND_AS_CC = 131
@@ -691,37 +688,37 @@ class Addressings(object):
         if actuator_type == self.ADDRESSING_TYPE_HMI:
 
             if portsymbol == ":bypass":
-                hmitype = HMI_ADDRESSING_TYPE_BYPASS
+                hmitype = FLAG_CONTROL_BYPASS
                 if momentary:
-                    hmitype |= HMI_ADDRESSING_TYPE_MOMENTARY_SW
+                    hmitype |= FLAG_CONTROL_MOMENTARY
 
             elif portsymbol == ":presets":
-                hmitype = HMI_ADDRESSING_TYPE_ENUMERATION|HMI_ADDRESSING_TYPE_INTEGER
+                hmitype = FLAG_CONTROL_ENUMERATION|FLAG_CONTROL_SCALE_POINTS|FLAG_CONTROL_INTEGER
 
             else:
                 if "toggled" in pprops:
-                    hmitype = HMI_ADDRESSING_TYPE_TOGGLED
+                    hmitype = FLAG_CONTROL_TOGGLED
                     if momentary:
-                        hmitype |= HMI_ADDRESSING_TYPE_MOMENTARY_SW
+                        hmitype |= FLAG_CONTROL_MOMENTARY
                 elif "integer" in pprops:
-                    hmitype = HMI_ADDRESSING_TYPE_INTEGER
+                    hmitype = FLAG_CONTROL_INTEGER
                 else:
-                    hmitype = HMI_ADDRESSING_TYPE_LINEAR
+                    hmitype = FLAG_CONTROL_LINEAR
 
                 if "logarithmic" in pprops:
-                    hmitype |= HMI_ADDRESSING_TYPE_LOGARITHMIC
+                    hmitype |= FLAG_CONTROL_LOGARITHMIC
                 if "trigger" in pprops:
-                    hmitype |= HMI_ADDRESSING_TYPE_TRIGGER
+                    hmitype |= FLAG_CONTROL_TRIGGER
 
                 if portsymbol == ":bpm" and "tapTempo" in pprops and actuator_uri.startswith("/hmi/footswitch"):
-                    hmitype |= HMI_ADDRESSING_TYPE_TAP_TEMPO
+                    hmitype |= FLAG_CONTROL_TAP_TEMPO
 
                 if tempo or "enumeration" in pprops and len(port_info["scalePoints"]) > 0:
-                    hmitype |= HMI_ADDRESSING_TYPE_ENUMERATION
+                    hmitype |= FLAG_CONTROL_ENUMERATION|FLAG_CONTROL_SCALE_POINTS
                     if coloured:
                         # FIXME? not defined yet if we reuse the flag
                         print("sending with coloured flag")
-                        hmitype |= HMI_ADDRESSING_TYPE_MOMENTARY_SW
+                        hmitype |= FLAG_CONTROL_MOMENTARY
                     else:
                         print("sending without coloured flag")
 
@@ -730,11 +727,11 @@ class Addressings(object):
                 group_actuator = next((act for act in self.hw_actuators if act['uri'] == group), None)
                 if group_actuator is not None:
                     if group_actuator['group'].index(actuator_uri) == 0:
-                        hmitype |= HMI_ADDRESSING_TYPE_REVERSE_ENUM
+                        hmitype |= FLAG_CONTROL_REVERSE_ENUM
                     else:
-                        hmitype &= ~HMI_ADDRESSING_TYPE_REVERSE_ENUM
+                        hmitype &= ~FLAG_CONTROL_REVERSE_ENUM
 
-            if hmitype & HMI_ADDRESSING_TYPE_SCALE_POINTS:
+            if hmitype & FLAG_CONTROL_SCALE_POINTS:
                 if not tempo and value not in [o[0] for o in options]:
                     print("WARNING: current value '%f' for '%s' is not a valid scalepoint" % (value, portsymbol))
                     addressing_data['value'] = get_nearest_valid_scalepoint_value(value, options)[1]
@@ -920,9 +917,9 @@ class Addressings(object):
                     group_addressing_data = addressing_data.copy()
                     group_addressing_data['actuator_uri'] = group_actuator_uri
                     if i == 0: # first actuator has reverse enum hmi type
-                        group_addressing_data['hmitype'] |= HMI_ADDRESSING_TYPE_REVERSE_ENUM
+                        group_addressing_data['hmitype'] |= FLAG_CONTROL_REVERSE_ENUM
                     else:
-                        group_addressing_data['hmitype'] &= ~HMI_ADDRESSING_TYPE_REVERSE_ENUM
+                        group_addressing_data['hmitype'] &= ~FLAG_CONTROL_REVERSE_ENUM
                     was_active = self.remove_hmi(group_addressing_data, group_actuator_uri)
                 return was_active
 
@@ -1014,7 +1011,7 @@ class Addressings(object):
                                                                                        addressing['port'])
 
         # NOTE we never call `control_set` for HMI lists, as it breaks pagination
-        if updateValue and not (addressing_data['hmitype'] & HMI_ADDRESSING_TYPE_ENUMERATION):
+        if updateValue and not (addressing_data['hmitype'] & FLAG_CONTROL_ENUMERATION):
             self._task_set_value(self.ADDRESSING_TYPE_HMI, actuator_hmi, addressing_data, callback, send_hmi=send_hmi)
         else:
             self._task_addressing(self.ADDRESSING_TYPE_HMI, actuator_hmi, addressing_data, callback, send_hmi=send_hmi)
