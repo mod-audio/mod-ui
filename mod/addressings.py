@@ -66,7 +66,7 @@ class Addressings(object):
         self._task_act_added   = None
         self._task_act_removed = None
         self._task_set_available_pages = None
-        self.addr_task_get_plugin_cv_port_op_mode = None
+        self._task_get_plugin_cv_port_op_mode = None
 
         self.cchain = ControlChainDeviceListener(self.cc_hardware_added,
                                                  self.cc_hardware_removed,

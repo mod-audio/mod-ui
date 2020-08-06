@@ -379,10 +379,6 @@ class Session(object):
 
     # host commands
 
-    def bypass(self, instance, value, callback):
-        value = int(value) > 0
-        self.host.enable(instance, value, callback)
-
     def format_port(self, port):
         if not 'system' in port and not 'effect' in port:
             port = "effect_%s" % port
