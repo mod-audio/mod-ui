@@ -28,9 +28,6 @@ DEV_API = bool(int(os.environ.get('MOD_DEV_API', False)))
 APP = bool(int(os.environ.get('MOD_APP', False)))
 LOG = bool(int(os.environ.get('MOD_LOG', False)))
 
-# Enable for testing carla instead of mod-host
-HOST_CARLA = bool(int(os.environ.get('MOD_HOST_CARLA', False)))
-
 API_KEY = os.environ.pop('MOD_API_KEY', None)
 DEVICE_KEY = os.environ.pop('MOD_DEVICE_KEY', None)
 DEVICE_TAG = os.environ.pop('MOD_DEVICE_TAG', None)
