@@ -236,10 +236,6 @@ class Host(object):
     HMI_SNAPSHOTS_RIGHT  = 0 - (HMI_SNAPSHOTS_OFFSET + 1)
 
     def __init__(self, hmi, prefs, msg_callback):
-        if False:
-            from mod.hmi import HMI
-            hmi = HMI()
-
         self.hmi = hmi
         self.prefs = prefs
         self.msg_callback = msg_callback
@@ -827,7 +823,7 @@ class Host(object):
     def ping_hmi(self):
         if self.hmi_ping_io is not None:
             IOLoop.instance().remove_timeout(self.hmi_ping_io)
-        self.hmi_ping_io = self.ioloop.call_later(5, self.ping_hmi)
+        self.hmi_ping_io = IOLoop.instance().call_later(5, self.ping_hmi)
         self.hmi.ping(None)
 
     def ping_hmi_start(self):
