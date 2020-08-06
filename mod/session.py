@@ -30,12 +30,10 @@ from mod.screenshot import ScreenshotGenerator
 from mod.settings import (LOG,
                           DEV_ENVIRONMENT, DEV_HMI, DEV_HOST,
                           HMI_SERIAL_PORT, HMI_BAUD_RATE, HMI_TIMEOUT,
-                          HOST_CARLA, PREFERENCES_JSON_FILE, UNTITLED_PEDALBOARD_NAME)
+                          PREFERENCES_JSON_FILE, UNTITLED_PEDALBOARD_NAME)
 
 if DEV_HOST:
     Host = FakeHost
-elif HOST_CARLA:
-    from mod.host_carla import CarlaHost as Host
 else:
     from mod.host import Host
 
