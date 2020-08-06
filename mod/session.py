@@ -30,12 +30,10 @@ from mod.screenshot import ScreenshotGenerator
 from mod.settings import (LOG,
                           DEV_ENVIRONMENT, DEV_HMI, DEV_HOST,
                           HMI_SERIAL_PORT, HMI_BAUD_RATE, HMI_TIMEOUT,
-                          HOST_CARLA, PREFERENCES_JSON_FILE, UNTITLED_PEDALBOARD_NAME)
+                          PREFERENCES_JSON_FILE, UNTITLED_PEDALBOARD_NAME)
 
 if DEV_HOST:
     Host = FakeHost
-elif HOST_CARLA:
-    from mod.host_carla import CarlaHost as Host
 else:
     from mod.host import Host
 
@@ -387,10 +385,6 @@ class Session(object):
         self.pedalboard_changed_callback(True, "", "")
 
     # host commands
-
-    def bypass(self, instance, value, callback):
-        value = int(value) > 0
-        self.host.enable(instance, value, callback)
 
     def format_port(self, port):
         if not 'system' in port and not 'effect' in port:
