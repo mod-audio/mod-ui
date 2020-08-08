@@ -254,11 +254,6 @@ JqueryClass('cloudPluginBox', {
                     cplugin.featured = results.featured.filter(function (ft) { return ft.uri === cplugin.uri })[0]
                 }
 
-                // NOTE backwards compatibility, to be removed once cloud updates itself and rebuilds all plugins
-                if (cplugin.buildEnvironment === undefined) {
-                    cplugin.buildEnvironment = (url === CLOUD_LABS_URL || !cplugin.stable) ? "labs" : "prod"
-                }
-
                 cplugin.latestVersion = [cplugin.builder_version || 0, cplugin.minorVersion, cplugin.microVersion, cplugin.release_number]
 
                 if (lplugin) {
