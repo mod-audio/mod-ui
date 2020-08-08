@@ -1770,9 +1770,10 @@ class Host(object):
 
             rinstances[instance_id] = pluginData['instance']
 
-            websocket.write_message("add %s %s %.1f %.1f %d" % (pluginData['instance'], pluginData['uri'],
-                                                                pluginData['x'], pluginData['y'],
-                                                                int(pluginData['bypassed'])))
+            websocket.write_message("add %s %s %.1f %.1f %d %d" % (pluginData['instance'], pluginData['uri'],
+                                                                   pluginData['x'], pluginData['y'],
+                                                                   int(pluginData['bypassed']),
+                                                                   int(bool(pluginData['buildEnv']))))
 
             if -1 not in pluginData['bypassCC']:
                 mchnnl, mctrl = pluginData['bypassCC']
@@ -2077,7 +2078,8 @@ class Host(object):
                 "designations": (enabled_symbol, freewheel_symbol, bpb_symbol, bpm_symbol, speed_symbol),
                 "outputs"     : dict((symbol, None) for symbol in allports['monitoredOutputs']),
                 "preset"      : "",
-                "mapPresets"  : []
+                "mapPresets"  : [],
+                "buildEnv"    : allports['buildEnvironment'],
             }
 
             for output in allports['monitoredOutputs']:
@@ -2087,7 +2089,9 @@ class Host(object):
                 self.plugins_added.append(instance_id)
 
             callback(True)
-            self.msg_callback("add %s %s %.1f %.1f %d" % (instance, uri, x, y, int(bypassed)))
+            self.msg_callback("add %s %s %.1f %.1f %d %d" % (instance, uri, x, y,
+                                                             int(bypassed),
+                                                             int(bool(allports['buildEnvironment']))))
 
         self.send_modified("add %s %d" % (uri, instance_id), host_callback, datatype='int')
 
@@ -3174,7 +3178,10 @@ class Host(object):
             if p['bypassed']:
                 self.send_notmodified("bypass %d 1" % (instance_id,))
 
-            self.msg_callback("add %s %s %.1f %.1f %d" % (instance, p['uri'], p['x'], p['y'], int(p['bypassed'])))
+            self.msg_callback("add %s %s %.1f %.1f %d %d" % (instance,
+                                                             p['uri'], p['x'], p['y'],
+                                                             int(p['bypassed']),
+                                                             int(bool(p['buildEnv']))))
 
             if p['bypassCC']['channel'] >= 0 and p['bypassCC']['control'] >= 0:
                 pluginData['addressings'][':bypass'] = self.addressings.add_midi(instance_id, ":bypass",

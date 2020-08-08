@@ -37,7 +37,7 @@ function shouldSkipPort(port) {
     return false;
 }
 
-function loadDependencies(gui, effect, callback) { //source, effect, bundle, callback) {
+function loadDependencies(gui, effect, dummy, callback) { //source, effect, bundle, callback) {
     var iconLoaded = true
     var settingsLoaded = true
     var cssLoaded = true
@@ -56,11 +56,12 @@ function loadDependencies(gui, effect, callback) { //source, effect, bundle, cal
         baseUrl.replace(/\/?$/, '')
     }
 
-    var version    = [effect.builder, effect.microVersion, effect.minorVersion, effect.release].join('_')
-    var escapeduri = escape(effect.uri)
-    var plughash   = escapeduri + version
+    effect.renderedVersion = [effect.builder, effect.microVersion, effect.minorVersion, effect.release].join('_')
 
-    if (! isSDK) {
+    if (isSDK || !effect.buildEnvironment) {
+        nonCachedInfoLoaded = true
+        effect.renderedVersion += '_' + Date.now()
+    } else if (! dummy) {
         nonCachedInfoLoaded = false
         $.ajax({
             url: '/effect/get_non_cached',
@@ -81,6 +82,10 @@ function loadDependencies(gui, effect, callback) { //source, effect, bundle, cal
             dataType: 'json'
         })
     }
+
+    var escapeduri = escape(effect.uri)
+    var version    = effect.renderedVersion
+    var plughash   = escapeduri + version
 
     if (effect.gui.iconTemplate) {
         if (loadedIcons[plughash]) {
@@ -188,6 +193,7 @@ function GUI(effect, options) {
         defaultIconTemplate: 'Template missing',
         defaultSettingsTemplate: 'Template missing',
         loadDependencies: true,
+        dummy: false,
     }, options)
 
     if (!effect.gui)
@@ -198,7 +204,7 @@ function GUI(effect, options) {
     if (options.loadDependencies) {
         self.dependenciesLoaded = false
 
-        loadDependencies(this, effect, function () {
+        loadDependencies(this, effect, options.dummy, function () {
             self.dependenciesLoaded = true
             for (var i in self.dependenciesCallbacks) {
                 self.dependenciesCallbacks[i]()
@@ -1106,8 +1112,8 @@ function GUI(effect, options) {
         var data = $.extend({}, options.gui.templateData)
         data.effect = options
 
-        var version    = [options.builder, options.microVersion, options.minorVersion, options.release].join('_')
         var escapeduri = escape(options.uri)
+        var version    = options.renderedVersion
 
         if (skipNamespace) {
             data.ns  = ''
