@@ -3788,6 +3788,7 @@ const PluginInfo_Controls* get_plugin_control_inputs_and_monitored_outputs(const
 
         info.inputs = pInfo.ports.control.input;
         info.monitoredOutputs = pInfo.gui.monitoredOutputs;
+        info.buildEnvironment = pInfo.buildEnvironment;
         return &info;
     }
 
@@ -3811,6 +3812,7 @@ const PluginInfo_Controls* get_plugin_control_inputs_and_monitored_outputs(const
 
         info.inputs = pInfo.ports.control.input;
         info.monitoredOutputs = pInfo.gui.monitoredOutputs;
+        info.buildEnvironment = pInfo.buildEnvironment;
         return &info;
     }
 
