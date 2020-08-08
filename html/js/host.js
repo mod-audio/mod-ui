@@ -320,12 +320,13 @@ $('document').ready(function() {
         }
 
         if (cmd == "add") {
-            data         = data.split(" ",5)
+            data         = data.split(" ",6)
             var instance = data[0]
             var uri      = data[1]
             var x        = parseFloat(data[2])
             var y        = parseFloat(data[3])
             var bypassed = parseInt(data[4]) != 0
+            var offBuild = parseInt(data[5]) != 0 // official MOD build coming from store, can be cached
             var plugins  = desktop.pedalboard.data('plugins')
             var skipModified = pb_loading
 
@@ -353,7 +354,7 @@ $('document').ready(function() {
 
                         desktop.pedalboard.pedalboard("addPlugin", pluginData, instance, bypassed, x, y, {}, null, skipModified)
                     },
-                    cache: true,
+                    cache: offBuild,
                     dataType: 'json'
                 })
             }

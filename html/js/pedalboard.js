@@ -683,7 +683,8 @@ JqueryClass('pedalboard', {
         })
 
         var options = {
-            defaultIconTemplate: DEFAULT_ICON_TEMPLATE
+            defaultIconTemplate: DEFAULT_ICON_TEMPLATE,
+            dummy: true,
         }
         var thumb = element.children(".thumb");
         var img = thumb.children("img");
@@ -737,7 +738,7 @@ JqueryClass('pedalboard', {
                             dummy.append(children);
                         })
                     },
-                    cache: true,
+                    cache: !!pluginData.buildEnvironment,
                     dataType: 'json'
                 })
                 $('body').append(dummy)
