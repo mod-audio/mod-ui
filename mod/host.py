@@ -3161,6 +3161,7 @@ class Host(object):
                 "preset"      : p['preset'],
                 "mapPresets"  : [],
                 "nextPreset"  : "",
+                "buildEnv"    : allports['buildEnvironment'],
             }
 
             self.send_notmodified("add %s %d" % (p['uri'], instance_id))
@@ -3171,7 +3172,7 @@ class Host(object):
             self.msg_callback("add %s %s %.1f %.1f %d %d" % (instance,
                                                              p['uri'], p['x'], p['y'],
                                                              int(p['bypassed']),
-                                                             int(bool(p['buildEnv']))))
+                                                             int(bool(allports['buildEnvironment']))))
 
             if p['bypassCC']['channel'] >= 0 and p['bypassCC']['control'] >= 0:
                 pluginData['addressings'][':bypass'] = self.addressings.add_midi(instance_id, ":bypass",
