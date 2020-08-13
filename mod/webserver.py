@@ -1920,13 +1920,14 @@ class AuthNonce(JsonRequestHandler):
             message = {}
         else:
             data    = json.loads(self.request.body.decode())
-            message = token.create_token_message(data['nonce'])
+            message = token.create_token_message(bool(data['labs']), data['nonce'])
 
         self.write(message)
 
 class AuthToken(JsonRequestHandler):
     def post(self):
-        access_token = token.decode_and_decrypt(self.request.body.decode())
+        data = json.loads(self.request.body.decode())
+        access_token = token.decode_and_decrypt(bool(data['labs']), data['message'], data.get('signature', ''))
         # don't ever save this token locally
         self.write({'access_token': access_token})
 

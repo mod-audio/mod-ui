@@ -31,14 +31,15 @@ JqueryClass('cloudPluginBox', {
         var self = $(this)
 
         options = $.extend({
+            usingLabs: false,
             resultCanvas: self.find('.js-cloud-plugins'),
             removePluginBundles: function (bundles, callback) {
                 callback({})
             },
-            installPluginURI: function (uri, callback) {
+            installPluginURI: function (uri, usingLabs, callback) {
                 callback({}, "")
             },
-            upgradePluginURI: function (uri, callback) {
+            upgradePluginURI: function (uri, usingLabs, callback) {
                 callback({}, "")
             },
             info: null,
@@ -59,6 +60,8 @@ JqueryClass('cloudPluginBox', {
 
         self.data('category', null)
         self.cloudPluginBox('setCategory', "All")
+
+        self.data('usingLabs', self.find('input:radio[name=plugins-source]:checked').val() === 'labs')
 
         searchbox.keydown(function (e) {
             if (e.keyCode == 13) { //detect enter
@@ -91,6 +94,7 @@ JqueryClass('cloudPluginBox', {
         })
 
         self.find('input:radio[name=plugins-source]').click(function (e) {
+            self.data('usingLabs', self.find('input:radio[name=plugins-source]:checked').val() === 'labs')
             self.cloudPluginBox('toggleFeaturedPlugins')
             self.cloudPluginBox('search')
         })
@@ -180,11 +184,11 @@ JqueryClass('cloudPluginBox', {
     toggleFeaturedPlugins: function () {
       var self  = $(this)
       var featuredPlugins = self.find('.featured-plugins')
-      var officialPlugins = self.find('input:radio[name=plugins-source]:checked').val() === 'official'
+      var usingLabs = self.data('usingLabs')
       var queryText = self.data('searchbox').val()
       var category = self.data('category')
 
-      if (queryText === '' && category === 'All' && officialPlugins) {
+      if (queryText === '' && category === 'All' && ! usingLabs) {
         if (featuredPlugins.is(':hidden')) {
           featuredPlugins.show()
         }
@@ -203,11 +207,9 @@ JqueryClass('cloudPluginBox', {
         }
 
         // hide/show featured plugins if searching/not searching
+        var url = self.data('usingLabs') ? CLOUD_LABS_URL : SITEURL
+
         self.cloudPluginBox('toggleFeaturedPlugins')
-        var url = SITEURL
-        if (self.find('input:radio[name=plugins-source]:checked').val() === 'labs') {
-            url = CLOUD_LABS_URL
-        }
 
         if (self.find('input:checkbox[name=installed]:checked').length)
             return self.cloudPluginBox('searchInstalled', url, query, customRenderCallback)
@@ -331,7 +333,7 @@ JqueryClass('cloudPluginBox', {
             complete: function () {
                 $.ajax({
                     method: 'GET',
-                    url: SITEURL + "/lv2/plugins/featured",
+                    url: url + "/lv2/plugins/featured",
                     success: function (featured) {
                         results.featured = featured
                     },
@@ -935,7 +937,7 @@ JqueryClass('cloudPluginBox', {
                 info.find('.js-installed-version').hide()
                 info.find('.js-install').show().click(function () {
                     // Install plugin
-                    self.data('installPluginURI')(plugin.uri, function (resp, bundlename) {
+                    self.data('installPluginURI')(plugin.uri, self.data('usingLabs'), function (resp, bundlename) {
                         self.cloudPluginBox('postInstallAction', resp.installed, resp.removed, bundlename)
                         info.window('close')
                     })
@@ -946,7 +948,7 @@ JqueryClass('cloudPluginBox', {
                 canUpgrade = true
                 info.find('.js-upgrade').show().click(function () {
                     // Upgrade plugin
-                    self.data('upgradePluginURI')(plugin.uri, function (resp, bundlename) {
+                    self.data('upgradePluginURI')(plugin.uri, self.data('usingLabs'), function (resp, bundlename) {
                         self.cloudPluginBox('postInstallAction', resp.installed, resp.removed, bundlename)
                         info.window('close')
                     })
@@ -1000,7 +1002,7 @@ JqueryClass('cloudPluginBox', {
 
         // always get cloud plugin info
         $.ajax({
-            url: SITEURL + "/lv2/plugins",
+            url: (self.data('usingLabs') ? CLOUD_LABS_URL : SITEURL) + "/lv2/plugins",
             data: {
                 uri: plugin.uri,
                 image_version: VERSION,

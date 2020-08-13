@@ -1,5 +1,5 @@
 import os
-from mod.settings import API_KEY, DEVICE_KEY, DEVICE_TAG, DEVICE_UID, IMAGE_VERSION
+from mod.settings import API_KEY, DEVICE_KEY, DEVICE_TAG, DEVICE_UID, IMAGE_VERSION, LABS_KEY
 
 def get_uid():
     if DEVICE_UID is None:
@@ -24,6 +24,14 @@ def get_device_key():
         with open(DEVICE_KEY, 'r') as fh:
             return fh.read().strip()
     return DEVICE_KEY
+
+def get_labs_key():
+    if LABS_KEY is None:
+        raise Exception('Missing LABS key')
+    if os.path.isfile(LABS_KEY):
+        with open(LABS_KEY, 'r') as fh:
+            return fh.read().strip()
+    return LABS_KEY
 
 def get_server_key():
     if API_KEY is None:

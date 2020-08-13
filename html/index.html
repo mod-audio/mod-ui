@@ -165,7 +165,7 @@ $('document').ready(function() {
     }
 
     if ({{using_mod}}) {
-        desktop.authenticateDevice(function (ok) {
+        desktop.authenticateDevice(false, function (ok) {
             if (ok) {
                 console.log("MOD authentication succeeded")
                 desktop.resetPedalboardStats();

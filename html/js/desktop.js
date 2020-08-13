@@ -221,6 +221,7 @@ function Desktop(elements) {
     this.title = ''
     this.cloudAccessToken = null
     this.cloudHardwareDeviceVersions = null
+    this.labsAccessToken = null
     this.pedalboardBundle = null
     this.pedalboardEmpty  = true
     this.pedalboardModified = false
@@ -386,16 +387,18 @@ function Desktop(elements) {
         $("body").addClass("initialized");
     }
 
-    this.authenticateDevice = function (callback) {
+    this.authenticateDevice = function (usingLabs, callback) {
         $.ajax({
             method: 'GET',
-            url: SITEURL + '/devices/nonce',
+            url: (usingLabs ? CLOUD_LABS_URL : SITEURL) + '/devices/nonce',
             cache: false,
             success: function (resp) {
                 if (!resp || !resp.nonce) {
                     callback(false)
                     return
                 }
+                resp.labs = usingLabs ? 1 : 0
+
                 $.ajax({
                     url: '/auth/nonce',
                     type: 'POST',
@@ -412,7 +415,7 @@ function Desktop(elements) {
                         }
 
                         $.ajax({
-                            url: SITEURL + '/devices/tokens',
+                            url: (usingLabs ? CLOUD_LABS_URL : SITEURL) + '/devices/tokens',
                             type: 'POST',
                             cache: false,
                             contentType: 'application/json',
@@ -423,22 +426,28 @@ function Desktop(elements) {
                                     callback(false)
                                     return;
                                 }
+                                resp.labs = usingLabs ? 1 : 0
 
-                                if (resp['upgrade']) {
-                                    $.ajax({
-                                        method: 'GET',
-                                        url: resp['image-href'],
-                                        cache: false,
-                                        contentType: 'application/json',
-                                        success: function (data) {
-                                            elements.upgradeWindow.upgradeWindow('setup', resp['upgrade-required'], data)
-                                        },
-                                        error: function () {
-                                            elements.upgradeWindow.upgradeWindow('setErrored')
-                                        },
-                                    })
-                                } else {
-                                    elements.upgradeWindow.upgradeWindow('setUpdated')
+                                // verify that OS is updated if authenticating with cloud
+                                if (! usingLabs) {
+                                    if (resp['upgrade']) {
+                                        $.ajax({
+                                            method: 'GET',
+                                            url: resp['image-href'],
+                                            cache: false,
+                                            contentType: 'application/json',
+                                            success: function (data) {
+                                                elements.upgradeWindow.upgradeWindow('setup',
+                                                                                     resp['upgrade-required'],
+                                                                                     data)
+                                            },
+                                            error: function () {
+                                                elements.upgradeWindow.upgradeWindow('setErrored')
+                                            },
+                                        })
+                                    } else {
+                                        elements.upgradeWindow.upgradeWindow('setUpdated')
+                                    }
                                 }
 
                                 $.ajax({
@@ -449,7 +458,11 @@ function Desktop(elements) {
                                     dataType: 'json',
                                     data: JSON.stringify(resp),
                                     success: function (resp) {
-                                        self.cloudAccessToken = resp.access_token;
+                                        if (usingLabs) {
+                                            self.labsAccessToken = resp.access_token;
+                                        } else {
+                                            self.cloudAccessToken = resp.access_token;
+                                        }
                                         var opts = {
                                             from_args: {
                                                 headers: { 'Authorization' : 'MOD ' + resp.access_token }
@@ -476,6 +489,10 @@ function Desktop(elements) {
                 callback(false)
             },
         })
+    }
+
+    this.authenticateDeviceLabs = function (callback) {
+        return self.authenticateDevice(true, callback)
     }
 
     elements.devicesIcon.statusTooltip()
@@ -605,7 +622,7 @@ function Desktop(elements) {
 
     this.checkHardwareDeviceVersion = function (dev_uri, label, version) {
         if (self.cloudAccessToken == null) {
-            self.authenticateDevice(function (ok) {
+            self.authenticateDevice(false, function (ok) {
                 if (ok && self.cloudAccessToken != null) {
                     self.checkHardwareDeviceVersion(dev_uri, label, version)
                 } else {
@@ -779,7 +796,7 @@ function Desktop(elements) {
         var installPlugin = function (uri, data) {
             missingCount++
 
-            self.installationQueue.installUsingURI(uri, function (resp, bundlename) {
+            self.installationQueue.installUsingURI(uri, 'auto', function (resp, bundlename) {
                 if (! resp.ok) {
                     error = true
                 }
@@ -823,7 +840,7 @@ function Desktop(elements) {
         self.windowManager.closeWindows(null, true)
 
         if (self.cloudAccessToken == null) {
-            self.authenticateDevice(function (ok) {
+            self.authenticateDevice(false, function (ok) {
                 if (ok && self.cloudAccessToken != null) {
                     self.loadRemotePedalboard(pedalboard_id)
                 } else {
@@ -1215,7 +1232,7 @@ function Desktop(elements) {
             }
 
             if (self.cloudAccessToken == null) {
-                self.authenticateDevice(function (ok) {
+                self.authenticateDevice(false, function (ok) {
                     if (ok && self.cloudAccessToken != null) {
                         elements.shareWindow.shareBox('share', data, callback)
                     } else {
@@ -1269,7 +1286,7 @@ function Desktop(elements) {
                     if (resp.status == 401 && ! data.reauthorized) {
                         console.log("Pedalboard share unauthorized, retrying authentication...")
                         data.reauthorized = true
-                        self.authenticateDevice(function (ok, options) {
+                        self.authenticateDevice(false, function (ok, options) {
                             if (ok) {
                                 console.log("Authentication succeeded")
                                 self.options = $.extend(self.options, options)
@@ -1370,14 +1387,9 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
                         }
                     },
                     error: function (resp) {
-                        /*if (resp.status == 404 && firstTry) {
-                            firstTry = false
-                            self.installationQueue.installUsingURI(uri, add)
-                        } else*/ {
-                            new Notification('error', 'Error adding effect. Probably a connection problem.')
-                            if (errorCallback)
-                                errorCallback()
-                        }
+                        new Notification('error', 'Error adding effect. Probably a connection problem.')
+                        if (errorCallback)
+                            errorCallback()
                     },
                     cache: false,
                     dataType: 'json'
@@ -1726,13 +1738,13 @@ Desktop.prototype.makeCloudPluginBox = function (el, trigger) {
                 dataType: 'json'
             })
         },
-        upgradePluginURI: function (uri, callback) {
+        upgradePluginURI: function (uri, usingLabs, callback) {
             self.previousPedalboardList = null
-            self.installationQueue.installUsingURI(uri, callback)
+            self.installationQueue.installUsingURI(uri, usingLabs, callback)
         },
-        installPluginURI: function (uri, callback) {
+        installPluginURI: function (uri, usingLabs, callback) {
             self.previousPedalboardList = null
-            self.installationQueue.installUsingURI(uri, callback)
+            self.installationQueue.installUsingURI(uri, usingLabs, callback)
         }
     })
 }
