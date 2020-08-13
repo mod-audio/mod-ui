@@ -97,7 +97,7 @@ function InstallationQueue() {
             $.ajax({
                 url: SITEURL + '/lv2/plugins',
                 data: {
-                    uri: uri + "hahaTesting",
+                    uri: uri,
                     image_version: VERSION,
                 },
                 success: function (effects) {
@@ -151,8 +151,8 @@ function InstallationQueue() {
         var tokenProp = bundle.usingLabs ? 'labsAccessToken' : 'cloudAccessToken'
 
         if (desktop[tokenProp] == null) {
-            desktop.authenticateDevice(true, function (ok) {
-                if (ok && desktop.labsAccessToken != null) {
+            desktop.authenticateDevice(bundle.usingLabs, function (ok) {
+                if (ok && desktop[tokenProp] != null) {
                     self.installNext()
                 } else {
                     queue = []
