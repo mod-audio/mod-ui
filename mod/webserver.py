@@ -1324,13 +1324,13 @@ class PedalboardPackBundle(TimelessRequestHandler):
                 fh.write(SESSION.recordhandle.read())
 
             # pack audio + pedalboard.tar.gz
-            self.proc = subprocess.Popen(['tar', 'czf', tmpstep2, "audio.ogg", "pedalboard.tar.gz"],
+            self.proc = subprocess.Popen(['tar', 'chzf', tmpstep2, "audio.ogg", "pedalboard.tar.gz"],
                                         cwd=tmpdir,
                                         stdout=subprocess.PIPE)
             ioloop.add_handler(self.proc.stdout.fileno(), end_proc2, 16)
 
         # start packing pedalboard
-        self.proc = subprocess.Popen(['tar', 'czf', tmpstep1, bundlename],
+        self.proc = subprocess.Popen(['tar', 'chzf', tmpstep1, bundlename],
                                      cwd=parentpath,
                                      stdout=subprocess.PIPE)
         ioloop.add_handler(self.proc.stdout.fileno(), end_proc1, 16)
