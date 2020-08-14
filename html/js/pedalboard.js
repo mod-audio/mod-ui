@@ -1509,10 +1509,8 @@ JqueryClass('pedalboard', {
                 element = icon.find('[mod-role=' + direction + '-' + type + '-port][mod-port-symbol=' + symbol + ']')
                 if (element.length == 0)
                     continue
-                curCvPosY = element.position().top
-                console.log(curCvPosY)
+                var curCvPosY = element.position().top
                 if (lastCvPosY != -1 && Math.abs(curCvPosY - lastCvPosY) < 50) {
-                    console.log("oi fix this", element, lastCvElem)
                     element.find('.output-cv-checkbox').css({left:'50px',top:'10px'})
                     lastCvElem.find('.output-cv-checkbox').css({left:'50px',top:'10px'})
                 }
