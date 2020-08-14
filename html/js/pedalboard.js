@@ -1451,7 +1451,7 @@ JqueryClass('pedalboard', {
                         element = icon.find('[mod-role=' + direction + '-' + type + '-port][mod-port-symbol=' + symbol + ']')
                         if (element.length == 0)
                             continue
-                            // call either makeInput or makeOutput
+                        // call either makeInput or makeOutput
                         var method = 'make' + direction.charAt(0).toUpperCase() + direction.slice(1)
                         self.pedalboard(method, element, instance)
                     }
@@ -1493,6 +1493,25 @@ JqueryClass('pedalboard', {
                 left: x,
                 top: y
             }).appendTo(self)
+
+            // adjust position of cv out checkboxes if needed
+            var lastCvPosY = -1, lastCvElem
+            for (k = 0; k < pluginData.ports['cv']['output'].length; k++) {
+                symbol = pluginData.ports['cv']['output'][k].symbol
+                element = icon.find('[mod-role=' + direction + '-' + type + '-port][mod-port-symbol=' + symbol + ']')
+                if (element.length == 0)
+                    continue
+                curCvPosY = element.position().top
+                console.log(curCvPosY)
+                if (lastCvPosY != -1 && Math.abs(curCvPosY - lastCvPosY) < 50) {
+                    console.log("oi fix this", element, lastCvElem)
+                    element.find('.output-cv-checkbox').css({left:'50px',top:'10px'})
+                    lastCvElem.find('.output-cv-checkbox').css({left:'50px',top:'10px'})
+                }
+                lastCvElem = element
+                lastCvPosY = curCvPosY
+            }
+
             self.data('z_index', self.data('z_index')+1)
             if (renderCallback)
                 renderCallback()
@@ -1981,7 +2000,7 @@ JqueryClass('pedalboard', {
             canvas.addClass("mod-cv");
 
         // Add checkbox + text inputs next to output cv ports for addressings
-        if (output.attr('mod-role') === 'output-cv-port') {
+        if (output.attr('mod-role') === 'output-cv-port' && output.find('.output-cv-checkbox').length === 0) {
           var port = output.attr("mod-port");
           var portSymbol = output.attr("mod-port-symbol");
           var cvPort = '/cv' + port;
