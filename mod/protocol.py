@@ -15,6 +15,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from mod.mod_protocol import CMD_ARGS
+
 PLUGIN_LOG_TRACE   = 0
 PLUGIN_LOG_NOTE    = 1
 PLUGIN_LOG_WARNING = 2
@@ -100,116 +102,26 @@ def process_resp(resp, datatype):
     return resp
 
 class Protocol(object):
-    # Make sure this is free of duplicates!
-    COMMANDS = {
-        "banks": [int, int],
-        "pedalboards": [int, int, int],
-        "pb": [int, str],
-
-        "hw_con": [int, int],
-        "hw_dis": [int, int],
-
-        "s": [int, float], # control_set
-        "g": [int], # control_get
-        "n": [int], # control_next
-        "ncp": [int, int], # next_control_page
-
-        "pbs": [], # pedalboard_save
-        "pbr": [], # pedalboard_reset
-
-        "g_bp": [int],      # get_truebypass_value
-        "s_bp": [int, int], # set_truebypass_value
-
-        # Quick Bypass Mode
-        "g_qbp": [],    # get_q_bypass
-        "s_qbp": [int], # set_q_bypass
-
-        # Beats per minute
-        "g_bpm": [],    # get_tempo_bpm
-        "s_bpm": [int], # set_tempo_bpm
-
-        # Beats per bar
-        "g_bpb": [],    # get_tempo_bpb
-        "s_bpb": [int], # set_tempo_bpb
-
-        "tu": [str],    # tuner
-        "tu_i": [int],  # tuner_input
-        "g_tum": [],    # get_tuner_mute
-        "s_tum": [int], # set_tuner_mute
-
-        "fn": [int], # footswitch_navigation
-
-        # User Profile handling
-        "g_p": [],    # get_current_profile
-        "r_p": [int], # retrieve_profile
-        "s_p": [int], # store_profile
-
-        # Master volume channel mode
-        "g_mv_c": [],    # get_mv_channel
-        "s_mv_c": [int], # set_mv_channel
-
-        # Stereo Link for inputs and outputs
-        "g_il": [],    # get_in_chan_link
-        "s_il": [int], # set_in_chan_link
-        "g_ol": [],    # get_out_chan_link
-        "s_ol": [int], # set_out_chan_link
-
-        # Configurable in- and output
-        "g_ex": [],      # get_exp_cv
-        "s_ex": [int],   # set_exp_cv
-        "g_hp": [],      # get_hp_cv
-        "s_hp": [int],   # set_hp_cv
-        "g_exp_m": [],    # get_exp_mode
-        "s_exp_m": [int], # set_exp_mode
-
-        # Transport and tempo sync mode
-        "g_cls": [],    # get_clk_src
-        "s_cls": [int], # set_clk_src
-
-        # MIDI program change channel for switching snapshots
-        "g_ssc": [],    # get_snapshot_prgch
-        "s_ssc": [int], # set_snapshot_prgch
-
-        # MIDI Beat Clock sending
-        "g_mclk": [],    # get_send_midi_clk
-        "s_mclk": [int], # set_send_midi_clk
-
-        # MIDI program change channel for switching pedalboards in a bank
-        "g_pbc": [],    # get_pb_prgch
-        "s_pbc": [int], # set_pb_prgch
-
-        # Transport play status
-        "g_ps": [],    # get_play_status
-        "s_ps": [int], # set_play_status
-
-        # Display brightness
-        "g_br": [],    # get_display_brightness
-        "s_br": [int], # set_display_brightness
-
-        "sl": [int], # snapshot_load
-        "ss": [int], # snapshot_save
-
-        "lp": [int], # page_load
-
-        "am": [str, str, str, str], # alsamixer
-
-        # unused
-        "get_pb_name": [],
-        "encoder_clicked": [int],
-    }
-
+    COMMANDS_ARGS = {}
     COMMANDS_FUNC = {}
+    COMMANDS_USED = []
 
-    RESPONSES = [
-        "resp", "few arguments", "many arguments", "not found"
-    ]
+    RESPONSES = (
+        "r", "resp", "few arguments", "many arguments", "not found",
+    )
 
     @classmethod
-    def register_cmd_callback(cls, cmd, func):
-        if cmd not in cls.COMMANDS.keys():
-            raise ValueError("Command %s is not registered" % cmd)
+    def register_cmd_callback(cls, model, cmd, func):
+        if model not in CMD_ARGS.keys():
+            raise ValueError("Model %s is not available" % model)
+        if cmd not in CMD_ARGS[model].keys():
+            raise ValueError("Command %s is not available" % cmd)
+        if cmd in cls.COMMANDS_USED:
+            raise ValueError("Command %s is already registered" % cmd)
 
+        cls.COMMANDS_ARGS[cmd] = CMD_ARGS[model][cmd]
         cls.COMMANDS_FUNC[cmd] = func
+        cls.COMMANDS_USED.append(cmd)
 
     def __init__(self, msg):
         self.msg = msg.replace("\0", "").strip()
@@ -230,7 +142,7 @@ class Protocol(object):
             callback("-1003") # TODO: proper error handling
             return
 
-        if len(self.args) != len(self.COMMANDS[self.cmd]):
+        if len(self.args) != len(self.COMMANDS_ARGS[self.cmd]):
             callback("-1003") # TODO: proper error handling
             return
 
@@ -238,7 +150,10 @@ class Protocol(object):
         cmd(*args)
 
     def process_resp(self, datatype):
-        if "resp" in self.msg:
+        if self.msg.startswith("r "):
+            resp = self.msg.replace("r ", "")
+            return process_resp(resp, datatype)
+        elif self.msg.startswith("resp "):
             resp = self.msg.replace("resp ", "")
             return process_resp(resp, datatype)
         return self.msg
@@ -248,12 +163,12 @@ class Protocol(object):
             return
 
         cmd = self.msg.split()
-        if not cmd or cmd[0] not in self.COMMANDS.keys():
+        if not cmd or cmd[0] not in self.COMMANDS_USED:
             raise ProtocolError("not found") # Command not found
 
         try:
             self.cmd = cmd[0]
-            self.args = [ typ(arg) for typ, arg in zip(self.COMMANDS[self.cmd], cmd[1:]) ]
+            self.args = [ typ(arg) for typ, arg in zip(self.COMMANDS_ARGS[self.cmd], cmd[1:]) ]
             if not all(str(a) for a in self.args):
                 raise ValueError
         except ValueError:

@@ -190,7 +190,7 @@ def restart_services(restartJACK2, restartUI):
 @gen.coroutine
 def start_restore():
     os.sync()
-    yield gen.Task(SESSION.hmi.send, "restore", datatype='boolean')
+    yield gen.Task(SESSION.hmi.restore, datatype='boolean')
 
 class TimelessRequestHandler(web.RequestHandler):
     def compute_etag(self):
@@ -2234,7 +2234,7 @@ def signal_upgrade_check():
     with TextFileFlusher("/root/check-upgrade-system") as fh:
         fh.write("%i\n" % (countNumb+1))
 
-    SESSION.hmi.send("restore")
+    SESSION.hmi.restore()
 
 def signal_recv(sig, _=0):
     if sig == SIGUSR1:
