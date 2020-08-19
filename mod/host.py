@@ -4455,12 +4455,13 @@ _:b%i
         numPedals = len(pedalboards)
 
         if pedalboard_id < 0 or pedalboard_id >= numPedals:
-            if not wrap:
+            if not wrap and pedalboard_id > 0:
                 logging.error("hmi wants out of bounds pedalboard data (%d %d %d)", props, pedalboard_id, bank_id)
                 callback(True)
                 return
+
             # wrap around mode, neat
-            if pedalboard_id < 0:
+            if pedalboard_id < 0 and wrap:
                 pedalboard_id = numPedals - 1
             else:
                 pedalboard_id = 0
