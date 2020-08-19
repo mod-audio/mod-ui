@@ -4951,7 +4951,7 @@ _:b%i
     def hmi_reset_current_pedalboard(self, callback):
         logging.debug("hmi reset current pedalboard")
         try:
-            yield gen.Task(self.hmi_reset_current_pedalboard_real)
+            self.hmi_reset_current_pedalboard_real(callback)
         except Exception as e:
             callback(False)
             logging.exception(e)
