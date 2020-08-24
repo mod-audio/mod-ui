@@ -483,14 +483,14 @@ class HMI(object):
 
     def set_profile_values(self, playback_rolling, values, callback):
         msg  = CMD_MENU_ITEM_CHANGE
-        msg += " %i %i" % (MENU_ID_PLAY_STATUS, int(playback_rolling))
         msg += " %i %i" % (MENU_ID_SL_IN, int(values['inputStereoLink']))
         msg += " %i %i" % (MENU_ID_SL_OUT, int(values['outputStereoLink']))
-        msg += " %i %i" % (MENU_ID_MASTER_VOL_PORT, int(values['masterVolumeChannelMode']))
+        msg += " %i %i" % (MENU_ID_PLAY_STATUS, int(playback_rolling))
         msg += " %i %i" % (MENU_ID_MIDI_CLK_SOURCE, values['transportSource'])
         msg += " %i %i" % (MENU_ID_MIDI_CLK_SEND, int(values['midiClockSend']))
         msg += " %i %i" % (MENU_ID_SNAPSHOT_PRGCHGE, values['midiChannelForSnapshotsNavigation'])
         msg += " %i %i" % (MENU_ID_PB_PRGCHNGE, values['midiChannelForPedalboardsNavigation'])
+        msg += " %i %i" % (MENU_ID_MASTER_VOL_PORT, int(values['masterVolumeChannelMode']))
         self.send(msg, callback)
 
     # pages is a list of int (1 if page available else 0)

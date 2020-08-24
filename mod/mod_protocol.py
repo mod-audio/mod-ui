@@ -47,6 +47,7 @@ CMD_ARGS = {
         'ss': [int],
         'sl': [int],
         'sc': [],
+        'enc_clicked': [int],
     },
     'DWARF': {
     },
@@ -93,6 +94,7 @@ CMD_DUOX_NEXT_PAGE        = 'lp'
 CMD_DUOX_SNAPSHOT_SAVE    = 'ss'
 CMD_DUOX_SNAPSHOT_LOAD    = 'sl'
 CMD_DUOX_SNAPSHOT_CLEAR   = 'sc'
+CMD_DUOX_ENCODER_CLICKED  = 'enc_clicked'
 
 BANK_FUNC_NONE            = 0
 BANK_FUNC_TRUE_BYPASS     = 1
@@ -143,3 +145,50 @@ MENU_ID_MASTER_VOL_PORT  = 42
 MENU_ID_EXP_MODE         = 43
 MENU_ID_TOP              = 44
 
+def menu_item_id_to_str(idx):
+    if not isinstance(idx, int):
+        raise ValueError
+    elif idx == 0:
+        return "MENU_ID_SL_IN"
+    elif idx == 1:
+        return "MENU_ID_SL_OUT"
+    elif idx == 2:
+        return "MENU_ID_TUNER_MUTE"
+    elif idx == 3:
+        return "MENU_ID_QUICK_BYPASS"
+    elif idx == 4:
+        return "MENU_ID_PLAY_STATUS"
+    elif idx == 5:
+        return "MENU_ID_MIDI_CLK_SOURCE"
+    elif idx == 6:
+        return "MENU_ID_MIDI_CLK_SEND"
+    elif idx == 7:
+        return "MENU_ID_SNAPSHOT_PRGCHGE"
+    elif idx == 8:
+        return "MENU_ID_PB_PRGCHNGE"
+    elif idx == 9:
+        return "MENU_ID_TEMPO"
+    elif idx == 10:
+        return "MENU_ID_BEATS_PER_BAR"
+    elif idx == 11:
+        return "MENU_ID_BYPASS1"
+    elif idx == 12:
+        return "MENU_ID_BYPASS2"
+    elif idx == 13:
+        return "MENU_ID_BRIGHTNESS"
+    elif idx == 14:
+        return "MENU_ID_CURRENT_PROFILE"
+    elif idx == 30:
+        return "MENU_ID_FOOTSWITCH_NAV"
+    elif idx == 40:
+        return "MENU_ID_EXP_CV_INPUT"
+    elif idx == 41:
+        return "MENU_ID_HP_CV_OUTPUT"
+    elif idx == 42:
+        return "MENU_ID_MASTER_VOL_PORT"
+    elif idx == 43:
+        return "MENU_ID_EXP_MODE"
+    elif idx == 44:
+        return "MENU_ID_TOP"
+    else:
+        return "unknown"
