@@ -75,6 +75,9 @@ from mod.mod_protocol import (
     FLAG_PAGINATION_PAGE_UP,
     FLAG_PAGINATION_WRAP_AROUND,
     FLAG_PAGINATION_INITIAL_REQ,
+    FLAG_SCALEPOINT_PAGINATED,
+    FLAG_SCALEPOINT_WRAP_AROUND,
+    FLAG_SCALEPOINT_END_PAGE,
     MENU_ID_SL_IN,
     MENU_ID_SL_OUT,
     MENU_ID_TUNER_MUTE,
@@ -2218,13 +2221,13 @@ class Host(object):
             return
         bundlepath = '/tmp/reloaded.pedalboard'
         if os.path.exists(bundlepath):
-            rmtree(bundlepath)
+            shutil.rmtree(bundlepath)
         os.mkdir(bundlepath)
         self.save_state_to_ttl(bundlepath, self.pedalboard_name, 'tmp')
         def load(ok):
             if ok:
                 self.load(bundlepath)
-            rmtree(bundlepath)
+            shutil.rmtree(bundlepath)
         self.reset(load)
 
     # -----------------------------------------------------------------------------------------------------------------
