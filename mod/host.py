@@ -78,6 +78,7 @@ from mod.mod_protocol import (
     FLAG_SCALEPOINT_PAGINATED,
     FLAG_SCALEPOINT_WRAP_AROUND,
     FLAG_SCALEPOINT_END_PAGE,
+    FLAG_SCALEPOINT_ALT_LED_COLOR,
     MENU_ID_SL_IN,
     MENU_ID_SL_OUT,
     MENU_ID_TUNER_MUTE,
@@ -4865,6 +4866,8 @@ _:b%i
             flags |= FLAG_SCALEPOINT_WRAP_AROUND
         if endIndex == numOpts:
             flags |= FLAG_SCALEPOINT_END_PAGE
+        if data.get('coloured', False):
+            flags |= FLAG_SCALEPOINT_ALT_LED_COLOR
 
         for i in range(startIndex, endIndex):
             option = options[i]
