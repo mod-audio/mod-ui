@@ -715,12 +715,6 @@ class Addressings(object):
 
                 if tempo or "enumeration" in pprops and len(port_info["scalePoints"]) > 0:
                     hmitype |= FLAG_CONTROL_ENUMERATION|FLAG_CONTROL_SCALE_POINTS
-                    if coloured:
-                        # FIXME? not defined yet if we reuse the flag
-                        print("sending with coloured flag")
-                        hmitype |= FLAG_CONTROL_MOMENTARY
-                    else:
-                        print("sending without coloured flag")
 
             # first actuator in group should have reverse enum hmi type
             if group is not None:
