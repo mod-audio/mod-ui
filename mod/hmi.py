@@ -37,6 +37,7 @@ from mod.mod_protocol import (
     CMD_MENU_ITEM_CHANGE,
     CMD_DUO_CONTROL_INDEX_SET,
     CMD_DUO_BANK_CONFIG,
+    CMD_DUOX_PAGES_AVAILABLE,
     CMD_RESPONSE,
     CMD_RESTORE,
     FLAG_CONTROL_REVERSE_ENUM,
@@ -495,7 +496,7 @@ class HMI(object):
 
     # pages is a list of int (1 if page available else 0)
     def set_available_pages(self, pages, callback):
-        msg = "pa" # FIXME
+        msg = CMD_DUOX_PAGES_AVAILABLE
         for page in pages:
             msg += " %i" % page
         self.send(msg, callback)

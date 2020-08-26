@@ -1045,8 +1045,8 @@ class Host(object):
             bootdata += " {} {}".format(master_chan_mode, get_master_volume(master_chan_is_mode_2))
 
         if self.descriptor.get('pages_cb', False):
-            pages = self.addressings.available_pages
-            bootdata += " {} {} {}".format(pages[0], pages[1], pages[2])
+            for page in self.addressings.available_pages:
+                bootdata += " {}".format(page)
 
         # we will dispatch all messages in reverse order, terminating in "boot"
         msgs = [(self.hmi.boot, [bootdata])]
