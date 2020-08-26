@@ -4871,7 +4871,7 @@ _:b%i
             xdata  = '"%s" %f' % (option[1].replace('"', '')[:31].upper(), float(option[0]))
             optionsData.append(xdata)
 
-        options = "%d %d %s" % (len(optionsData), flags, " ".join(optionsData))
+        options = "%d %d %d %s" % (len(optionsData), flags, startIndex, " ".join(optionsData))
         options = options.strip()
 
         label = data['label']
