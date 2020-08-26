@@ -676,19 +676,36 @@ body > .mod-settings.mod-window-visible {
     right:0;
     top:0;
     z-index:1000;
+    /* new style */
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:start;
+}
+
+.mod-pedal-settings-address .mod-spacer {
+    height:10%;
 }
 
 .mod-pedal-settings-address .mod-box {
     background:white;
+    padding:18px 18px 0 18px;
+    width:766px;
+    overflow-y:auto;
+    overflow-x:hidden;
+    /* old style */
+    /*
+    margin:-150px -430px;
     left:48%;
-    margin:-150px -193px;
-    padding: 18px 18px 0 18px;
-    position:absolute;
     top:40%;
-    width:516px;
-    max-height: 70%;
-    overflow-y: auto;
-    overflow-x: hidden;
+    max-height:70%;
+    position:absolute;
+    */
+    /* new style */
+    margin:0;
+    max-height:90%;
+    position:initial;
+    position:unset;
 }
 
 .mod-pedal-settings-address h1 {

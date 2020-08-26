@@ -873,14 +873,14 @@ function HardwareManager(options) {
         form.find('.advanced-toggle').click(function() {
             if (!form.find('.advanced-container').is(':visible')) {
               $('.mod-pedal-settings-address').find('.mod-box').animate({
-                width: '666px'
+                width: '916px'
               }, 100, function() {
                 form.find('.advanced-container').toggle()
               });
             } else {
               form.find('.advanced-container').toggle(0, function() {
                 $('.mod-pedal-settings-address').find('.mod-box').animate({
-                  width: '516px'
+                  width: '766px'
                 }, 100)
               })
             }
