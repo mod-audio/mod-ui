@@ -1040,18 +1040,14 @@ class Host(object):
         quick_bypass_mode = self.prefs.get("quick-bypass-mode", DEFAULT_QUICK_BYPASS_MODE, int, QUICK_BYPASS_MODE_VALUES)
 
         bootdata = "{} {} {} {}".format(display_brightness,
-                                             quick_bypass_mode,
-                                             int(self.current_tuner_mute),
-                                             self.profile.get_index())
+                                        quick_bypass_mode,
+                                        int(self.current_tuner_mute),
+                                        self.profile.get_index())
 
         if self.descriptor.get('hmi_set_master_vol', False):
             master_chan_mode = self.profile.get_master_volume_channel_mode()
             master_chan_is_mode_2 = master_chan_mode == Profile.MASTER_VOLUME_CHANNEL_MODE_2
             bootdata += " {} {}".format(master_chan_mode, get_master_volume(master_chan_is_mode_2))
-
-        if self.descriptor.get('pages_cb', False):
-            for page in self.addressings.available_pages:
-                bootdata += " {}".format(page)
 
         # we will dispatch all messages in reverse order, terminating in "boot"
         msgs = [(self.hmi.boot, [bootdata])]
@@ -1063,6 +1059,9 @@ class Host(object):
         if self.descriptor.get('hmi_set_ss_name', False):
             ssname = self.snapshot_name() or DEFAULT_SNAPSHOT_NAME
             msgs.append((self.hmi.set_snapshot_name, [ssname]))
+
+        if self.descriptor.get('pages_cb', False):
+            msgs.append((self.hmi.set_available_pages, [self.addressings.available_pages]))
 
         if self.isBankFootswitchNavigationOn():
             msgs.append((self.hmi.set_profile_value, [MENU_ID_FOOTSWITCH_NAV, 1])) # FIXME profile as name is wrong
