@@ -49,7 +49,7 @@ CMD_ARGS = {
         'ss': [int],
         'sl': [int],
         'sc': [],
-        'pa': [int,int,int],
+        'pa': [int,int,int,int,int,int],
         'enc_clicked': [int],
         'save_pot_cal': [int,int],
     },
@@ -123,6 +123,7 @@ FLAG_CONTROL_MOMENTARY        = 0x200
 FLAG_PAGINATION_PAGE_UP       = 0x1
 FLAG_PAGINATION_WRAP_AROUND   = 0x2
 FLAG_PAGINATION_INITIAL_REQ   = 0x4
+FLAG_PAGINATION_ALT_LED_COLOR = 0x8
 
 FLAG_SCALEPOINT_PAGINATED     = 0x1
 FLAG_SCALEPOINT_WRAP_AROUND   = 0x2
