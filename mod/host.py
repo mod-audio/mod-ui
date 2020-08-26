@@ -278,8 +278,9 @@ class Host(object):
 
     # HMI snapshots, reusing the same code for pedalboard snapshots but with reserved negative numbers
     HMI_SNAPSHOTS_OFFSET = 100
-    HMI_SNAPSHOTS_LEFT   = 0 - (HMI_SNAPSHOTS_OFFSET + 0)
-    HMI_SNAPSHOTS_RIGHT  = 0 - (HMI_SNAPSHOTS_OFFSET + 1)
+    HMI_SNAPSHOTS_1      = 0 - (HMI_SNAPSHOTS_OFFSET + 0)
+    HMI_SNAPSHOTS_2      = 0 - (HMI_SNAPSHOTS_OFFSET + 1)
+    HMI_SNAPSHOTS_3      = 0 - (HMI_SNAPSHOTS_OFFSET + 2)
 
     def __init__(self, hmi, prefs, msg_callback):
         self.hmi = hmi
@@ -2512,7 +2513,7 @@ class Host(object):
 
     @gen.coroutine
     def snapshot_load(self, idx, from_hmi, abort_catcher, callback):
-        if idx in (self.HMI_SNAPSHOTS_LEFT, self.HMI_SNAPSHOTS_RIGHT):
+        if idx in (self.HMI_SNAPSHOTS_1, self.HMI_SNAPSHOTS_2, self.HMI_SNAPSHOTS_3):
             snapshot = self.hmi_snapshots[abs(idx + self.HMI_SNAPSHOTS_OFFSET)]
             is_hmi_snapshot = True
 
@@ -5340,7 +5341,7 @@ _:b%i
         # Use negative numbers for HMI snapshots
         snapshot_id = 0 - (self.HMI_SNAPSHOTS_OFFSET + idx)
 
-        if snapshot_id not in (self.HMI_SNAPSHOTS_LEFT, self.HMI_SNAPSHOTS_RIGHT):
+        if snapshot_id not in (self.HMI_SNAPSHOTS_1, self.HMI_SNAPSHOTS_2, self.HMI_SNAPSHOTS_3):
             callback(False)
             logging.error("hmi_snapshot_load received with wrong index %d (snapshot id %d)",
                           idx, snapshot_id)
