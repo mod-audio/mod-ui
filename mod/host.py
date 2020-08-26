@@ -78,6 +78,7 @@ from mod.mod_protocol import (
     FLAG_SCALEPOINT_PAGINATED,
     FLAG_SCALEPOINT_WRAP_AROUND,
     FLAG_SCALEPOINT_END_PAGE,
+    FLAG_SCALEPOINT_ALT_LED_COLOR,
     MENU_ID_SL_IN,
     MENU_ID_SL_OUT,
     MENU_ID_TUNER_MUTE,
@@ -281,8 +282,9 @@ class Host(object):
 
     # HMI snapshots, reusing the same code for pedalboard snapshots but with reserved negative numbers
     HMI_SNAPSHOTS_OFFSET = 100
-    HMI_SNAPSHOTS_LEFT   = 0 - (HMI_SNAPSHOTS_OFFSET + 0)
-    HMI_SNAPSHOTS_RIGHT  = 0 - (HMI_SNAPSHOTS_OFFSET + 1)
+    HMI_SNAPSHOTS_1      = 0 - (HMI_SNAPSHOTS_OFFSET + 0)
+    HMI_SNAPSHOTS_2      = 0 - (HMI_SNAPSHOTS_OFFSET + 1)
+    HMI_SNAPSHOTS_3      = 0 - (HMI_SNAPSHOTS_OFFSET + 2)
 
     def __init__(self, hmi, prefs, msg_callback):
         self.hmi = hmi
@@ -1038,18 +1040,14 @@ class Host(object):
         quick_bypass_mode = self.prefs.get("quick-bypass-mode", DEFAULT_QUICK_BYPASS_MODE, int, QUICK_BYPASS_MODE_VALUES)
 
         bootdata = "{} {} {} {}".format(display_brightness,
-                                             quick_bypass_mode,
-                                             int(self.current_tuner_mute),
-                                             self.profile.get_index())
+                                        quick_bypass_mode,
+                                        int(self.current_tuner_mute),
+                                        self.profile.get_index())
 
         if self.descriptor.get('hmi_set_master_vol', False):
             master_chan_mode = self.profile.get_master_volume_channel_mode()
             master_chan_is_mode_2 = master_chan_mode == Profile.MASTER_VOLUME_CHANNEL_MODE_2
             bootdata += " {} {}".format(master_chan_mode, get_master_volume(master_chan_is_mode_2))
-
-        if self.descriptor.get('pages_cb', False):
-            pages = self.addressings.available_pages
-            bootdata += " {} {} {}".format(pages[0], pages[1], pages[2])
 
         # we will dispatch all messages in reverse order, terminating in "boot"
         msgs = [(self.hmi.boot, [bootdata])]
@@ -1061,6 +1059,9 @@ class Host(object):
         if self.descriptor.get('hmi_set_ss_name', False):
             ssname = self.snapshot_name() or DEFAULT_SNAPSHOT_NAME
             msgs.append((self.hmi.set_snapshot_name, [ssname]))
+
+        if self.descriptor.get('pages_cb', False):
+            msgs.append((self.hmi.set_available_pages, [self.addressings.available_pages]))
 
         if self.isBankFootswitchNavigationOn():
             msgs.append((self.hmi.set_profile_value, [MENU_ID_FOOTSWITCH_NAV, 1])) # FIXME profile as name is wrong
@@ -2537,7 +2538,7 @@ class Host(object):
 
     @gen.coroutine
     def snapshot_load(self, idx, from_hmi, abort_catcher, callback):
-        if idx in (self.HMI_SNAPSHOTS_LEFT, self.HMI_SNAPSHOTS_RIGHT):
+        if idx in (self.HMI_SNAPSHOTS_1, self.HMI_SNAPSHOTS_2, self.HMI_SNAPSHOTS_3):
             snapshot = self.hmi_snapshots[abs(idx + self.HMI_SNAPSHOTS_OFFSET)]
             is_hmi_snapshot = True
 
@@ -4877,13 +4878,15 @@ _:b%i
             flags |= FLAG_SCALEPOINT_WRAP_AROUND
         if endIndex == numOpts:
             flags |= FLAG_SCALEPOINT_END_PAGE
+        if data.get('coloured', False):
+            flags |= FLAG_SCALEPOINT_ALT_LED_COLOR
 
         for i in range(startIndex, endIndex):
             option = options[i]
             xdata  = '"%s" %f' % (option[1].replace('"', '')[:31].upper(), float(option[0]))
             optionsData.append(xdata)
 
-        options = "%d %d %s" % (len(optionsData), flags, " ".join(optionsData))
+        options = "%d %d %d %s" % (len(optionsData), flags, startIndex, " ".join(optionsData))
         options = options.strip()
 
         label = data['label']
@@ -5365,7 +5368,7 @@ _:b%i
         # Use negative numbers for HMI snapshots
         snapshot_id = 0 - (self.HMI_SNAPSHOTS_OFFSET + idx)
 
-        if snapshot_id not in (self.HMI_SNAPSHOTS_LEFT, self.HMI_SNAPSHOTS_RIGHT):
+        if snapshot_id not in (self.HMI_SNAPSHOTS_1, self.HMI_SNAPSHOTS_2, self.HMI_SNAPSHOTS_3):
             callback(False)
             logging.error("hmi_snapshot_load received with wrong index %d (snapshot id %d)",
                           idx, snapshot_id)

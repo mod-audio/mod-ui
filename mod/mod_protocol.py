@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# pylint: disable=bad-whitespace
+# pylint: disable=too-many-return-statements
 
 CMD_ARGS = {
     'ALL': {
@@ -47,54 +49,58 @@ CMD_ARGS = {
         'ss': [int],
         'sl': [int],
         'sc': [],
+        'pa': [int,int,int,int,int,int],
         'enc_clicked': [int],
+        'save_pot_cal': [int,int],
     },
     'DWARF': {
     },
 }
 
-CMD_PING                  = 'pi'
-CMD_SAY                   = 'say'
-CMD_LED                   = 'l'
-CMD_GLCD_TEXT             = 'glcd_text'
-CMD_GLCD_DIALOG           = 'glcd_dialog'
-CMD_GLCD_DRAW             = 'glcd_draw'
-CMD_GUI_CONNECTED         = 'uc'
-CMD_GUI_DISCONNECTED      = 'ud'
-CMD_CONTROL_ADD           = 'a'
-CMD_CONTROL_REMOVE        = 'd'
-CMD_CONTROL_GET           = 'g'
-CMD_CONTROL_SET           = 's'
-CMD_CONTROL_PAGE          = 'ncp'
-CMD_INITIAL_STATE         = 'is'
-CMD_BANKS                 = 'b'
-CMD_PEDALBOARDS           = 'p'
-CMD_PEDALBOARD_LOAD       = 'pb'
-CMD_PEDALBOARD_RESET      = 'pr'
-CMD_PEDALBOARD_SAVE       = 'ps'
-CMD_PEDALBOARD_NAME_SET   = 'pn'
-CMD_PEDALBOARD_CLEAR      = 'pcl'
-CMD_SNAPSHOT_NAME_SET     = 'sn'
-CMD_TUNER                 = 'ts'
-CMD_TUNER_ON              = 'tn'
-CMD_TUNER_OFF             = 'tf'
-CMD_TUNER_INPUT           = 'ti'
-CMD_RESTORE               = 'restore'
-CMD_RESPONSE              = 'r'
-CMD_MENU_ITEM_CHANGE      = 'c'
-CMD_PROFILE_LOAD          = 'upr'
-CMD_PROFILE_STORE         = 'ups'
-CMD_DUO_BOOT              = 'boot'
-CMD_DUO_FOOT_NAVIG        = 'fn'
-CMD_DUO_BANK_CONFIG       = 'bc'
-CMD_DUO_CONTROL_NEXT      = 'n'
-CMD_DUO_CONTROL_INDEX_SET = 'si'
-CMD_DUOX_BOOT             = 'boot'
-CMD_DUOX_NEXT_PAGE        = 'lp'
-CMD_DUOX_SNAPSHOT_SAVE    = 'ss'
-CMD_DUOX_SNAPSHOT_LOAD    = 'sl'
-CMD_DUOX_SNAPSHOT_CLEAR   = 'sc'
-CMD_DUOX_ENCODER_CLICKED  = 'enc_clicked'
+CMD_PING                      = 'pi'
+CMD_SAY                       = 'say'
+CMD_LED                       = 'l'
+CMD_GLCD_TEXT                 = 'glcd_text'
+CMD_GLCD_DIALOG               = 'glcd_dialog'
+CMD_GLCD_DRAW                 = 'glcd_draw'
+CMD_GUI_CONNECTED             = 'uc'
+CMD_GUI_DISCONNECTED          = 'ud'
+CMD_CONTROL_ADD               = 'a'
+CMD_CONTROL_REMOVE            = 'd'
+CMD_CONTROL_GET               = 'g'
+CMD_CONTROL_SET               = 's'
+CMD_CONTROL_PAGE              = 'ncp'
+CMD_INITIAL_STATE             = 'is'
+CMD_BANKS                     = 'b'
+CMD_PEDALBOARDS               = 'p'
+CMD_PEDALBOARD_LOAD           = 'pb'
+CMD_PEDALBOARD_RESET          = 'pr'
+CMD_PEDALBOARD_SAVE           = 'ps'
+CMD_PEDALBOARD_NAME_SET       = 'pn'
+CMD_PEDALBOARD_CLEAR          = 'pcl'
+CMD_SNAPSHOT_NAME_SET         = 'sn'
+CMD_TUNER                     = 'ts'
+CMD_TUNER_ON                  = 'tn'
+CMD_TUNER_OFF                 = 'tf'
+CMD_TUNER_INPUT               = 'ti'
+CMD_RESTORE                   = 'restore'
+CMD_RESPONSE                  = 'r'
+CMD_MENU_ITEM_CHANGE          = 'c'
+CMD_PROFILE_LOAD              = 'upr'
+CMD_PROFILE_STORE             = 'ups'
+CMD_DUO_BOOT                  = 'boot'
+CMD_DUO_FOOT_NAVIG            = 'fn'
+CMD_DUO_BANK_CONFIG           = 'bc'
+CMD_DUO_CONTROL_NEXT          = 'n'
+CMD_DUO_CONTROL_INDEX_SET     = 'si'
+CMD_DUOX_BOOT                 = 'boot'
+CMD_DUOX_NEXT_PAGE            = 'lp'
+CMD_DUOX_SNAPSHOT_SAVE        = 'ss'
+CMD_DUOX_SNAPSHOT_LOAD        = 'sl'
+CMD_DUOX_SNAPSHOT_CLEAR       = 'sc'
+CMD_DUOX_PAGES_AVAILABLE      = 'pa'
+CMD_DUOX_ENCODER_CLICKED      = 'enc_clicked'
+CMD_DUOX_SAVE_POT_CALIBRATION = 'save_pot_cal'
 
 BANK_FUNC_NONE            = 0
 BANK_FUNC_TRUE_BYPASS     = 1
@@ -117,6 +123,7 @@ FLAG_CONTROL_MOMENTARY        = 0x200
 FLAG_PAGINATION_PAGE_UP       = 0x1
 FLAG_PAGINATION_WRAP_AROUND   = 0x2
 FLAG_PAGINATION_INITIAL_REQ   = 0x4
+FLAG_PAGINATION_ALT_LED_COLOR = 0x8
 
 FLAG_SCALEPOINT_PAGINATED     = 0x1
 FLAG_SCALEPOINT_WRAP_AROUND   = 0x2
@@ -148,47 +155,46 @@ MENU_ID_TOP              = 44
 def menu_item_id_to_str(idx):
     if not isinstance(idx, int):
         raise ValueError
-    elif idx == 0:
+    if idx == 0:
         return "MENU_ID_SL_IN"
-    elif idx == 1:
+    if idx == 1:
         return "MENU_ID_SL_OUT"
-    elif idx == 2:
+    if idx == 2:
         return "MENU_ID_TUNER_MUTE"
-    elif idx == 3:
+    if idx == 3:
         return "MENU_ID_QUICK_BYPASS"
-    elif idx == 4:
+    if idx == 4:
         return "MENU_ID_PLAY_STATUS"
-    elif idx == 5:
+    if idx == 5:
         return "MENU_ID_MIDI_CLK_SOURCE"
-    elif idx == 6:
+    if idx == 6:
         return "MENU_ID_MIDI_CLK_SEND"
-    elif idx == 7:
+    if idx == 7:
         return "MENU_ID_SNAPSHOT_PRGCHGE"
-    elif idx == 8:
+    if idx == 8:
         return "MENU_ID_PB_PRGCHNGE"
-    elif idx == 9:
+    if idx == 9:
         return "MENU_ID_TEMPO"
-    elif idx == 10:
+    if idx == 10:
         return "MENU_ID_BEATS_PER_BAR"
-    elif idx == 11:
+    if idx == 11:
         return "MENU_ID_BYPASS1"
-    elif idx == 12:
+    if idx == 12:
         return "MENU_ID_BYPASS2"
-    elif idx == 13:
+    if idx == 13:
         return "MENU_ID_BRIGHTNESS"
-    elif idx == 14:
+    if idx == 14:
         return "MENU_ID_CURRENT_PROFILE"
-    elif idx == 30:
+    if idx == 30:
         return "MENU_ID_FOOTSWITCH_NAV"
-    elif idx == 40:
+    if idx == 40:
         return "MENU_ID_EXP_CV_INPUT"
-    elif idx == 41:
+    if idx == 41:
         return "MENU_ID_HP_CV_OUTPUT"
-    elif idx == 42:
+    if idx == 42:
         return "MENU_ID_MASTER_VOL_PORT"
-    elif idx == 43:
+    if idx == 43:
         return "MENU_ID_EXP_MODE"
-    elif idx == 44:
+    if idx == 44:
         return "MENU_ID_TOP"
-    else:
-        return "unknown"
+    return "unknown"

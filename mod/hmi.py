@@ -37,12 +37,14 @@ from mod.mod_protocol import (
     CMD_MENU_ITEM_CHANGE,
     CMD_DUO_CONTROL_INDEX_SET,
     CMD_DUO_BANK_CONFIG,
+    CMD_DUOX_PAGES_AVAILABLE,
     CMD_RESPONSE,
     CMD_RESTORE,
     FLAG_CONTROL_REVERSE_ENUM,
     FLAG_PAGINATION_PAGE_UP,
     FLAG_PAGINATION_WRAP_AROUND,
     FLAG_PAGINATION_INITIAL_REQ,
+    FLAG_PAGINATION_ALT_LED_COLOR,
     MENU_ID_TEMPO,
     MENU_ID_PLAY_STATUS,
     MENU_ID_SL_IN,
@@ -385,13 +387,15 @@ class HMI(object):
                 flags |= FLAG_PAGINATION_WRAP_AROUND
             if endIndex == numOpts:
                 flags |= FLAG_PAGINATION_INITIAL_REQ
+            if data.get('coloured', False):
+                flags |= FLAG_PAGINATION_ALT_LED_COLOR
 
             for i in range(startIndex, endIndex):
                 option = options[i]
                 xdata  = '"%s" %f' % (option[1].replace('"', '')[:31].upper(), float(option[0]))
                 optionsData.append(xdata)
 
-            options = "%d %d %s" % (len(optionsData), flags, " ".join(optionsData))
+            options = "%d %d %d %s" % (len(optionsData), flags, startIndex, " ".join(optionsData))
             options = options.strip()
 
         else:
@@ -495,7 +499,7 @@ class HMI(object):
 
     # pages is a list of int (1 if page available else 0)
     def set_available_pages(self, pages, callback):
-        msg = "pa" # FIXME
+        msg = CMD_DUOX_PAGES_AVAILABLE
         for page in pages:
             msg += " %i" % page
         self.send(msg, callback)
