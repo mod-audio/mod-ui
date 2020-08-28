@@ -1098,8 +1098,8 @@ class EffectPresetSaveReplace(JsonRequestHandler):
                 tempo = presets.get('tempo', False)
                 dividers = presets.get('dividers', None)
                 page = presets.get('page', None)
-                coloured = data.get('coloured', None)
-                momentary = data.get('momentary', None)
+                coloured = presets.get('coloured', None)
+                momentary = presets.get('momentary', None)
                 operational_mode = presets.get('operationalMode', None)
                 ok = yield gen.Task(SESSION.web_parameter_address, port, actuator_uri, label, minimum, maximum, value,
                                     steps, tempo, dividers, page, coloured, momentary, operational_mode)

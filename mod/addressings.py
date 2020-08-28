@@ -263,7 +263,7 @@ class Addressings(object):
                         break
 
                 coloured = addr.get('coloured', False)
-                momentary = addr.get('momentary', False)
+                momentary = int(addr.get('momentary', 0))
                 operational_mode = addr.get('operational_mode', '=')
 
                 curvalue = self._task_get_port_value(instance_id, portsymbol)
@@ -445,7 +445,7 @@ class Addressings(object):
                     'page'    : addr.get('page'),
                     'group'   : addr.get('group'),
                     'coloured': addr.get('coloured', False),
-                    'momentary': addr.get('momentary', False),
+                    'momentary': int(addr.get('momentary', 0)),
                 })
             addressings[uri] = addrs2
 
@@ -541,7 +541,7 @@ class Addressings(object):
                             page,
                             group,
                             int(addr.get('coloured', False)),
-                            int(addr.get('momentary', False)))
+                            int(addr.get('momentary', 0)))
                     msg_callback("hw_map %s %s %s %f %f %d %s %s %s %s %s 1 %d %d" % args)
 
         # Virtual addressings (/bpm)
