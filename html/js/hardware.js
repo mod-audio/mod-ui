@@ -678,7 +678,7 @@ function HardwareManager(options) {
 
           // restore values
           ledColourMode.val(currentAddressing.coloured ? 1 : 0)
-          momentarySwMode.val(currentAddressing.momentary ? 1 : 0)
+          momentarySwMode.val(currentAddressing.momentary || 0)
         }
         else
         {
@@ -1006,9 +1006,9 @@ function HardwareManager(options) {
                 // remove data needed by the server, useless for us
                 delete addressing.value
 
-                // convert some values to boolean
+                // convert some values to proper type
                 addressing.coloured = !!addressing.coloured
-                addressing.momentary = !!addressing.momentary
+                addressing.momentary = parseInt(addressing.momentary)
 
                 // now save
                 self.addressingsByPortSymbol[instanceAndSymbol] = actuator.uri

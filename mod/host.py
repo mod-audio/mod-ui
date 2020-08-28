@@ -4112,7 +4112,7 @@ _:b%i
         dividers = extras.get('dividers', None)
         page = extras.get('page', None)
         coloured = bool(int(extras.get('coloured', None) or 0))
-        momentary = bool(int(extras.get('momentary', None) or 0))
+        momentary = int(extras.get('momentary', None) or 0)
         operational_mode = extras.get('operational_mode', '=')
 
         if pluginData is None:
@@ -4244,6 +4244,15 @@ _:b%i
         if tempo and not not_param_set:
             needsValueChange = True
 
+        # momentary on
+        if momentary == 1 and value != minimum:
+            value = minimum
+            needsValueChange = True
+        # momentary off
+        elif momentary == 2 and value != maximum:
+            value = maximum
+            needsValueChange = True
+
         group_actuators = self.addressings.get_group_actuators(actuator_uri)
         if group_actuators is not None:
             for group_actuator_uri in group_actuators:
@@ -4276,7 +4285,7 @@ _:b%i
                 callback(False)
                 return
             if needsValueChange:
-                if actuator_uri != kBpmURI and is_hmi_actuator:
+                if actuator_uri != kBpmURI: # and is_hmi_actuator:
                     hw_id = self.addressings.hmi_uri2hw_map[actuator_uri]
                     try:
                         yield gen.Task(self.hmi_parameter_set, hw_id, value)
@@ -4631,7 +4640,17 @@ _:b%i
 
         pluginData = self.plugins[instance_id]
         port_addressing = pluginData['addressings'].get(portsymbol, None)
-        save_port_value = (port_addressing.get('hmitype', 0x0) & (FLAG_CONTROL_TRIGGER|FLAG_CONTROL_MOMENTARY)) == 0x0
+        save_port_value = True
+
+        if port_addressing is not None:
+            hmitype = port_addressing.get('hmitype', 0x0)
+            if hmitype & FLAG_CONTROL_TRIGGER:
+                save_port_value = False
+            elif hmitype & FLAG_CONTROL_MOMENTARY:
+                if port_addressing['momentary'] == 1 and port_addressing['minimum'] == value:
+                    save_port_value = False
+                elif port_addressing['momentary'] == 2 and port_addressing['maximum'] == value:
+                    save_port_value = False
 
         if portsymbol == ":bypass":
             bypassed = bool(value)
@@ -4711,7 +4730,7 @@ _:b%i
                 callback(False)
                 return
 
-            if port_addressing:
+            if port_addressing is not None:
                 if port_addressing.get('hmitype', 0x0) & FLAG_CONTROL_ENUMERATION:
                     value = get_nearest_valid_scalepoint_value(value, port_addressing['options'])[1]
 
@@ -4763,6 +4782,8 @@ _:b%i
                         'tempo': port_addressing['tempo'],
                         'dividers': value,
                         'page': port_addressing['page'],
+                        'coloured': port_addressing['coloured'],
+                        'momentary': port_addressing['momentary'],
                         'operational_mode': port_addressing['operational_mode'],
                     }
 
