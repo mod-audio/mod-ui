@@ -193,7 +193,7 @@ $('document').ready(function() {
             var group = data[10]
             var feedback = parseInt(data[11]) == 1
             var coloured = parseInt(data[12]) == 1
-            var momentary = parseInt(data[13]) == 1
+            var momentary = parseInt(data[13])
 
             desktop.hardwareManager.addHardwareMapping(instance,
                                                        symbol,
