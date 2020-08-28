@@ -779,7 +779,7 @@ function Desktop(elements) {
         var installPlugin = function (uri, data) {
             missingCount++
 
-            self.installationQueue.installUsingURI(uri, function (resp, bundlename) {
+            self.installationQueue.installUsingURI(uri, 'auto', function (resp, bundlename) {
                 if (! resp.ok) {
                     error = true
                 }
@@ -837,7 +837,6 @@ function Desktop(elements) {
             url: SITEURL + '/pedalboards/' + pedalboard_id,
             contentType: 'application/json',
             success: function (resp) {
-                // FIXME replace "stable" cloud property with something else!
                 if (!resp.data.stable && PREFERENCES['show-labs-plugins'] !== "true") {
                     new Notification('error', 'This pedalboard contains one or more community maintained MOD Labs plugins. To load it, you need to enable MOD Labs plugins in <a href="settings">Settings</a> -> Advanced');
                     return;
@@ -1370,14 +1369,9 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
                         }
                     },
                     error: function (resp) {
-                        /*if (resp.status == 404 && firstTry) {
-                            firstTry = false
-                            self.installationQueue.installUsingURI(uri, add)
-                        } else*/ {
-                            new Notification('error', 'Error adding effect. Probably a connection problem.')
-                            if (errorCallback)
-                                errorCallback()
-                        }
+                        new Notification('error', 'Error adding effect. Probably a connection problem.')
+                        if (errorCallback)
+                            errorCallback()
                     },
                     cache: false,
                     dataType: 'json'
@@ -1726,13 +1720,13 @@ Desktop.prototype.makeCloudPluginBox = function (el, trigger) {
                 dataType: 'json'
             })
         },
-        upgradePluginURI: function (uri, callback) {
+        upgradePluginURI: function (uri, usingLabs, callback) {
             self.previousPedalboardList = null
-            self.installationQueue.installUsingURI(uri, callback)
+            self.installationQueue.installUsingURI(uri, usingLabs, callback)
         },
-        installPluginURI: function (uri, callback) {
+        installPluginURI: function (uri, usingLabs, callback) {
             self.previousPedalboardList = null
-            self.installationQueue.installUsingURI(uri, callback)
+            self.installationQueue.installUsingURI(uri, usingLabs, callback)
         }
     })
 }
