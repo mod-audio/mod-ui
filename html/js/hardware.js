@@ -348,30 +348,30 @@ function HardwareManager(options) {
 
     this.toggleAdvancedItemsVisibility = function (port, sensitivity, ledColourMode, momentarySwMode, currentActuator) {
       if (currentActuator && currentActuator.steps.length !== 0 && this.portSupportsSensitivity(port)) {
-        sensitivity.parent().parent().show()
+        sensitivity.removeClass('disabled').parent().parent().show()
       } else {
-        sensitivity.parent().parent().hide()
+        sensitivity.addClass('disabled').parent().parent().hide()
       }
 
       if (currentActuator && currentActuator.modes.indexOf(":colouredlist:") >= 0 &&
           port.properties.indexOf("enumeration") >= 0)
       {
-        ledColourMode.parent().parent().show()
+        ledColourMode.removeClass('disabled').parent().parent().show()
       }
       else
       {
-        ledColourMode.parent().parent().hide()
+        ledColourMode.addClass('disabled').parent().parent().hide()
       }
 
       if (currentActuator && currentActuator.modes.indexOf(":momentarytoggle:") >= 0 &&
           port.properties.indexOf("enumeration") < 0 &&
           port.properties.indexOf("trigger") < 0)
       {
-        momentarySwMode.parent().parent().show()
+        momentarySwMode.removeClass('disabled').parent().parent().show()
       }
       else
       {
-        momentarySwMode.parent().parent().hide()
+        momentarySwMode.addClass('disabled').parent().parent().hide()
       }
     }
 
@@ -684,7 +684,14 @@ function HardwareManager(options) {
         {
           // If there is no addressing made yet, try to set some good defaults
           ledColourMode.val(port.properties.indexOf("preferColouredListByDefault") >= 0 ? 1 : 0)
-          momentarySwMode.val(port.properties.indexOf("preferMomentaryToggleByDefault") >= 0 ? 1 : 0)
+
+          if (port.properties.indexOf("preferMomentaryOffByDefault") >= 0) {
+              momentarySwMode.val(2)
+          } else if (port.properties.indexOf("preferMomentaryOnByDefault") >= 0) {
+              momentarySwMode.val(1)
+          } else {
+              momentarySwMode.val(0)
+          }
         }
 
         typeInput.val(typeInputVal)
@@ -1112,8 +1119,8 @@ function HardwareManager(options) {
         var labelValue = label.val() || pname
         var sensitivityValue = sensitivity.val()
         var dividerValue = divider.val() ? parseFloat(divider.val()): divider.val()
-        var colouredValue = ledColourMode.is(':visible') ? parseInt(ledColourMode.val()) : 0
-        var momentarySwValue = momentarySwMode.is(':visible') ? parseInt(momentarySwMode.val()) : 0
+        var colouredValue = ledColourMode.hasClass('disabled') ? 0 : parseInt(ledColourMode.val())
+        var momentarySwValue = momentarySwMode.hasClass('disabled') ? 0 : parseInt(momentarySwMode.val())
         var operationalModeValue = operationalMode.val()
 
         // if changing from midi-learn, unlearn first
