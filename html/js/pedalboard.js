@@ -1549,7 +1549,7 @@ JqueryClass('pedalboard', {
         return Object.keys(uris)
     },
 
-    setPortEnabled: function (instance, symbol, enabled, feedback, forceAddress) {
+    setPortEnabled: function (instance, symbol, enabled, feedback, forceAddress, momentaryMode) {
         var self = $(this)
         var targetname1, targetname2
         var callbackId  = instance+'/'+symbol+":enabled"
@@ -1570,7 +1570,7 @@ JqueryClass('pedalboard', {
                 gui.disable(symbol)
             }
             if (forceAddress) {
-              gui.addressPort(symbol, feedback)
+              gui.addressPort(symbol, feedback, momentaryMode)
             }
 
         } else {
@@ -1587,7 +1587,7 @@ JqueryClass('pedalboard', {
                 }
 
                 if (forceAddress) {
-                  gui.addressPort(symbol, feedback)
+                  gui.addressPort(symbol, feedback, momentaryMode)
                 }
             }
 
