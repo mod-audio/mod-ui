@@ -429,7 +429,7 @@ function GUI(effect, options) {
         }
     }
 
-    this.addressPort = function (symbol, feedback) {
+    this.addressPort = function (symbol, feedback, momentaryMode) {
       var port = self.controls[symbol]
       if (symbol !== ":presets") {
         // add "addressed" class to all related widgets
@@ -441,7 +441,7 @@ function GUI(effect, options) {
         // allow feedback when interacting with widget
         if (feedback) {
           for (var i in port.widgets) {
-              port.widgets[i].controlWidget('address')
+              port.widgets[i].controlWidget('address', momentaryMode || 0)
           }
         }
       } else {
@@ -1318,6 +1318,16 @@ var baseWidget = {
 
         self.data('dragPrecisionVertical', Math.ceil(100 / portSteps))
         self.data('dragPrecisionHorizontal', Math.ceil(portSteps / 10))
+
+        var momentary
+        if (port.properties.indexOf("preferMomentaryOffByDefault") >= 0) {
+            momentary = 2
+        } else if (port.properties.indexOf("preferMomentaryOnByDefault") >= 0) {
+            momentary = 1
+        } else {
+            momentary = 0
+        }
+        self.data('momentary', momentary)
     },
 
     setValue: function (value, only_gui) {
@@ -1336,8 +1346,9 @@ var baseWidget = {
     enable: function () {
         $(this).removeClass('addressed').removeClass('disabled').data('enabled', true)
     },
-    address: function () {
+    address: function (momentary) {
         $(this).data('enabled', true)
+        $(this).data('momentary', momentary)
     },
 
     valueFromSteps: function (steps) {
@@ -1505,6 +1516,11 @@ JqueryClass('film', baseWidget, {
                    We DO NOT want this click event, as it will bump the current value again. */
                 return
             }
+            if (self.data('momentary')) {
+                /* If we get a click while momentary mode is on, ignore the click.
+                   We will use mouseDown/Up instead as a way to deal with momentary action. */
+                return
+            }
             self.film('mouseClick', e)
         })
 
@@ -1585,10 +1601,40 @@ JqueryClass('film', baseWidget, {
         self.data('dragged', false)
         self.data('lastY', e.pageY)
         self.data('lastX', e.pageX)
+
+        var value
+        switch (self.data('momentary'))
+        {
+        case 1:
+            value = self.data('maximum')
+            break;
+        case 2:
+            value = self.data('minimum')
+            break;
+        default:
+            return;
+        }
+
+        self.film('setValue', value, false)
     },
 
     mouseUp: function (e) {
         var self = $(this)
+
+        var value
+        switch (self.data('momentary'))
+        {
+        case 1:
+            value = self.data('minimum')
+            break;
+        case 2:
+            value = self.data('maximum')
+            break;
+        default:
+            return;
+        }
+
+        self.film('setValue', value, false)
     },
 
     mouseMove: function (e) {
@@ -1747,13 +1793,47 @@ JqueryClass('switchWidget', baseWidget, {
         var self = $(this)
         self.switchWidget('config', options)
         self.switchWidget('setValue', options.port.ranges.default, true)
+
+        var upHandler = function (e) {
+            self.switchWidget('mouseUp', e)
+            $(document).unbind('mouseup', upHandler)
+        }
+
+        self.mousedown(function (e) {
+            e.preventDefault();
+            if (!self.data('enabled')) {
+                return self.switchWidget('prevent', e)
+            }
+            if (e.which == 1) { // left button
+                self.switchWidget('mouseDown', e)
+                $(document).bind('mouseup', upHandler)
+            }
+         })
+
+        self.bind('touchstart', function (e) {
+            e.preventDefault();
+            if (!self.data('enabled')) {
+                return self.switchWidget('prevent', e)
+            }
+            self.switchWidget('mouseDown', e.originalEvent.changedTouches[0])
+        })
+        self.bind('touchend', function (e) {
+            self.switchWidget('mouseUp', e.originalEvent.changedTouches[0])
+        })
+
         self.click(function (e) {
             if (!self.data('enabled')) {
                 return self.switchWidget('prevent', e)
             }
+            if (self.data('momentary')) {
+                /* If we get a click while momentary mode is on, ignore the click.
+                   We will use mouseDown/Up instead as a way to deal with momentary action. */
+                return
+            }
             var nextValue = (self.data('value') == self.data('minimum')) ? self.data('maximum') : self.data('minimum')
             self.switchWidget('setValue', nextValue, false)
         })
+
         return self
     },
     setValue: function (value, only_gui) {
@@ -1769,7 +1849,43 @@ JqueryClass('switchWidget', baseWidget, {
         if (!only_gui) {
             self.trigger('valuechange', value)
         }
-    }
+    },
+    mouseDown: function (e) {
+        var self = $(this)
+
+        var value
+        switch (self.data('momentary'))
+        {
+        case 1:
+            value = self.data('maximum')
+            break;
+        case 2:
+            value = self.data('minimum')
+            break;
+        default:
+            return;
+        }
+
+        self.switchWidget('setValue', value, false)
+    },
+    mouseUp: function (e) {
+        var self = $(this)
+
+        var value
+        switch (self.data('momentary'))
+        {
+        case 1:
+            value = self.data('minimum')
+            break;
+        case 2:
+            value = self.data('maximum')
+            break;
+        default:
+            return;
+        }
+
+        self.switchWidget('setValue', value, false)
+    },
 })
 
 // this is the same as switchWidget with extra bypass-specific stuff
@@ -1779,13 +1895,47 @@ JqueryClass('bypassWidget', baseWidget, {
         self.data('changeLights', options.changeLights)
         self.bypassWidget('config', options)
         self.bypassWidget('setValue', options.port.ranges.default, true)
+
+        var upHandler = function (e) {
+            self.bypassWidget('mouseUp', e)
+            $(document).unbind('mouseup', upHandler)
+        }
+
+        self.mousedown(function (e) {
+            e.preventDefault();
+            if (!self.data('enabled')) {
+                return self.bypassWidget('prevent', e)
+            }
+            if (e.which == 1) { // left button
+                self.bypassWidget('mouseDown', e)
+                $(document).bind('mouseup', upHandler)
+            }
+         })
+
+        self.bind('touchstart', function (e) {
+            e.preventDefault();
+            if (!self.data('enabled')) {
+                return self.bypassWidget('prevent', e)
+            }
+            self.bypassWidget('mouseDown', e.originalEvent.changedTouches[0])
+        })
+        self.bind('touchend', function (e) {
+            self.bypassWidget('mouseUp', e.originalEvent.changedTouches[0])
+        })
+
         self.click(function (e) {
             if (!self.data('enabled')) {
                 return self.bypassWidget('prevent', e)
             }
+            if (self.data('momentary')) {
+                /* If we get a click while momentary mode is on, ignore the click.
+                   We will use mouseDown/Up instead as a way to deal with momentary action. */
+                return
+            }
             var nextValue = (self.data('value') == self.data('minimum')) ? self.data('maximum') : self.data('minimum')
             self.bypassWidget('setValue', nextValue, false)
         })
+
         return self
     },
     setValue: function (value, only_gui) {
@@ -1802,6 +1952,44 @@ JqueryClass('bypassWidget', baseWidget, {
         if (!only_gui) {
             self.trigger('valuechange', value)
         }
+    },
+    mouseDown: function (e) {
+        var self = $(this)
+
+        // NOTE values are purposefully inverted
+        var value
+        switch (self.data('momentary'))
+        {
+        case 1:
+            value = self.data('minimum')
+            break;
+        case 2:
+            value = self.data('maximum')
+            break;
+        default:
+            return;
+        }
+
+        self.bypassWidget('setValue', value, false)
+    },
+    mouseUp: function (e) {
+        var self = $(this)
+
+        // NOTE values are purposefully inverted
+        var value
+        switch (self.data('momentary'))
+        {
+        case 1:
+            value = self.data('maximum')
+            break;
+        case 2:
+            value = self.data('minimum')
+            break;
+        default:
+            return;
+        }
+
+        self.bypassWidget('setValue', value, false)
     },
 })
 

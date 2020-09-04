@@ -4232,13 +4232,17 @@ _:b%i
             needsValueChange = True
 
         # momentary on
-        if momentary == 1 and value != minimum:
-            value = minimum
-            needsValueChange = True
+        if momentary == 1:
+            target = maximum if portsymbol == ":bypass" else minimum
+            if value != target:
+                value = target
+                needsValueChange = True
         # momentary off
-        elif momentary == 2 and value != maximum:
-            value = maximum
-            needsValueChange = True
+        elif momentary == 2:
+            target = minimum if portsymbol == ":bypass" else maximum
+            if value != target:
+                value = target
+                needsValueChange = True
 
         group_actuators = self.addressings.get_group_actuators(actuator_uri)
         if group_actuators is not None:
