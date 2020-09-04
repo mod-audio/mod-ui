@@ -12,7 +12,6 @@ from mod.settings import PEDALBOARD_INSTANCE_ID
 from modtools.utils import get_plugin_control_inputs_and_monitored_outputs
 from modtools.tempo import get_divider_options
 from mod.mod_protocol import (
-    FLAG_CONTROL_LINEAR,
     FLAG_CONTROL_BYPASS,
     FLAG_CONTROL_TAP_TEMPO,
     FLAG_CONTROL_ENUMERATION,
@@ -691,6 +690,8 @@ class Addressings(object):
                 hmitype = FLAG_CONTROL_BYPASS
                 if momentary:
                     hmitype |= FLAG_CONTROL_MOMENTARY
+                    if momentary == 2:
+                        hmitype |= FLAG_CONTROL_REVERSE_ENUM
 
             elif portsymbol == ":presets":
                 hmitype = FLAG_CONTROL_ENUMERATION|FLAG_CONTROL_SCALE_POINTS|FLAG_CONTROL_INTEGER
@@ -700,10 +701,12 @@ class Addressings(object):
                     hmitype = FLAG_CONTROL_TOGGLED
                     if momentary:
                         hmitype |= FLAG_CONTROL_MOMENTARY
+                        if momentary == 2:
+                            hmitype |= FLAG_CONTROL_REVERSE_ENUM
                 elif "integer" in pprops:
                     hmitype = FLAG_CONTROL_INTEGER
                 else:
-                    hmitype = FLAG_CONTROL_LINEAR
+                    hmitype = 0x0 # linear, fallback mode
 
                 if "logarithmic" in pprops:
                     hmitype |= FLAG_CONTROL_LOGARITHMIC
