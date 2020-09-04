@@ -86,7 +86,7 @@ function HardwareManager(options) {
         address: function (instanceAndSymbol, addressing, callback) { callback(true) },
 
         // Callback to enable or disable a control in GUI
-        setEnabled: function (instance, portSymbol, enabled, feedback) {},
+        setEnabled: function (instance, portSymbol, enabled, feedback, momentaryMode) {},
 
         // Renders the address html template
         renderForm: function (instance, port) {},
@@ -1023,7 +1023,7 @@ function HardwareManager(options) {
 
                 // disable this control
                 var feedback = actuator.feedback === false ? false : true // backwards compat, true by default
-                options.setEnabled(instance, port.symbol, false, feedback, true)
+                options.setEnabled(instance, port.symbol, false, feedback, true, momentarySwValue)
             }
             // We're unaddressing
             else if (unaddressing)
@@ -1217,7 +1217,7 @@ function HardwareManager(options) {
             momentary: momentary
         }
         // disable this control if needed
-        options.setEnabled(instance, portSymbol, false, feedback, true)
+        options.setEnabled(instance, portSymbol, false, feedback, true, momentary)
     }
 
     this.addCvMapping = function (instance, portSymbol, actuator_uri,
