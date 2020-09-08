@@ -55,13 +55,16 @@ static std::vector<std::string> gUnregisteredPorts;
 static snd_mixer_t* gAlsaMixer = nullptr;
 static snd_mixer_elem_t* gAlsaControlLeft  = nullptr;
 static snd_mixer_elem_t* gAlsaControlRight = nullptr;
+static snd_mixer_elem_t* gAlsaControlCvExp = nullptr;
 static bool gLastAlsaValueLeft  = true;
 static bool gLastAlsaValueRight = true;
+static bool gLastAlsaValueCvExp = false;
 
 static JackBufSizeChanged     jack_bufsize_changed_cb = nullptr;
 static JackPortAppeared       jack_port_appeared_cb   = nullptr;
 static JackPortDeleted        jack_port_deleted_cb    = nullptr;
 static TrueBypassStateChanged true_bypass_changed_cb  = nullptr;
+static CvExpInputModeChanged  cv_exp_mode_changed_cb  = nullptr;
 
 // --------------------------------------------------------------------------------------------------------
 
@@ -176,6 +179,13 @@ bool init_jack(void)
                 snd_mixer_selem_id_set_index(sid, 0);
                 snd_mixer_selem_id_set_name(sid, ALSA_CONTROL_BYPASS_RIGHT);
                 gAlsaControlRight = snd_mixer_find_selem(gAlsaMixer, sid);
+
+#if defined(__MOD_DEVICES__) && defined(__aarch64__)
+                // special case until HMI<->system comm is not in place yet
+                snd_mixer_selem_id_set_index(sid, 0);
+                snd_mixer_selem_id_set_name(sid, "CV/Exp.Pedal Mode");
+                gAlsaControlCvExp = snd_mixer_find_selem(gAlsaMixer, sid);
+#endif
 
                 snd_mixer_selem_id_free(sid);
             }
@@ -332,9 +342,9 @@ JackData* get_jack_data(bool withTransport)
         jack_bufsize_changed_cb(bufsize);
     }
 
-    if (gAlsaMixer != nullptr && true_bypass_changed_cb != nullptr)
+    if (gAlsaMixer != nullptr && (true_bypass_changed_cb != nullptr || cv_exp_mode_changed_cb != nullptr))
     {
-        bool changed = false;
+        bool changedBypass = false;
         snd_mixer_handle_events(gAlsaMixer);
 
         if (gAlsaControlLeft != nullptr)
@@ -343,7 +353,7 @@ JackData* get_jack_data(bool withTransport)
 
             if (gLastAlsaValueLeft != newValue)
             {
-                changed = true;
+                changedBypass = true;
                 gLastAlsaValueLeft = newValue;
             }
         }
@@ -354,13 +364,32 @@ JackData* get_jack_data(bool withTransport)
 
             if (gLastAlsaValueRight != newValue)
             {
-                changed = true;
+                changedBypass = true;
                 gLastAlsaValueRight = newValue;
             }
         }
 
-        if (changed)
+        if (changedBypass && true_bypass_changed_cb != nullptr)
             true_bypass_changed_cb(gLastAlsaValueLeft, gLastAlsaValueRight);
+
+#if defined(__MOD_DEVICES__) && defined(__aarch64__)
+        // special case until HMI<->system comm is not in place yet
+        bool changedCvExpMode = false;
+
+        if (gAlsaControlCvExp != nullptr)
+        {
+            const bool newValue = _get_alsa_switch_value(gAlsaControlCvExp);
+
+            if (gLastAlsaValueCvExp != newValue)
+            {
+                changedCvExpMode = true;
+                gLastAlsaValueCvExp = newValue;
+            }
+        }
+
+        if (changedCvExpMode && cv_exp_mode_changed_cb != nullptr)
+            cv_exp_mode_changed_cb(gLastAlsaValueCvExp);
+#endif
     }
 
     return &data;
@@ -580,6 +609,12 @@ void init_bypass(void)
     if (gAlsaControlRight != nullptr)
         snd_mixer_selem_set_playback_switch_all(gAlsaControlRight, 0);
 
+#if defined(__MOD_DEVICES__) && defined(__aarch64__)
+    // special case until HMI<->system comm is not in place yet
+    if (gAlsaControlCvExp != nullptr)
+        gLastAlsaValueCvExp = _get_alsa_switch_value(gAlsaControlCvExp);
+#endif
+
     snd_mixer_selem_id_t* sid;
     if (snd_mixer_selem_id_malloc(&sid) == 0)
     {
@@ -671,6 +706,19 @@ void set_util_callbacks(JackBufSizeChanged bufSizeChanged,
     jack_port_appeared_cb   = portAppeared;
     jack_port_deleted_cb    = portDeleted;
     true_bypass_changed_cb  = trueBypassChanged;
+}
+
+
+void set_extra_util_callbacks(CvExpInputModeChanged cvExpInputModeChanged)
+{
+#if defined(__MOD_DEVICES__) && defined(__aarch64__)
+    cv_exp_mode_changed_cb = cvExpInputModeChanged;
+#else
+    // unused
+    (void)cvExpInputModeChanged;
+    (void)gAlsaControlCvExp;
+    (void)gLastAlsaValueCvExp;
+#endif
 }
 
 // --------------------------------------------------------------------------------------------------------

@@ -287,6 +287,7 @@ typedef void (*JackBufSizeChanged)(unsigned bufsize);
 typedef void (*JackPortAppeared)(const char* name, bool isOutput);
 typedef void (*JackPortDeleted)(const char* name);
 typedef void (*TrueBypassStateChanged)(bool left, bool right);
+typedef void (*CvExpInputModeChanged)(bool expPedalMode);
 
 // initialize
 MOD_API void init(void);
@@ -392,6 +393,9 @@ MOD_API void set_util_callbacks(JackBufSizeChanged bufSizeChanged,
                                 JackPortAppeared portAppeared,
                                 JackPortDeleted portDeleted,
                                 TrueBypassStateChanged trueBypassChanged);
+
+// special case until HMI<->system comm is not in place yet
+MOD_API void set_extra_util_callbacks(CvExpInputModeChanged cvExpInputModeChanged);
 
 #ifdef __cplusplus
 } // extern "C"
