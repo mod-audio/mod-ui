@@ -430,6 +430,7 @@ JackBufSizeChanged = CFUNCTYPE(None, c_uint)
 JackPortAppeared = CFUNCTYPE(None, c_char_p, c_bool)
 JackPortDeleted = CFUNCTYPE(None, c_char_p)
 TrueBypassStateChanged = CFUNCTYPE(None, c_bool, c_bool)
+CvExpInputModeChanged = CFUNCTYPE(None, c_bool)
 
 c_struct_types = (PluginAuthor,
                   PluginGUI,
@@ -584,6 +585,9 @@ utils.get_master_volume.restype  = c_float
 
 utils.set_util_callbacks.argtypes = [JackBufSizeChanged, JackPortAppeared, JackPortDeleted, TrueBypassStateChanged]
 utils.set_util_callbacks.restype  = None
+
+utils.set_extra_util_callbacks.argtypes = [CvExpInputModeChanged]
+utils.set_extra_util_callbacks.restype  = None
 
 # ------------------------------------------------------------------------------------------------------------
 
@@ -835,6 +839,17 @@ def set_util_callbacks(bufSizeChanged, portAppeared, portDeleted, trueBypassChan
     portDeletedCb       = JackPortDeleted(portDeleted)
     trueBypassChangedCb = TrueBypassStateChanged(trueBypassChanged)
     utils.set_util_callbacks(bufSizeChangedCb, portAppearedCb, portDeletedCb, trueBypassChangedCb)
+
+# ------------------------------------------------------------------------------------------------------------
+# special case until HMI<->system comm is not in place yet
+
+global cvExpInputModeChangedCb
+cvExpInputModeChangedCb = None
+
+def set_extra_util_callbacks(cvExpInputModeChanged):
+    global cvExpInputModeChangedCb
+    cvExpInputModeChangedCb = CvExpInputModeChanged(cvExpInputModeChanged)
+    utils.set_extra_util_callbacks(cvExpInputModeChangedCb)
 
 # ------------------------------------------------------------------------------------------------------------
 # set process name

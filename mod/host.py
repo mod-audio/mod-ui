@@ -132,7 +132,7 @@ from modtools.utils import (
     has_midi_beat_clock_sender_port,
     connect_jack_ports, connect_jack_midi_output_ports, disconnect_jack_ports,
     set_truebypass_value, get_master_volume,
-    set_util_callbacks, kPedalboardTimeAvailableBPB,
+    set_util_callbacks, set_extra_util_callbacks, kPedalboardTimeAvailableBPB,
     kPedalboardTimeAvailableBPM, kPedalboardTimeAvailableRolling
 )
 from modtools.tempo import (
@@ -412,6 +412,7 @@ class Host(object):
                            self.jack_port_appeared,
                            self.jack_port_deleted,
                            self.true_bypass_changed)
+        set_extra_util_callbacks(self.cv_exp_mode_changed)
 
         # Setup addressing callbacks
         self.addressings._task_addressing = self.addr_task_addressing
@@ -565,6 +566,10 @@ class Host(object):
 
         self.last_true_bypass_left = left
         self.last_true_bypass_right = right
+
+    def cv_exp_mode_changed(self, expMode):
+        if self.hmi.initialized:
+            self.hmi.set_profile_value(MENU_ID_EXP_CV_INPUT, int(expMode), None)
 
     def remove_port_from_connections(self, name):
         removed_conns = []
