@@ -4245,7 +4245,8 @@ _:b%i
             for group_actuator_uri in group_actuators:
                 group_addressing = self.addressings.add(instance_id, pluginData['uri'], portsymbol, group_actuator_uri,
                                                         label, minimum, maximum, steps, value,
-                                                        tempo, dividers, page, actuator_uri)
+                                                        tempo, dividers, page, actuator_uri,
+                                                        coloured, momentary, operational_mode)
                                               # group=[a for a in group_actuators if a != group_actuator_uri])
                 if group_addressing is None:
                     callback(False)
