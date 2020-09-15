@@ -90,6 +90,11 @@ JqueryClass('cloudPluginBox', {
         })
 
         self.find('input:checkbox[name=installed]').click(function (e) {
+            self.find('input:checkbox[name=non-installed]').prop('checked', false)
+            self.cloudPluginBox('search')
+        })
+        self.find('input:checkbox[name=non-installed]').click(function (e) {
+            self.find('input:checkbox[name=installed]').prop('checked', false)
             self.cloudPluginBox('search')
         })
 
@@ -214,7 +219,10 @@ JqueryClass('cloudPluginBox', {
         if (self.find('input:checkbox[name=installed]:checked').length)
             return self.cloudPluginBox('searchInstalled', usingLabs, query, customRenderCallback)
 
-        return self.cloudPluginBox('searchAll', usingLabs, query, customRenderCallback)
+        if (self.find('input:checkbox[name=non-installed]:checked').length)
+            return self.cloudPluginBox('searchAll', usingLabs, false, query, customRenderCallback)
+
+        return self.cloudPluginBox('searchAll', usingLabs, true, query, customRenderCallback)
     },
 
     synchronizePluginData: function (plugin) {
@@ -235,8 +243,8 @@ JqueryClass('cloudPluginBox', {
         desktop.resetPluginIndexer(plugins.filter(function(plugin) { return !!plugin.installedVersion }))
     },
 
-    // search cloud and local plugins, show all but prefer cloud
-    searchAll: function (usingLabs, query, customRenderCallback) {
+    // search cloud and local plugins, prefer cloud
+    searchAll: function (usingLabs, showInstalled, query, customRenderCallback) {
         var self = $(this)
         var results = {}
         var cplugin, lplugin,
@@ -413,10 +421,16 @@ JqueryClass('cloudPluginBox', {
             dataType: 'json'
         })
 
+        if (!showInstalled) {
+            results.local = {}
+            renderResults()
+            return
+        }
+
         // local search
         if (query.text)
         {
-            var lplugins   = {}
+            var lplugins = {}
 
             var ret = desktop.pluginIndexer.search(query.text)
             for (var i in ret) {
@@ -447,6 +461,10 @@ JqueryClass('cloudPluginBox', {
                     }
 
                     results.local = $.extend(true, {}, allplugins) // deep copy instead of link/reference
+                    renderResults()
+                },
+                error: function () {
+                    results.local = {}
                     renderResults()
                 },
                 cache: false,
@@ -558,7 +576,7 @@ JqueryClass('cloudPluginBox', {
         // local search
         if (query.text)
         {
-            var lplugins   = []
+            var lplugins = []
 
             var ret = desktop.pluginIndexer.search(query.text)
             for (var i in ret) {
@@ -581,11 +599,10 @@ JqueryClass('cloudPluginBox', {
                 method: 'GET',
                 url: '/effect/list',
                 success: function (plugins) {
-                    var i, plugin, allplugins = {}
+                    var i, plugin
                     for (i in plugins) {
                         plugin = plugins[i]
                         plugin.installedVersion = [plugin.builder || 0, plugin.minorVersion, plugin.microVersion, plugin.release]
-                        allplugins[plugin.uri] = plugin
                     }
 
                     results.local = plugins
