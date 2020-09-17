@@ -300,10 +300,11 @@ class PluginInfo_Mini(Structure):
         ("gui", PluginGUI_Mini),
     ]
 
-class PluginInfo_Controls(Structure):
+class PluginInfo_Essentials(Structure):
     _fields_ = [
-        ("inputs", POINTER(PluginPort)),
+        ("controlInputs", POINTER(PluginPort)),
         ("monitoredOutputs", POINTER(c_char_p)),
+        ("parameters", POINTER(PluginParameter)),
         ("buildEnvironment", c_char_p),
     ]
 
@@ -494,8 +495,11 @@ utils.get_plugin_gui.restype  = POINTER(PluginGUI)
 utils.get_plugin_gui_mini.argtypes = [c_char_p]
 utils.get_plugin_gui_mini.restype  = POINTER(PluginGUI_Mini)
 
-utils.get_plugin_control_inputs_and_monitored_outputs.argtypes = [c_char_p]
-utils.get_plugin_control_inputs_and_monitored_outputs.restype  = POINTER(PluginInfo_Controls)
+utils.get_plugin_control_inputs.argtypes = [c_char_p]
+utils.get_plugin_control_inputs.restype  = POINTER(PluginPort)
+
+utils.get_plugin_info_essentials.argtypes = [c_char_p]
+utils.get_plugin_info_essentials.restype  = POINTER(PluginInfo_Essentials)
 
 utils.rescan_plugin_presets.argtypes = [c_char_p]
 utils.rescan_plugin_presets.restype  = None
@@ -663,11 +667,23 @@ def get_plugin_gui_mini(uri):
         raise Exception
     return structToDict(info.contents)
 
-# get all control inputs and monitored outputs for a specific plugin
-def get_plugin_control_inputs_and_monitored_outputs(uri):
-    info = utils.get_plugin_control_inputs_and_monitored_outputs(uri.encode("utf-8"))
+def get_plugin_control_inputs(uri):
+    info = utils.get_plugin_control_inputs(uri.encode("utf-8"))
     if not info:
-        return {'inputs':[],'monitoredOutputs':[],'buildEnvironment':'','error':True}
+        return []
+    return structPtrToList(info.contents)
+
+# get essential plugin info for host control (control inputs, monitored outputs, parameters and build environment)
+def get_plugin_info_essentials(uri):
+    info = utils.get_plugin_info_essentials(uri.encode("utf-8"))
+    if not info:
+        return {
+            'error': True,
+            'controlInputs': [],
+            'monitoredOutputs': [],
+            'parameters': [],
+            'buildEnvironment': '',
+        }
     return structToDict(info.contents)
 
 # trigger a preset rescan for a plugin the next time it's loaded
