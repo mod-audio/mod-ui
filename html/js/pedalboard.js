@@ -1650,6 +1650,31 @@ JqueryClass('pedalboard', {
         }
     },
 
+    setParameterWidgetsValue: function (instance, uri, value) {
+        var self = $(this)
+        var targetname1 = '.mod-pedal [mod-instance="'+instance+'"][mod-parameter-uri="'+uri+'"]'
+        var targetname2 = '.mod-pedal-settings [mod-instance="'+instance+'"][mod-parameter-uri="'+uri+'"]'
+        var callbackId  = instance+'@'+uri+'@value'
+        var gui = self.pedalboard('getGui', instance)
+
+        if (gui && ($(targetname1).length || $(targetname2).length)) {
+            gui.setParameterWidgetsValue(uri, value, null, true)
+
+        } else {
+            var cb = function () {
+                delete self.data('callbacksToArrive')[callbackId]
+                $(document).unbindArrive(targetname1, cb)
+                $(document).unbindArrive(targetname2, cb)
+
+                var gui = self.pedalboard('getGui', instance)
+                gui.setParameterWidgetsValue(uri, value, null, true)
+            }
+
+            self.pedalboard('addUniqueCallbackToArrive', cb, targetname1, callbackId)
+            self.pedalboard('addUniqueCallbackToArrive', cb, targetname2, callbackId)
+        }
+    },
+
     selectPreset: function (instance, value) {
         var self = $(this)
         var gui = self.pedalboard('getGui', instance)

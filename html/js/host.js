@@ -123,6 +123,16 @@ $('document').ready(function() {
             return
         }
 
+        if (cmd == "patch_set") {
+            data         = data.split(" ",3)
+            var instance = data[0]
+            var uri      = data[1]
+            var value    = parseFloat(data[2])
+
+            desktop.pedalboard.pedalboard("setParameterWidgetsValue", instance, uri, value);
+            return
+        }
+
         if (cmd == "output_atom") {
             data         = data.split(" ",3)
             var instance = data[0]
