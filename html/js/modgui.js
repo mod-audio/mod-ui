@@ -313,10 +313,19 @@ function GUI(effect, options) {
 
             if (parameteri.type === "http://lv2plug.in/ns/ext/atom#Bool") {
                 properties = ["toggled", "integer"]
+                parameteri.ranges.default = !!parameteri.ranges.default
+                parameteri.ranges.minimum = !!parameteri.ranges.minimum
+                parameteri.ranges.maximum = !!parameteri.ranges.maximum
             } else if (parameteri.type === "http://lv2plug.in/ns/ext/atom#Int") {
                 properties = ["integer"]
+                parameteri.ranges.default = parameteri.ranges.default|0
+                parameteri.ranges.minimum = parameteri.ranges.minimum|0
+                parameteri.ranges.maximum = parameteri.ranges.maximum|0
             } else if (parameteri.type === "http://lv2plug.in/ns/ext/atom#Long") {
                 properties = ["integer"]
+                parameteri.ranges.default = Math.round(parameteri.ranges.default)
+                parameteri.ranges.minimum = Math.round(parameteri.ranges.minimum)
+                parameteri.ranges.maximum = Math.round(parameteri.ranges.maximum)
             } else if (parameteri.type === "http://lv2plug.in/ns/ext/atom#Float") {
                 properties = []
             } else if (parameteri.type === "http://lv2plug.in/ns/ext/atom#Double") {
@@ -532,6 +541,21 @@ function GUI(effect, options) {
     this.setParameterWidgetsValue = function (uri, value, source, only_gui) {
         var valueField, widget,
             parameter = self.parameters[uri]
+
+        // when host.js is used the source is null and value needs conversion
+        if (source == null) {
+            /*  */ if (parameter.type === "http://lv2plug.in/ns/ext/atom#Bool") {
+                value = parseInt(value) != 0
+            } else if (parameter.type === "http://lv2plug.in/ns/ext/atom#Int") {
+                value = parseInt(value)
+            } else if (parameter.type === "http://lv2plug.in/ns/ext/atom#Long") {
+                value = parseInt(value)
+            } else if (parameter.type === "http://lv2plug.in/ns/ext/atom#Float") {
+                value = parseFloat(value)
+            } else if (parameter.type === "http://lv2plug.in/ns/ext/atom#Double") {
+                value = parseFloat(value)
+            }
+        }
 
         parameter.value = value
 
@@ -1232,6 +1256,10 @@ function GUI(effect, options) {
                     }
                 })
 
+                if (instance) {
+                    control.attr("mod-instance", instance)
+                }
+
                 parameter.widgets.push(control)
 
                 self.setParameterWidgetsValue(uri, parameter.value, control, true)
@@ -1472,7 +1500,7 @@ function GUI(effect, options) {
             self.lv2PatchGet(uri)
         },
         patch_set: function (uri, value) {
-            self.lv2PatchSet(uri, value)
+            self.lv2PatchSet(uri, value, "from-js")
         }
     }
 
