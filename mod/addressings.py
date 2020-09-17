@@ -9,8 +9,8 @@ from tornado import gen
 from mod import get_hardware_descriptor, get_nearest_valid_scalepoint_value, safe_json_load, TextFileFlusher
 from mod.control_chain import ControlChainDeviceListener
 from mod.settings import PEDALBOARD_INSTANCE_ID
-from modtools.utils import get_plugin_control_inputs_and_monitored_outputs
 from modtools.tempo import get_divider_options
+from modtools.utils import get_plugin_control_inputs
 from mod.mod_protocol import (
     FLAG_CONTROL_BYPASS,
     FLAG_CONTROL_TAP_TEMPO,
@@ -632,7 +632,7 @@ class Addressings(object):
                 return None
 
         elif portsymbol != ":bypass":
-            for port_info in get_plugin_control_inputs_and_monitored_outputs(plugin_uri)['inputs']:
+            for port_info in get_plugin_control_inputs(plugin_uri):
                 if port_info["symbol"] == portsymbol:
                     break
             else:
