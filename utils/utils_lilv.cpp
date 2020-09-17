@@ -3881,9 +3881,49 @@ const PluginGUI_Mini* get_plugin_gui_mini(const char* uri_)
 
 // --------------------------------------------------------------------------------------------------------
 
-const PluginInfo_Controls* get_plugin_control_inputs_and_monitored_outputs(const char* const uri_)
+const PluginPort* get_plugin_control_inputs(const char* const uri_)
 {
-    static PluginInfo_Controls info;
+    const std::string uri = uri_;
+
+    // check if plugin exists
+    if (PLUGNFO.count(uri) == 0)
+        return nullptr;
+
+    // return right-away if already cached
+    if (PLUGNFO[uri].valid)
+    {
+        const PluginInfo& pInfo = PLUGNFO[uri];
+        return pInfo.ports.control.input;
+    }
+
+    const NamespaceDefinitions ns;
+
+    // look for it
+    LILV_FOREACH(plugins, itpls, PLUGINS)
+    {
+        const LilvPlugin* const p = lilv_plugins_get(PLUGINS, itpls);
+
+        const char* const uri2 = lilv_node_as_uri(lilv_plugin_get_uri(p));
+
+        if (uri != uri2)
+            continue;
+
+        // found the plugin
+        const PluginInfo& pInfo = _get_plugin_info(p, ns);
+
+        PLUGNFO[uri] = pInfo;
+        _fill_plugin_info_mini_from_full(pInfo, &PLUGNFO_Mini[uri]);
+
+        return pInfo.ports.control.input;
+    }
+
+    // plugin not found
+    return nullptr;
+}
+
+const PluginInfo_Essentials* get_plugin_info_essentials(const char* const uri_)
+{
+    static PluginInfo_Essentials info;
 
     const std::string uri = uri_;
 
@@ -3896,8 +3936,9 @@ const PluginInfo_Controls* get_plugin_control_inputs_and_monitored_outputs(const
     {
         const PluginInfo& pInfo = PLUGNFO[uri];
 
-        info.inputs = pInfo.ports.control.input;
+        info.controlInputs    = pInfo.ports.control.input;
         info.monitoredOutputs = pInfo.gui.monitoredOutputs;
+        info.parameters       = pInfo.parameters;
         info.buildEnvironment = pInfo.buildEnvironment;
         return &info;
     }
@@ -3909,9 +3950,9 @@ const PluginInfo_Controls* get_plugin_control_inputs_and_monitored_outputs(const
     {
         const LilvPlugin* const p = lilv_plugins_get(PLUGINS, itpls);
 
-        std::string uri2 = lilv_node_as_uri(lilv_plugin_get_uri(p));
+        const char* const uri2 = lilv_node_as_uri(lilv_plugin_get_uri(p));
 
-        if (uri2 != uri)
+        if (uri != uri2)
             continue;
 
         // found the plugin
@@ -3920,8 +3961,9 @@ const PluginInfo_Controls* get_plugin_control_inputs_and_monitored_outputs(const
         PLUGNFO[uri] = pInfo;
         _fill_plugin_info_mini_from_full(pInfo, &PLUGNFO_Mini[uri]);
 
-        info.inputs = pInfo.ports.control.input;
+        info.controlInputs    = pInfo.ports.control.input;
         info.monitoredOutputs = pInfo.gui.monitoredOutputs;
+        info.parameters       = pInfo.parameters;
         info.buildEnvironment = pInfo.buildEnvironment;
         return &info;
     }
@@ -3929,6 +3971,8 @@ const PluginInfo_Controls* get_plugin_control_inputs_and_monitored_outputs(const
     // plugin not found
     return nullptr;
 }
+
+// --------------------------------------------------------------------------------------------------------
 
 // trigger a preset rescan for a plugin the next time it's loaded
 void rescan_plugin_presets(const char* const uri_)
