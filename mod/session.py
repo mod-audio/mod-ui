@@ -317,14 +317,19 @@ class Session(object):
 
         self.msg_callback_broadcast("param_set %s %s %f" % (instance, portsymbol, value), ws)
 
-    # Set a plugin parameter
-    # We use ":bypass" symbol for on/off state
-    def ws_patch_parameter_set(self, instance, uri, value, ws):
+    # LV2 patch support
+    def ws_patch_get(self, instance, uri, ws):
         def resp(ok):
-            print("host patch_param_set responded with", ok)
+            print("host patch_get responded with", ok)
 
-        self.host.patch_param_set(instance, uri, value, resp)
-        self.msg_callback_broadcast("patch_param_set %s %s %s" % (instance, uri, value), ws)
+        self.host.patch_get(instance, uri, resp)
+
+    def ws_patch_set(self, instance, uri, value, ws):
+        def resp(ok):
+            print("host patch_set responded with", ok)
+
+        self.host.patch_set(instance, uri, value, resp)
+        self.msg_callback_broadcast("patch_set %s %s %s" % (instance, uri, str(value)), ws)
 
     # Set a plugin block position within the canvas
     def ws_plugin_position(self, instance, x, y):
