@@ -668,10 +668,7 @@ def get_plugin_gui_mini(uri):
     return structToDict(info.contents)
 
 def get_plugin_control_inputs(uri):
-    info = utils.get_plugin_control_inputs(uri.encode("utf-8"))
-    if not info:
-        return []
-    return structPtrToList(info.contents)
+    return structPtrToList(utils.get_plugin_control_inputs(uri.encode("utf-8")))
 
 # get essential plugin info for host control (control inputs, monitored outputs, parameters and build environment)
 def get_plugin_info_essentials(uri):
