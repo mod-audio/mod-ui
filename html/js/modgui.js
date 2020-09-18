@@ -313,9 +313,9 @@ function GUI(effect, options) {
 
             if (parameteri.type === "http://lv2plug.in/ns/ext/atom#Bool") {
                 properties = ["toggled", "integer"]
-                parameteri.ranges.default = !!parameteri.ranges.default
-                parameteri.ranges.minimum = !!parameteri.ranges.minimum
-                parameteri.ranges.maximum = !!parameteri.ranges.maximum
+                parameteri.ranges.default = parameteri.ranges.default|0
+                parameteri.ranges.minimum = parameteri.ranges.minimum|0
+                parameteri.ranges.maximum = parameteri.ranges.maximum|0
             } else if (parameteri.type === "http://lv2plug.in/ns/ext/atom#Int") {
                 properties = ["integer"]
                 parameteri.ranges.default = parameteri.ranges.default|0
@@ -545,7 +545,7 @@ function GUI(effect, options) {
         // when host.js is used the source is null and value needs conversion
         if (source == null) {
             /*  */ if (parameter.type === "http://lv2plug.in/ns/ext/atom#Bool") {
-                value = parseInt(value) != 0
+                value = parseInt(value)
             } else if (parameter.type === "http://lv2plug.in/ns/ext/atom#Int") {
                 value = parseInt(value)
             } else if (parameter.type === "http://lv2plug.in/ns/ext/atom#Long") {
