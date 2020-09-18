@@ -2499,6 +2499,16 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
                         else
                             param.ranges.def = param.ranges.min;
                     }
+                    else if (strcmp(param.type, LV2_ATOM__Bool) == 0)
+                    {
+                        param.ranges.min = 0.0f;
+                        param.ranges.max = 1.0f;
+
+                        if (xdefault != nullptr)
+                            param.ranges.def = std::min(1.0f, std::max(0.0f, lilv_node_as_float(xdefault)));
+                        else
+                            param.ranges.def = param.ranges.min;
+                    }
 
                     lilv_node_free(xminimum);
                     lilv_node_free(xmaximum);
