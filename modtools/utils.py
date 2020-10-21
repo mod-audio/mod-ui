@@ -232,6 +232,10 @@ class PluginParameter(Structure):
         ("uri", c_char_p),
         ("label", c_char_p),
         ("type", c_char_p),
+        ("ranges", PluginPortRanges),
+        ("units", PluginPortUnits),
+        ("comment", c_char_p),
+        ("shortName", c_char_p),
         ("fileTypes", POINTER(c_char_p)),
         ("supportedExtensions", POINTER(c_char_p)),
     ]

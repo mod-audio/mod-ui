@@ -1283,6 +1283,111 @@ const PluginInfo_Mini& _get_plugin_info_mini(const LilvPlugin* const p, const Na
     return info;
 }
 
+static void _fill_units(PluginPortUnits& portunits, LilvNode* const uunit, const NamespaceDefinitions& ns)
+{
+    const char* uuri = lilv_node_as_uri(uunit);
+
+    // using pre-existing lv2 unit
+    if (uuri != nullptr && strncmp(uuri, LV2_UNITS_PREFIX, 38) == 0)
+    {
+        uuri += 38; // strlen(LV2_UNITS_PREFIX)
+
+        if (_isalnum(uuri))
+        {
+            const char* const* unittable;
+
+            if (strcmp(uuri, "s") == 0)
+                unittable = kUnit_s;
+            else if (strcmp(uuri, "ms") == 0)
+                unittable = kUnit_ms;
+            else if (strcmp(uuri, "min") == 0)
+                unittable = kUnit_min;
+            else if (strcmp(uuri, "bar") == 0)
+                unittable = kUnit_bar;
+            else if (strcmp(uuri, "beat") == 0)
+                unittable = kUnit_beat;
+            else if (strcmp(uuri, "frame") == 0)
+                unittable = kUnit_frame;
+            else if (strcmp(uuri, "m") == 0)
+                unittable = kUnit_m;
+            else if (strcmp(uuri, "cm") == 0)
+                unittable = kUnit_cm;
+            else if (strcmp(uuri, "mm") == 0)
+                unittable = kUnit_mm;
+            else if (strcmp(uuri, "km") == 0)
+                unittable = kUnit_km;
+            else if (strcmp(uuri, "inch") == 0)
+                unittable = kUnit_inch;
+            else if (strcmp(uuri, "mile") == 0)
+                unittable = kUnit_mile;
+            else if (strcmp(uuri, "db") == 0)
+                unittable = kUnit_db;
+            else if (strcmp(uuri, "pc") == 0)
+                unittable = kUnit_pc;
+            else if (strcmp(uuri, "coef") == 0)
+                unittable = kUnit_coef;
+            else if (strcmp(uuri, "hz") == 0)
+                unittable = kUnit_hz;
+            else if (strcmp(uuri, "khz") == 0)
+                unittable = kUnit_khz;
+            else if (strcmp(uuri, "mhz") == 0)
+                unittable = kUnit_mhz;
+            else if (strcmp(uuri, "bpm") == 0)
+                unittable = kUnit_bpm;
+            else if (strcmp(uuri, "oct") == 0)
+                unittable = kUnit_oct;
+            else if (strcmp(uuri, "cent") == 0)
+                unittable = kUnit_cent;
+            else if (strcmp(uuri, "semitone12TET") == 0)
+                unittable = kUnit_semitone12TET;
+            else if (strcmp(uuri, "degree") == 0)
+                unittable = kUnit_degree;
+            else if (strcmp(uuri, "midiNote") == 0)
+                unittable = kUnit_midiNote;
+            else
+                unittable = nullptr;
+
+            if (unittable != nullptr)
+            {
+                portunits.label  = unittable[0];
+                portunits.render = unittable[1];
+                portunits.symbol = unittable[2];
+            }
+        }
+    }
+    // using mod:volts unit
+    else if (uuri != nullptr && strcmp(uuri, LILV_NS_MOD "volts") == 0)
+    {
+        portunits.label  = kUnit_volts[0];
+        portunits.render = kUnit_volts[1];
+        portunits.symbol = kUnit_volts[2];
+    }
+    // using custom unit
+    else
+    {
+        if (LilvNode* const node = lilv_world_get(W, uunit, ns.rdfs_label, nullptr))
+        {
+            portunits.label = strdup(lilv_node_as_string(node));
+            lilv_node_free(node);
+        }
+
+        if (LilvNode* const node = lilv_world_get(W, uunit, ns.units_render, nullptr))
+        {
+            portunits.render = strdup(lilv_node_as_string(node));
+            lilv_node_free(node);
+        }
+
+        if (LilvNode* const node = lilv_world_get(W, uunit, ns.units_symbol, nullptr))
+        {
+            portunits.symbol = strdup(lilv_node_as_string(node));
+            lilv_node_free(node);
+        }
+
+        portunits._custom = true;
+    }
+
+}
+
 const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDefinitions& ns)
 {
     static PluginInfo info;
@@ -2172,6 +2277,23 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
                         portinfo.ranges.def = lilv_node_as_float(lilv_nodes_get_first(xdefault));
                     else
                         portinfo.ranges.def = portinfo.ranges.min;
+
+                    if (portinfo.properties != nullptr)
+                    {
+                        for (int j=0; portinfo.properties[j] != nullptr; ++j)
+                        {
+                            if (strcmp(portinfo.properties[j], "preferMomentaryOffByDefault") == 0)
+                            {
+                                portinfo.ranges.def = portinfo.ranges.max;
+                                break;
+                            }
+                            if (strcmp(portinfo.properties[j], "preferMomentaryOnByDefault") == 0)
+                            {
+                                portinfo.ranges.def = portinfo.ranges.min;
+                                break;
+                            }
+                        }
+                    }
                 }
                 else
                 {
@@ -2251,107 +2373,7 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
                 if (LilvNodes* const uunits = lilv_port_get_value(p, port, ns.units_unit))
                 {
                     LilvNode* const uunit = lilv_nodes_get_first(uunits);
-                    const char* uuri = lilv_node_as_uri(uunit);
-
-                    // using pre-existing lv2 unit
-                    if (uuri != nullptr && strncmp(uuri, LV2_UNITS_PREFIX, 38) == 0)
-                    {
-                        uuri += 38; // strlen(LV2_UNITS_PREFIX)
-
-                        if (_isalnum(uuri))
-                        {
-                            const char* const* unittable;
-
-                            if (strcmp(uuri, "s") == 0)
-                                unittable = kUnit_s;
-                            else if (strcmp(uuri, "ms") == 0)
-                                unittable = kUnit_ms;
-                            else if (strcmp(uuri, "min") == 0)
-                                unittable = kUnit_min;
-                            else if (strcmp(uuri, "bar") == 0)
-                                unittable = kUnit_bar;
-                            else if (strcmp(uuri, "beat") == 0)
-                                unittable = kUnit_beat;
-                            else if (strcmp(uuri, "frame") == 0)
-                                unittable = kUnit_frame;
-                            else if (strcmp(uuri, "m") == 0)
-                                unittable = kUnit_m;
-                            else if (strcmp(uuri, "cm") == 0)
-                                unittable = kUnit_cm;
-                            else if (strcmp(uuri, "mm") == 0)
-                                unittable = kUnit_mm;
-                            else if (strcmp(uuri, "km") == 0)
-                                unittable = kUnit_km;
-                            else if (strcmp(uuri, "inch") == 0)
-                                unittable = kUnit_inch;
-                            else if (strcmp(uuri, "mile") == 0)
-                                unittable = kUnit_mile;
-                            else if (strcmp(uuri, "db") == 0)
-                                unittable = kUnit_db;
-                            else if (strcmp(uuri, "pc") == 0)
-                                unittable = kUnit_pc;
-                            else if (strcmp(uuri, "coef") == 0)
-                                unittable = kUnit_coef;
-                            else if (strcmp(uuri, "hz") == 0)
-                                unittable = kUnit_hz;
-                            else if (strcmp(uuri, "khz") == 0)
-                                unittable = kUnit_khz;
-                            else if (strcmp(uuri, "mhz") == 0)
-                                unittable = kUnit_mhz;
-                            else if (strcmp(uuri, "bpm") == 0)
-                                unittable = kUnit_bpm;
-                            else if (strcmp(uuri, "oct") == 0)
-                                unittable = kUnit_oct;
-                            else if (strcmp(uuri, "cent") == 0)
-                                unittable = kUnit_cent;
-                            else if (strcmp(uuri, "semitone12TET") == 0)
-                                unittable = kUnit_semitone12TET;
-                            else if (strcmp(uuri, "degree") == 0)
-                                unittable = kUnit_degree;
-                            else if (strcmp(uuri, "midiNote") == 0)
-                                unittable = kUnit_midiNote;
-                            else
-                                unittable = nullptr;
-
-                            if (unittable != nullptr)
-                            {
-                                portinfo.units.label  = unittable[0];
-                                portinfo.units.render = unittable[1];
-                                portinfo.units.symbol = unittable[2];
-                            }
-                        }
-                    }
-                    // using mod:volts unit
-                    else if (uuri != nullptr && strcmp(uuri, LILV_NS_MOD "volts") == 0)
-                    {
-                        portinfo.units.label  = kUnit_volts[0];
-                        portinfo.units.render = kUnit_volts[1];
-                        portinfo.units.symbol = kUnit_volts[2];
-                    }
-                    // using custom unit
-                    else
-                    {
-                        if (LilvNode* const node = lilv_world_get(W, uunit, ns.rdfs_label, nullptr))
-                        {
-                            portinfo.units.label = strdup(lilv_node_as_string(node));
-                            lilv_node_free(node);
-                        }
-
-                        if (LilvNode* const node = lilv_world_get(W, uunit, ns.units_render, nullptr))
-                        {
-                            portinfo.units.render = strdup(lilv_node_as_string(node));
-                            lilv_node_free(node);
-                        }
-
-                        if (LilvNode* const node = lilv_world_get(W, uunit, ns.units_symbol, nullptr))
-                        {
-                            portinfo.units.symbol = strdup(lilv_node_as_string(node));
-                            lilv_node_free(node);
-                        }
-
-                        portinfo.units._custom = true;
-                    }
-
+                    _fill_units(portinfo.units, uunit, ns);
                     lilv_nodes_free(uunits);
                 }
             }
@@ -2443,6 +2465,86 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
                 param.label = strdup(lilv_node_as_string(labelNode));
                 param.type  = strdup(lilv_node_as_string(rangeNode));
 
+                // ----------------------------------------------------------------------------------------------------
+                // ranges
+
+                {
+                    LilvNode* xminimum = lilv_world_get(W, patch, ns.mod_minimum, nullptr);
+                    if (xminimum == nullptr)
+                        xminimum = lilv_world_get(W, patch, ns.lv2core_minimum, nullptr);
+
+                    LilvNode* xmaximum = lilv_world_get(W, patch, ns.mod_maximum, nullptr);
+                    if (xmaximum == nullptr)
+                        xmaximum = lilv_world_get(W, patch, ns.lv2core_maximum, nullptr);
+
+                    LilvNode* xdefault = lilv_world_get(W, patch, ns.mod_default, nullptr);
+                    if (xdefault == nullptr)
+                        xdefault = lilv_world_get(W, patch, ns.lv2core_default, nullptr);
+
+                    if (xminimum != nullptr && xmaximum != nullptr)
+                    {
+                        param.ranges.min = lilv_node_as_float(xminimum);
+                        param.ranges.max = lilv_node_as_float(xmaximum);
+
+                        if (param.ranges.min >= param.ranges.max)
+                            param.ranges.max = param.ranges.min + 1.0f;
+
+                        if (xdefault != nullptr)
+                            param.ranges.def = lilv_node_as_float(xdefault);
+                        else
+                            param.ranges.def = param.ranges.min;
+                    }
+
+                    lilv_node_free(xminimum);
+                    lilv_node_free(xmaximum);
+                    lilv_node_free(xdefault);
+                }
+
+                // ----------------------------------------------------------------------------------------------------
+                // units
+
+                param.units.label  = nc;
+                param.units.render = nc;
+                param.units.symbol = nc;
+
+                if (LilvNode* const uunit = lilv_world_get(W, patch, ns.units_unit, nullptr))
+                {
+                    _fill_units(param.units, uunit, ns);
+                    lilv_node_free(uunit);
+                }
+
+                // ----------------------------------------------------------------------------------------------------
+                // comment
+
+                if (LilvNode* const node = lilv_world_get(W, patch, ns.rdfs_comment, nullptr))
+                {
+                    param.comment = strdup(lilv_node_as_string(node));
+                    lilv_node_free(node);
+                }
+                else
+                {
+                    param.comment = nc;
+                }
+
+                // ----------------------------------------------------------------------------------------------------
+                // short name
+
+                if (LilvNode* const node = lilv_world_get(W, patch, ns.lv2core_shortName, nullptr))
+                {
+                    param.shortName = strdup(lilv_node_as_string(node));
+                    lilv_node_free(node);
+                }
+                else
+                {
+                    param.shortName = strdup(param.label);
+                }
+
+                if (strlen(param.shortName) > 16)
+                    ((char*)param.shortName)[16] = '\0';
+
+                // ----------------------------------------------------------------------------------------------------
+                // file types
+
                 if (LilvNode* const fileTypesNode = lilv_world_get(W, patch, ns.mod_fileTypes, nullptr))
                 {
                     if (char* const fileTypes = strdup(lilv_node_as_string(fileTypesNode)))
@@ -2478,6 +2580,9 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
 
                     lilv_node_free(fileTypesNode);
                 }
+
+                // ----------------------------------------------------------------------------------------------------
+                // supported extensions
 
                 if (LilvNode* const supportedExtensionsNode = lilv_world_get(W, patch, ns.mod_supportedExtensions, nullptr))
                 {
@@ -2771,6 +2876,42 @@ static void _clear_port_info(PluginPort& portinfo)
     memset(&portinfo, 0, sizeof(PluginPort));
 }
 
+static void _clear_parameter_info(const PluginParameter& parameter)
+{
+    free((void*)parameter.uri);
+    free((void*)parameter.label);
+    free((void*)parameter.type);
+
+    if (parameter.comment != nc)
+        free((void*)parameter.comment);
+    if (parameter.shortName != nc)
+        free((void*)parameter.shortName);
+
+    if (parameter.fileTypes != nullptr)
+    {
+        free((void*)parameter.fileTypes[0]);
+        delete[] parameter.fileTypes;
+    }
+
+    if (parameter.supportedExtensions != nullptr)
+    {
+        free((void*)parameter.supportedExtensions[0]);
+        delete[] parameter.supportedExtensions;
+    }
+
+    if (parameter.units._custom)
+    {
+        if (parameter.units.label != nc)
+            free((void*)parameter.units.label);
+        if (parameter.units.render != nc)
+            free((void*)parameter.units.render);
+        if (parameter.units.symbol != nc)
+            free((void*)parameter.units.symbol);
+    }
+
+    // memset(&parameter, 0, sizeof(PluginParameter));
+}
+
 static void _clear_plugin_info(PluginInfo& info)
 {
     if (info.name != nc)
@@ -2898,21 +3039,7 @@ static void _clear_plugin_info(PluginInfo& info)
     if (info.parameters != nullptr)
     {
         for (int i=0; info.parameters[i].valid; ++i)
-        {
-            free((void*)info.parameters[i].uri);
-            free((void*)info.parameters[i].label);
-            free((void*)info.parameters[i].type);
-            if (info.parameters[i].fileTypes != nullptr)
-            {
-                free((void*)info.parameters[i].fileTypes[0]);
-                delete[] info.parameters[i].fileTypes;
-            }
-            if (info.parameters[i].supportedExtensions != nullptr)
-            {
-                free((void*)info.parameters[i].supportedExtensions[0]);
-                delete[] info.parameters[i].supportedExtensions;
-            }
-        }
+            _clear_parameter_info(info.parameters[i]);
         delete[] info.parameters;
     }
 

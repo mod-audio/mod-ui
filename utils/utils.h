@@ -115,6 +115,12 @@ typedef struct {
     const char* uri;
     const char* label;
     const char* type;
+    // for regular controls
+    PluginPortRanges ranges;
+    PluginPortUnits units;
+    const char* comment;
+    const char* shortName;
+    // for path stuff
     const char* const* fileTypes;
     const char* const* supportedExtensions;
     // TODO see what else is needed
