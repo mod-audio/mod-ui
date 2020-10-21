@@ -38,6 +38,7 @@ from mod.mod_protocol import (
     CMD_DUO_CONTROL_INDEX_SET,
     CMD_DUO_BANK_CONFIG,
     CMD_DUOX_PAGES_AVAILABLE,
+    CMD_DUOX_RESET_EEPROM,
     CMD_RESPONSE,
     CMD_RESTORE,
     FLAG_CONTROL_REVERSE,
@@ -508,6 +509,9 @@ class HMI(object):
 
     def restore(self, callback=None, datatype='int'):
         self.send(CMD_RESTORE, callback, datatype)
+
+    def reset_eeprom(self, callback=None, datatype='int'):
+        self.send(CMD_DUOX_RESET_EEPROM, callback, datatype)
 
     # FIXME this message should be generic, most likely
     def boot(self, bootdata, callback, datatype='int'):
