@@ -2154,6 +2154,23 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
                         portinfo.ranges.def = lilv_node_as_float(lilv_nodes_get_first(xdefault));
                     else
                         portinfo.ranges.def = portinfo.ranges.min;
+
+                    if (portinfo.properties != nullptr)
+                    {
+                        for (int j=0; portinfo.properties[j] != nullptr; ++j)
+                        {
+                            if (strcmp(portinfo.properties[j], "preferMomentaryOffByDefault") == 0)
+                            {
+                                portinfo.ranges.def = portinfo.ranges.max;
+                                break;
+                            }
+                            if (strcmp(portinfo.properties[j], "preferMomentaryOnByDefault") == 0)
+                            {
+                                portinfo.ranges.def = portinfo.ranges.min;
+                                break;
+                            }
+                        }
+                    }
                 }
                 else
                 {
