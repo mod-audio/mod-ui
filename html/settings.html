@@ -86,6 +86,13 @@
         padding-right: 5px;
         text-align: center;
     }
+    #bank-library #bank-list div.add-bank.disabled {
+        color: #666;
+    }
+    #bank-library #bank-list div.add-bank.disabled:hover {
+        background: #222222;
+        cursor: default;
+    }
 
     #bank-pedalboards-search #bank-pedalboards-result {
         background: none;
@@ -127,6 +134,7 @@
     VERSION          = '{{version}}'
     var TEMPLATES    = {}
     var NOTIFICATIONS_ENABLED = true
+    var HMI_EEPROM = {{hmi_eeprom}}
     var PREFERENCES = {{preferences}}
 
     var INFO = {
@@ -234,7 +242,7 @@ function refresh_device_updates(respDev, respVer) {
         elem.append(text)
     }
 
-    $("#tab-device-updates").show()
+    $("#tab-device-updates").removeClass("disabled")
 
     $(".button-action-update-firmware").click(function () {
         var self = $(this)
@@ -311,11 +319,13 @@ function config_set(key, value) {
     })
 }
 
-function system_cleanup(banks, pedalboards, plugins, callback) {
+function system_cleanup(favorites, hmiSettings, banks, pedalboards, plugins, callback) {
     $.ajax({
         url: '/system/cleanup',
         method: 'POST',
         data: {
+            favorites: banks ? 1 : 0,
+            hmiSettings: hmiSettings ? 1 : 0,
             banks: banks ? 1 : 0,
             pedalboards: pedalboards ? 1 : 0,
             plugins: plugins ? 1 : 0,
@@ -474,6 +484,9 @@ $('document').ready(function() {
     })
 
     $("#tab-device-updates").click(function () {
+        if ($(this).hasClass("disabled")) {
+            return
+        }
         // hide all
         $(".add-bank").removeClass("selected")
         $(".settings-page").hide()
@@ -519,6 +532,10 @@ $('document').ready(function() {
     }
     if (PREFERENCES['show-labs-plugins'] == "true") {
         $("#prefs-ui-labs-plugins").prop("checked", true)
+    }
+    if (! HMI_EEPROM) {
+        $("#prefs-delete-hmi-settings_br").hide()
+        $("#prefs-delete-hmi-settings_label").hide()
     }
 
     // ----------------------------------------------------------------------------------------------------------------
@@ -711,34 +728,41 @@ $('document').ready(function() {
 
     var deleteEnabled = function() {
         var ok = $("#prefs-delete-confirm").val().toUpperCase() == "DELETE";
+        var favorites = !!$("#prefs-delete-favorites").prop('checked');
+        var hmiSettings = !!$("#prefs-delete-hmi-settings").prop('checked');
         var banks = !!$("#prefs-delete-banks").prop('checked');
         var pedalboards = !!$("#prefs-delete-pedalboards").prop('checked');
         var plugins = !!$("#prefs-delete-plugins").prop('checked');
         var title = '';
-        if (!banks && !pedalboards && !plugins) {
+        if (!favorites && !hmiSettings && !banks && !pedalboards && !plugins) {
             title = "You need to check at least one checkbox above";
         } else if (!ok) {
             title = 'You need type "DELETE" on the input above to confirm data removal';
         }
-        $("#button-action-delete").attr('disabled', !ok || (!banks && !pedalboards && !plugins));
+        var disabled = !ok || (!favorites && !hmiSettings && !banks && !pedalboards && !plugins);
+        $("#button-action-delete").attr('disabled', disabled);
         $("#button-action-delete").attr('title', title);
     }
 
     $("#prefs-delete-confirm").change(deleteEnabled);
     $("#prefs-delete-confirm").keyup(deleteEnabled);
+    $("#prefs-delete-favorites").click(deleteEnabled);
+    $("#prefs-delete-hmi-settings").click(deleteEnabled);
     $("#prefs-delete-banks").click(deleteEnabled);
     $("#prefs-delete-pedalboards").click(deleteEnabled);
     $("#prefs-delete-plugins").click(deleteEnabled);
     deleteEnabled();
 
     $("#button-action-delete").click(function() {
+        var favorites = !!$("#prefs-delete-favorites").prop('checked');
+        var hmiSettings = !!$("#prefs-delete-hmi-settings").prop('checked');
         var banks = !!$("#prefs-delete-banks").prop('checked');
         var pedalboards = !!$("#prefs-delete-pedalboards").prop('checked');
         var plugins = !!$("#prefs-delete-plugins").prop('checked');
 
         var block = show_blocker("delete");
 
-        system_cleanup(banks, pedalboards, plugins, function (resp) {
+        system_cleanup(favorites, hmiSettings, banks, pedalboards, plugins, function (resp) {
             if (resp.ok) {
                 setTimeout(function () {
                     block.html('<p>Delete operation complete!</p>')
@@ -908,7 +932,7 @@ $('document').ready(function() {
         <div id="bank-list">
             <div id="tab-basic" class="add-bank selected">Basic</div>
             <div id="tab-advanced" class="add-bank">Advanced</div>
-            <div id="tab-device-updates" class="add-bank mod-hidden">Device Updates</div>
+            <div id="tab-device-updates" class="add-bank disabled">Device Updates</div>
             <div id="tab-dangerous" class="add-bank">Dangerous</div>
             <a href="/" id="go-back"><span class="icon-return"></span>Go back</a>
         </div>
@@ -1112,6 +1136,14 @@ $('document').ready(function() {
                         This will PERMANENTLY DELETE the selected USER DATA. This action is IRREVERSIBLE.
                         The device won't work properly until new items are created or installed.
                     </p>
+                    <label>
+                        <input type="checkbox" autocomplete="off" id="prefs-delete-favorites"> Clear favorite plugin list</input>
+                    </label>
+                    <br/>
+                    <label id="prefs-delete-hmi-settings_label">
+                        <input type="checkbox" autocomplete="off" id="prefs-delete-hmi-settings"> Clear device settings</input>
+                    </label>
+                    <br id="prefs-delete-hmi-settings_br"/>
                     <label>
                         <input type="checkbox" autocomplete="off" id="prefs-delete-banks"> Delete all Banks</input>
                     </label>
