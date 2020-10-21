@@ -598,13 +598,21 @@ class SystemCleanup(JsonRequestHandler):
     @gen.coroutine
     def post(self):
         banks       = bool(int(self.get_argument('banks')))
+        favorites   = bool(int(self.get_argument('favorites')))
+        hmiSettings = bool(int(self.get_argument('hmiSettings')))
         pedalboards = bool(int(self.get_argument('pedalboards')))
         plugins     = bool(int(self.get_argument('plugins')))
+
+        if hmiSettings and not get_hardware_descriptor().get('hmi_eeprom', False):
+            hmiSettings = False
 
         stuffToDelete = []
 
         if banks:
             stuffToDelete.append(BANKS_JSON_FILE)
+
+        if favorites:
+            stuffToDelete.append(FAVORITES_JSON_FILE)
 
         if pedalboards:
             stuffToDelete.append(LV2_PEDALBOARDS_DIR)
@@ -612,12 +620,17 @@ class SystemCleanup(JsonRequestHandler):
         if plugins:
             stuffToDelete.append(LV2_PLUGIN_DIR)
 
-        if not stuffToDelete:
+        if not stuffToDelete and not hmiSettings:
             self.write({
                 'ok'   : False,
                 'error': "Nothing to delete",
             })
             return
+
+        if hmiSettings:
+            # NOTE this will desync HMI, but we always restart ourselves at the end
+            SESSION.hmi.reset_eeprom(None)
+            yield gen.Task(SESSION.hmi.ping)
 
         if plugins:
             yield gen.Task(run_command, ["systemctl", "stop", "jack2"], None)
@@ -1066,8 +1079,8 @@ class EffectPresetSaveNew(JsonRequestHandler):
                 tempo = presets.get('tempo', False)
                 dividers = presets.get('dividers', None)
                 page = presets.get('page', None)
-                coloured = data.get('coloured', None)
-                momentary = data.get('momentary', None)
+                coloured = presets.get('coloured', None)
+                momentary = presets.get('momentary', None)
                 operational_mode = presets.get('operationalMode', None)
 
                 ok = yield gen.Task(SESSION.web_parameter_address, port, actuator_uri, label, minimum, maximum, value,
@@ -1745,12 +1758,14 @@ class TemplateHandler(TimelessRequestHandler):
         return context
 
     def settings(self):
+        hwdesc = get_hardware_descriptor()
         prefs = safe_json_load(PREFERENCES_JSON_FILE, dict)
 
         context = {
             'cloud_url': CLOUD_HTTP_ADDRESS,
             'controlchain_url': CONTROLCHAIN_HTTP_ADDRESS,
             'version': self.get_argument('v'),
+            'hmi_eeprom': 'true' if hwdesc.get('hmi_eeprom', False) else 'false',
             'preferences': json.dumps(prefs),
             'bufferSize': get_jack_buffer_size(),
             'sampleRate': get_jack_sample_rate(),

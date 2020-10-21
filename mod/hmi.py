@@ -38,9 +38,10 @@ from mod.mod_protocol import (
     CMD_DUO_CONTROL_INDEX_SET,
     CMD_DUO_BANK_CONFIG,
     CMD_DUOX_PAGES_AVAILABLE,
+    CMD_DUOX_RESET_EEPROM,
     CMD_RESPONSE,
     CMD_RESTORE,
-    FLAG_CONTROL_REVERSE_ENUM,
+    FLAG_CONTROL_REVERSE,
     FLAG_PAGINATION_PAGE_UP,
     FLAG_PAGINATION_WRAP_AROUND,
     FLAG_PAGINATION_INITIAL_REQ,
@@ -345,7 +346,7 @@ class HMI(object):
         hmi_set_index = self.hw_desc.get('hmi_set_index', False)
 
         if data.get('group', None) is not None:
-            if var_type & FLAG_CONTROL_REVERSE_ENUM:
+            if var_type & FLAG_CONTROL_REVERSE:
                 prefix = "- "
             else:
                 prefix = "+ "
@@ -508,6 +509,9 @@ class HMI(object):
 
     def restore(self, callback=None, datatype='int'):
         self.send(CMD_RESTORE, callback, datatype)
+
+    def reset_eeprom(self, callback=None, datatype='int'):
+        self.send(CMD_DUOX_RESET_EEPROM, callback, datatype)
 
     # FIXME this message should be generic, most likely
     def boot(self, bootdata, callback, datatype='int'):
