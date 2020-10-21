@@ -4726,14 +4726,13 @@ _:b%i
 
                 if port_addressing.get('tempo', None):
                     # compute new port value based on received divider value
-                    pluginInfo = get_plugin_info(pluginData['uri'])
+                    allports = get_plugin_control_inputs_and_monitored_outputs(pluginData['uri'])
 
-                    if not pluginInfo:
+                    if 'error' in allports.keys() and allports['error']:
                         callback(False)
                         return
 
-                    controlPorts = pluginInfo['ports']['control']['input']
-                    ports        = [p for p in controlPorts if p['symbol'] == portsymbol]
+                    ports = [p for p in allports['inputs'] if p['symbol'] == portsymbol]
 
                     if not ports:
                         callback(False)
