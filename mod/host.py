@@ -70,7 +70,7 @@ from mod.mod_protocol import (
     BANK_FUNC_PEDALBOARD_PREV,
     FLAG_CONTROL_ENUMERATION,
     FLAG_CONTROL_TRIGGER,
-    FLAG_CONTROL_REVERSE_ENUM,
+    FLAG_CONTROL_REVERSE,
     FLAG_CONTROL_MOMENTARY,
     FLAG_PAGINATION_PAGE_UP,
     FLAG_PAGINATION_WRAP_AROUND,
@@ -4804,9 +4804,9 @@ _:b%i
                 group_actuator = next((act for act in self.addressings.hw_actuators if act['uri'] == addressing_data['group']), None)
                 if group_actuator is not None:
                     if group_actuator['group'].index(group_actuator_uri) == 0:
-                        addressing_data['hmitype'] |= FLAG_CONTROL_REVERSE_ENUM
+                        addressing_data['hmitype'] |= FLAG_CONTROL_REVERSE
                     else:
-                        addressing_data['hmitype'] &= ~FLAG_CONTROL_REVERSE_ENUM
+                        addressing_data['hmitype'] &= ~FLAG_CONTROL_REVERSE
                 self.addressings.load_addr(group_actuator_uri, addressing_data, callback)
                 return
         callback(True)
@@ -4900,7 +4900,7 @@ _:b%i
         label = data['label']
 
         if data.get('group', None) is not None:
-            if data['hmitype'] & FLAG_CONTROL_REVERSE_ENUM:
+            if data['hmitype'] & FLAG_CONTROL_REVERSE:
                 prefix = "- "
             else:
                 prefix = "+ "

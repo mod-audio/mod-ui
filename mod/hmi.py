@@ -40,7 +40,7 @@ from mod.mod_protocol import (
     CMD_DUOX_PAGES_AVAILABLE,
     CMD_RESPONSE,
     CMD_RESTORE,
-    FLAG_CONTROL_REVERSE_ENUM,
+    FLAG_CONTROL_REVERSE,
     FLAG_PAGINATION_PAGE_UP,
     FLAG_PAGINATION_WRAP_AROUND,
     FLAG_PAGINATION_INITIAL_REQ,
@@ -345,7 +345,7 @@ class HMI(object):
         hmi_set_index = self.hw_desc.get('hmi_set_index', False)
 
         if data.get('group', None) is not None:
-            if var_type & FLAG_CONTROL_REVERSE_ENUM:
+            if var_type & FLAG_CONTROL_REVERSE:
                 prefix = "- "
             else:
                 prefix = "+ "
