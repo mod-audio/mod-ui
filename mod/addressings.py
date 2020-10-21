@@ -20,7 +20,7 @@ from mod.mod_protocol import (
     FLAG_CONTROL_TOGGLED,
     FLAG_CONTROL_LOGARITHMIC,
     FLAG_CONTROL_INTEGER,
-    FLAG_CONTROL_REVERSE_ENUM,
+    FLAG_CONTROL_REVERSE,
     FLAG_CONTROL_MOMENTARY,
 )
 
@@ -691,7 +691,7 @@ class Addressings(object):
                 if momentary:
                     hmitype |= FLAG_CONTROL_MOMENTARY
                     if momentary == 2:
-                        hmitype |= FLAG_CONTROL_REVERSE_ENUM
+                        hmitype |= FLAG_CONTROL_REVERSE
 
             elif portsymbol == ":presets":
                 hmitype = FLAG_CONTROL_ENUMERATION|FLAG_CONTROL_SCALE_POINTS|FLAG_CONTROL_INTEGER
@@ -702,7 +702,7 @@ class Addressings(object):
                     if momentary:
                         hmitype |= FLAG_CONTROL_MOMENTARY
                         if momentary == 2:
-                            hmitype |= FLAG_CONTROL_REVERSE_ENUM
+                            hmitype |= FLAG_CONTROL_REVERSE
                 elif "integer" in pprops:
                     hmitype = FLAG_CONTROL_INTEGER
                 else:
@@ -724,9 +724,9 @@ class Addressings(object):
                 group_actuator = next((act for act in self.hw_actuators if act['uri'] == group), None)
                 if group_actuator is not None:
                     if group_actuator['group'].index(actuator_uri) == 0:
-                        hmitype |= FLAG_CONTROL_REVERSE_ENUM
+                        hmitype |= FLAG_CONTROL_REVERSE
                     else:
-                        hmitype &= ~FLAG_CONTROL_REVERSE_ENUM
+                        hmitype &= ~FLAG_CONTROL_REVERSE
 
             if hmitype & FLAG_CONTROL_SCALE_POINTS:
                 if not tempo and value not in [o[0] for o in options]:
@@ -914,9 +914,9 @@ class Addressings(object):
                     group_addressing_data = addressing_data.copy()
                     group_addressing_data['actuator_uri'] = group_actuator_uri
                     if i == 0: # first actuator has reverse enum hmi type
-                        group_addressing_data['hmitype'] |= FLAG_CONTROL_REVERSE_ENUM
+                        group_addressing_data['hmitype'] |= FLAG_CONTROL_REVERSE
                     else:
-                        group_addressing_data['hmitype'] &= ~FLAG_CONTROL_REVERSE_ENUM
+                        group_addressing_data['hmitype'] &= ~FLAG_CONTROL_REVERSE
                     was_active = self.remove_hmi(group_addressing_data, group_actuator_uri)
                 return was_active
 

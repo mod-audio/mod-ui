@@ -35,6 +35,15 @@ CMD_ARGS = {
         'c': [int,int,],
         'upr': [int],
         'ups': [int],
+        'enc_clicked': [int],
+        'enc_left': [int],
+        'enc_right': [int],
+        'button_clicked': [int],
+        'pot_call_check': [int],
+        'pot_call_ok': [int],
+        'control_skip_enable': [],
+        'control_bad_skip': [],
+        'save_pot_cal': [int,int],
     },
     'DUO': {
         'boot': [int,int,str,],
@@ -50,57 +59,64 @@ CMD_ARGS = {
         'sl': [int],
         'sc': [],
         'pa': [int,int,int,int,int,int],
-        'enc_clicked': [int],
-        'save_pot_cal': [int,int],
+        'reset_eeprom': [],
     },
     'DWARF': {
     },
 }
 
-CMD_PING                      = 'pi'
-CMD_SAY                       = 'say'
-CMD_LED                       = 'l'
-CMD_GLCD_TEXT                 = 'glcd_text'
-CMD_GLCD_DIALOG               = 'glcd_dialog'
-CMD_GLCD_DRAW                 = 'glcd_draw'
-CMD_GUI_CONNECTED             = 'uc'
-CMD_GUI_DISCONNECTED          = 'ud'
-CMD_CONTROL_ADD               = 'a'
-CMD_CONTROL_REMOVE            = 'd'
-CMD_CONTROL_GET               = 'g'
-CMD_CONTROL_SET               = 's'
-CMD_CONTROL_PAGE              = 'ncp'
-CMD_INITIAL_STATE             = 'is'
-CMD_BANKS                     = 'b'
-CMD_PEDALBOARDS               = 'p'
-CMD_PEDALBOARD_LOAD           = 'pb'
-CMD_PEDALBOARD_RESET          = 'pr'
-CMD_PEDALBOARD_SAVE           = 'ps'
-CMD_PEDALBOARD_NAME_SET       = 'pn'
-CMD_PEDALBOARD_CLEAR          = 'pcl'
-CMD_SNAPSHOT_NAME_SET         = 'sn'
-CMD_TUNER                     = 'ts'
-CMD_TUNER_ON                  = 'tn'
-CMD_TUNER_OFF                 = 'tf'
-CMD_TUNER_INPUT               = 'ti'
-CMD_RESTORE                   = 'restore'
-CMD_RESPONSE                  = 'r'
-CMD_MENU_ITEM_CHANGE          = 'c'
-CMD_PROFILE_LOAD              = 'upr'
-CMD_PROFILE_STORE             = 'ups'
-CMD_DUO_BOOT                  = 'boot'
-CMD_DUO_FOOT_NAVIG            = 'fn'
-CMD_DUO_BANK_CONFIG           = 'bc'
-CMD_DUO_CONTROL_NEXT          = 'n'
-CMD_DUO_CONTROL_INDEX_SET     = 'si'
-CMD_DUOX_BOOT                 = 'boot'
-CMD_DUOX_NEXT_PAGE            = 'lp'
-CMD_DUOX_SNAPSHOT_SAVE        = 'ss'
-CMD_DUOX_SNAPSHOT_LOAD        = 'sl'
-CMD_DUOX_SNAPSHOT_CLEAR       = 'sc'
-CMD_DUOX_PAGES_AVAILABLE      = 'pa'
-CMD_DUOX_ENCODER_CLICKED      = 'enc_clicked'
-CMD_DUOX_SAVE_POT_CALIBRATION = 'save_pot_cal'
+CMD_PING                          = 'pi'
+CMD_SAY                           = 'say'
+CMD_LED                           = 'l'
+CMD_GLCD_TEXT                     = 'glcd_text'
+CMD_GLCD_DIALOG                   = 'glcd_dialog'
+CMD_GLCD_DRAW                     = 'glcd_draw'
+CMD_GUI_CONNECTED                 = 'uc'
+CMD_GUI_DISCONNECTED              = 'ud'
+CMD_CONTROL_ADD                   = 'a'
+CMD_CONTROL_REMOVE                = 'd'
+CMD_CONTROL_GET                   = 'g'
+CMD_CONTROL_SET                   = 's'
+CMD_CONTROL_PAGE                  = 'ncp'
+CMD_INITIAL_STATE                 = 'is'
+CMD_BANKS                         = 'b'
+CMD_PEDALBOARDS                   = 'p'
+CMD_PEDALBOARD_LOAD               = 'pb'
+CMD_PEDALBOARD_RESET              = 'pr'
+CMD_PEDALBOARD_SAVE               = 'ps'
+CMD_PEDALBOARD_NAME_SET           = 'pn'
+CMD_PEDALBOARD_CLEAR              = 'pcl'
+CMD_SNAPSHOT_NAME_SET             = 'sn'
+CMD_TUNER                         = 'ts'
+CMD_TUNER_ON                      = 'tn'
+CMD_TUNER_OFF                     = 'tf'
+CMD_TUNER_INPUT                   = 'ti'
+CMD_RESTORE                       = 'restore'
+CMD_RESPONSE                      = 'r'
+CMD_MENU_ITEM_CHANGE              = 'c'
+CMD_PROFILE_LOAD                  = 'upr'
+CMD_PROFILE_STORE                 = 'ups'
+CMD_SELFTEST_ENCODER_CLICKED      = 'enc_clicked'
+CMD_SELFTEST_ENCODER_LEFT         = 'enc_left'
+CMD_SELFTEST_ENCODER_RIGHT        = 'enc_right'
+CMD_SELFTEST_BUTTON_CLICKED       = 'button_clicked'
+CMD_SELFTEST_CHECK_CALIBRATION    = 'pot_call_check'
+CMD_SELFTEST_CALLIBRATION_OK      = 'pot_call_ok'
+CMD_SELFTEST_ENABLE_SKIP          = 'control_skip_enable'
+CMD_SELFTEST_SKIP_CONTROL         = 'control_bad_skip'
+CMD_SELFTEST_SAVE_POT_CALIBRATION = 'save_pot_cal'
+CMD_DUO_BOOT                      = 'boot'
+CMD_DUO_FOOT_NAVIG                = 'fn'
+CMD_DUO_BANK_CONFIG               = 'bc'
+CMD_DUO_CONTROL_NEXT              = 'n'
+CMD_DUO_CONTROL_INDEX_SET         = 'si'
+CMD_DUOX_BOOT                     = 'boot'
+CMD_DUOX_NEXT_PAGE                = 'lp'
+CMD_DUOX_SNAPSHOT_SAVE            = 'ss'
+CMD_DUOX_SNAPSHOT_LOAD            = 'sl'
+CMD_DUOX_SNAPSHOT_CLEAR           = 'sc'
+CMD_DUOX_PAGES_AVAILABLE          = 'pa'
+CMD_DUOX_RESET_EEPROM             = 'reset_eeprom'
 
 BANK_FUNC_NONE            = 0
 BANK_FUNC_TRUE_BYPASS     = 1
@@ -116,7 +132,7 @@ FLAG_CONTROL_TRIGGER          = 0x010
 FLAG_CONTROL_TOGGLED          = 0x020
 FLAG_CONTROL_LOGARITHMIC      = 0x040
 FLAG_CONTROL_INTEGER          = 0x080
-FLAG_CONTROL_REVERSE_ENUM     = 0x100
+FLAG_CONTROL_REVERSE          = 0x100
 FLAG_CONTROL_MOMENTARY        = 0x200
 
 FLAG_PAGINATION_PAGE_UP       = 0x1
