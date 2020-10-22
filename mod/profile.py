@@ -46,6 +46,13 @@ def apply_mixer_values(values, platform):
         os.system("/usr/bin/mod-amixer cvexp %s" % Profile.value_to_string('inputMode', values['inputMode']))
         os.system("/usr/bin/mod-amixer exppedal %s" % Profile.value_to_string('expPedalMode', values['expPedalMode']))
         return
+    if platform == "dwarf":
+        os.system("/usr/bin/mod-amixer in 1 xvol %f" % values['input1volume'])
+        os.system("/usr/bin/mod-amixer in 2 xvol %f" % values['input2volume'])
+        os.system("/usr/bin/mod-amixer out 1 xvol %f" % values['output1volume'])
+        os.system("/usr/bin/mod-amixer out 2 xvol %f" % values['output2volume'])
+        os.system("/usr/bin/mod-amixer hp xvol %f" % values['headphoneVolume'])
+        return
     if platform is None:
         logging.error("[profile] apply_mixer_values called without platform")
     else:
@@ -75,6 +82,13 @@ def fill_in_mixer_values(data, platform):
         data['inputMode']       = Profile.string_to_value('inputMode', getoutput("/usr/bin/mod-amixer cvexp").strip())
         data['expPedalMode']    = Profile.string_to_value('expPedalMode',
                                                           getoutput("/usr/bin/mod-amixer exppedal").strip())
+        return
+    if platform == "dwarf":
+        data['input1volume']    = float(getoutput("/usr/bin/mod-amixer in 1 xvol").strip())
+        data['input2volume']    = float(getoutput("/usr/bin/mod-amixer in 2 xvol").strip())
+        data['output1volume']   = float(getoutput("/usr/bin/mod-amixer out 1 xvol").strip())
+        data['output1volume']   = float(getoutput("/usr/bin/mod-amixer out 2 xvol").strip())
+        data['headphoneVolume'] = float(getoutput("/usr/bin/mod-amixer hp xvol").strip())
         return
     if platform is None:
         logging.error("[profile] fill_in_mixer_values called without platform")
