@@ -160,6 +160,11 @@ $('document').ready(function() {
         desktop.pedalboardModified = true
     }
 
+    if (!{{codec_truebypass}}) {
+        $('#mod-bypassLeft').hide()
+        $('#mod-bypassRight').hide()
+    }
+
     if ({{using_app}}) {
         desktop.setupApp()
     }

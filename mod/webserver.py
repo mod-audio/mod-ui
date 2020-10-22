@@ -1677,6 +1677,7 @@ class TemplateHandler(TimelessRequestHandler):
             'hardware_profile': b64encode(json.dumps(SESSION.get_hardware_actuators()).encode("utf-8")),
             'version': self.get_argument('v'),
             'bin_compat': hwdesc.get('bin-compat', "Unknown"),
+            'codec_truebypass': 'true' if hwdesc.get('codec_truebypass', False) else 'false',
             'platform': hwdesc.get('platform', "Unknown"),
             'pages_nb': hwdesc.get('pages_nb', 0),
             'pages_cb': hwdesc.get('pages_cb', 0),
