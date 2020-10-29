@@ -630,6 +630,7 @@ class SystemCleanup(JsonRequestHandler):
             # NOTE this will desync HMI, but we always restart ourselves at the end
             SESSION.hmi.reset_eeprom(None)
             yield gen.Task(SESSION.hmi.ping)
+            yield gen.Task(run_command, ["hmi-reset"], None)
 
         if plugins:
             yield gen.Task(run_command, ["systemctl", "stop", "jack2"], None)
