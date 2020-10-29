@@ -324,7 +324,7 @@ function system_cleanup(favorites, hmiSettings, banks, pedalboards, plugins, cal
         url: '/system/cleanup',
         method: 'POST',
         data: {
-            favorites: banks ? 1 : 0,
+            favorites: favorites ? 1 : 0,
             hmiSettings: hmiSettings ? 1 : 0,
             banks: banks ? 1 : 0,
             pedalboards: pedalboards ? 1 : 0,
