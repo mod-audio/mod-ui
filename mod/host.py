@@ -1609,6 +1609,27 @@ class Host(object):
         p['caller'] = caller
         return self.abort_progress_catcher
 
+    # NOTE these might not be needed, we might never use these value directly
+    def decode_parameter_string_as_value(self, value, vtype):
+        if vtype == 'int':
+            try:
+                return int(value)
+            except ValueError:
+                return 0
+        if vtype == 'float':
+            try:
+                return float(value)
+            except ValueError:
+                return 0.0
+        # TODO tuple and array
+        return value
+
+    def encode_parameter_value_as_string(self, value, vtype):
+        if vtype == 'str':
+            return value
+        # TODO tuple and array
+        return str(value)
+
     def mute(self):
         disconnect_jack_ports(self.jack_hwout_prefix + "1", "system:playback_1")
         disconnect_jack_ports(self.jack_hwout_prefix + "2", "system:playback_2")
@@ -1787,13 +1808,11 @@ class Host(object):
                     self.send_notmodified("monitor_output %d %s" % (instance_id, symbol))
 
             for paramuri, paramdata in pluginData['parameters'].items():
-                svalue = str(paramdata[0])
+                svalue = self.encode_parameter_value_as_string(paramdata[0], paramdata[1])
                 websocket.write_message("patch_set %s %s %s" % (pluginData['instance'], paramuri, svalue))
 
-                # TODO
-                #if crashed:
-                    #valuesize =
-                    #self.send_notmodified("patch_set %d %s %f" % (instance_id, paramuri, value))
+                if crashed:
+                    self.send_notmodified("patch_set %d %s %d \"%s\"" % (instance_id, paramuri, len(svalue), svalue))
 
             if crashed:
                 for symbol, data in pluginData['midiCCs'].items():
@@ -2242,19 +2261,10 @@ class Host(object):
 
         parameter = pluginData['parameters'][uri]
 
-        if parameter[1] in ("http://lv2plug.in/ns/ext/atom#Bool",
-                            "http://lv2plug.in/ns/ext/atom#Int",
-                            "http://lv2plug.in/ns/ext/atom#Long",
-                            "http://lv2plug.in/ns/ext/atom#Float",
-                            "http://lv2plug.in/ns/ext/atom#Double"):
-            parameter[0] = float(value)
-        # TODO tuple and array
-        else:
-            parameter[0] = value
-
-        value = str(value)
-
+        parameter[0] = self.decode_parameter_string_as_value(value, parameter[1])
+        value = self.encode_parameter_value_as_string(parameter[0], parameter[1])
         print("mod-host sent patch_set %d %s \"%s\"" % (instance_id, uri, value))
+
         self.send_modified("patch_set %d %s %d \"%s\"" % (instance_id, uri, len(value), value), callback, datatype='boolean')
 
     def set_position(self, instance, x, y):
@@ -3173,7 +3183,17 @@ class Host(object):
                 paramuri = param['uri']
                 if param['ranges']['minimum'] == param['ranges']['maximum']:
                     continue
-                params[paramuri] = [param['ranges']['default'], param['type']]
+                if param['type'] in ("http://lv2plug.in/ns/ext/atom#Bool",
+                                     "http://lv2plug.in/ns/ext/atom#Int",
+                                     "http://lv2plug.in/ns/ext/atom#Long"):
+                    ptype = 'int'
+                elif param['type'] in ("http://lv2plug.in/ns/ext/atom#Float",
+                                       "http://lv2plug.in/ns/ext/atom#Double"):
+                    ptype = 'float'
+                else:
+                    ptype = 'str'
+                pvalue = self.decode_parameter_string_as_value(param['ranges']['default'], ptype)
+                params[paramuri] = [pvalue, ptype]
                 ranges[paramuri] = (param['ranges']['minimum'], param['ranges']['maximum'])
 
             self.plugins[instance_id] = pluginData = {
