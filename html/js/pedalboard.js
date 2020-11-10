@@ -1650,7 +1650,7 @@ JqueryClass('pedalboard', {
         }
     },
 
-    setParameterWidgetsValue: function (instance, uri, value) {
+    setParameterWidgetsValue: function (instance, uri, valuestr) {
         var self = $(this)
         var targetname1 = '.mod-pedal [mod-instance="'+instance+'"][mod-parameter-uri="'+uri+'"]'
         var targetname2 = '.mod-pedal-settings [mod-instance="'+instance+'"][mod-parameter-uri="'+uri+'"]'
@@ -1658,7 +1658,7 @@ JqueryClass('pedalboard', {
         var gui = self.pedalboard('getGui', instance)
 
         if (gui && ($(targetname1).length || $(targetname2).length)) {
-            gui.setParameterWidgetsValue(uri, value, null, true)
+            gui.setParameterWidgetsValue(uri, valuestr, null, true)
 
         } else {
             var cb = function () {
@@ -1667,7 +1667,7 @@ JqueryClass('pedalboard', {
                 $(document).unbindArrive(targetname2, cb)
 
                 var gui = self.pedalboard('getGui', instance)
-                gui.setParameterWidgetsValue(uri, value, null, true)
+                gui.setParameterWidgetsValue(uri, valuestr, null, true)
             }
 
             self.pedalboard('addUniqueCallbackToArrive', cb, targetname1, callbackId)

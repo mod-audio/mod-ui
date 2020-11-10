@@ -1335,11 +1335,11 @@ class Host(object):
                     pluginData['outputs'][portsymbol] = value
                     self.msg_callback("output_set %s %s %f" % (instance, portsymbol, value))
 
-        elif cmd == "atom":
-            msg_data    = data.split(" ",3)
-            instance_id = int(msg_data[0])
-            portsymbol  = msg_data[1]
-            atomjson    = msg_data[2]
+        elif cmd == "patch_set":
+            msg_data     = data.split(" ",3)
+            instance_id  = int(msg_data[0])
+            parameteruri = msg_data[1]
+            valuestr     = msg_data[2]
 
             try:
                 instance   = self.mapper.get_instance(instance_id)
@@ -1347,8 +1347,10 @@ class Host(object):
             except:
                 pass
             else:
-                #pluginData['outputs'][portsymbol] = atomjson
-                self.msg_callback("output_atom %s %s %s" % (instance, portsymbol, atomjson))
+                parameter = pluginData['parameters'].get(parameteruri, None)
+                if parameter is not None:
+                    parameter[0] = valuestr
+                self.msg_callback("patch_set %s %s %s" % (instance, parameteruri, valuestr))
 
         elif cmd == "midi_mapped":
             msg_data    = data.split(" ",7)
