@@ -535,10 +535,14 @@ function GUI(effect, options) {
         }
 
         // update our own widgets
-        self.setParameterWidgetsValue(uri, value, source, false)
+        self.setWritableParameterValue(uri, value, source, false)
     }
 
-    this.setParameterWidgetsValue = function (uri, value, source, only_gui) {
+    this.setReadableParameterValue = function (uri, value) {
+        self.triggerJS({ type: 'change', uri: uri, value: value })
+    }
+
+    this.setWritableParameterValue = function (uri, value, source, only_gui) {
         var valueField, widget,
             parameter = self.parameters[uri]
 
@@ -1234,7 +1238,7 @@ function GUI(effect, options) {
                     {
                         self.setupValueField(valueField, parameter, function (value) {
                             self.lv2PatchSet(uri, value, control)
-                            // setParameterWidgetsValue() skips this control as it's the same as the 'source'
+                            // setWritableParameterValue() skips this control as it's the same as the 'source'
                             control.controlWidget('setValue', value, true)
                         })
                     }
@@ -1262,7 +1266,7 @@ function GUI(effect, options) {
 
                 parameter.widgets.push(control)
 
-                self.setParameterWidgetsValue(uri, parameter.value, control, true)
+                self.setWritableParameterValue(uri, parameter.value, control, true)
             }
             else
             {

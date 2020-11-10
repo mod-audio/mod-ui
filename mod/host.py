@@ -1350,7 +1350,10 @@ class Host(object):
                 parameter = pluginData['parameters'].get(parameteruri, None)
                 if parameter is not None:
                     parameter[0] = valuestr
-                self.msg_callback("patch_set %s %s %s" % (instance, parameteruri, valuestr))
+                    writable = 1
+                else:
+                    writable = 0
+                self.msg_callback("patch_set %s %d %s %s" % (instance, writable, parameteruri, valuestr))
 
         elif cmd == "midi_mapped":
             msg_data    = data.split(" ",7)
@@ -1811,7 +1814,7 @@ class Host(object):
 
             for paramuri, paramdata in pluginData['parameters'].items():
                 svalue = self.encode_parameter_value_as_string(paramdata[0], paramdata[1])
-                websocket.write_message("patch_set %s %s %s" % (pluginData['instance'], paramuri, svalue))
+                websocket.write_message("patch_set %s 1 %s %s" % (pluginData['instance'], paramuri, svalue))
 
                 if crashed:
                     self.send_notmodified("patch_set %d %s %d \"%s\"" % (instance_id, paramuri, len(svalue), svalue))

@@ -124,12 +124,17 @@ $('document').ready(function() {
         }
 
         if (cmd == "patch_set") {
-            data         = data.split(" ",3)
+            data         = data.split(" ",4)
             var instance = data[0]
-            var uri      = data[1]
-            var valuestr = data[2]
+            var writable = parseInt(data[1]) != 0
+            var uri      = data[2]
+            var valuestr = data[3]
 
-            desktop.pedalboard.pedalboard("setParameterWidgetsValue", instance, uri, valuestr);
+            if (writable) {
+                desktop.pedalboard.pedalboard("setWritableParameterValue", instance, uri, valuestr);
+            } else {
+                desktop.pedalboard.pedalboard("setReadableParameterValue", instance, uri, valuestr);
+            }
             return
         }
 
