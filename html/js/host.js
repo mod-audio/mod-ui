@@ -127,9 +127,9 @@ $('document').ready(function() {
             data         = data.split(" ",3)
             var instance = data[0]
             var uri      = data[1]
-            var value    = parseFloat(data[2])
+            var valuestr = data[2]
 
-            desktop.pedalboard.pedalboard("setParameterWidgetsValue", instance, uri, value);
+            desktop.pedalboard.pedalboard("setParameterWidgetsValue", instance, uri, valuestr);
             return
         }
 
