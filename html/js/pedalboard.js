@@ -1650,7 +1650,30 @@ JqueryClass('pedalboard', {
         }
     },
 
-    setParameterWidgetsValue: function (instance, uri, valuestr) {
+    setReadableParameterValue: function (instance, uri, valuestr) {
+        var self = $(this)
+        var gui = self.pedalboard('getGui', instance)
+
+        if (gui) {
+            gui.setReadableParameterValue(uri, valuestr)
+
+        } else {
+            var targetname = '.mod-pedal [mod-instance="'+instance+'"][mod-parameter-uri="'+uri+'"]'
+            var callbackId  = instance+'@'+uri+'@value'
+
+            var cb = function () {
+                delete self.data('callbacksToArrive')[callbackId]
+                $(document).unbindArrive(targetname, cb)
+
+                var gui = self.pedalboard('getGui', instance)
+                gui.setReadableParameterValue(uri, valuestr)
+            }
+
+            self.pedalboard('addUniqueCallbackToArrive', cb, targetname, callbackId)
+        }
+    },
+
+    setWritableParameterValue: function (instance, uri, valuestr) {
         var self = $(this)
         var targetname1 = '.mod-pedal [mod-instance="'+instance+'"][mod-parameter-uri="'+uri+'"]'
         var targetname2 = '.mod-pedal-settings [mod-instance="'+instance+'"][mod-parameter-uri="'+uri+'"]'
@@ -1658,7 +1681,7 @@ JqueryClass('pedalboard', {
         var gui = self.pedalboard('getGui', instance)
 
         if (gui && ($(targetname1).length || $(targetname2).length)) {
-            gui.setParameterWidgetsValue(uri, valuestr, null, true)
+            gui.setWritableParameterValue(uri, valuestr, null, true)
 
         } else {
             var cb = function () {
@@ -1667,7 +1690,7 @@ JqueryClass('pedalboard', {
                 $(document).unbindArrive(targetname2, cb)
 
                 var gui = self.pedalboard('getGui', instance)
-                gui.setParameterWidgetsValue(uri, valuestr, null, true)
+                gui.setWritableParameterValue(uri, valuestr, null, true)
             }
 
             self.pedalboard('addUniqueCallbackToArrive', cb, targetname1, callbackId)
