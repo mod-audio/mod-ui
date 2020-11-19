@@ -259,6 +259,7 @@ struct NamespaceDefinitions {
     LilvNode* const mod_buildEnvironment;
     LilvNode* const mod_fileTypes;
     LilvNode* const mod_supportedExtensions;
+    LilvNode* const mod_rawMIDIClockAcess;
     LilvNode* const modlicense_interface;
     LilvNode* const modgui_gui;
     LilvNode* const modgui_resourcesDirectory;
@@ -317,6 +318,7 @@ struct NamespaceDefinitions {
           mod_buildEnvironment     (lilv_new_uri(W, LILV_NS_MOD    "buildEnvironment"  )),
           mod_fileTypes            (lilv_new_uri(W, LILV_NS_MOD    "fileTypes"         )),
           mod_supportedExtensions  (lilv_new_uri(W, LILV_NS_MOD    "supportedExtensions")),
+          mod_rawMIDIClockAcess    (lilv_new_uri(W, LILV_NS_MOD    "rawMIDIClockAcess" )),
           modlicense_interface     (lilv_new_uri(W, MOD_LICENSE__interface             )),
           modgui_gui               (lilv_new_uri(W, LILV_NS_MODGUI "gui"               )),
           modgui_resourcesDirectory(lilv_new_uri(W, LILV_NS_MODGUI "resourcesDirectory")),
@@ -376,6 +378,7 @@ struct NamespaceDefinitions {
         lilv_node_free(mod_buildEnvironment);
         lilv_node_free(mod_fileTypes);
         lilv_node_free(mod_supportedExtensions);
+        lilv_node_free(mod_rawMIDIClockAcess);
         lilv_node_free(modlicense_interface);
         lilv_node_free(modgui_gui);
         lilv_node_free(modgui_resourcesDirectory);
@@ -2005,7 +2008,8 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
                         if (LilvNodes* const nodes2 = lilv_port_get_value(p, port, ns.atom_bufferType))
                         {
                             if (lilv_node_equals(lilv_nodes_get_first(nodes2), ns.atom_Sequence))
-                                type = kPortTypeMIDI;
+                                if (! lilv_port_has_property(p, port, ns.mod_rawMIDIClockAcess))
+                                    type = kPortTypeMIDI;
                             lilv_nodes_free(nodes2);
                         }
                     }
