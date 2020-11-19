@@ -732,8 +732,8 @@ class Host(object):
                 return
 
         if atype == Addressings.ADDRESSING_TYPE_CC:
-            # FIXME not supported yet, this line never gets reached
-            pass
+            return self.send_modified("cc_value_set %d %s %f" % (data['instance_id'], data['port'], data['value']),
+                                      callback, datatype='boolean')
 
         # Everything else has nothing
         callback(True)
@@ -1930,8 +1930,8 @@ class Host(object):
         current_addressing['value'] = float(value)
 
         if actuator_type == Addressings.ADDRESSING_TYPE_CC:
-            # FIXME not supported yet, this line never gets reached
-            pass
+            return self.send_modified("cc_value_set %d %s %f" % (instance_id, portsymbol, current_addressing['value']),
+                                      callback, datatype='boolean')
 
         if actuator_type != Addressings.ADDRESSING_TYPE_HMI:
             if callback is not None:
