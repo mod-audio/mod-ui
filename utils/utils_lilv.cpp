@@ -2132,7 +2132,8 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
                         if (LilvNodes* const nodes2 = lilv_port_get_value(p, port, ns.atom_bufferType))
                         {
                             if (lilv_node_equals(lilv_nodes_get_first(nodes2), ns.atom_Sequence))
-                                type = kPortTypeMIDI;
+                                if (! lilv_port_has_property(p, port, ns.mod_rawMIDIClockAccess))
+                                    type = kPortTypeMIDI;
                             lilv_nodes_free(nodes2);
                         }
                     }
