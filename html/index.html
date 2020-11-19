@@ -200,6 +200,9 @@ $('document').ready(function() {
     if (PREFERENCES['plugins-folded'] == "true") {
         desktop.effectBox.effectBox('toggle')
     }
+    if (PREFERENCES['show-unstable-plugins'] == "true") {
+        $("#cloud-plugins-stable").parent().show()
+    }
     if (PREFERENCES['show-labs-plugins'] == "true") {
         $("#cloud-plugins-source").parent().show()
     }
@@ -710,6 +713,10 @@ $('document').ready(function() {
                 <div class="control-group">
                     <input type="checkbox" name="non-installed" id="cloud-plugins-non-installed" />
                     <label for="cloud-plugins-non-installed">Non-Installed only</label>
+                </div>
+                <div class="control-group mod-hidden">
+                    <input type="checkbox" name="unstable" id="cloud-plugins-stable" />
+                    <label for="cloud-plugins-stable">Show beta plugins</label>
                 </div>
                 <div class="control-group mod-hidden">
                     <div class="switch" id="cloud-plugins-source">
