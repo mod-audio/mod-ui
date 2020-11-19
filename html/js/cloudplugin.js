@@ -272,6 +272,11 @@ JqueryClass('cloudPluginBox', {
                 cplugin = results.cloud[i]
                 lplugin = results.local[cplugin.uri]
 
+                if (!showInstalled && lplugin) {
+                    continue
+                }
+
+
                 if (results.featured) {
                     cplugin.featured = results.featured.filter(function (ft) { return ft.uri === cplugin.uri })[0]
                 }
@@ -341,21 +346,23 @@ JqueryClass('cloudPluginBox', {
             }
 
             // for all the other plugins that are not in the cloud
-            for (var uri in results.local) {
-                lplugin = results.local[uri]
-                lplugin.status = 'installed'
-                lplugin.latestVersion = null
-                self.cloudPluginBox('checkLocalScreenshot', lplugin)
-                if (lplugin.licensed) {
-                    if (lplugin.licensed > 0) {
-                        lplugin.licensed = true;
-                    } else {
-                        lplugin.licensed = false;
-                        lplugin.demo = true;
+            if (showInstalled) {
+                for (var uri in results.local) {
+                    lplugin = results.local[uri]
+                    lplugin.status = 'installed'
+                    lplugin.latestVersion = null
+                    self.cloudPluginBox('checkLocalScreenshot', lplugin)
+                    if (lplugin.licensed) {
+                        if (lplugin.licensed > 0) {
+                            lplugin.licensed = true;
+                        } else {
+                            lplugin.licensed = false;
+                            lplugin.demo = true;
+                        }
                     }
+                    self.cloudPluginBox('synchronizePluginData', lplugin)
+                    plugins.push(lplugin)
                 }
-                self.cloudPluginBox('synchronizePluginData', lplugin)
-                plugins.push(lplugin)
             }
 
             if (customRenderCallback) {
@@ -432,12 +439,6 @@ JqueryClass('cloudPluginBox', {
             cache: false,
             dataType: 'json'
         })
-
-        if (!showInstalled) {
-            results.local = {}
-            renderResults()
-            return
-        }
 
         // local search
         if (query.text)
