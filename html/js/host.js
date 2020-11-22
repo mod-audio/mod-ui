@@ -124,26 +124,18 @@ $('document').ready(function() {
         }
 
         if (cmd == "patch_set") {
-            data         = data.split(" ",4)
-            var instance = data[0]
-            var writable = parseInt(data[1]) != 0
-            var uri      = data[2]
-            var valuestr = data[3]
+            data          = data.split(" ",5)
+            var instance  = data[0]
+            var writable  = parseInt(data[1]) != 0
+            var uri       = data[2]
+            var valuetype = data[3]
+            var valuedata = data[4]
 
             if (writable) {
-                desktop.pedalboard.pedalboard("setWritableParameterValue", instance, uri, valuestr);
+                desktop.pedalboard.pedalboard("setWritableParameterValue", instance, uri, valuetype, valuedata);
             } else {
-                desktop.pedalboard.pedalboard("setReadableParameterValue", instance, uri, valuestr);
+                desktop.pedalboard.pedalboard("setReadableParameterValue", instance, uri, valuetype, valuedata);
             }
-            return
-        }
-
-        if (cmd == "output_atom") {
-            data         = data.split(" ",3)
-            var instance = data[0]
-            var symbol   = data[1]
-            var atom     = data[2]
-            desktop.pedalboard.pedalboard("setOutputPortValue", instance, symbol, JSON.parse(atom))
             return
         }
 

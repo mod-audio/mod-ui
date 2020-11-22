@@ -215,8 +215,8 @@ function GUI(effect, options) {
         patchGet: function (uri) {
             console.log("PATCH GET =>", uri)
         },
-        patchSet: function (uri, value) {
-            console.log("PATCH SET =>", uri, value)
+        patchSet: function (uri, valuetype, value) {
+            console.log("PATCH SET =>", uri, valuetype, value)
         },
         click: function (event) {
         },
@@ -454,17 +454,19 @@ function GUI(effect, options) {
             value = port.ranges.maximum
             console.log("WARNING: setPortValue called with > max value, symbol:", symbol)
         }
-
-        // update our own widgets
-        self.setPortWidgetsValue(symbol, value, source, false)
-
         // let the host know about this change
-        var mod_port = source ? source.attr("mod-port") : (self.instance ? self.instance+'/'+symbol : symbol)
+        var mod_port = source && source !== "from-js"
+                     ? source.attr("mod-port")
+                     : (self.instance ? self.instance+'/'+symbol : symbol)
         options.change(mod_port, value)
 
         // let the HMI know about this change
+        // FIXME totally wrong place for this
         var paramchange = (self.instance + '/' + symbol + '/' + value)
         desktop.ParameterSet(paramchange)
+
+        // update our own widgets
+        self.setPortWidgetsValue(symbol, value, source, false)
     }
 
     this.setPortWidgetsValue = function (symbol, value, source, only_gui) {
@@ -475,7 +477,7 @@ function GUI(effect, options) {
 
         for (var i in port.widgets) {
             widget = port.widgets[i]
-            if (source == null || widget != source) {
+            if (source == null || source === "from-js" || widget != source) {
                 widget.controlWidget('setValue', value, only_gui)
             }
         }
@@ -491,7 +493,9 @@ function GUI(effect, options) {
             valueField.text(label)
         }
 
-        self.triggerJS({ type: 'change', symbol: symbol, value: value })
+        if (source !== "from-js") {
+            self.triggerJS({ type: 'change', symbol: symbol, value: value })
+        }
 
         // If trigger, switch back to default value after a few miliseconds
         // Careful not to actually send the change to the host, it's not needed
@@ -509,63 +513,130 @@ function GUI(effect, options) {
         self.triggerJS({ type: 'change', symbol: symbol, value: value })
     }
 
-    this.getPortValue = function (symbol) {
-        return self.controls[symbol].value
-    }
-
     // lv2 patch messages, mostly used for parameters
     this.lv2PatchGet = function (uri) {
         // let the host know about this
         options.patchGet(uri)
     }
-    this.lv2PatchSet = function (uri, value, source) {
+    this.lv2PatchSet = function (uri, valuetype, value, source) {
+        // convert value for host (as string)
+        var svalue
+        switch (valuetype)
+        {
+        case 'b':
+            svalue = !!value ? '1' : '0';
+            break;
+        case 'i':
+        case 'l':
+            svalue = value.toFixed(0);
+            break;
+        case 'f':
+        case 'g':
+            svalue = value.toString();
+            break;
+        case 'v':
+            if (value.length === 0 || value[0].length !== 1 || "bilfg".indexOf(value[0][0]) < 0) {
+                console.log("lv2PatchSet: vector is missing child type")
+                return
+            }
+            var childtype = value[0][0];
+            svalue = sprintf("%d-%c-", value.length-1, childtype);
+            switch (childtype)
+            {
+            case 'b':
+                svalue += value.slice(1).map(function(v) { return !!v ? '1' : '0' }).join(':')
+                break;
+            case 'i':
+            case 'l':
+                svalue += value.slice(1).map(function(v) { return v.toFixed(0) }).join(':')
+                break;
+            case 'f':
+            case 'g':
+                svalue += value.slice(1).join(':')
+                break;
+            }
+            svalue = value
+            break;
+        default:
+            svalue = value
+            break;
+        }
         // let the host know about this
-        options.patchSet(uri, value)
+        options.patchSet(uri, valuetype, svalue)
 
         var parameter = self.parameters[uri]
         if (!parameter || !parameter.enabled || parameter.value == value)
             return
 
-        if (value < parameter.ranges.minimum) {
-            value = parameter.ranges.minimum
-            console.log("WARNING: setPortValue called with < min value, uri:", uri)
-        } else if (value > parameter.ranges.maximum) {
-            value = parameter.ranges.maximum
-            console.log("WARNING: setPortValue called with > max value, uri:", uri)
+        if (parameter.control) {
+            if (value < parameter.ranges.minimum) {
+                value = parameter.ranges.minimum
+                console.log("WARNING: setPortValue called with < min value, uri:", uri)
+            } else if (value > parameter.ranges.maximum) {
+                value = parameter.ranges.maximum
+                console.log("WARNING: setPortValue called with > max value, uri:", uri)
+            }
         }
 
         // update our own widgets
-        self.setWritableParameterValue(uri, value, source, false)
+        self.setWritableParameterValue(uri, parameter.valuetype, value, source, false)
     }
 
-    this.setReadableParameterValue = function (uri, value) {
-        self.triggerJS({ type: 'change', uri: uri, value: value })
+    this._decodePatchValue = function (valuetype, value) {
+        switch (valuetype)
+        {
+        case 'b':
+            return parseInt(value) != 0
+        case 'i':
+        case 'l':
+            return parseInt(value)
+        case 'f':
+        case 'g':
+            return parseFloat(value)
+        case 'v':
+            var snum, stype
+            value = value.split(/-/,3)
+            snum  = parseInt(value[0])
+            stype = value[1]
+            value = value[2].split(/:/,snum)
+            switch (stype)
+            {
+            case 'b':
+                return value.map(function(v) { return parseInt(v) != 0 })
+            case 'i':
+            case 'l':
+                return value.map(function(v) { return parseInt(v) })
+            case 'f':
+            case 'g':
+                return value.map(function(v) { return parseFloat(v) })
+            default:
+                return null
+            }
+        }
+        return value
     }
 
-    this.setWritableParameterValue = function (uri, value, source, only_gui) {
+    this.setReadableParameterValue = function (uri, valuetype, valuedata) {
+        self.triggerJS({ type: 'change', uri: uri, value: self._decodePatchValue(valuetype, valuedata) })
+    }
+
+    this.setWritableParameterValue = function (uri, valuetype, value, source, only_gui) {
         var valueField, widget,
             parameter = self.parameters[uri]
 
         // when host.js is used the source is null and value needs conversion
         if (source == null) {
-            /*  */ if (parameter.type === "http://lv2plug.in/ns/ext/atom#Bool") {
-                value = parseInt(value)
-            } else if (parameter.type === "http://lv2plug.in/ns/ext/atom#Int") {
-                value = parseInt(value)
-            } else if (parameter.type === "http://lv2plug.in/ns/ext/atom#Long") {
-                value = parseInt(value)
-            } else if (parameter.type === "http://lv2plug.in/ns/ext/atom#Float") {
-                value = parseFloat(value)
-            } else if (parameter.type === "http://lv2plug.in/ns/ext/atom#Double") {
-                value = parseFloat(value)
-            }
+            value = self._decodePatchValue(valuetype, value)
+            console.log(parameter.type, value)
+        } else {
+            console.log(parameter.type, value)
         }
 
         parameter.value = value
 
         for (var i in parameter.widgets) {
             widget = parameter.widgets[i]
-            if (source == null || widget != source) {
+            if (source == null || source === "from-js" || widget != source) {
                 widget.controlWidget('setValue', value, only_gui)
             }
         }
@@ -576,7 +647,9 @@ function GUI(effect, options) {
             valueField.text(sprintf(parameter.format, value))
         }
 
-        self.triggerJS({ type: 'change', uri: uri, value: value })
+        if (source !== "from-js") {
+            self.triggerJS({ type: 'change', uri: uri, value: value })
+        }
     }
 
     this.selectPreset = function (value) {
@@ -1215,10 +1288,25 @@ function GUI(effect, options) {
             var control = $(this)
             var uri = $(this).attr('mod-parameter-uri')
             var parameter = self.parameters[uri]
-            console.log(parameter)
 
             if (parameter)
             {
+                /*  */ if (parameter.type === "http://lv2plug.in/ns/ext/atom#Bool") {
+                    parameter.valuetype = 'b'
+                } else if (parameter.type === "http://lv2plug.in/ns/ext/atom#Int") {
+                    parameter.valuetype = 'i'
+                } else if (parameter.type === "http://lv2plug.in/ns/ext/atom#Long") {
+                    parameter.valuetype = 'l'
+                } else if (parameter.type === "http://lv2plug.in/ns/ext/atom#Float") {
+                    parameter.valuetype = 'f'
+                } else if (parameter.type === "http://lv2plug.in/ns/ext/atom#Double") {
+                    parameter.valuetype = 'g'
+                } else if (parameter.type === "http://lv2plug.in/ns/ext/atom#Vector") {
+                    parameter.valuetype = 'v'
+                } else {
+                    parameter.valuetype = 's'
+                }
+
                 if (parameter.control)
                 {
                     // Set the display formatting of this control
@@ -1237,7 +1325,7 @@ function GUI(effect, options) {
                     if (valueField.length > 0 && parameter.properties.indexOf("toggled") < 0)
                     {
                         self.setupValueField(valueField, parameter, function (value) {
-                            self.lv2PatchSet(uri, value, control)
+                            self.lv2PatchSet(uri, parameter.valuetype, value, control)
                             // setWritableParameterValue() skips this control as it's the same as the 'source'
                             control.controlWidget('setValue', value, true)
                         })
@@ -1256,7 +1344,7 @@ function GUI(effect, options) {
                     dummy: onlySetValues,
                     port: parameter,
                     change: function (e, value) {
-                        self.lv2PatchSet(uri, value, control)
+                        self.lv2PatchSet(uri, parameter.valuetype, value, control)
                     }
                 })
 
@@ -1266,7 +1354,7 @@ function GUI(effect, options) {
 
                 parameter.widgets.push(control)
 
-                self.setWritableParameterValue(uri, parameter.value, control, true)
+                self.setWritableParameterValue(uri, parameter.valuetype, parameter.value, control, true)
             }
             else
             {
@@ -1497,14 +1585,14 @@ function GUI(effect, options) {
     this.jsFuncs = {
         // added in v1: allow plugin js code to change plugin controls
         set_port_value: function (symbol, value) {
-            self.setPortValue(symbol, value, null)
+            self.setPortValue(symbol, value, "from-js")
         },
         // added in v2: allow plugin js code to send lv2 patch messages
         patch_get: function (uri) {
             self.lv2PatchGet(uri)
         },
-        patch_set: function (uri, value) {
-            self.lv2PatchSet(uri, value, "from-js")
+        patch_set: function (uri, valuetype, value) {
+            self.lv2PatchSet(uri, valuetype, value, "from-js")
         }
     }
 

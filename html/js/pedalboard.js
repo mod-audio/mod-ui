@@ -137,7 +137,7 @@ JqueryClass('pedalboard', {
             pluginPatchGet: function (instance, uri) {},
 
             // Set value of a plugin parameter
-            pluginPatchSet: function (instance, uri, value) {},
+            pluginPatchSet: function (instance, uri, valuetype, value) {},
 
             // Connects two ports
             portConnect: function (fromPort, toPort, callback) {
@@ -1345,8 +1345,8 @@ JqueryClass('pedalboard', {
             patchGet: function (uri) {
                 self.data('pluginPatchGet')(instance, uri)
             },
-            patchSet: function (uri, value, type) {
-                self.data('pluginPatchSet')(instance, uri, value)
+            patchSet: function (uri, valuetype, value) {
+                self.data('pluginPatchSet')(instance, uri, valuetype, value)
             },
             presetLoad: function (uri) {
                 self.data('pluginPresetLoad')(instance, uri, function (ok) {
@@ -1650,12 +1650,12 @@ JqueryClass('pedalboard', {
         }
     },
 
-    setReadableParameterValue: function (instance, uri, valuestr) {
+    setReadableParameterValue: function (instance, uri, valuetype, valuedata) {
         var self = $(this)
         var gui = self.pedalboard('getGui', instance)
 
         if (gui) {
-            gui.setReadableParameterValue(uri, valuestr)
+            gui.setReadableParameterValue(uri, valuetype, valuedata)
 
         } else {
             var targetname = '.mod-pedal [mod-instance="'+instance+'"][mod-parameter-uri="'+uri+'"]'
@@ -1666,14 +1666,14 @@ JqueryClass('pedalboard', {
                 $(document).unbindArrive(targetname, cb)
 
                 var gui = self.pedalboard('getGui', instance)
-                gui.setReadableParameterValue(uri, valuestr)
+                gui.setReadableParameterValue(uri, valuetype, valuedata)
             }
 
             self.pedalboard('addUniqueCallbackToArrive', cb, targetname, callbackId)
         }
     },
 
-    setWritableParameterValue: function (instance, uri, valuestr) {
+    setWritableParameterValue: function (instance, uri, valuetype, valuedata) {
         var self = $(this)
         var targetname1 = '.mod-pedal [mod-instance="'+instance+'"][mod-parameter-uri="'+uri+'"]'
         var targetname2 = '.mod-pedal-settings [mod-instance="'+instance+'"][mod-parameter-uri="'+uri+'"]'
@@ -1681,7 +1681,7 @@ JqueryClass('pedalboard', {
         var gui = self.pedalboard('getGui', instance)
 
         if (gui && ($(targetname1).length || $(targetname2).length)) {
-            gui.setWritableParameterValue(uri, valuestr, null, true)
+            gui.setWritableParameterValue(uri, valuetype, valuedata, null, true)
 
         } else {
             var cb = function () {
@@ -1690,7 +1690,7 @@ JqueryClass('pedalboard', {
                 $(document).unbindArrive(targetname2, cb)
 
                 var gui = self.pedalboard('getGui', instance)
-                gui.setWritableParameterValue(uri, valuestr, null, true)
+                gui.setWritableParameterValue(uri, valuetype, valuedata, null, true)
             }
 
             self.pedalboard('addUniqueCallbackToArrive', cb, targetname1, callbackId)

@@ -324,12 +324,14 @@ class Session(object):
 
         self.host.patch_get(instance, uri, resp)
 
-    def ws_patch_set(self, instance, uri, value, ws):
+    def ws_patch_set(self, instance, uri, valuetype, valuedata, ws):
         def resp(ok):
             print("host patch_set responded with", ok)
 
-        self.host.patch_set(instance, uri, value, resp)
-        self.msg_callback_broadcast("patch_set %s %s %s" % (instance, uri, str(value)), ws)
+        writable = self.host.patch_set(instance, uri, valuedata, resp)
+        self.msg_callback_broadcast("patch_set %s %d %s %c %s" % (instance,
+                                                                  1 if writable else 0,
+                                                                  uri, valuetype, valuedata))
 
     # Set a plugin block position within the canvas
     def ws_plugin_position(self, instance, x, y):
