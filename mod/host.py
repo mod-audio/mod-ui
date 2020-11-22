@@ -123,7 +123,7 @@ from mod.tuner import (
 from modtools.utils import (
     charPtrToString,
     is_bundle_loaded, add_bundle_to_lilv_world, remove_bundle_from_lilv_world, rescan_plugin_presets,
-    get_plugin_info, get_plugin_control_inputs_and_monitored_outputs, get_pedalboard_info, get_state_port_values,
+    get_plugin_info, get_plugin_info_essentials, get_pedalboard_info, get_state_port_values,
     list_plugins_in_bundle, get_all_pedalboards, get_pedalboard_plugin_values,
     init_jack, close_jack, get_jack_data,
     init_bypass, get_jack_port_alias, get_jack_hardware_ports,
@@ -1335,11 +1335,12 @@ class Host(object):
                     pluginData['outputs'][portsymbol] = value
                     self.msg_callback("output_set %s %s %f" % (instance, portsymbol, value))
 
-        elif cmd == "atom":
-            msg_data    = data.split(" ",3)
-            instance_id = int(msg_data[0])
-            portsymbol  = msg_data[1]
-            atomjson    = msg_data[2]
+        elif cmd == "patch_set":
+            msg_data     = data.split(" ",3)
+            instance_id  = int(msg_data[0])
+            parameteruri = msg_data[1]
+            valuetype    = msg_data[2]
+            valuedata    = msg_data[3]
 
             try:
                 instance   = self.mapper.get_instance(instance_id)
@@ -1347,8 +1348,13 @@ class Host(object):
             except:
                 pass
             else:
-                #pluginData['outputs'][portsymbol] = atomjson
-                self.msg_callback("output_atom %s %s %s" % (instance, portsymbol, atomjson))
+                parameter = pluginData['parameters'].get(parameteruri, None)
+                if parameter is not None:
+                    parameter[0] = valuedata
+                    writable = 1
+                else:
+                    writable = 0
+                self.msg_callback("patch_set %s %d %s %s %s" % (instance, writable, parameteruri, valuetype, valuedata))
 
         elif cmd == "midi_mapped":
             msg_data    = data.split(" ",7)
@@ -1786,6 +1792,15 @@ class Host(object):
                 if crashed:
                     self.send_notmodified("monitor_output %d %s" % (instance_id, symbol))
 
+            for paramuri, parameter in pluginData['parameters'].items():
+                websocket.write_message("patch_set %s 1 %s %c %s" % (pluginData['instance'],
+                                                                     paramuri,
+                                                                     parameter[1],
+                                                                     parameter[0]))
+
+                if crashed:
+                    self.send_notmodified("patch_set %d %s \"%s\"" % (instance_id, paramuri, parameter[0]))
+
             if crashed:
                 for symbol, data in pluginData['midiCCs'].items():
                     mchnnl, mctrl, minimum, maximum = data
@@ -2003,9 +2018,10 @@ class Host(object):
                 return
             bypassed = False
 
-            allports = get_plugin_control_inputs_and_monitored_outputs(uri)
+            extinfo  = get_plugin_info_essentials(uri)
             badports = []
             valports = {}
+            params = {}
             ranges = {}
 
             enabled_symbol = None
@@ -2014,7 +2030,7 @@ class Host(object):
             bpm_symbol = None
             speed_symbol = None
 
-            for port in allports['inputs']:
+            for port in extinfo['controlInputs']:
                 symbol = port['symbol']
                 valports[symbol] = port['ranges']['default']
                 ranges[symbol] = (port['ranges']['minimum'], port['ranges']['maximum'])
@@ -2049,6 +2065,29 @@ class Host(object):
                     badports.append(symbol)
                     valports[symbol] = 1.0 if self.transport_rolling else 0.0
 
+            for param in extinfo['parameters']:
+                paramuri = param['uri']
+                if param['ranges']['minimum'] == param['ranges']['maximum']:
+                    continue
+                if param['type'] == "http://lv2plug.in/ns/ext/atom#Bool":
+                    paramtype = 'b'
+                elif param['type'] == "http://lv2plug.in/ns/ext/atom#Int":
+                    paramtype = 'i'
+                elif param['type'] == "http://lv2plug.in/ns/ext/atom#Long":
+                    paramtype = 'l'
+                elif param['type'] == "http://lv2plug.in/ns/ext/atom#Float":
+                    paramtype = 'f'
+                elif param['type'] == "http://lv2plug.in/ns/ext/atom#Double":
+                    paramtype = 'g'
+                elif param['type'] in ("http://lv2plug.in/ns/ext/atom#String",
+                                       "http://lv2plug.in/ns/ext/atom#Path",
+                                       "http://lv2plug.in/ns/ext/atom#URI"):
+                    paramtype = 's'
+                else:
+                    continue
+                params[paramuri] = [param['ranges']['default'], paramtype]
+                ranges[paramuri] = (param['ranges']['minimum'], param['ranges']['maximum'])
+
             self.plugins[instance_id] = {
                 "instance"    : instance,
                 "uri"         : uri,
@@ -2057,18 +2096,19 @@ class Host(object):
                 "x"           : x,
                 "y"           : y,
                 "addressings" : {}, # symbol: addressing
-                "midiCCs"     : dict((p['symbol'], (-1,-1,0.0,1.0)) for p in allports['inputs']),
+                "midiCCs"     : dict((p['symbol'], (-1,-1,0.0,1.0)) for p in extinfo['controlInputs']),
                 "ports"       : valports,
+                "parameters"  : params,
                 "ranges"      : ranges,
                 "badports"    : badports,
                 "designations": (enabled_symbol, freewheel_symbol, bpb_symbol, bpm_symbol, speed_symbol),
-                "outputs"     : dict((symbol, None) for symbol in allports['monitoredOutputs']),
+                "outputs"     : dict((symbol, None) for symbol in extinfo['monitoredOutputs']),
                 "preset"      : "",
                 "mapPresets"  : [],
-                "buildEnv"    : allports['buildEnvironment'],
+                "buildEnv"    : extinfo['buildEnvironment'],
             }
 
-            for output in allports['monitoredOutputs']:
+            for output in extinfo['monitoredOutputs']:
                 self.send_notmodified("monitor_output %d %s" % (instance_id, output))
 
             if len(self.pedalboard_snapshots) > 0:
@@ -2077,7 +2117,7 @@ class Host(object):
             callback(True)
             self.msg_callback("add %s %s %.1f %.1f %d %d" % (instance, uri, x, y,
                                                              int(bypassed),
-                                                             int(bool(allports['buildEnvironment']))))
+                                                             int(bool(extinfo['buildEnvironment']))))
 
         self.send_modified("add %s %d" % (uri, instance_id), host_callback, datatype='int')
 
@@ -2207,18 +2247,22 @@ class Host(object):
         pluginData['ports'][symbol] = value
         self.send_modified("param_set %d %s %f" % (instance_id, symbol, value), callback, datatype='boolean')
 
-    def patch_param_set(self, instance, uri, value, callback):
+    def patch_get(self, instance, uri, callback):
+        instance_id = self.mapper.get_id_without_creating(instance)
+
+        print("mod-host sent param_get %d %s" % (instance_id, uri))
+        self.send_modified("param_get %d %s" % (instance_id, uri), callback, datatype='boolean')
+
+    def patch_set(self, instance, uri, value, callback):
         instance_id = self.mapper.get_id_without_creating(instance)
         pluginData  = self.plugins[instance_id]
+        parameter   = pluginData['parameters'].get(uri, None)
 
-        if uri in pluginData['designations']:
-            print("ERROR: Trying to modify a specially designated parameter '%s', stop!" % uri)
-            callback(False)
-            return
+        if parameter is not None:
+            parameter[0] = value
 
-        # pluginData['parameters'][uri] = value
-        print("mod-host sent param_set %d %s \"%s\"" % (instance_id, uri, value))
-        self.send_modified("param_set %d %s \"%s\"" % (instance_id, uri, value), callback, datatype='boolean')
+        self.send_modified("patch_set %d %s %s" % (instance_id, uri, value), callback, datatype='boolean')
+        return parameter is not None
 
     def set_position(self, instance, x, y):
         instance_id = self.mapper.get_id_without_creating(instance)
@@ -3075,9 +3119,9 @@ class Host(object):
 
     def load_pb_plugins(self, plugins, instances, rinstances):
         for p in plugins:
-            allports = get_plugin_control_inputs_and_monitored_outputs(p['uri'])
+            extinfo = get_plugin_info_essentials(p['uri'])
 
-            if 'error' in allports.keys() and allports['error']:
+            if 'error' in extinfo and extinfo['error']:
                 continue
 
             instance    = "/graph/%s" % p['instance']
@@ -3088,7 +3132,8 @@ class Host(object):
 
             badports = []
             valports = {}
-            ranges   = {}
+            params = {}
+            ranges = {}
 
             enabled_symbol = None
             freewheel_symbol = None
@@ -3096,7 +3141,7 @@ class Host(object):
             bpm_symbol = None
             speed_symbol = None
 
-            for port in allports['inputs']:
+            for port in extinfo['controlInputs']:
                 symbol = port['symbol']
                 valports[symbol] = port['ranges']['default']
                 ranges[symbol] = (port['ranges']['minimum'], port['ranges']['maximum'])
@@ -3131,6 +3176,29 @@ class Host(object):
                     badports.append(symbol)
                     valports[symbol] = 1.0 if self.transport_rolling else 0.0
 
+            for param in extinfo['parameters']:
+                paramuri = param['uri']
+                if param['ranges']['minimum'] == param['ranges']['maximum']:
+                    continue
+                if param['type'] == "http://lv2plug.in/ns/ext/atom#Bool":
+                    paramtype = 'b'
+                elif param['type'] == "http://lv2plug.in/ns/ext/atom#Int":
+                    paramtype = 'i'
+                elif param['type'] == "http://lv2plug.in/ns/ext/atom#Long":
+                    paramtype = 'l'
+                elif param['type'] == "http://lv2plug.in/ns/ext/atom#Float":
+                    paramtype = 'f'
+                elif param['type'] == "http://lv2plug.in/ns/ext/atom#Double":
+                    paramtype = 'g'
+                elif param['type'] in ("http://lv2plug.in/ns/ext/atom#String",
+                                       "http://lv2plug.in/ns/ext/atom#Path",
+                                       "http://lv2plug.in/ns/ext/atom#URI"):
+                    paramtype = 's'
+                else:
+                    continue
+                params[paramuri] = [param['ranges']['default'], paramtype]
+                ranges[paramuri] = (param['ranges']['minimum'], param['ranges']['maximum'])
+
             self.plugins[instance_id] = pluginData = {
                 "instance"    : instance,
                 "uri"         : p['uri'],
@@ -3139,16 +3207,17 @@ class Host(object):
                 "x"           : p['x'],
                 "y"           : p['y'],
                 "addressings" : {}, # symbol: addressing
-                "midiCCs"     : dict((p['symbol'], (-1,-1,0.0,1.0)) for p in allports['inputs']),
+                "midiCCs"     : dict((p['symbol'], (-1,-1,0.0,1.0)) for p in extinfo['controlInputs']),
                 "ports"       : valports,
+                "parameters"  : params,
                 "ranges"      : ranges,
                 "badports"    : badports,
                 "designations": (enabled_symbol, freewheel_symbol, bpb_symbol, bpm_symbol, speed_symbol),
-                "outputs"     : dict((symbol, None) for symbol in allports['monitoredOutputs']),
+                "outputs"     : dict((symbol, None) for symbol in extinfo['monitoredOutputs']),
                 "preset"      : p['preset'],
                 "mapPresets"  : [],
                 "nextPreset"  : "",
-                "buildEnv"    : allports['buildEnvironment'],
+                "buildEnv"    : extinfo['buildEnvironment'],
             }
 
             self.send_notmodified("add %s %d" % (p['uri'], instance_id))
@@ -3159,7 +3228,7 @@ class Host(object):
             self.msg_callback("add %s %s %.1f %.1f %d %d" % (instance,
                                                              p['uri'], p['x'], p['y'],
                                                              int(p['bypassed']),
-                                                             int(bool(allports['buildEnvironment']))))
+                                                             int(bool(extinfo['buildEnvironment']))))
 
             if p['bypassCC']['channel'] >= 0 and p['bypassCC']['control'] >= 0:
                 pluginData['addressings'][':bypass'] = self.addressings.add_midi(instance_id, ":bypass",
@@ -3203,7 +3272,7 @@ class Host(object):
                     pluginData['addressings'][symbol] = self.addressings.add_midi(instance_id, symbol,
                                                                                   mchnnl, mctrl, minimum, maximum)
 
-            for output in allports['monitoredOutputs']:
+            for output in extinfo['monitoredOutputs']:
                 self.send_notmodified("monitor_output %d %s" % (instance_id, output))
 
     def load_pb_connections(self, connections, mappedOldMidiIns, mappedOldMidiOuts,

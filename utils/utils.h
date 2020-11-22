@@ -183,10 +183,11 @@ typedef struct {
 } PluginInfo_Mini;
 
 typedef struct {
-    const PluginPort* inputs;
+    const PluginPort* controlInputs;
     const char* const* monitoredOutputs;
+    const PluginParameter* parameters;
     const char* buildEnvironment;
-} PluginInfo_Controls;
+} PluginInfo_Essentials;
 
 typedef struct {
     int8_t channel;
@@ -346,8 +347,11 @@ MOD_API const PluginGUI* get_plugin_gui(const char* uri);
 // NOTE: may return null
 MOD_API const PluginGUI_Mini* get_plugin_gui_mini(const char* uri);
 
-// get all control inputs and monitored outputs for a specific plugin
-MOD_API const PluginInfo_Controls* get_plugin_control_inputs_and_monitored_outputs(const char* uri);
+// get all control inputs for a specific plugin
+MOD_API const PluginPort* get_plugin_control_inputs(const char* uri);
+
+// get essential plugin info for host control (control inputs, monitored outputs, parameters and build environment)
+MOD_API const PluginInfo_Essentials* get_plugin_info_essentials(const char* uri);
 
 // trigger a preset rescan for a plugin the next time it's loaded
 MOD_API void rescan_plugin_presets(const char* uri);
