@@ -1163,8 +1163,9 @@ class ServerWebSocket(websocket.WebSocketHandler):
             data  = data[1].split(" ",3)
             inst  = data[0]
             uri   = data[1]
-            value = data[2]
-            SESSION.ws_patch_set(inst, uri, value, self)
+            vtype = data[2]
+            value = data[3]
+            SESSION.ws_patch_set(inst, uri, value, vtype, self)
 
         elif cmd == "plugin_pos":
             data = data[1].split(" ",3)
