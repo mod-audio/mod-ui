@@ -135,8 +135,11 @@ JqueryClass('pedalboard', {
             // Changes the parameter of a plugin's control port
             pluginParameterChange: function (port, value) {},
 
-            // Changes the patch:writable parameter of a plugin
-            pluginPatchParameterChange: function (instance, uri, value) {},
+            // Get value of a plugin parameter
+            pluginPatchGet: function (instance, uri) {},
+
+            // Set value of a plugin parameter
+            pluginPatchSet: function (instance, uri, valuetype, value) {},
 
             // Connects two ports
             portConnect: function (fromPort, toPort, callback) {
@@ -189,7 +192,7 @@ JqueryClass('pedalboard', {
         self.pedalboard('wrapApplicationFunctions', options, [
             'pluginLoad', 'pluginRemove',
             'pluginPresetLoad', 'pluginPresetSaveNew', 'pluginPresetSaveReplace', 'pluginPresetDelete',
-            'pluginParameterChange', 'pluginPatchParameterChange', 'pluginMove',
+            'pluginParameterChange', 'pluginPatchGet', 'pluginPatchSet', 'pluginMove',
             'portConnect', 'portDisconnect', 'reset', 'getPluginsData'
         ])
 
@@ -1341,8 +1344,11 @@ JqueryClass('pedalboard', {
             change: function (port, value) {
                 self.data('pluginParameterChange')(port, value)
             },
-            changeParam: function (uri, value) {
-                self.data('pluginPatchParameterChange')(instance, uri, value)
+            patchGet: function (uri) {
+                self.data('pluginPatchGet')(instance, uri)
+            },
+            patchSet: function (uri, valuetype, value) {
+                self.data('pluginPatchSet')(instance, uri, valuetype, value)
             },
             presetLoad: function (uri) {
                 self.data('pluginPresetLoad')(instance, uri, function (ok) {
@@ -1663,6 +1669,54 @@ JqueryClass('pedalboard', {
             }
 
             self.pedalboard('addUniqueCallbackToArrive', cb, targetname, callbackId)
+        }
+    },
+
+    setReadableParameterValue: function (instance, uri, valuetype, valuedata) {
+        var self = $(this)
+        var gui = self.pedalboard('getGui', instance)
+
+        if (gui) {
+            gui.setReadableParameterValue(uri, valuetype, valuedata)
+
+        } else {
+            var targetname = '.mod-pedal [mod-instance="'+instance+'"][mod-parameter-uri="'+uri+'"]'
+            var callbackId  = instance+'@'+uri+'@value'
+
+            var cb = function () {
+                delete self.data('callbacksToArrive')[callbackId]
+                $(document).unbindArrive(targetname, cb)
+
+                var gui = self.pedalboard('getGui', instance)
+                gui.setReadableParameterValue(uri, valuetype, valuedata)
+            }
+
+            self.pedalboard('addUniqueCallbackToArrive', cb, targetname, callbackId)
+        }
+    },
+
+    setWritableParameterValue: function (instance, uri, valuetype, valuedata) {
+        var self = $(this)
+        var targetname1 = '.mod-pedal [mod-instance="'+instance+'"][mod-parameter-uri="'+uri+'"]'
+        var targetname2 = '.mod-pedal-settings [mod-instance="'+instance+'"][mod-parameter-uri="'+uri+'"]'
+        var callbackId  = instance+'@'+uri+'@value'
+        var gui = self.pedalboard('getGui', instance)
+
+        if (gui && ($(targetname1).length || $(targetname2).length)) {
+            gui.setWritableParameterValue(uri, valuetype, valuedata, null, true)
+
+        } else {
+            var cb = function () {
+                delete self.data('callbacksToArrive')[callbackId]
+                $(document).unbindArrive(targetname1, cb)
+                $(document).unbindArrive(targetname2, cb)
+
+                var gui = self.pedalboard('getGui', instance)
+                gui.setWritableParameterValue(uri, valuetype, valuedata, null, true)
+            }
+
+            self.pedalboard('addUniqueCallbackToArrive', cb, targetname1, callbackId)
+            self.pedalboard('addUniqueCallbackToArrive', cb, targetname2, callbackId)
         }
     },
 

@@ -1144,29 +1144,40 @@ class ServerWebSocket(websocket.WebSocketHandler):
         if message == "pong":
             return
 
-        data = message.split(" ")
+        data = message.split(" ",1)
         cmd  = data[0]
 
         if cmd == "param_set":
-            port  = data[1]
-            value = float(data[2])
+            data  = data[1].split(" ",2)
+            port  = data[0]
+            value = float(data[1])
             SESSION.ws_parameter_set(port, value, self)
 
-        elif cmd == "patch_param_set":
-            inst  = data[1]
-            uri   = data[2]
-            value = " ".join(data[3:])
-            SESSION.ws_patch_parameter_set(inst, uri, value, self)
+        elif cmd == "patch_get":
+            data = data[1].split(" ",2)
+            inst = data[0]
+            uri  = data[1]
+            SESSION.ws_patch_get(inst, uri, value, self)
+
+        elif cmd == "patch_set":
+            data  = data[1].split(" ",3)
+            inst  = data[0]
+            uri   = data[1]
+            vtype = data[2]
+            value = data[3]
+            SESSION.ws_patch_set(inst, uri, value, vtype, self)
 
         elif cmd == "plugin_pos":
-            inst = data[1]
-            x    = float(data[2])
-            y    = float(data[3])
+            data = data[1].split(" ",3)
+            inst = data[0]
+            x    = float(data[1])
+            y    = float(data[2])
             SESSION.ws_plugin_position(inst, x, y)
 
         elif cmd == "pb_size":
-            width  = int(float(data[1]))
-            height = int(float(data[2]))
+            data   = data[1].split(" ",2)
+            width  = int(float(data[0]))
+            height = int(float(data[1]))
             SESSION.ws_pedalboard_size(width, height)
 
         elif cmd == "link_enable":
@@ -1189,14 +1200,6 @@ class ServerWebSocket(websocket.WebSocketHandler):
         elif cmd == "transport-rolling":
             rolling = bool(int(data[1]))
             SESSION.host.set_transport_rolling(rolling, True, True, False)
-
-        #elif cmd == "set_midi_program_change_pedalboard_bank_channel":
-            #channel = int(data[2])
-            #SESSION.host.set_midi_program_change_pedalboard_bank_channel(channel)
-
-        #elif cmd == "set_midi_program_change_pedalboard_snapshot_channel":
-            #channel = int(data[2])
-            #SESSION.host.set_midi_program_change_pedalboard_snapshot_channel(channel)
 
         else:
             print("Unexpected command received over websocket")
