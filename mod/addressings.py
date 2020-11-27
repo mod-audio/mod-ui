@@ -623,6 +623,7 @@ class Addressings(object):
 
         unit = "none"
         options = []
+        pprops = []
 
         if portsymbol == ":presets":
             data = self.get_presets_as_options(instance_id)
@@ -708,7 +709,6 @@ class Addressings(object):
         # -------------------------------------------------------------------------------------------------------------
 
         if actuator_type == self.ADDRESSING_TYPE_HMI:
-
             if portsymbol == ":bypass":
                 hmitype = FLAG_CONTROL_BYPASS
                 if momentary:
