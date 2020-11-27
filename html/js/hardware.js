@@ -379,6 +379,10 @@ function HardwareManager(options) {
     this.showDynamicField = function (form, typeInputVal, currentAddressing, port, cvUri, firstOpen) {
       // Hide all then show the relevant content
       form.find('.dynamic-field').hide()
+      // Hide led-color and momentary modes, only usable for a few selections
+      // These are enabled by various event triggers below as needed
+      form.find('select[name=led-color-mode]').addClass('disabled').parent().parent().hide()
+      form.find('select[name=momentary-sw-mode]').addClass('disabled').parent().parent().hide()
 
       if (typeInputVal === kMidiLearnURI)
       {
@@ -392,12 +396,14 @@ function HardwareManager(options) {
       }
       else if (typeInputVal === deviceOption)
       {
+        form.find('.device-table').find('.selected').click()
         form.find('.device-table').show()
       }
       else if (typeInputVal === ccOption)
       {
         var ccActuatorSelect = form.find('select[name=cc-actuator]')
         if (ccActuatorSelect.children('option').length) {
+          ccActuatorSelect.change()
           form.find('.cc-select').show()
         } else if (self.hasControlChainDevice()) {
           form.find('.cc-in-use').show()
@@ -746,6 +752,13 @@ function HardwareManager(options) {
 
         if (ccActuators.length === 0) {
           ccActuatorSelect.hide()
+        } else {
+          ccActuatorSelect.change(function () {
+            var actuatorUri = $(this).val()
+            self.toggleAdvancedItemsVisibility(port,
+                                               sensitivity, ledColourMode, momentarySwMode,
+                                               actuators[actuatorUri])
+          })
         }
 
         form.find('.js-type').click(function () {
@@ -818,6 +831,7 @@ function HardwareManager(options) {
             max.attr("step", step)
 
             // Hide sensitivity and tempo options for MIDI
+            // FIXME this whole section below can likely be removed without side effects
             var act = typeInput.val()
             if (act === kMidiLearnURI || act.lastIndexOf(kMidiCustomPrefixURI, 0) === 0 || act === cvOption) {
                 form.find('.sensitivity').css({ display: "none" })
