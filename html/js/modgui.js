@@ -586,7 +586,7 @@ function GUI(effect, options) {
         switch (valuetype)
         {
         case 'b':
-            return parseInt(value) != 0
+            return parseInt(value) != 0 ? 1 : 0
         case 'i':
         case 'l':
             return parseInt(value)
@@ -602,7 +602,7 @@ function GUI(effect, options) {
             switch (stype)
             {
             case 'b':
-                return value.map(function(v) { return parseInt(v) != 0 })
+                return value.map(function(v) { return parseInt(v) != 0 ? 1 : 0 })
             case 'i':
             case 'l':
                 return value.map(function(v) { return parseInt(v) })
