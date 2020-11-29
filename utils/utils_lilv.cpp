@@ -2488,26 +2488,50 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
 
                     if (xminimum != nullptr && xmaximum != nullptr)
                     {
-                        param.ranges.min = lilv_node_as_float(xminimum);
-                        param.ranges.max = lilv_node_as_float(xmaximum);
+                        const bool isLong = strcmp(param.type, LV2_ATOM__Long) == 0;
 
-                        if (param.ranges.min >= param.ranges.max)
-                            param.ranges.max = param.ranges.min + 1.0f;
+                        if (isLong)
+                        {
+                            param.ranges.isLong = true;
+                            param.ranges.l.min = atoll(lilv_node_as_string(xminimum));
+                            param.ranges.l.max = atoll(lilv_node_as_string(xmaximum));
+
+                            if (param.ranges.l.min >= param.ranges.l.max)
+                                param.ranges.l.max = param.ranges.l.min + 1;
+                        }
+                        else
+                        {
+                            param.ranges.f.min = lilv_node_as_float(xminimum);
+                            param.ranges.f.max = lilv_node_as_float(xmaximum);
+
+                            if (param.ranges.f.min >= param.ranges.f.max)
+                                param.ranges.f.max = param.ranges.f.min + 1.0f;
+                        }
 
                         if (xdefault != nullptr)
-                            param.ranges.def = lilv_node_as_float(xdefault);
+                        {
+                            if (isLong)
+                                param.ranges.l.def = atoll(lilv_node_as_string(xdefault));
+                            else
+                                param.ranges.f.def = lilv_node_as_float(xdefault);
+                        }
                         else
-                            param.ranges.def = param.ranges.min;
+                        {
+                            if (isLong)
+                                param.ranges.l.def = param.ranges.l.min;
+                            else
+                                param.ranges.f.def = param.ranges.f.min;
+                        }
                     }
                     else if (strcmp(param.type, LV2_ATOM__Bool) == 0)
                     {
-                        param.ranges.min = 0.0f;
-                        param.ranges.max = 1.0f;
+                        param.ranges.f.min = 0.0f;
+                        param.ranges.f.max = 1.0f;
 
                         if (xdefault != nullptr)
-                            param.ranges.def = std::min(1.0f, std::max(0.0f, lilv_node_as_float(xdefault)));
+                            param.ranges.f.def = std::min(1.0f, std::max(0.0f, lilv_node_as_float(xdefault)));
                         else
-                            param.ranges.def = param.ranges.min;
+                            param.ranges.f.def = param.ranges.f.min;
                     }
 
                     lilv_node_free(xminimum);
