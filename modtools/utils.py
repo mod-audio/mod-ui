@@ -96,6 +96,7 @@ c_floatp_types   = tuple(POINTER(i) for i in c_float_types)
 c_struct_types   = () # redefined below
 c_structp_types  = () # redefined below
 c_structpp_types = () # redefined below
+c_union_types    = ()
 
 def toPythonType(value, attr):
     #if value is None:
@@ -114,6 +115,8 @@ def toPythonType(value, attr):
         return structPtrToList(value)
     if isinstance(value, c_structpp_types):
         return structPtrPtrToList(value)
+    if isinstance(value, c_union_types):
+        return unionToDict(value)
     print("..............", attr, ".....................", value, ":", type(value))
     return value
 
@@ -122,6 +125,11 @@ def toPythonType(value, attr):
 
 def structToDict(struct):
     return dict((attr, toPythonType(getattr(struct, attr), attr)) for attr, value in struct._fields_)
+
+def unionToDict(struct):
+    if isinstance(struct, PluginParameterRanges):
+        return structToDict(struct.l if struct.isLong else struct.f)
+    return None
 
 # ------------------------------------------------------------------------------------------------------------
 
@@ -226,13 +234,33 @@ class PluginPorts(Structure):
         ("midi", PluginPortsI),
     ]
 
+class PluginLongParameterRanges(Structure):
+    _fields_ = [
+        ("minimum", c_int64),
+        ("maximum", c_int64),
+        ("default", c_int64),
+    ]
+
+class _PluginParameterRangesU(Union):
+    _fields_ = [
+        ("f", PluginPortRanges),
+        ("l", PluginLongParameterRanges),
+    ]
+
+class PluginParameterRanges(Structure):
+    _anonymous_ = ("u",)
+    _fields_ = [
+        ("isLong", c_bool),
+        ("u", _PluginParameterRangesU),
+    ]
+
 class PluginParameter(Structure):
     _fields_ = [
         ("valid", c_bool),
         ("uri", c_char_p),
         ("label", c_char_p),
         ("type", c_char_p),
-        ("ranges", PluginPortRanges),
+        ("ranges", PluginParameterRanges),
         ("units", PluginPortUnits),
         ("comment", c_char_p),
         ("shortName", c_char_p),
@@ -444,6 +472,7 @@ c_struct_types = (PluginAuthor,
                   PluginPortUnits,
                   PluginPortsI,
                   PluginPorts,
+                  PluginLongParameterRanges,
                   PedalboardMidiControl,
                   PedalboardHardware,
                   PedalboardTimeInfo)
@@ -461,6 +490,8 @@ c_structp_types = (POINTER(PluginGUIPort),
 
 c_structpp_types = (POINTER(POINTER(PluginInfo_Mini)),
                     POINTER(POINTER(PedalboardInfo_Mini)))
+
+c_union_types    = (PluginParameterRanges,)
 
 utils.init.argtypes = None
 utils.init.restype  = None
