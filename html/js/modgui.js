@@ -316,12 +316,8 @@ function GUI(effect, options) {
                 parameteri.ranges.default = parameteri.ranges.default|0
                 parameteri.ranges.minimum = parameteri.ranges.minimum|0
                 parameteri.ranges.maximum = parameteri.ranges.maximum|0
-            } else if (parameteri.type === "http://lv2plug.in/ns/ext/atom#Int") {
-                properties = ["integer"]
-                parameteri.ranges.default = parameteri.ranges.default|0
-                parameteri.ranges.minimum = parameteri.ranges.minimum|0
-                parameteri.ranges.maximum = parameteri.ranges.maximum|0
-            } else if (parameteri.type === "http://lv2plug.in/ns/ext/atom#Long") {
+            } else if (parameteri.type === "http://lv2plug.in/ns/ext/atom#Int" ||
+                       parameteri.type === "http://lv2plug.in/ns/ext/atom#Long") {
                 properties = ["integer"]
                 parameteri.ranges.default = Math.round(parameteri.ranges.default)
                 parameteri.ranges.minimum = Math.round(parameteri.ranges.minimum)
@@ -335,7 +331,7 @@ function GUI(effect, options) {
             }
 
             // some parameters have no ranges, we can't show those
-            if (properties != null && parameteri.ranges.minimum != parameteri.ranges.maximum)
+            if (properties !== null && parameteri.ranges.minimum != parameteri.ranges.maximum)
             {
                 // make this presentable as control widget
                 parameteri.control = true;
