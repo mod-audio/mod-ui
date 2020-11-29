@@ -1366,7 +1366,9 @@ function GUI(effect, options) {
 
                 parameter.widgets.push(control)
 
-                self.setWritableParameterValue(uri, parameter.valuetype, parameter.value, control, true)
+                if (parameter.control) {
+                    self.setWritableParameterValue(uri, parameter.valuetype, parameter.value, control, true)
+                }
             }
             else
             {
