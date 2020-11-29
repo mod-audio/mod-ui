@@ -116,7 +116,7 @@ from mod.protocol import (
     Protocol, ProtocolError, process_resp,
 )
 from mod.settings import (
-    APP, LOG, DEFAULT_PEDALBOARD, LV2_PEDALBOARDS_DIR,
+    APP, LOG, DEFAULT_PEDALBOARD, LV2_PEDALBOARDS_DIR, USER_FILES_DIR,
     PEDALBOARD_INSTANCE, PEDALBOARD_INSTANCE_ID, PEDALBOARD_URI, PEDALBOARD_TMP_DIR,
     TUNER_URI, TUNER_INSTANCE_ID, TUNER_INPUT_PORT, TUNER_MONITOR_PORT, HMI_TIMEOUT,
     UNTITLED_PEDALBOARD_NAME, DEFAULT_SNAPSHOT_NAME,
@@ -1377,6 +1377,8 @@ class Host(object):
             else:
                 parameter = pluginData['parameters'].get(parameteruri, None)
                 if parameter is not None:
+                    if valuetype == 'p' and not valuedata.startswith(USER_FILES_DIR) and os.path.islink(valuedata):
+                        valuedata = os.path.realpath(valuedata)
                     parameter[0] = valuedata
                     writable = 1
                 else:
@@ -2104,13 +2106,15 @@ class Host(object):
                     paramtype = 'f'
                 elif param['type'] == "http://lv2plug.in/ns/ext/atom#Double":
                     paramtype = 'g'
-                elif param['type'] in ("http://lv2plug.in/ns/ext/atom#String",
-                                       "http://lv2plug.in/ns/ext/atom#Path",
-                                       "http://lv2plug.in/ns/ext/atom#URI"):
+                elif param['type'] == "http://lv2plug.in/ns/ext/atom#String":
                     paramtype = 's'
+                elif param['type'] == "http://lv2plug.in/ns/ext/atom#Path":
+                    paramtype = 'p'
+                elif param['type'] == "http://lv2plug.in/ns/ext/atom#URI":
+                    paramtype = 'u'
                 else:
                     continue
-                if paramtype != 's' and param['ranges']['minimum'] == param['ranges']['maximum']:
+                if paramtype not in ('s','p','u') and param['ranges']['minimum'] == param['ranges']['maximum']:
                     continue
                 params[paramuri] = [param['ranges']['default'], paramtype]
                 ranges[paramuri] = (param['ranges']['minimum'], param['ranges']['maximum'])
@@ -2288,7 +2292,8 @@ class Host(object):
         if parameter is not None:
             parameter[0] = value
 
-        self.send_modified("patch_set %d %s %s" % (instance_id, uri, value), callback, datatype='boolean')
+        self.send_modified("patch_set %d %s \"%s\"" % (instance_id, uri, value.replace('"','\\"')),
+                           callback, datatype='boolean')
         return parameter is not None
 
     def set_position(self, instance, x, y):
@@ -3215,13 +3220,15 @@ class Host(object):
                     paramtype = 'f'
                 elif param['type'] == "http://lv2plug.in/ns/ext/atom#Double":
                     paramtype = 'g'
-                elif param['type'] in ("http://lv2plug.in/ns/ext/atom#String",
-                                       "http://lv2plug.in/ns/ext/atom#Path",
-                                       "http://lv2plug.in/ns/ext/atom#URI"):
+                elif param['type'] == "http://lv2plug.in/ns/ext/atom#String":
                     paramtype = 's'
+                elif param['type'] == "http://lv2plug.in/ns/ext/atom#Path":
+                    paramtype = 'p'
+                elif param['type'] == "http://lv2plug.in/ns/ext/atom#URI":
+                    paramtype = 'u'
                 else:
                     continue
-                if paramtype != 's' and param['ranges']['minimum'] == param['ranges']['maximum']:
+                if paramtype not in ('s','p','u') and param['ranges']['minimum'] == param['ranges']['maximum']:
                     continue
                 params[paramuri] = [param['ranges']['default'], paramtype]
                 ranges[paramuri] = (param['ranges']['minimum'], param['ranges']['maximum'])

@@ -5103,10 +5103,11 @@ const PedalboardPluginValues* get_pedalboard_plugin_values(const char* bundle)
 #ifdef HAVE_NEW_LILV
 // note: these ids must match the ones on the mapping (see 'kMapping')
 static const uint32_t k_urid_null        = 0;
-static const uint32_t k_urid_atom_int    = 1;
-static const uint32_t k_urid_atom_long   = 2;
-static const uint32_t k_urid_atom_float  = 3;
-static const uint32_t k_urid_atom_double = 4;
+static const uint32_t k_urid_atom_bool   = 1;
+static const uint32_t k_urid_atom_int    = 2;
+static const uint32_t k_urid_atom_long   = 3;
+static const uint32_t k_urid_atom_float  = 4;
+static const uint32_t k_urid_atom_double = 5;
 
 static LV2_URID lv2_urid_map(LV2_URID_Map_Handle, const char* const uri_)
 {
@@ -5114,6 +5115,7 @@ static LV2_URID lv2_urid_map(LV2_URID_Map_Handle, const char* const uri_)
         return 0;
 
     static std::vector<std::string> kMapping = {
+        LV2_ATOM__Bool,
         LV2_ATOM__Int,
         LV2_ATOM__Long,
         LV2_ATOM__Float,
@@ -5134,12 +5136,14 @@ static LV2_URID lv2_urid_map(LV2_URID_Map_Handle, const char* const uri_)
     return urid;
 }
 
-static void lilv_set_port_value(const char* const portSymbol, void* const userData, const void* const value, const uint32_t size, const uint32_t type)
+static void lilv_set_port_value(const char* const portSymbol, void* const userData,
+                                const void* const value, const uint32_t size, const uint32_t type)
 {
     std::vector<StatePortValue>* const values = (std::vector<StatePortValue>*)userData;
 
     switch (type)
     {
+    case k_urid_atom_bool:
     case k_urid_atom_int:
         if (size == sizeof(int32_t))
         {
@@ -5189,7 +5193,13 @@ const StatePortValue* get_state_port_values(const char* const state)
         lv2_urid_map
     };
 
-    if (LilvState* const lstate = lilv_state_new_from_string(W, &uridMap, state))
+    setenv("LILV_STATE_SKIP_PROPERTIES", "2", 1);
+
+    LilvState* const lstate = lilv_state_new_from_string(W, &uridMap, state);
+
+    unsetenv("LILV_STATE_SKIP_PROPERTIES");
+
+    if (lstate != nullptr)
     {
         std::vector<StatePortValue> values;
         lilv_state_emit_port_values(lstate, lilv_set_port_value, &values);

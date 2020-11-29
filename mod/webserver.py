@@ -42,7 +42,8 @@ from mod.settings import (APP, LOG, DEV_API,
                           LV2_PLUGIN_DIR, LV2_PEDALBOARDS_DIR, IMAGE_VERSION,
                           UPDATE_CC_FIRMWARE_FILE, UPDATE_MOD_OS_FILE, USING_256_FRAMES_FILE,
                           DEFAULT_ICON_TEMPLATE, DEFAULT_SETTINGS_TEMPLATE, DEFAULT_ICON_IMAGE,
-                          DEFAULT_PEDALBOARD, DATA_DIR, FAVORITES_JSON_FILE, PREFERENCES_JSON_FILE, USER_ID_JSON_FILE,
+                          DEFAULT_PEDALBOARD, DATA_DIR, USER_FILES_DIR,
+                          FAVORITES_JSON_FILE, PREFERENCES_JSON_FILE, USER_ID_JSON_FILE,
                           DEV_HOST, UNTITLED_PEDALBOARD_NAME, MODEL_CPU, MODEL_TYPE, PEDALBOARDS_LABS_HTTP_ADDRESS)
 
 from mod import check_environment, jsoncall, safe_json_load, TextFileFlusher, get_hardware_descriptor
@@ -2101,7 +2102,7 @@ class FilesList(JsonRequestHandler):
             if datadir is None:
                 continue
 
-            for root, dirs, files in os.walk(os.path.join("/data/user-files", datadir)):
+            for root, dirs, files in os.walk(os.path.join(USER_FILES_DIR, datadir)):
                 for name in tuple(name for name in sorted(files) if name.lower().endswith(extensions)):
                     retfiles.append({
                         'fullname': os.path.join(root, name),
