@@ -625,9 +625,6 @@ function GUI(effect, options) {
         // when host.js is used the source is null and value needs conversion
         if (source == null) {
             value = self._decodePatchValue(valuetype, value)
-            console.log(parameter.type, value)
-        } else {
-            console.log(parameter.type, value)
         }
 
         parameter.value = value
@@ -2483,8 +2480,7 @@ JqueryClass('customSelectPath', baseWidget, {
     init: function (options) {
         var self = $(this)
         self.customSelectPath('config', options)
-        // TODO find a way to get selected value
-        // self.customSelectPath('setValue', options.port.ranges.default, true)
+        self.customSelectPath('setValue', options.port.value, true)
         self.find('[mod-role=enumeration-option]').each(function () {
             var opt = $(this)
             opt.click(function (e) {
@@ -2512,6 +2508,12 @@ JqueryClass('customSelectPath', baseWidget, {
         }
 
         selected.addClass('selected')
+
+        var valueField = self.find('[mod-role=input-parameter-value]')
+        if (valueField) {
+            valueField.data('value', value)
+            valueField.text(selected.text())
+        }
 
         if (!only_gui) {
             self.trigger('valuechange', value)
