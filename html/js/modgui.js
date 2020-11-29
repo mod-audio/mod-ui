@@ -270,6 +270,10 @@ function GUI(effect, options) {
     self.bypassed = options.bypassed
     self.currentPreset = ""
 
+    // initialized during `render`
+    self.controls = []
+    self.parameters = []
+
     this.makePortIndexes = function (ports) {
         var i, port, porti, indexes = {}
 
@@ -300,6 +304,61 @@ function GUI(effect, options) {
 
             // ready
             indexes[port.symbol] = port
+        }
+
+        // Bypass needs to be represented as a port since it shares the hardware addressing
+        // structure with ports. We use the symbol ':bypass' that is an invalid lv2 symbol and
+        // so will cause no conflict
+        // Be aware that this is being acessed directly in pedalboard.js
+        indexes[':bypass'] = {
+            name: 'Bypass',
+            symbol: ':bypass',
+            ranges: {
+                minimum: 0,
+                maximum: 1,
+                default: 1,
+            },
+            comment: "",
+            designation: "",
+            properties: ["toggled", "integer"],
+            widgets: [],
+            enabled: true,
+            value: self.bypassed ? 1 : 0,
+            format: null,
+            scalePoints: [],
+            scalePointsIndex: null,
+            valueFields: [],
+
+            // FIXME: limits of mustache
+            default: 1,
+            maximum: 1,
+            minimum: 0,
+            enumeration: false,
+            integer: true,
+            logarithmic: false,
+            toggled: true,
+            trigger: false,
+        }
+
+        // The same with bypass applies to presets, as ':presets' symbol
+        indexes[':presets'] = {
+            name: 'Presets',
+            symbol: ':presets',
+            ranges: {
+                minimum: -1,
+                maximum: 0,
+                default: -1,
+            },
+            comment: "",
+            designation: "",
+            properties: ["enumeration", "integer"],
+            widgets: [],
+            enabled: true,
+            value: -1,
+            format: null,
+            scalePoints: [],
+            scalePointsIndex: null,
+            valueFields: []
         }
 
         return indexes
@@ -337,6 +396,7 @@ function GUI(effect, options) {
                 parameteri.control = true;
 
                 parameter = {
+                    path: false,
                     enabled: true,
                     widgets: [],
                     format: null,
@@ -363,7 +423,7 @@ function GUI(effect, options) {
                     valueFields: [],
                     // stuff not used in parameters
                     designation: "",
-                    properties: properties,
+                    properties: [],
                     scalePoints: [],
                 }
                 $.extend(parameter, parameteri)
@@ -374,64 +434,6 @@ function GUI(effect, options) {
         }
 
         return indexes
-    }
-
-    self.controls = self.makePortIndexes(effect.ports.control.input)
-    self.parameters = self.makeParameterIndexes(effect.parameters)
-
-    // Bypass needs to be represented as a port since it shares the hardware addressing
-    // structure with ports. We use the symbol ':bypass' that is an invalid lv2 symbol and
-    // so will cause no conflict
-    // Be aware that this is being acessed directly in pedalboard.js
-    self.controls[':bypass'] = {
-        name: 'Bypass',
-        symbol: ':bypass',
-        ranges: {
-            minimum: 0,
-            maximum: 1,
-            default: 1,
-        },
-        comment: "",
-        designation: "",
-        properties: ["toggled", "integer"],
-        widgets: [],
-        enabled: true,
-        value: self.bypassed ? 1 : 0,
-        format: null,
-        scalePoints: [],
-        scalePointsIndex: null,
-        valueFields: [],
-
-        // FIXME: limits of mustache
-        default: 1,
-        maximum: 1,
-        minimum: 0,
-        enumeration: false,
-        integer: true,
-        logarithmic: false,
-        toggled: true,
-        trigger: false,
-    }
-
-    // The same with bypass applies to presets, as ':presets' symbol
-    self.controls[':presets'] = {
-        name: 'Presets',
-        symbol: ':presets',
-        ranges: {
-            minimum: -1,
-            maximum: 0,
-            default: -1,
-        },
-        comment: "",
-        designation: "",
-        properties: ["enumeration", "integer"],
-        widgets: [],
-        enabled: true,
-        value: -1,
-        format: null,
-        scalePoints: [],
-        scalePointsIndex: null,
-        valueFields: []
     }
 
     // changes control port
@@ -770,10 +772,17 @@ function GUI(effect, options) {
         }
     }
 
+    this.preRender = function () {
+        self.controls = self.makePortIndexes(effect.ports.control.input)
+        self.parameters = self.makeParameterIndexes(effect.parameters)
+    }
+
     this.render = function (instance, callback, skipNamespace) {
         self.instance = instance
 
         var render = function () {
+            self.preRender()
+
             if (instance) {
                 self.icon = $('<div mod-instance="' + instance + '" class="mod-pedal">')
             } else {
@@ -1080,9 +1089,16 @@ function GUI(effect, options) {
 
     this.renderDummyIcon = function (callback) {
         var render = function () {
+            self.preRender()
             var icon = $('<div class="mod-pedal dummy">')
             icon.html(Mustache.render(effect.gui.iconTemplate || options.defaultIconTemplate,
                       self.getTemplateData(effect, false)))
+            icon.find('[mod-role="input-audio-port"]').addClass("mod-audio-input")
+            icon.find('[mod-role="output-audio-port"]').addClass("mod-audio-output")
+            icon.find('[mod-role="input-midi-port"]').addClass("mod-midi-input")
+            icon.find('[mod-role="output-midi-port"]').addClass("mod-midi-output")
+            icon.find('[mod-role="input-cv-port"]').addClass("mod-cv-input")
+            icon.find('[mod-role="output-cv-port"]').addClass("mod-cv-output")
             self.assignControlFunctionality(icon, true)
             callback(icon)
         }
@@ -1641,7 +1657,7 @@ function JqueryClass() {
             'bypass': 'bypassWidget',
             'select': 'selectWidget',
             'custom-select': 'customSelect',
-            'custom-parameter-select': 'customParameterSelect',
+            'custom-select-path': 'customSelectPath',
         }
         var name = self.attr('mod-widget') || 'film'
         name = widgets[name]
@@ -2454,20 +2470,20 @@ JqueryClass('customSelect', baseWidget, {
     },
 })
 
-JqueryClass('customParameterSelect', baseWidget, {
+JqueryClass('customSelectPath', baseWidget, {
     init: function (options) {
         var self = $(this)
-        self.customParameterSelect('config', options)
+        self.customSelectPath('config', options)
         // TODO find a way to get selected value
-        // self.customParameterSelect('setValue', options.port.ranges.default, true)
+        // self.customSelectPath('setValue', options.port.ranges.default, true)
         self.find('[mod-role=enumeration-option]').each(function () {
             var opt = $(this)
             opt.click(function (e) {
                 if (!self.data('enabled')) {
-                    return self.customParameterSelect('prevent', e)
+                    return self.customSelectPath('prevent', e)
                 }
                 var value = opt.attr('mod-parameter-value')
-                self.customParameterSelect('setValue', value, false)
+                self.customSelectPath('setValue', value, false)
             })
         })
         self.click(function () {
