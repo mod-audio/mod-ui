@@ -428,6 +428,9 @@ body > .mod-settings.mod-window-visible {
     overflow:auto;
     position:relative;
 }
+.mod-pedal-settings .mod-enumerated.mod-file-list .mod-enumerated-list {
+    height:130px;
+}
 
 .mod-pedal-settings .mod-enumerated .mod-enumerated-list > div {
     font-weight:bold;

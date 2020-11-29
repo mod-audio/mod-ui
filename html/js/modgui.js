@@ -842,7 +842,8 @@ function GUI(effect, options) {
 
             var presetElem = self.settings.find('.mod-presets')
 
-            if (instance && (totalPresetCount > 0 || self.effect.ports.control.input.length > 0))
+            if (instance &&
+                (totalPresetCount > 0 || self.effect.parameters.length + self.effect.ports.control.input.length > 0))
             {
                 presetElem.data('enabled', true)
 
@@ -1313,10 +1314,16 @@ function GUI(effect, options) {
                     parameter.valuetype = 'f'
                 } else if (parameter.type === "http://lv2plug.in/ns/ext/atom#Double") {
                     parameter.valuetype = 'g'
+                } else if (parameter.type === "http://lv2plug.in/ns/ext/atom#String") {
+                    parameter.valuetype = 's'
+                } else if (parameter.type === "http://lv2plug.in/ns/ext/atom#Path") {
+                    parameter.valuetype = 'p'
+                } else if (parameter.type === "http://lv2plug.in/ns/ext/atom#URI") {
+                    parameter.valuetype = 'u'
                 } else if (parameter.type === "http://lv2plug.in/ns/ext/atom#Vector") {
                     parameter.valuetype = 'v'
                 } else {
-                    parameter.valuetype = 's'
+                    return
                 }
 
                 if (parameter.control)
