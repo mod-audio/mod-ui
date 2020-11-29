@@ -2094,8 +2094,6 @@ class Host(object):
 
             for param in extinfo['parameters']:
                 paramuri = param['uri']
-                if param['ranges']['minimum'] == param['ranges']['maximum']:
-                    continue
                 if param['type'] == "http://lv2plug.in/ns/ext/atom#Bool":
                     paramtype = 'b'
                 elif param['type'] == "http://lv2plug.in/ns/ext/atom#Int":
@@ -2111,6 +2109,8 @@ class Host(object):
                                        "http://lv2plug.in/ns/ext/atom#URI"):
                     paramtype = 's'
                 else:
+                    continue
+                if paramtype != 's' and param['ranges']['minimum'] == param['ranges']['maximum']:
                     continue
                 params[paramuri] = [param['ranges']['default'], paramtype]
                 ranges[paramuri] = (param['ranges']['minimum'], param['ranges']['maximum'])
@@ -3205,8 +3205,6 @@ class Host(object):
 
             for param in extinfo['parameters']:
                 paramuri = param['uri']
-                if param['ranges']['minimum'] == param['ranges']['maximum']:
-                    continue
                 if param['type'] == "http://lv2plug.in/ns/ext/atom#Bool":
                     paramtype = 'b'
                 elif param['type'] == "http://lv2plug.in/ns/ext/atom#Int":
@@ -3222,6 +3220,8 @@ class Host(object):
                                        "http://lv2plug.in/ns/ext/atom#URI"):
                     paramtype = 's'
                 else:
+                    continue
+                if paramtype != 's' and param['ranges']['minimum'] == param['ranges']['maximum']:
                     continue
                 params[paramuri] = [param['ranges']['default'], paramtype]
                 ranges[paramuri] = (param['ranges']['minimum'], param['ranges']['maximum'])
