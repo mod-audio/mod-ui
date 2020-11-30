@@ -247,9 +247,8 @@ $('document').ready(function() {
             'iPhone',
             'iPod'
         ].includes(navigator.platform);
-        var isiOSUserAgent = navigator.userAgent.includes("iPad") ||
-            navigator.userAgent.includes("iPhone");
         var isiPadOS13SUserAgent = (navigator.userAgent.includes("Mac") && "ontouchend" in document);
+        var isiOSUserAgent = /(iPad|iPhone|iPod)/g.test(navigator.userAgent);
         var isiOS = isiOSPlatform || isiPadOS13SUserAgent || isiOSUserAgent;
 
         if (isiOS) {
