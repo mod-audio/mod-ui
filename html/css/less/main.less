@@ -143,8 +143,12 @@ body {
 
 body {
   background: #111;
+  min-width: 1024px;
 
-  min-width: 980px;
+  // set document body to have 980px min-width on iOS devices to match default virtual viewport width
+  &.ios {
+    min-width: 980px;
+  }
 }
 
 * {

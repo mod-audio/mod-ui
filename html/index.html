@@ -231,6 +231,26 @@ $('document').ready(function() {
         dataType: 'json'
     });
     */
+
+    // add iOS/iPadOS-specific document body class `.ios`
+    (function () {
+        var isiOSPlatform = [
+            'iPad Simulator',
+            'iPhone Simulator',
+            'iPod Simulator',
+            'iPad',
+            'iPhone',
+            'iPod'
+        ].includes(navigator.platform);
+        var isiOSUserAgent = navigator.userAgent.includes("iPad") ||
+            navigator.userAgent.includes("iPhone");
+        var isiPadOS13SUserAgent = (navigator.userAgent.includes("Mac") && "ontouchend" in document);
+        var isiOS = isiOSPlatform || isiPadOS13SUserAgent || isiOSUserAgent;
+
+        if (isiOS) {
+            $('body').addClass('ios');
+        }
+    })();
 })
 </script>
 
