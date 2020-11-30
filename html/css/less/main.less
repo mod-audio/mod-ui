@@ -145,8 +145,11 @@ body {
   background: #111;
   min-width: 1024px;
 
-  // set document body to have 980px min-width on iOS devices to match default virtual viewport width
+  // iOS/iPadOS device-specific styles
   &.ios {
+    // prevent vertical inertia scrolling
+    position: fixed;
+    // set 980px min-width to match default virtual viewport width
     min-width: 980px;
   }
 }
