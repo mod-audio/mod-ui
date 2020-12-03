@@ -38,16 +38,29 @@ function shouldSkipPort(port) {
     return false;
 }
 
-function loadFileTypesList(parameter, callback) {
+function loadFileTypesList(parameter, dummy, callback) {
+    var files = []
+    if (parameter.ranges.default) {
+        var sdef = parameter.ranges.default
+        files.push({
+            'fullname': sdef,
+            'basename': sdef.slice(sdef.lastIndexOf('/')+1),
+        })
+    }
+    if (dummy) {
+        parameter.files = files
+        parameter.path = true
+        callback()
+        return
+    }
     $.ajax({
         url: '/files/list',
         data: {
             'types': parameter.fileTypes.join(","),
         },
         success: function (data) {
-            parameter.files = (parameter.files || []).concat(data.files);
-            // make this presentable as control widget (file path selector)
-            parameter.path = true;
+            parameter.files = files.concat(data.files)
+            parameter.path = true
             callback()
         },
         error: function () {
@@ -152,7 +165,7 @@ function loadDependencies(gui, effect, dummy, callback) { //source, effect, bund
         })
     }
 
-    if (effect.gui.javascript) {
+    if (effect.gui.javascript && !dummy) {
         if (loadedJSs[plughash]) {
             gui.jsCallback = loadedJSs[plughash]
         } else {
@@ -192,7 +205,7 @@ function loadDependencies(gui, effect, dummy, callback) { //source, effect, bund
                 filelistLoaded = false;
                 ++numPathParametersTotal;
 
-                loadFileTypesList(parameter, function() {
+                loadFileTypesList(parameter, dummy, function() {
                     if (++numPathParametersHandled == numPathParametersTotal) {
                         filelistLoaded = true
                         cb()
@@ -412,12 +425,12 @@ function GUI(effect, options) {
                     scalePoints: [],
                 }
                 $.extend(parameter, parameteri)
-
-                // set initial value
-                parameter.value = parameter.ranges.default
             }
             else
             {
+                // make this presentable as string
+                parameteri.string = parameteri.type === "http://lv2plug.in/ns/ext/atom#String";
+
                 parameter = {
                     control: false,
                     enabled: true,
@@ -433,6 +446,9 @@ function GUI(effect, options) {
                 $.extend(parameter, parameteri)
             }
 
+            // set initial value
+            parameter.value = parameter.ranges.default
+
             // ready
             indexes[parameter.uri] = parameter
         }
@@ -446,9 +462,9 @@ function GUI(effect, options) {
             throw "Invalid NaN value for " + symbol
         }
         var port = self.controls[symbol]
-        if (!port.enabled || port.value == value)
+        if (!port.enabled) {
             return
-
+        }
         if (value < port.ranges.minimum) {
             value = port.ranges.minimum
             console.log("WARNING: setPortValue called with < min value, symbol:", symbol)
@@ -456,6 +472,10 @@ function GUI(effect, options) {
             value = port.ranges.maximum
             console.log("WARNING: setPortValue called with > max value, symbol:", symbol)
         }
+        if (port.value == value) {
+            return
+        }
+
         // let the host know about this change
         var mod_port = source && source !== "from-js"
                      ? source.attr("mod-port")
@@ -521,6 +541,25 @@ function GUI(effect, options) {
         options.patchGet(uri)
     }
     this.lv2PatchSet = function (uri, valuetype, value, source) {
+        var parameter = self.parameters[uri]
+        if (parameter) {
+            if (!parameter.enabled) {
+                return
+            }
+            if (parameter.control) {
+                if (value < parameter.ranges.minimum) {
+                    value = parameter.ranges.minimum
+                    console.log("WARNING: setPortValue called with < min value, uri:", uri)
+                } else if (value > parameter.ranges.maximum) {
+                    value = parameter.ranges.maximum
+                    console.log("WARNING: setPortValue called with > max value, uri:", uri)
+                }
+            }
+            if (parameter.value == value) {
+                return
+            }
+        }
+
         // convert value for host (as string)
         var svalue
         switch (valuetype)
@@ -566,19 +605,8 @@ function GUI(effect, options) {
         // let the host know about this
         options.patchSet(uri, valuetype, svalue)
 
-        var parameter = self.parameters[uri]
-        if (!parameter || !parameter.enabled || parameter.value == value)
+        if (!parameter)
             return
-
-        if (parameter.control) {
-            if (value < parameter.ranges.minimum) {
-                value = parameter.ranges.minimum
-                console.log("WARNING: setPortValue called with < min value, uri:", uri)
-            } else if (value > parameter.ranges.maximum) {
-                value = parameter.ranges.maximum
-                console.log("WARNING: setPortValue called with > max value, uri:", uri)
-            }
-        }
 
         // update our own widgets
         self.setWritableParameterValue(uri, parameter.valuetype, value, source, false)
@@ -643,7 +671,11 @@ function GUI(effect, options) {
         for (var i in parameter.valueFields) {
             valueField = parameter.valueFields[i]
             valueField.data('value', value)
-            valueField.text(sprintf(parameter.format, value))
+            if (parameter.string) {
+                valueField.text(value)
+            } else {
+                valueField.text(sprintf(parameter.format, value))
+            }
         }
 
         if (source !== "from-js") {
@@ -1114,15 +1146,21 @@ function GUI(effect, options) {
     this.setupValueField = function (valueField, port, setValueFn) {
         // For ports that are not enumerated, we allow
         // editing the value directly
-        valueField.attr('contenteditable', true)
+        valueField.attr('contenteditable', !port.string || port.writable)
         valueField.focus(function () {
-            valueField.text(sprintf(port.format, valueField.data('value')))
+            if (! port.string) {
+                valueField.text(sprintf(port.format, valueField.data('value')))
+            }
         })
         valueField.keydown(function (e) {
             // enter
             if (e.keyCode == 13) {
                 valueField.blur()
                 return false
+            }
+            // everything if string
+            if (port.string) {
+                return true;
             }
             // numbers
             if (e.keyCode >= 48 && e.keyCode <= 57) {
@@ -1148,6 +1186,10 @@ function GUI(effect, options) {
             return false
         })
         valueField.blur(function () {
+            if (port.string) {
+                setValueFn(valueField.text())
+                return
+            }
             var value = parseFloat(valueField.text())
             if (isNaN(value)) {
                 value = valueField.data('value')
@@ -1327,10 +1369,12 @@ function GUI(effect, options) {
                     return
                 }
 
-                if (parameter.control)
+                if (parameter.control || parameter.string)
                 {
                     // Set the display formatting of this control
-                    if (parameter.units.render)
+                    if (parameter.string)
+                        parameter.format = '%s'
+                    else if (parameter.units.render)
                         parameter.format = parameter.units.render.replace('%f', '%.2f')
                     else
                         parameter.format = '%.2f'
@@ -1374,9 +1418,7 @@ function GUI(effect, options) {
 
                 parameter.widgets.push(control)
 
-                if (parameter.control) {
-                    self.setWritableParameterValue(uri, parameter.valuetype, parameter.value, control, true)
-                }
+                self.setWritableParameterValue(uri, parameter.valuetype, parameter.value, control, true)
             }
             else
             {
@@ -1666,6 +1708,7 @@ function JqueryClass() {
             'switch': 'switchWidget',
             'bypass': 'bypassWidget',
             'select': 'selectWidget',
+            'string': 'stringWidget',
             'custom-select': 'customSelect',
             'custom-select-path': 'customSelectPath',
         }
@@ -2519,6 +2562,22 @@ JqueryClass('customSelectPath', baseWidget, {
             valueField.text(selected.text())
         }
 
+        if (!only_gui) {
+            self.trigger('valuechange', value)
+        }
+    },
+})
+
+JqueryClass('stringWidget', baseWidget, {
+    init: function (options) {
+        var self = $(this)
+        self.stringWidget('config', options)
+        self.stringWidget('setValue', options.port.value, true)
+        return self
+    },
+
+    setValue: function (value, only_gui) {
+        var self = $(this)
         if (!only_gui) {
             self.trigger('valuechange', value)
         }

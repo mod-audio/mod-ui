@@ -282,6 +282,7 @@ struct NamespaceDefinitions {
     LilvNode* const atom_Sequence;
     LilvNode* const midi_MidiEvent;
     LilvNode* const pprops_rangeSteps;
+    LilvNode* const patch_readable;
     LilvNode* const patch_writable;
     LilvNode* const pset_Preset;
     LilvNode* const state_state;
@@ -342,6 +343,7 @@ struct NamespaceDefinitions {
           atom_Sequence            (lilv_new_uri(W, LV2_ATOM__Sequence                 )),
           midi_MidiEvent           (lilv_new_uri(W, LV2_MIDI__MidiEvent                )),
           pprops_rangeSteps        (lilv_new_uri(W, LV2_PORT_PROPS__rangeSteps         )),
+          patch_readable           (lilv_new_uri(W, LV2_PATCH__readable                )),
           patch_writable           (lilv_new_uri(W, LV2_PATCH__writable                )),
           pset_Preset              (lilv_new_uri(W, LV2_PRESETS__Preset                )),
           state_state              (lilv_new_uri(W, LV2_STATE__state                   )),
@@ -403,6 +405,7 @@ struct NamespaceDefinitions {
         lilv_node_free(atom_Sequence);
         lilv_node_free(midi_MidiEvent);
         lilv_node_free(pprops_rangeSteps);
+        lilv_node_free(patch_readable);
         lilv_node_free(patch_writable);
         lilv_node_free(pset_Preset);
         lilv_node_free(state_state);
@@ -515,7 +518,7 @@ static const char* const kUnit_volts[] = { "volts", "%f v", "v" };
 
 static const char nc[1] = { '\0' };
 
-bool _isalnum(const char* const string)
+static bool _isalnum(const char* const string)
 {
     for (size_t i=0;; ++i)
     {
@@ -526,7 +529,7 @@ bool _isalnum(const char* const string)
     }
 }
 
-void _swap_preset_data(PluginPreset* preset1, PluginPreset* preset2)
+static void _swap_preset_data(PluginPreset* preset1, PluginPreset* preset2)
 {
     std::swap(preset1->uri,   preset2->uri);
     std::swap(preset1->label, preset2->label);
@@ -534,7 +537,7 @@ void _swap_preset_data(PluginPreset* preset1, PluginPreset* preset2)
 }
 
 // adjusted from https://stackoverflow.com/questions/19612152/quicksort-string-array-in-c
-void _sort_presets_data(PluginPreset presets[], unsigned int count)
+static void _sort_presets_data(PluginPreset presets[], unsigned int count)
 {
     if (count <= 1)
         return;
@@ -562,7 +565,7 @@ void _sort_presets_data(PluginPreset presets[], unsigned int count)
 // adjust bundle safely to lilv, as it wants the last character as the separator
 // this also ensures paths are always written the same way
 // NOTE: returned value must not be freed or cached
-const char* _get_safe_bundlepath(const char* const bundle, size_t& bundlepathsize)
+static const char* _get_safe_bundlepath(const char* const bundle, size_t& bundlepathsize)
 {
     static char tmppath[PATH_MAX+2];
     char* bundlepath = realpath(bundle, tmppath);
@@ -588,7 +591,7 @@ const char* _get_safe_bundlepath(const char* const bundle, size_t& bundlepathsiz
 }
 
 // proper lilv_file_uri_parse function that returns absolute paths
-char* lilv_file_abspath(const char* const path)
+static char* lilv_file_abspath(const char* const path)
 {
     if (char* const lilvpath = lilv_file_uri_parse(path, nullptr))
     {
@@ -601,7 +604,7 @@ char* lilv_file_abspath(const char* const path)
 }
 
 // fill in `bundles` vector with all known data bundles (main bundle + local presets)
-void _fill_bundles_for_plugin(std::list<std::string>& bundles, const LilvPlugin* const p, LilvNode* const pset_Preset)
+static void _fill_bundles_for_plugin(std::list<std::string>& bundles, const LilvPlugin* const p, LilvNode* const pset_Preset)
 {
     char* lilvparsed;
     const char* bundlepath;
@@ -676,6 +679,311 @@ void _fill_bundles_for_plugin(std::list<std::string>& bundles, const LilvPlugin*
                 bundles.push_back(bundlestr);
         }
         lilv_nodes_free(presetnodes);
+    }
+}
+
+// used below
+static void _fill_units(PluginPortUnits& portunits, LilvNode* const uunit, const NamespaceDefinitions& ns);
+
+// fill in parameter data, defined as function because writable/readable code is pretty much the same
+static void _fill_parameters_for_plugin(const LilvPlugin* const p,
+                                        const NamespaceDefinitions& ns,
+                                        std::map<std::string, PluginParameter>& usedParameters,
+                                        const bool writable)
+{
+    if (LilvNodes* const patches = lilv_plugin_get_value(p, writable ? ns.patch_writable : ns.patch_readable))
+    {
+        if (lilv_nodes_size(patches) != 0)
+        {
+            // used to fetch default values
+            LilvNode* const statenode = lilv_world_get(W, lilv_plugin_get_uri(p), ns.state_state, nullptr);
+
+            LILV_FOREACH(nodes, itpatches, patches)
+            {
+                const LilvNode* const patch = lilv_nodes_get(patches, itpatches);
+                const char* const patch_uri = lilv_node_as_uri(patch);
+
+                if (usedParameters.count(patch_uri) != 0)
+                {
+                    PluginParameter& param(usedParameters[patch_uri]);
+
+                    if (writable)
+                        param.writable = true;
+                    else
+                        param.readable = true;
+
+                    continue;
+                }
+
+                LilvNode* const typeNode = lilv_world_get(W, patch, ns.rdf_type, nullptr);
+
+                if (typeNode == nullptr)
+                    continue;
+
+                if (strcmp(lilv_node_as_uri(typeNode), LV2_CORE__Parameter) != 0)
+                {
+                    lilv_node_free(typeNode);
+                    continue;
+                }
+
+                LilvNode* const rangeNode = lilv_world_get(W, patch, ns.rdfs_range, nullptr);
+
+                if (rangeNode == nullptr)
+                {
+                    lilv_node_free(typeNode);
+                    continue;
+                }
+
+                LilvNode* const labelNode = lilv_world_get(W, patch, ns.rdfs_label, nullptr);
+
+                if (labelNode == nullptr)
+                {
+                    lilv_node_free(rangeNode);
+                    lilv_node_free(typeNode);
+                    continue;
+                }
+
+                PluginParameter param;
+                memset(&param, 0, sizeof(PluginParameter));
+
+                param.valid = true;
+                param.uri   = strdup(patch_uri);
+                param.label = strdup(lilv_node_as_string(labelNode));
+                param.type  = strdup(lilv_node_as_string(rangeNode));
+
+                if (writable)
+                    param.writable = true;
+                else
+                    param.readable = true;
+
+                const char* const atomType = (strncmp(param.type, LV2_ATOM_PREFIX, strlen(LV2_ATOM_PREFIX)) == 0)
+                                           ? param.type + strlen(LV2_ATOM_PREFIX)
+                                           : "";
+
+                // ----------------------------------------------------------------------------------------------------
+                // ranges
+
+                if (strcmp(atomType, "Path") == 0 || strcmp(atomType, "String") == 0 || strcmp(atomType, "URI") == 0)
+                {
+                    param.ranges.type = 's';
+
+                    if (LilvNode* const keynode = lilv_new_uri(W, param.uri))
+                    {
+                        if (LilvNode* const valuenode = lilv_world_get(W, statenode, keynode, nullptr))
+                        {
+                            if (strcmp(atomType, "Path") == 0)
+                                param.ranges.s = lilv_file_abspath(lilv_node_as_string(valuenode));
+                            else if (strcmp(atomType, "URI") == 0)
+                                param.ranges.s = strdup(lilv_node_as_uri(valuenode));
+                            else
+                                param.ranges.s = strdup(lilv_node_as_string(valuenode));
+
+                            lilv_node_free(valuenode);
+                        }
+
+                        lilv_node_free(keynode);
+                    }
+                }
+                else
+                {
+                    LilvNode* xminimum = lilv_world_get(W, patch, ns.mod_minimum, nullptr);
+                    if (xminimum == nullptr)
+                        xminimum = lilv_world_get(W, patch, ns.lv2core_minimum, nullptr);
+
+                    LilvNode* xmaximum = lilv_world_get(W, patch, ns.mod_maximum, nullptr);
+                    if (xmaximum == nullptr)
+                        xmaximum = lilv_world_get(W, patch, ns.lv2core_maximum, nullptr);
+
+                    LilvNode* xdefault = lilv_world_get(W, patch, ns.mod_default, nullptr);
+                    if (xdefault == nullptr)
+                        xdefault = lilv_world_get(W, patch, ns.lv2core_default, nullptr);
+
+                    if (xminimum != nullptr && xmaximum != nullptr)
+                    {
+                        const bool isLong = strcmp(atomType, "Long") == 0;
+
+                        if (isLong)
+                        {
+                            param.ranges.type = 'l';
+                            param.ranges.l.min = atoll(lilv_node_as_string(xminimum));
+                            param.ranges.l.max = atoll(lilv_node_as_string(xmaximum));
+
+                            if (param.ranges.l.min >= param.ranges.l.max)
+                                param.ranges.l.max = param.ranges.l.min + 1;
+                        }
+                        else
+                        {
+                            param.ranges.type = 'f';
+                            param.ranges.f.min = lilv_node_as_float(xminimum);
+                            param.ranges.f.max = lilv_node_as_float(xmaximum);
+
+                            if (param.ranges.f.min >= param.ranges.f.max)
+                                param.ranges.f.max = param.ranges.f.min + 1.0f;
+                        }
+
+                        if (xdefault != nullptr)
+                        {
+                            if (isLong)
+                                param.ranges.l.def = atoll(lilv_node_as_string(xdefault));
+                            else
+                                param.ranges.f.def = lilv_node_as_float(xdefault);
+                        }
+                        else
+                        {
+                            if (isLong)
+                                param.ranges.l.def = param.ranges.l.min;
+                            else
+                                param.ranges.f.def = param.ranges.f.min;
+                        }
+                    }
+                    else if (strcmp(atomType, "Bool") == 0)
+                    {
+                        param.ranges.type = 'f';
+                        param.ranges.f.min = 0.0f;
+                        param.ranges.f.max = 1.0f;
+
+                        if (xdefault != nullptr)
+                            param.ranges.f.def = std::min(1.0f, std::max(0.0f, lilv_node_as_float(xdefault)));
+                        else
+                            param.ranges.f.def = param.ranges.f.min;
+                    }
+
+                    lilv_node_free(xminimum);
+                    lilv_node_free(xmaximum);
+                    lilv_node_free(xdefault);
+                }
+
+                // ----------------------------------------------------------------------------------------------------
+                // units
+
+                param.units.label  = nc;
+                param.units.render = nc;
+                param.units.symbol = nc;
+
+                if (LilvNode* const uunit = lilv_world_get(W, patch, ns.units_unit, nullptr))
+                {
+                    _fill_units(param.units, uunit, ns);
+                    lilv_node_free(uunit);
+                }
+
+                // ----------------------------------------------------------------------------------------------------
+                // comment
+
+                if (LilvNode* const node = lilv_world_get(W, patch, ns.rdfs_comment, nullptr))
+                {
+                    param.comment = strdup(lilv_node_as_string(node));
+                    lilv_node_free(node);
+                }
+                else
+                {
+                    param.comment = nc;
+                }
+
+                // ----------------------------------------------------------------------------------------------------
+                // short name
+
+                if (LilvNode* const node = lilv_world_get(W, patch, ns.lv2core_shortName, nullptr))
+                {
+                    param.shortName = strdup(lilv_node_as_string(node));
+                    lilv_node_free(node);
+                }
+                else
+                {
+                    param.shortName = strdup(param.label);
+                }
+
+                if (strlen(param.shortName) > 16)
+                    ((char*)param.shortName)[16] = '\0';
+
+                // ----------------------------------------------------------------------------------------------------
+                // file types
+
+                if (LilvNode* const fileTypesNode = lilv_world_get(W, patch, ns.mod_fileTypes, nullptr))
+                {
+                    if (char* const fileTypes = strdup(lilv_node_as_string(fileTypesNode)))
+                    {
+                        const size_t fileTypesLen = strlen(fileTypes);
+                        uint fileTypesCount = 1;
+
+                        // count number of items
+                        for (size_t i=0; i<fileTypesLen; ++i)
+                        {
+                            if (fileTypes[i] == ',')
+                                ++fileTypesCount;
+                        }
+
+                        const char** const fileTypesArray = new const char*[fileTypesCount+1U];
+                        memset(fileTypesArray, 0, sizeof(const char*)*(fileTypesCount+1U));
+
+                        // assign data, reusing fileTypes string pointer
+                        fileTypesCount = 0;
+                        fileTypesArray[0] = fileTypes;
+
+                        for (size_t i=0; i<fileTypesLen; ++i)
+                        {
+                            if (fileTypes[i] == ',')
+                            {
+                                fileTypes[i] = '\0';
+                                fileTypesArray[++fileTypesCount] = &fileTypes[i+1];
+                            }
+                        }
+
+                        param.fileTypes = fileTypesArray;
+                    }
+
+                    lilv_node_free(fileTypesNode);
+                }
+
+                // ----------------------------------------------------------------------------------------------------
+                // supported extensions
+
+                if (LilvNode* const supportedExtensionsNode = lilv_world_get(W, patch, ns.mod_supportedExtensions, nullptr))
+                {
+                    if (char* const supportedExtensions = strdup(lilv_node_as_string(supportedExtensionsNode)))
+                    {
+                        const size_t supportedExtensionsLen = strlen(supportedExtensions);
+                        uint supportedExtensionsCount = 1;
+
+                        // count number of items
+                        for (size_t i=0; i<supportedExtensionsLen; ++i)
+                        {
+                            if (supportedExtensions[i] == ',')
+                                ++supportedExtensionsCount;
+                        }
+
+                        const char** const supportedExtensionsArray = new const char*[supportedExtensionsCount+1U];
+                        memset(supportedExtensionsArray, 0, sizeof(const char*)*(supportedExtensionsCount+1U));
+
+                        // assign data, reusing supportedExtensions string pointer
+                        supportedExtensionsCount = 0;
+                        supportedExtensionsArray[0] = supportedExtensions;
+
+                        for (size_t i=0; i<supportedExtensionsLen; ++i)
+                        {
+                            if (supportedExtensions[i] == ',')
+                            {
+                                supportedExtensions[i] = '\0';
+                                supportedExtensionsArray[++supportedExtensionsCount] = &supportedExtensions[i+1];
+                            }
+                        }
+
+                        param.supportedExtensions = supportedExtensionsArray;
+                    }
+
+                    lilv_node_free(supportedExtensionsNode);
+                }
+
+                lilv_node_free(labelNode);
+                lilv_node_free(rangeNode);
+                lilv_node_free(typeNode);
+
+                usedParameters[param.uri] = param;
+            }
+
+            lilv_node_free(statenode);
+        }
+
+        lilv_nodes_free(patches);
     }
 }
 
@@ -2426,287 +2734,21 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
     // --------------------------------------------------------------------------------------------------------
     // parameters
 
-    if (LilvNodes* const patches = lilv_plugin_get_value(p, ns.patch_writable))
+    std::map<std::string, PluginParameter> usedParameters;
+
+    _fill_parameters_for_plugin(p, ns, usedParameters, true);
+    _fill_parameters_for_plugin(p, ns, usedParameters, false);
+
+    if (size_t count = usedParameters.size())
     {
-        if (unsigned int count = lilv_nodes_size(patches))
-        {
-            PluginParameter* const params = new PluginParameter[count+1];
-            memset(params, 0, sizeof(PluginParameter) * (count+1));
+        PluginParameter* const params = new PluginParameter[count+1];
+        memset(params, 0, sizeof(PluginParameter) * (count+1));
 
-            // used to fetch default values
-            LilvNode* const statenode = lilv_world_get(W, lilv_plugin_get_uri(p), ns.state_state, nullptr);
+        count = 0;
+        for (auto& param : usedParameters)
+            params[count++] = param.second;
 
-            count = 0;
-            LILV_FOREACH(nodes, itpatches, patches)
-            {
-                const LilvNode* const patch = lilv_nodes_get(patches, itpatches);
-
-                LilvNode* const typeNode = lilv_world_get(W, patch, ns.rdf_type, nullptr);
-
-                if (typeNode == nullptr)
-                    continue;
-
-                if (strcmp(lilv_node_as_uri(typeNode), LV2_CORE__Parameter) != 0)
-                {
-                    lilv_node_free(typeNode);
-                    continue;
-                }
-
-                LilvNode* const rangeNode = lilv_world_get(W, patch, ns.rdfs_range, nullptr);
-
-                if (rangeNode == nullptr)
-                {
-                    lilv_node_free(typeNode);
-                    continue;
-                }
-
-                LilvNode* const labelNode = lilv_world_get(W, patch, ns.rdfs_label, nullptr);
-
-                if (labelNode == nullptr)
-                {
-                    lilv_node_free(rangeNode);
-                    lilv_node_free(typeNode);
-                    continue;
-                }
-
-                PluginParameter param;
-                memset(&param, 0, sizeof(PluginParameter));
-
-                param.valid = true;
-                param.uri   = strdup(lilv_node_as_uri(patch));
-                param.label = strdup(lilv_node_as_string(labelNode));
-                param.type  = strdup(lilv_node_as_string(rangeNode));
-
-                const char* const atomType = (strncmp(param.type, LV2_ATOM_PREFIX, strlen(LV2_ATOM_PREFIX)) == 0)
-                                           ? param.type + strlen(LV2_ATOM_PREFIX)
-                                           : "";
-
-                // ----------------------------------------------------------------------------------------------------
-                // ranges
-
-                if (strcmp(atomType, "Path") == 0 || strcmp(atomType, "String") == 0 || strcmp(atomType, "URI") == 0)
-                {
-                    param.ranges.type = 's';
-
-                    if (LilvNode* const keynode = lilv_new_uri(W, param.uri))
-                    {
-                        if (LilvNode* const valuenode = lilv_world_get(W, statenode, keynode, nullptr))
-                        {
-                            if (strcmp(atomType, "Path") == 0)
-                                param.ranges.s = lilv_file_abspath(lilv_node_as_string(valuenode));
-                            else if (strcmp(atomType, "URI") == 0)
-                                param.ranges.s = strdup(lilv_node_as_uri(valuenode));
-                            else
-                                param.ranges.s = strdup(lilv_node_as_string(valuenode));
-
-                            lilv_node_free(valuenode);
-                        }
-
-                        lilv_node_free(keynode);
-                    }
-                }
-                else
-                {
-                    LilvNode* xminimum = lilv_world_get(W, patch, ns.mod_minimum, nullptr);
-                    if (xminimum == nullptr)
-                        xminimum = lilv_world_get(W, patch, ns.lv2core_minimum, nullptr);
-
-                    LilvNode* xmaximum = lilv_world_get(W, patch, ns.mod_maximum, nullptr);
-                    if (xmaximum == nullptr)
-                        xmaximum = lilv_world_get(W, patch, ns.lv2core_maximum, nullptr);
-
-                    LilvNode* xdefault = lilv_world_get(W, patch, ns.mod_default, nullptr);
-                    if (xdefault == nullptr)
-                        xdefault = lilv_world_get(W, patch, ns.lv2core_default, nullptr);
-
-                    if (xminimum != nullptr && xmaximum != nullptr)
-                    {
-                        const bool isLong = strcmp(atomType, "Long") == 0;
-
-                        if (isLong)
-                        {
-                            param.ranges.type = 'l';
-                            param.ranges.l.min = atoll(lilv_node_as_string(xminimum));
-                            param.ranges.l.max = atoll(lilv_node_as_string(xmaximum));
-
-                            if (param.ranges.l.min >= param.ranges.l.max)
-                                param.ranges.l.max = param.ranges.l.min + 1;
-                        }
-                        else
-                        {
-                            param.ranges.type = 'f';
-                            param.ranges.f.min = lilv_node_as_float(xminimum);
-                            param.ranges.f.max = lilv_node_as_float(xmaximum);
-
-                            if (param.ranges.f.min >= param.ranges.f.max)
-                                param.ranges.f.max = param.ranges.f.min + 1.0f;
-                        }
-
-                        if (xdefault != nullptr)
-                        {
-                            if (isLong)
-                                param.ranges.l.def = atoll(lilv_node_as_string(xdefault));
-                            else
-                                param.ranges.f.def = lilv_node_as_float(xdefault);
-                        }
-                        else
-                        {
-                            if (isLong)
-                                param.ranges.l.def = param.ranges.l.min;
-                            else
-                                param.ranges.f.def = param.ranges.f.min;
-                        }
-                    }
-                    else if (strcmp(atomType, "Bool") == 0)
-                    {
-                        param.ranges.type = 'f';
-                        param.ranges.f.min = 0.0f;
-                        param.ranges.f.max = 1.0f;
-
-                        if (xdefault != nullptr)
-                            param.ranges.f.def = std::min(1.0f, std::max(0.0f, lilv_node_as_float(xdefault)));
-                        else
-                            param.ranges.f.def = param.ranges.f.min;
-                    }
-
-                    lilv_node_free(xminimum);
-                    lilv_node_free(xmaximum);
-                    lilv_node_free(xdefault);
-                }
-
-                // ----------------------------------------------------------------------------------------------------
-                // units
-
-                param.units.label  = nc;
-                param.units.render = nc;
-                param.units.symbol = nc;
-
-                if (LilvNode* const uunit = lilv_world_get(W, patch, ns.units_unit, nullptr))
-                {
-                    _fill_units(param.units, uunit, ns);
-                    lilv_node_free(uunit);
-                }
-
-                // ----------------------------------------------------------------------------------------------------
-                // comment
-
-                if (LilvNode* const node = lilv_world_get(W, patch, ns.rdfs_comment, nullptr))
-                {
-                    param.comment = strdup(lilv_node_as_string(node));
-                    lilv_node_free(node);
-                }
-                else
-                {
-                    param.comment = nc;
-                }
-
-                // ----------------------------------------------------------------------------------------------------
-                // short name
-
-                if (LilvNode* const node = lilv_world_get(W, patch, ns.lv2core_shortName, nullptr))
-                {
-                    param.shortName = strdup(lilv_node_as_string(node));
-                    lilv_node_free(node);
-                }
-                else
-                {
-                    param.shortName = strdup(param.label);
-                }
-
-                if (strlen(param.shortName) > 16)
-                    ((char*)param.shortName)[16] = '\0';
-
-                // ----------------------------------------------------------------------------------------------------
-                // file types
-
-                if (LilvNode* const fileTypesNode = lilv_world_get(W, patch, ns.mod_fileTypes, nullptr))
-                {
-                    if (char* const fileTypes = strdup(lilv_node_as_string(fileTypesNode)))
-                    {
-                        const size_t fileTypesLen = strlen(fileTypes);
-                        uint fileTypesCount = 1;
-
-                        // count number of items
-                        for (size_t i=0; i<fileTypesLen; ++i)
-                        {
-                            if (fileTypes[i] == ',')
-                                ++fileTypesCount;
-                        }
-
-                        const char** const fileTypesArray = new const char*[fileTypesCount+1U];
-                        memset(fileTypesArray, 0, sizeof(const char*)*(fileTypesCount+1U));
-
-                        // assign data, reusing fileTypes string pointer
-                        fileTypesCount = 0;
-                        fileTypesArray[0] = fileTypes;
-
-                        for (size_t i=0; i<fileTypesLen; ++i)
-                        {
-                            if (fileTypes[i] == ',')
-                            {
-                                fileTypes[i] = '\0';
-                                fileTypesArray[++fileTypesCount] = &fileTypes[i+1];
-                            }
-                        }
-
-                        param.fileTypes = fileTypesArray;
-                    }
-
-                    lilv_node_free(fileTypesNode);
-                }
-
-                // ----------------------------------------------------------------------------------------------------
-                // supported extensions
-
-                if (LilvNode* const supportedExtensionsNode = lilv_world_get(W, patch, ns.mod_supportedExtensions, nullptr))
-                {
-                    if (char* const supportedExtensions = strdup(lilv_node_as_string(supportedExtensionsNode)))
-                    {
-                        const size_t supportedExtensionsLen = strlen(supportedExtensions);
-                        uint supportedExtensionsCount = 1;
-
-                        // count number of items
-                        for (size_t i=0; i<supportedExtensionsLen; ++i)
-                        {
-                            if (supportedExtensions[i] == ',')
-                                ++supportedExtensionsCount;
-                        }
-
-                        const char** const supportedExtensionsArray = new const char*[supportedExtensionsCount+1U];
-                        memset(supportedExtensionsArray, 0, sizeof(const char*)*(supportedExtensionsCount+1U));
-
-                        // assign data, reusing supportedExtensions string pointer
-                        supportedExtensionsCount = 0;
-                        supportedExtensionsArray[0] = supportedExtensions;
-
-                        for (size_t i=0; i<supportedExtensionsLen; ++i)
-                        {
-                            if (supportedExtensions[i] == ',')
-                            {
-                                supportedExtensions[i] = '\0';
-                                supportedExtensionsArray[++supportedExtensionsCount] = &supportedExtensions[i+1];
-                            }
-                        }
-
-                        param.supportedExtensions = supportedExtensionsArray;
-                    }
-
-                    lilv_node_free(supportedExtensionsNode);
-                }
-
-                lilv_node_free(labelNode);
-                lilv_node_free(rangeNode);
-                lilv_node_free(typeNode);
-
-                params[count++] = param;
-            }
-
-            info.parameters = params;
-
-            lilv_node_free(statenode);
-        }
-
-        lilv_nodes_free(patches);
+        info.parameters = params;
     }
 
     // --------------------------------------------------------------------------------------------------------
@@ -3994,8 +4036,6 @@ const PluginPort* get_plugin_control_inputs(const char* const uri_)
         return pInfo.ports.control.input;
     }
 
-    const NamespaceDefinitions ns;
-
     // look for it
     LILV_FOREACH(plugins, itpls, PLUGINS)
     {
@@ -4007,6 +4047,7 @@ const PluginPort* get_plugin_control_inputs(const char* const uri_)
             continue;
 
         // found the plugin
+        const NamespaceDefinitions ns;
         const PluginInfo& pInfo = _get_plugin_info(p, ns);
 
         PLUGNFO[uri] = pInfo;
@@ -4041,8 +4082,6 @@ const PluginInfo_Essentials* get_plugin_info_essentials(const char* const uri_)
         return &info;
     }
 
-    const NamespaceDefinitions ns;
-
     // look for it
     LILV_FOREACH(plugins, itpls, PLUGINS)
     {
@@ -4054,6 +4093,7 @@ const PluginInfo_Essentials* get_plugin_info_essentials(const char* const uri_)
             continue;
 
         // found the plugin
+        const NamespaceDefinitions ns;
         const PluginInfo& pInfo = _get_plugin_info(p, ns);
 
         PLUGNFO[uri] = pInfo;

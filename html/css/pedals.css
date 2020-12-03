@@ -466,6 +466,53 @@ body > .mod-settings.mod-window-visible {
 }
 
 
+/* = STRING
+================================================ */
+.mod-pedal-settings .mod-string {
+    background:#212121;
+    float:left;
+    height:160px;
+    margin:0 2px 2px 0;
+    position:relative;
+    text-align:center;
+    width:320px !important;
+}
+.mod-pedal-settings .mod-string > span.mod-string-title {
+    color:white;
+    display:block;
+    font-size:11px;
+    font-weight:bold;
+    height:11px;
+    line-height:1;
+    margin:9px 0;
+    position:relative;
+    overflow:hidden;
+    text-transform:uppercase;
+}
+
+.mod-pedal-settings .mod-string-content {
+    font-weight:bold;
+    background: black;
+    height:131px;
+    display:flex;
+}
+.mod-pedal-settings .mod-string-content > span.mod-string-value {
+    flex:1;
+    padding:2px;
+    border:1px solid #000;
+    white-space:pre-wrap;
+}
+.mod-pedal-settings .mod-string-content > span.mod-string-value:focus {
+    border: 1px solid #883996;
+    background: black;
+}
+.mod-pedal-settings .mod-string-content > span.mod-string-value::selection {
+  background: #883996;
+}
+.mod-pedal-settings .mod-string-content > span.mod-string-value::-moz-selection {
+  background: #883996;
+}
+
 /* = SLIDER
 ================================================ */
 .mod-pedal-settings .mod-slider {

@@ -127,6 +127,8 @@ typedef struct {
 
 typedef struct {
     bool valid;
+    bool readable;
+    bool writable;
     const char* uri;
     const char* label;
     const char* type;
@@ -138,7 +140,6 @@ typedef struct {
     // for path stuff
     const char* const* fileTypes;
     const char* const* supportedExtensions;
-    // TODO see what else is needed
 } PluginParameter;
 
 typedef struct {
