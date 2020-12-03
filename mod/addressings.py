@@ -7,7 +7,18 @@ import os
 
 from tornado import gen
 from mod import get_hardware_descriptor, get_nearest_valid_scalepoint_value, safe_json_load, TextFileFlusher
-from mod.control_chain import ControlChainDeviceListener
+from mod.control_chain import (
+  CC_MODE_TOGGLE,
+  CC_MODE_TRIGGER,
+  CC_MODE_OPTIONS,
+  CC_MODE_TAP_TEMPO,
+  CC_MODE_REAL,
+  CC_MODE_INTEGER,
+  CC_MODE_LOGARITHMIC,
+  CC_MODE_COLOURED,
+  CC_MODE_MOMENTARY,
+  ControlChainDeviceListener,
+)
 from mod.settings import PEDALBOARD_INSTANCE_ID
 from modtools.tempo import get_divider_options
 from modtools.utils import get_plugin_control_inputs
@@ -459,6 +470,8 @@ class Addressings(object):
                     'minimum' : addr['minimum'],
                     'maximum' : addr['maximum'],
                     'steps'   : addr['steps'],
+                    'coloured': addr.get('coloured', False),
+                    'momentary': int(addr.get('momentary', 0)),
                 })
             addressings[uri] = addrs2
 
@@ -535,7 +548,7 @@ class Addressings(object):
                             addr['maximum'],
                             addr['steps'],
                             addr['label'].replace(" ","_"),
-                            addr.get('tempo'),
+                            addr.get('tempo', False),
                             dividers,
                             page,
                             group,
@@ -555,13 +568,14 @@ class Addressings(object):
                         addr['maximum'],
                         addr['steps'],
                         addr['label'].replace(" ","_"),
-                        addr.get('tempo'),
+                        addr.get('tempo', False),
                         dividers,
                         page)
-                msg_callback("hw_map %s %s %s %f %f %d %s %s %s %s 1 0 0" % args)
+                msg_callback("hw_map %s %s %s %f %f %d %s %s %s %s null 1 0 0" % args)
 
         # Control Chain
         for uri, addrs in self.cc_addressings.items():
+            feedback = int(self.cc_metadata[uri]['feedback'])
             for addr in addrs:
                 args = (instances[addr['instance_id']],
                         addr['port'],
@@ -569,8 +583,11 @@ class Addressings(object):
                         addr['minimum'],
                         addr['maximum'],
                         addr['steps'],
-                        addr['label'].replace(" ","_"))
-                msg_callback("hw_map %s %s %s %f %f %d %s False null 0 0 0" % args)
+                        addr['label'].replace(" ","_"),
+                        feedback,
+                        int(addr.get('coloured', False)),
+                        int(addr.get('momentary', 0)))
+                msg_callback("hw_map %s %s %s %f %f %d %s False null null null %d %d %d" % args)
 
         # MIDI
         for uri, addrs in self.midi_addressings.items():
@@ -606,6 +623,7 @@ class Addressings(object):
 
         unit = "none"
         options = []
+        pprops = []
 
         if portsymbol == ":presets":
             data = self.get_presets_as_options(instance_id)
@@ -683,9 +701,14 @@ class Addressings(object):
             'operational_mode': operational_mode,
         }
 
-        # -------------------------------------------------------------------------------------------------------------
-        if actuator_type == self.ADDRESSING_TYPE_HMI:
+        if tempo or "enumeration" in pprops and len(port_info["scalePoints"]) > 0:
+            if not tempo and value not in [o[0] for o in options]:
+                print("WARNING: current value '%f' for '%s' is not a valid scalepoint" % (value, portsymbol))
+                addressing_data['value'] = get_nearest_valid_scalepoint_value(value, options)[1]
 
+        # -------------------------------------------------------------------------------------------------------------
+
+        if actuator_type == self.ADDRESSING_TYPE_HMI:
             if portsymbol == ":bypass":
                 hmitype = FLAG_CONTROL_BYPASS
                 if momentary:
@@ -728,11 +751,6 @@ class Addressings(object):
                     else:
                         hmitype &= ~FLAG_CONTROL_REVERSE
 
-            if hmitype & FLAG_CONTROL_SCALE_POINTS:
-                if not tempo and value not in [o[0] for o in options]:
-                    print("WARNING: current value '%f' for '%s' is not a valid scalepoint" % (value, portsymbol))
-                    addressing_data['value'] = get_nearest_valid_scalepoint_value(value, options)[1]
-
             # hmi specific
             addressing_data['hmitype'] = hmitype
 
@@ -751,6 +769,46 @@ class Addressings(object):
             if actuator_uri not in self.cc_addressings.keys():
                 print("ERROR: Can't load addressing for unavailable hardware '%s'" % actuator_uri)
                 return None
+
+            if portsymbol == ":bypass":
+                cctype = CC_MODE_TOGGLE|CC_MODE_INTEGER
+                if momentary:
+                    cctype |= CC_MODE_MOMENTARY
+                    if momentary == 2:
+                        cctype |= CC_MODE_COLOURED
+
+            elif portsymbol == ":presets":
+                cctype = CC_MODE_OPTIONS|CC_MODE_INTEGER
+                if coloured:
+                    cctype |= CC_MODE_COLOURED
+
+            else:
+                if "toggled" in pprops:
+                    cctype = CC_MODE_TOGGLE
+                    if momentary:
+                        cctype |= CC_MODE_MOMENTARY
+                        if momentary == 2:
+                            cctype |= CC_MODE_COLOURED
+                elif "integer" in pprops:
+                    cctype = CC_MODE_INTEGER
+                else:
+                    cctype = CC_MODE_REAL
+
+                if "logarithmic" in pprops:
+                    cctype |= CC_MODE_LOGARITHMIC
+                if "trigger" in pprops:
+                    cctype |= CC_MODE_TRIGGER
+
+                if portsymbol == ":bpm" and "tapTempo" in pprops and actuator_uri.startswith("/hmi/footswitch"):
+                    cctype |= CC_MODE_TAP_TEMPO
+
+                if tempo or "enumeration" in pprops and len(port_info["scalePoints"]) > 0:
+                    cctype |= CC_MODE_OPTIONS
+                    if coloured:
+                        cctype |= CC_MODE_COLOURED
+
+            # CC specific
+            addressing_data['cctype'] = cctype
 
             addressings = self.cc_addressings[actuator_uri]
             addressings.append(addressing_data)
@@ -845,29 +903,26 @@ class Addressings(object):
                         logging.exception(e)
 
             elif actuator_type == Addressings.ADDRESSING_TYPE_CC:
-                # FIXME: we need a way to change CC value, without re-addressing
                 actuator_cc = self.cc_metadata[actuator_uri]['hw_id']
+                feedback    = self.cc_metadata[actuator_uri]['feedback']
                 addressings = self.cc_addressings[actuator_uri]
 
                 for addressing in addressings:
                     if (addressing['instance_id'], addressing['port']) == skippedPort:
                         continue
-                    data = {
-                        'instance_id': addressing['instance_id'],
-                        'port'       : addressing['port'],
-                        'label'      : addressing['label'],
-                        'value'      : addressing['value'],
-                        'minimum'    : addressing['minimum'],
-                        'maximum'    : addressing['maximum'],
-                        'steps'      : addressing['steps'],
-                        'unit'       : addressing['unit'],
-                        'options'    : addressing['options'],
-                    }
-                    try:
-                        yield gen.Task(self._task_unaddressing, self.ADDRESSING_TYPE_CC, data['instance_id'], data['port'])
-                        yield gen.Task(self._task_addressing, self.ADDRESSING_TYPE_CC, actuator_cc, data)
-                    except Exception as e:
-                        logging.exception(e)
+
+                    if feedback:
+                        try:
+                            yield gen.Task(self._task_set_value, self.ADDRESSING_TYPE_CC, actuator_cc, addressing)
+                        except Exception as e:
+                            logging.exception(e)
+                    else:
+                        try:
+                            yield gen.Task(self._task_unaddressing, self.ADDRESSING_TYPE_CC,
+                                           addressing['instance_id'], addressing['port'])
+                            yield gen.Task(self._task_addressing, self.ADDRESSING_TYPE_CC, actuator_cc, addressing)
+                        except Exception as e:
+                            logging.exception(e)
 
         if callback is not None:
             callback(True)
@@ -1107,19 +1162,8 @@ class Addressings(object):
         addressings = self.cc_addressings[actuator_uri]
 
         for addressing in addressings:
-            data = {
-                'instance_id': addressing['instance_id'],
-                'port'       : addressing['port'],
-                'label'      : addressing['label'],
-                'value'      : addressing['value'],
-                'minimum'    : addressing['minimum'],
-                'maximum'    : addressing['maximum'],
-                'steps'      : addressing['steps'],
-                'unit'       : addressing['unit'],
-                'options'    : addressing['options'],
-            }
             try:
-                yield gen.Task(self._task_addressing, self.ADDRESSING_TYPE_CC, actuator_cc, data)
+                yield gen.Task(self._task_addressing, self.ADDRESSING_TYPE_CC, actuator_cc, addressing)
             except Exception as e:
                 logging.exception(e)
 

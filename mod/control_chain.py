@@ -8,12 +8,15 @@ from tornado import gen, iostream
 from tornado.ioloop import IOLoop
 from mod import symbolify
 
-CC_MODE_TOGGLE    = 0x01
-CC_MODE_TRIGGER   = 0x02
-CC_MODE_OPTIONS   = 0x04
-CC_MODE_REAL      = 0x10
-CC_MODE_INTEGER   = 0x20
-CC_MODE_TAP_TEMPO = 0x40
+CC_MODE_TOGGLE      = 0x001
+CC_MODE_TRIGGER     = 0x002
+CC_MODE_OPTIONS     = 0x004
+CC_MODE_TAP_TEMPO   = 0x008
+CC_MODE_REAL        = 0x010
+CC_MODE_INTEGER     = 0x020
+CC_MODE_LOGARITHMIC = 0x040
+CC_MODE_COLOURED    = 0x100
+CC_MODE_MOMENTARY   = 0x200
 
 # ---------------------------------------------------------------------------------------------------------------------
 
@@ -244,10 +247,18 @@ class ControlChainDeviceListener(object):
                     modes_str += ":trigger"
                 if modes_int & CC_MODE_OPTIONS:
                     modes_str += ":enumeration"
+                if modes_int & CC_MODE_TAP_TEMPO:
+                    modes_str += ":taptempo"
                 if modes_int & CC_MODE_REAL:
                     modes_str += ":float"
                 if modes_int & CC_MODE_INTEGER:
                     modes_str += ":integer"
+                if modes_int & CC_MODE_LOGARITHMIC:
+                    modes_str += ":logarithmic"
+                if modes_int & CC_MODE_COLOURED:
+                    modes_str += ":colouredlist"
+                if modes_int & CC_MODE_MOMENTARY:
+                    modes_str += ":momentarytoggle"
 
                 if not modes_str:
                     continue

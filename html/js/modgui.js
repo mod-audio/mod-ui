@@ -38,16 +38,29 @@ function shouldSkipPort(port) {
     return false;
 }
 
-function loadFileTypesList(parameter, callback) {
+function loadFileTypesList(parameter, dummy, callback) {
+    var files = []
+    if (parameter.ranges.default) {
+        var sdef = parameter.ranges.default
+        files.push({
+            'fullname': sdef,
+            'basename': sdef.slice(sdef.lastIndexOf('/')+1),
+        })
+    }
+    if (dummy) {
+        parameter.files = files
+        parameter.path = true
+        callback()
+        return
+    }
     $.ajax({
         url: '/files/list',
         data: {
             'types': parameter.fileTypes.join(","),
         },
         success: function (data) {
-            parameter.files = (parameter.files || []).concat(data.files);
-            // make this presentable as control widget (file path selector)
-            parameter.path = true;
+            parameter.files = files.concat(data.files)
+            parameter.path = true
             callback()
         },
         error: function () {
@@ -152,7 +165,7 @@ function loadDependencies(gui, effect, dummy, callback) { //source, effect, bund
         })
     }
 
-    if (effect.gui.javascript) {
+    if (effect.gui.javascript && !dummy) {
         if (loadedJSs[plughash]) {
             gui.jsCallback = loadedJSs[plughash]
         } else {
@@ -192,7 +205,7 @@ function loadDependencies(gui, effect, dummy, callback) { //source, effect, bund
                 filelistLoaded = false;
                 ++numPathParametersTotal;
 
-                loadFileTypesList(parameter, function() {
+                loadFileTypesList(parameter, dummy, function() {
                     if (++numPathParametersHandled == numPathParametersTotal) {
                         filelistLoaded = true
                         cb()
@@ -270,6 +283,10 @@ function GUI(effect, options) {
     self.bypassed = options.bypassed
     self.currentPreset = ""
 
+    // initialized during `render`
+    self.controls = []
+    self.parameters = []
+
     this.makePortIndexes = function (ports) {
         var i, port, porti, indexes = {}
 
@@ -302,6 +319,61 @@ function GUI(effect, options) {
             indexes[port.symbol] = port
         }
 
+        // Bypass needs to be represented as a port since it shares the hardware addressing
+        // structure with ports. We use the symbol ':bypass' that is an invalid lv2 symbol and
+        // so will cause no conflict
+        // Be aware that this is being acessed directly in pedalboard.js
+        indexes[':bypass'] = {
+            name: 'Bypass',
+            symbol: ':bypass',
+            ranges: {
+                minimum: 0,
+                maximum: 1,
+                default: 1,
+            },
+            comment: "",
+            designation: "",
+            properties: ["toggled", "integer"],
+            widgets: [],
+            enabled: true,
+            value: self.bypassed ? 1 : 0,
+            format: null,
+            scalePoints: [],
+            scalePointsIndex: null,
+            valueFields: [],
+
+            // FIXME: limits of mustache
+            default: 1,
+            maximum: 1,
+            minimum: 0,
+            enumeration: false,
+            integer: true,
+            logarithmic: false,
+            toggled: true,
+            trigger: false,
+        }
+
+        // The same with bypass applies to presets, as ':presets' symbol
+        indexes[':presets'] = {
+            name: 'Presets',
+            symbol: ':presets',
+            ranges: {
+                minimum: -1,
+                maximum: 0,
+                default: -1,
+            },
+            comment: "",
+            designation: "",
+            properties: ["enumeration", "integer"],
+            widgets: [],
+            enabled: true,
+            value: -1,
+            format: null,
+            scalePoints: [],
+            scalePointsIndex: null,
+            valueFields: []
+        }
+
         return indexes
     }
 
@@ -311,17 +383,17 @@ function GUI(effect, options) {
         for (i in parameters) {
             parameteri = parameters[i]
 
+            if (!parameteri.ranges) {
+                continue
+            }
+
             if (parameteri.type === "http://lv2plug.in/ns/ext/atom#Bool") {
                 properties = ["toggled", "integer"]
                 parameteri.ranges.default = parameteri.ranges.default|0
                 parameteri.ranges.minimum = parameteri.ranges.minimum|0
                 parameteri.ranges.maximum = parameteri.ranges.maximum|0
-            } else if (parameteri.type === "http://lv2plug.in/ns/ext/atom#Int") {
-                properties = ["integer"]
-                parameteri.ranges.default = parameteri.ranges.default|0
-                parameteri.ranges.minimum = parameteri.ranges.minimum|0
-                parameteri.ranges.maximum = parameteri.ranges.maximum|0
-            } else if (parameteri.type === "http://lv2plug.in/ns/ext/atom#Long") {
+            } else if (parameteri.type === "http://lv2plug.in/ns/ext/atom#Int" ||
+                       parameteri.type === "http://lv2plug.in/ns/ext/atom#Long") {
                 properties = ["integer"]
                 parameteri.ranges.default = Math.round(parameteri.ranges.default)
                 parameteri.ranges.minimum = Math.round(parameteri.ranges.minimum)
@@ -335,12 +407,13 @@ function GUI(effect, options) {
             }
 
             // some parameters have no ranges, we can't show those
-            if (properties != null && parameteri.ranges.minimum != parameteri.ranges.maximum)
+            if (properties !== null && parameteri.ranges.minimum != parameteri.ranges.maximum)
             {
                 // make this presentable as control widget
                 parameteri.control = true;
 
                 parameter = {
+                    path: false,
                     enabled: true,
                     widgets: [],
                     format: null,
@@ -352,12 +425,12 @@ function GUI(effect, options) {
                     scalePoints: [],
                 }
                 $.extend(parameter, parameteri)
-
-                // set initial value
-                parameter.value = parameter.ranges.default
             }
             else
             {
+                // make this presentable as string
+                parameteri.string = parameteri.type === "http://lv2plug.in/ns/ext/atom#String";
+
                 parameter = {
                     control: false,
                     enabled: true,
@@ -367,11 +440,14 @@ function GUI(effect, options) {
                     valueFields: [],
                     // stuff not used in parameters
                     designation: "",
-                    properties: properties,
+                    properties: [],
                     scalePoints: [],
                 }
                 $.extend(parameter, parameteri)
             }
+
+            // set initial value
+            parameter.value = parameter.ranges.default
 
             // ready
             indexes[parameter.uri] = parameter
@@ -380,73 +456,15 @@ function GUI(effect, options) {
         return indexes
     }
 
-    self.controls = self.makePortIndexes(effect.ports.control.input)
-    self.parameters = self.makeParameterIndexes(effect.parameters)
-
-    // Bypass needs to be represented as a port since it shares the hardware addressing
-    // structure with ports. We use the symbol ':bypass' that is an invalid lv2 symbol and
-    // so will cause no conflict
-    // Be aware that this is being acessed directly in pedalboard.js
-    self.controls[':bypass'] = {
-        name: 'Bypass',
-        symbol: ':bypass',
-        ranges: {
-            minimum: 0,
-            maximum: 1,
-            default: 1,
-        },
-        comment: "",
-        designation: "",
-        properties: ["toggled", "integer"],
-        widgets: [],
-        enabled: true,
-        value: self.bypassed ? 1 : 0,
-        format: null,
-        scalePoints: [],
-        scalePointsIndex: null,
-        valueFields: [],
-
-        // FIXME: limits of mustache
-        default: 1,
-        maximum: 1,
-        minimum: 0,
-        enumeration: false,
-        integer: true,
-        logarithmic: false,
-        toggled: true,
-        trigger: false,
-    }
-
-    // The same with bypass applies to presets, as ':presets' symbol
-    self.controls[':presets'] = {
-        name: 'Presets',
-        symbol: ':presets',
-        ranges: {
-            minimum: -1,
-            maximum: 0,
-            default: -1,
-        },
-        comment: "",
-        designation: "",
-        properties: ["enumeration", "integer"],
-        widgets: [],
-        enabled: true,
-        value: -1,
-        format: null,
-        scalePoints: [],
-        scalePointsIndex: null,
-        valueFields: []
-    }
-
     // changes control port
     this.setPortValue = function (symbol, value, source) {
         if (isNaN(value)) {
             throw "Invalid NaN value for " + symbol
         }
         var port = self.controls[symbol]
-        if (!port.enabled || port.value == value)
+        if (!port.enabled) {
             return
-
+        }
         if (value < port.ranges.minimum) {
             value = port.ranges.minimum
             console.log("WARNING: setPortValue called with < min value, symbol:", symbol)
@@ -454,6 +472,10 @@ function GUI(effect, options) {
             value = port.ranges.maximum
             console.log("WARNING: setPortValue called with > max value, symbol:", symbol)
         }
+        if (port.value == value) {
+            return
+        }
+
         // let the host know about this change
         var mod_port = source && source !== "from-js"
                      ? source.attr("mod-port")
@@ -519,6 +541,25 @@ function GUI(effect, options) {
         options.patchGet(uri)
     }
     this.lv2PatchSet = function (uri, valuetype, value, source) {
+        var parameter = self.parameters[uri]
+        if (parameter) {
+            if (!parameter.enabled) {
+                return
+            }
+            if (parameter.control) {
+                if (value < parameter.ranges.minimum) {
+                    value = parameter.ranges.minimum
+                    console.log("WARNING: setPortValue called with < min value, uri:", uri)
+                } else if (value > parameter.ranges.maximum) {
+                    value = parameter.ranges.maximum
+                    console.log("WARNING: setPortValue called with > max value, uri:", uri)
+                }
+            }
+            if (parameter.value == value) {
+                return
+            }
+        }
+
         // convert value for host (as string)
         var svalue
         switch (valuetype)
@@ -564,19 +605,8 @@ function GUI(effect, options) {
         // let the host know about this
         options.patchSet(uri, valuetype, svalue)
 
-        var parameter = self.parameters[uri]
-        if (!parameter || !parameter.enabled || parameter.value == value)
+        if (!parameter)
             return
-
-        if (parameter.control) {
-            if (value < parameter.ranges.minimum) {
-                value = parameter.ranges.minimum
-                console.log("WARNING: setPortValue called with < min value, uri:", uri)
-            } else if (value > parameter.ranges.maximum) {
-                value = parameter.ranges.maximum
-                console.log("WARNING: setPortValue called with > max value, uri:", uri)
-            }
-        }
 
         // update our own widgets
         self.setWritableParameterValue(uri, parameter.valuetype, value, source, false)
@@ -586,7 +616,7 @@ function GUI(effect, options) {
         switch (valuetype)
         {
         case 'b':
-            return parseInt(value) != 0
+            return parseInt(value) != 0 ? 1 : 0
         case 'i':
         case 'l':
             return parseInt(value)
@@ -602,7 +632,7 @@ function GUI(effect, options) {
             switch (stype)
             {
             case 'b':
-                return value.map(function(v) { return parseInt(v) != 0 })
+                return value.map(function(v) { return parseInt(v) != 0 ? 1 : 0 })
             case 'i':
             case 'l':
                 return value.map(function(v) { return parseInt(v) })
@@ -627,9 +657,6 @@ function GUI(effect, options) {
         // when host.js is used the source is null and value needs conversion
         if (source == null) {
             value = self._decodePatchValue(valuetype, value)
-            console.log(parameter.type, value)
-        } else {
-            console.log(parameter.type, value)
         }
 
         parameter.value = value
@@ -644,7 +671,11 @@ function GUI(effect, options) {
         for (var i in parameter.valueFields) {
             valueField = parameter.valueFields[i]
             valueField.data('value', value)
-            valueField.text(sprintf(parameter.format, value))
+            if (parameter.string) {
+                valueField.text(value)
+            } else {
+                valueField.text(sprintf(parameter.format, value))
+            }
         }
 
         if (source !== "from-js") {
@@ -774,10 +805,17 @@ function GUI(effect, options) {
         }
     }
 
+    this.preRender = function () {
+        self.controls = self.makePortIndexes(effect.ports.control.input)
+        self.parameters = self.makeParameterIndexes(effect.parameters)
+    }
+
     this.render = function (instance, callback, skipNamespace) {
         self.instance = instance
 
         var render = function () {
+            self.preRender()
+
             if (instance) {
                 self.icon = $('<div mod-instance="' + instance + '" class="mod-pedal">')
             } else {
@@ -837,7 +875,8 @@ function GUI(effect, options) {
 
             var presetElem = self.settings.find('.mod-presets')
 
-            if (instance && (totalPresetCount > 0 || self.effect.ports.control.input.length > 0))
+            if (instance &&
+                (totalPresetCount > 0 || self.effect.parameters.length + self.effect.ports.control.input.length > 0))
             {
                 presetElem.data('enabled', true)
 
@@ -1084,9 +1123,16 @@ function GUI(effect, options) {
 
     this.renderDummyIcon = function (callback) {
         var render = function () {
+            self.preRender()
             var icon = $('<div class="mod-pedal dummy">')
             icon.html(Mustache.render(effect.gui.iconTemplate || options.defaultIconTemplate,
                       self.getTemplateData(effect, false)))
+            icon.find('[mod-role="input-audio-port"]').addClass("mod-audio-input")
+            icon.find('[mod-role="output-audio-port"]').addClass("mod-audio-output")
+            icon.find('[mod-role="input-midi-port"]').addClass("mod-midi-input")
+            icon.find('[mod-role="output-midi-port"]').addClass("mod-midi-output")
+            icon.find('[mod-role="input-cv-port"]').addClass("mod-cv-input")
+            icon.find('[mod-role="output-cv-port"]').addClass("mod-cv-output")
             self.assignControlFunctionality(icon, true)
             callback(icon)
         }
@@ -1100,15 +1146,21 @@ function GUI(effect, options) {
     this.setupValueField = function (valueField, port, setValueFn) {
         // For ports that are not enumerated, we allow
         // editing the value directly
-        valueField.attr('contenteditable', true)
+        valueField.attr('contenteditable', !port.string || port.writable)
         valueField.focus(function () {
-            valueField.text(sprintf(port.format, valueField.data('value')))
+            if (! port.string) {
+                valueField.text(sprintf(port.format, valueField.data('value')))
+            }
         })
         valueField.keydown(function (e) {
             // enter
             if (e.keyCode == 13) {
                 valueField.blur()
                 return false
+            }
+            // everything if string
+            if (port.string) {
+                return true;
             }
             // numbers
             if (e.keyCode >= 48 && e.keyCode <= 57) {
@@ -1134,6 +1186,10 @@ function GUI(effect, options) {
             return false
         })
         valueField.blur(function () {
+            if (port.string) {
+                setValueFn(valueField.text())
+                return
+            }
             var value = parseFloat(valueField.text())
             if (isNaN(value)) {
                 value = valueField.data('value')
@@ -1301,16 +1357,24 @@ function GUI(effect, options) {
                     parameter.valuetype = 'f'
                 } else if (parameter.type === "http://lv2plug.in/ns/ext/atom#Double") {
                     parameter.valuetype = 'g'
+                } else if (parameter.type === "http://lv2plug.in/ns/ext/atom#String") {
+                    parameter.valuetype = 's'
+                } else if (parameter.type === "http://lv2plug.in/ns/ext/atom#Path") {
+                    parameter.valuetype = 'p'
+                } else if (parameter.type === "http://lv2plug.in/ns/ext/atom#URI") {
+                    parameter.valuetype = 'u'
                 } else if (parameter.type === "http://lv2plug.in/ns/ext/atom#Vector") {
                     parameter.valuetype = 'v'
                 } else {
-                    parameter.valuetype = 's'
+                    return
                 }
 
-                if (parameter.control)
+                if (parameter.control || parameter.string)
                 {
                     // Set the display formatting of this control
-                    if (parameter.units.render)
+                    if (parameter.string)
+                        parameter.format = '%s'
+                    else if (parameter.units.render)
                         parameter.format = parameter.units.render.replace('%f', '%.2f')
                     else
                         parameter.format = '%.2f'
@@ -1644,8 +1708,9 @@ function JqueryClass() {
             'switch': 'switchWidget',
             'bypass': 'bypassWidget',
             'select': 'selectWidget',
+            'string': 'stringWidget',
             'custom-select': 'customSelect',
-            'custom-parameter-select': 'customParameterSelect',
+            'custom-select-path': 'customSelectPath',
         }
         var name = self.attr('mod-widget') || 'film'
         name = widgets[name]
@@ -2458,20 +2523,19 @@ JqueryClass('customSelect', baseWidget, {
     },
 })
 
-JqueryClass('customParameterSelect', baseWidget, {
+JqueryClass('customSelectPath', baseWidget, {
     init: function (options) {
         var self = $(this)
-        self.customParameterSelect('config', options)
-        // TODO find a way to get selected value
-        // self.customParameterSelect('setValue', options.port.ranges.default, true)
+        self.customSelectPath('config', options)
+        self.customSelectPath('setValue', options.port.value, true)
         self.find('[mod-role=enumeration-option]').each(function () {
             var opt = $(this)
             opt.click(function (e) {
                 if (!self.data('enabled')) {
-                    return self.customParameterSelect('prevent', e)
+                    return self.customSelectPath('prevent', e)
                 }
                 var value = opt.attr('mod-parameter-value')
-                self.customParameterSelect('setValue', value, false)
+                self.customSelectPath('setValue', value, false)
             })
         })
         self.click(function () {
@@ -2492,6 +2556,28 @@ JqueryClass('customParameterSelect', baseWidget, {
 
         selected.addClass('selected')
 
+        var valueField = self.find('[mod-role=input-parameter-value]')
+        if (valueField) {
+            valueField.data('value', value)
+            valueField.text(selected.text())
+        }
+
+        if (!only_gui) {
+            self.trigger('valuechange', value)
+        }
+    },
+})
+
+JqueryClass('stringWidget', baseWidget, {
+    init: function (options) {
+        var self = $(this)
+        self.stringWidget('config', options)
+        self.stringWidget('setValue', options.port.value, true)
+        return self
+    },
+
+    setValue: function (value, only_gui) {
+        var self = $(this)
         if (!only_gui) {
             self.trigger('valuechange', value)
         }

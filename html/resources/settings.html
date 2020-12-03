@@ -50,16 +50,25 @@
             <!-- END PRESET LIST -->
 
             {{#effect.parameters}}
+            {{#writable}}
             {{#path}}
             <div class="mod-enumerated mod-file-list">
                 <span class="mod-enumerated-title">{{label}}</span>
-                <div class="mod-enumerated-list" mod-role="input-parameter" mod-parameter-uri="{{uri}}" mod-widget="custom-parameter-select">
+                <div class="mod-enumerated-list" mod-role="input-parameter" mod-parameter-uri="{{uri}}" mod-widget="custom-select-path">
                     {{#files}}
                     <div mod-role="enumeration-option" mod-parameter-value="{{fullname}}">{{basename}}</div>
                     {{/files}}
                 </div>
             </div>
             {{/path}}
+            {{#string}}
+            <div class="mod-string">
+                <span class="mod-string-title">{{label}}</span>
+                <div class="mod-string-content" mod-role="input-parameter" mod-parameter-uri="{{uri}}" mod-widget="string">
+                    <span class="mod-string-value" mod-role="input-parameter-value" mod-parameter-uri="{{uri}}"></span>
+                </div>
+            </div>
+            {{/string}}
             {{#control}}
             {{^toggled}}
             <div class="mod-knob">
@@ -68,17 +77,16 @@
                 <span class="mod-knob-max-value" mod-role="input-control-maximum" mod-parameter-uri="{{uri}}"></span>
                 <span class="mod-knob-current-value" mod-role="input-parameter-value" mod-parameter-uri="{{uri}}"></span>
                 <div class="mod-knob-image" mod-role="input-parameter" mod-parameter-uri="{{uri}}" mod-widget="film"></div>
-                <div class="mod-address" mod-role="input-parameter-address" mod-parameter-uri="{{uri}}"></div>
             </div>
             {{/toggled}}
             {{#toggled}}
             <div class="mod-switch">
                 <span class="mod-switch-title">{{shortName}}</span>
                 <div class="mod-switch-image" mod-role="input-parameter" mod-parameter-uri="{{uri}}" mod-widget="film"></div>
-                <div class="mod-address" mod-role="input-parameter-address" mod-parameter-uri="{{uri}}"></div>
             </div>
             {{/toggled}}
             {{/control}}
+            {{/writable}}
             {{/effect.parameters}}
 
             {{#effect.ports.control.input}}

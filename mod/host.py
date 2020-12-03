@@ -45,6 +45,11 @@ from mod.addressings import Addressings
 from mod.bank import (
     list_banks, get_last_bank_and_pedalboard, save_last_bank_and_pedalboard,
 )
+from mod.control_chain import (
+    CC_MODE_TRIGGER,
+    CC_MODE_OPTIONS,
+    CC_MODE_MOMENTARY
+)
 from mod.mod_protocol import (
     CMD_BANKS,
     CMD_PEDALBOARDS,
@@ -111,7 +116,7 @@ from mod.protocol import (
     Protocol, ProtocolError, process_resp,
 )
 from mod.settings import (
-    APP, LOG, DEFAULT_PEDALBOARD, LV2_PEDALBOARDS_DIR,
+    APP, LOG, DEFAULT_PEDALBOARD, LV2_PEDALBOARDS_DIR, USER_FILES_DIR,
     PEDALBOARD_INSTANCE, PEDALBOARD_INSTANCE_ID, PEDALBOARD_URI, PEDALBOARD_TMP_DIR,
     TUNER_URI, TUNER_INSTANCE_ID, TUNER_INPUT_PORT, TUNER_MONITOR_PORT, HMI_TIMEOUT,
     UNTITLED_PEDALBOARD_NAME, DEFAULT_SNAPSHOT_NAME,
@@ -594,7 +599,8 @@ class Host(object):
         if atype == Addressings.ADDRESSING_TYPE_HMI:
             if send_hmi and self.hmi.initialized:
                 actuator_uri = self.addressings.hmi_hw2uri_map[actuator]
-                return self.hmi.control_add(data, actuator, actuator_uri, callback)
+                self.hmi.control_add(data, actuator, actuator_uri, callback)
+                return
             else:
                 if callback is not None:
                     callback(True)
@@ -603,10 +609,11 @@ class Host(object):
         if atype == Addressings.ADDRESSING_TYPE_CC:
             label = '"%s"' % data['label'].replace('"', '')
             unit  = '"%s"' % data['unit'].replace('"', '')
-            optionsData = []
 
-            rmaximum = data['maximum']
-            rvalue   = data['value']
+            rmaximum    = data['maximum']
+            rvalue      = data['value']
+            extraflags  = data.get('cctype', 0x0)
+            optionsData = []
 
             if data['options']:
                 currentNum = 0
@@ -636,27 +643,31 @@ class Host(object):
             options = "%d %s" % (len(optionsData), " ".join(optionsData))
             options = options.strip()
 
-            return self.send_notmodified("cc_map %d %s %d %d %s %f %f %f %i %s %s" % (data['instance_id'],
-                                                                                      data['port'],
-                                                                                      actuator[0], # device id
-                                                                                      actuator[1], # actuator id
-                                                                                      label,
-                                                                                      rvalue,
-                                                                                      data['minimum'],
-                                                                                      rmaximum,
-                                                                                      data['steps'],
-                                                                                      unit,
-                                                                                      options
-                                                                                      ), callback, datatype='boolean')
+            self.send_notmodified("cc_map %d %s %d %d %s %f %f %f %i %i %s %s" % (data['instance_id'],
+                                                                                  data['port'],
+                                                                                  actuator[0], # device id
+                                                                                  actuator[1], # actuator id
+                                                                                  label,
+                                                                                  rvalue,
+                                                                                  data['minimum'],
+                                                                                  rmaximum,
+                                                                                  data['steps'],
+                                                                                  extraflags,
+                                                                                  unit,
+                                                                                  options
+                                                                                  ), callback, datatype='boolean')
+            return
 
         if atype == Addressings.ADDRESSING_TYPE_MIDI:
-            return self.send_notmodified("midi_map %d %s %i %i %f %f" % (data['instance_id'],
-                                                                         data['port'],
-                                                                         data['midichannel'],
-                                                                         data['midicontrol'],
-                                                                         data['minimum'],
-                                                                         data['maximum'],
-                                                                         ), callback, datatype='boolean')
+            self.send_notmodified("midi_map %d %s %i %i %f %f" % (data['instance_id'],
+                                                                  data['port'],
+                                                                  data['midichannel'],
+                                                                  data['midicontrol'],
+                                                                  data['minimum'],
+                                                                  data['maximum'],
+                                                                  ), callback, datatype='boolean')
+            return
+
         if atype == Addressings.ADDRESSING_TYPE_BPM:
             if callback is not None:
                 callback(True)
@@ -664,13 +675,14 @@ class Host(object):
 
         if atype == Addressings.ADDRESSING_TYPE_CV:
             source_port_name = self.get_jack_source_port_name(actuator)
-            return self.send_notmodified("cv_map %d %s %s %f %f %s" % (data['instance_id'],
-                                                                       data['port'],
-                                                                       source_port_name,
-                                                                       data['minimum'],
-                                                                       data['maximum'],
-                                                                       data['operational_mode']
-                                                                       ), callback, datatype='boolean')
+            self.send_notmodified("cv_map %d %s %s %f %f %s" % (data['instance_id'],
+                                                                data['port'],
+                                                                source_port_name,
+                                                                data['minimum'],
+                                                                data['maximum'],
+                                                                data['operational_mode']
+                                                                ), callback, datatype='boolean')
+            return
 
         print("ERROR: Invalid addressing requested for", actuator)
         callback(False)
@@ -680,20 +692,24 @@ class Host(object):
         if atype == Addressings.ADDRESSING_TYPE_HMI:
             self.pedalboard_modified = True
             if send_hmi:
-                return self.hmi.control_rm(hw_ids, callback)
+                self.hmi.control_rm(hw_ids, callback)
+                return
             else:
                 if callback is not None:
                     callback(True)
                 return
 
         if atype == Addressings.ADDRESSING_TYPE_CC:
-            return self.send_modified("cc_unmap %d %s" % (instance_id, portsymbol), callback, datatype='boolean')
+            self.send_modified("cc_unmap %d %s" % (instance_id, portsymbol), callback, datatype='boolean')
+            return
 
         if atype == Addressings.ADDRESSING_TYPE_MIDI:
-            return self.send_modified("midi_unmap %d %s" % (instance_id, portsymbol), callback, datatype='boolean')
+            self.send_modified("midi_unmap %d %s" % (instance_id, portsymbol), callback, datatype='boolean')
+            return
 
         if atype == Addressings.ADDRESSING_TYPE_CV:
-            return self.send_modified("cv_unmap %d %s" % (instance_id, portsymbol), callback, datatype='boolean')
+            self.send_modified("cv_unmap %d %s" % (instance_id, portsymbol), callback, datatype='boolean')
+            return
 
         if atype == Addressings.ADDRESSING_TYPE_BPM:
             if callback is not None:
@@ -707,7 +723,8 @@ class Host(object):
     def addr_task_set_value(self, atype, actuator, data, callback, send_hmi=True):
         if atype == Addressings.ADDRESSING_TYPE_HMI:
             if not self.hmi.initialized:
-                return callback(False)
+                callback(False)
+                return
             if data['hmitype'] & FLAG_CONTROL_ENUMERATION:
                 options = tuple(o[0] for o in data['options'])
                 try:
@@ -725,15 +742,25 @@ class Host(object):
             else:
                 value = data['value']
             if send_hmi:
-                return self.hmi.control_set(actuator, value, callback)
+                self.hmi.control_set(actuator, value, callback)
+                return
             else:
                 if callback is not None:
                     callback(True)
                 return
 
         if atype == Addressings.ADDRESSING_TYPE_CC:
-            return self.send_modified("cc_value_set %d %s %f" % (data['instance_id'], data['port'], data['value']),
-                                      callback, datatype='boolean')
+            if data['cctype'] & CC_MODE_OPTIONS:
+                options = tuple(o[0] for o in data['options'])
+                try:
+                    value = options.index(data['value'])
+                except ValueError:
+                    logging.error("[host] address set value not in list %f", data['value'])
+                    callback(False)
+                    return
+            self.send_modified("cc_value_set %d %s %f" % (data['instance_id'], data['port'], data['value']),
+                               callback, datatype='boolean')
+            return
 
         # Everything else has nothing
         callback(True)
@@ -1350,6 +1377,8 @@ class Host(object):
             else:
                 parameter = pluginData['parameters'].get(parameteruri, None)
                 if parameter is not None:
+                    if valuetype == 'p' and not valuedata.startswith(USER_FILES_DIR) and os.path.islink(valuedata):
+                        valuedata = os.path.realpath(valuedata)
                     parameter[0] = valuedata
                     writable = 1
                 else:
@@ -2066,8 +2095,7 @@ class Host(object):
                     valports[symbol] = 1.0 if self.transport_rolling else 0.0
 
             for param in extinfo['parameters']:
-                paramuri = param['uri']
-                if param['ranges']['minimum'] == param['ranges']['maximum']:
+                if param['ranges'] is None:
                     continue
                 if param['type'] == "http://lv2plug.in/ns/ext/atom#Bool":
                     paramtype = 'b'
@@ -2079,12 +2107,17 @@ class Host(object):
                     paramtype = 'f'
                 elif param['type'] == "http://lv2plug.in/ns/ext/atom#Double":
                     paramtype = 'g'
-                elif param['type'] in ("http://lv2plug.in/ns/ext/atom#String",
-                                       "http://lv2plug.in/ns/ext/atom#Path",
-                                       "http://lv2plug.in/ns/ext/atom#URI"):
+                elif param['type'] == "http://lv2plug.in/ns/ext/atom#String":
                     paramtype = 's'
+                elif param['type'] == "http://lv2plug.in/ns/ext/atom#Path":
+                    paramtype = 'p'
+                elif param['type'] == "http://lv2plug.in/ns/ext/atom#URI":
+                    paramtype = 'u'
                 else:
                     continue
+                if paramtype not in ('s','p','u') and param['ranges']['minimum'] == param['ranges']['maximum']:
+                    continue
+                paramuri = param['uri']
                 params[paramuri] = [param['ranges']['default'], paramtype]
                 ranges[paramuri] = (param['ranges']['minimum'], param['ranges']['maximum'])
 
@@ -2261,7 +2294,8 @@ class Host(object):
         if parameter is not None:
             parameter[0] = value
 
-        self.send_modified("patch_set %d %s %s" % (instance_id, uri, value), callback, datatype='boolean')
+        self.send_modified("patch_set %d %s \"%s\"" % (instance_id, uri, value.replace('"','\\"')),
+                           callback, datatype='boolean')
         return parameter is not None
 
     def set_position(self, instance, x, y):
@@ -3199,8 +3233,7 @@ class Host(object):
                     valports[symbol] = 1.0 if self.transport_rolling else 0.0
 
             for param in extinfo['parameters']:
-                paramuri = param['uri']
-                if param['ranges']['minimum'] == param['ranges']['maximum']:
+                if param['ranges'] is None:
                     continue
                 if param['type'] == "http://lv2plug.in/ns/ext/atom#Bool":
                     paramtype = 'b'
@@ -3212,12 +3245,17 @@ class Host(object):
                     paramtype = 'f'
                 elif param['type'] == "http://lv2plug.in/ns/ext/atom#Double":
                     paramtype = 'g'
-                elif param['type'] in ("http://lv2plug.in/ns/ext/atom#String",
-                                       "http://lv2plug.in/ns/ext/atom#Path",
-                                       "http://lv2plug.in/ns/ext/atom#URI"):
+                elif param['type'] == "http://lv2plug.in/ns/ext/atom#String":
                     paramtype = 's'
+                elif param['type'] == "http://lv2plug.in/ns/ext/atom#Path":
+                    paramtype = 'p'
+                elif param['type'] == "http://lv2plug.in/ns/ext/atom#URI":
+                    paramtype = 'u'
                 else:
                     continue
+                if paramtype not in ('s','p','u') and param['ranges']['minimum'] == param['ranges']['maximum']:
+                    continue
+                paramuri = param['uri']
                 params[paramuri] = [param['ranges']['default'], paramtype]
                 ranges[paramuri] = (param['ranges']['minimum'], param['ranges']['maximum'])
 
@@ -4305,9 +4343,9 @@ _:b%i
             return
 
         needsValueChange = False
-        has_strict_bounds = True
+        hasStrictBounds = True
 
-        if not tempo and has_strict_bounds:
+        if not tempo and hasStrictBounds:
             if value < minimum:
                 value = minimum
                 needsValueChange = True
@@ -4346,7 +4384,7 @@ _:b%i
                 if needsValueChange:
                     hw_id = self.addressings.hmi_uri2hw_map[group_actuator_uri]
                     try:
-                        yield gen.Task(self.hmi_parameter_set, hw_id, value)
+                        yield gen.Task(self.hmi_or_cc_parameter_set, instance_id, portsymbol, hw_id)
                     except Exception as e:
                         logging.exception(e)
                 try:
@@ -4364,10 +4402,10 @@ _:b%i
                 callback(False)
                 return
             if needsValueChange:
-                if actuator_uri != kBpmURI: # and is_hmi_actuator:
-                    hw_id = self.addressings.hmi_uri2hw_map[actuator_uri]
+                if actuator_uri != kBpmURI:
+                    hw_id = self.addressings.hmi_uri2hw_map[actuator_uri] if is_hmi_actuator else None
                     try:
-                        yield gen.Task(self.hmi_parameter_set, hw_id, value)
+                        yield gen.Task(self.hmi_or_cc_parameter_set, instance_id, portsymbol, value, hw_id)
                     except Exception as e:
                         logging.exception(e)
                 elif tempo:
@@ -4698,22 +4736,25 @@ _:b%i
         instance_id, portsymbol = self.get_addressed_port_info(hw_id)
         callback(self.addr_task_get_port_value(instance_id, portsymbol))
 
-    # def hmi_parameter_set(self, instance_id, portsymbol, value, callback):
     def hmi_parameter_set(self, hw_id, value, callback):
         logging.debug("hmi parameter set")
+        instance_id, portsymbol = self.get_addressed_port_info(hw_id)
+        self.hmi_or_cc_parameter_set(instance_id, portsymbol, value, hw_id, callback)
+
+    def hmi_or_cc_parameter_set(self, instance_id, portsymbol, value, hw_id, callback):
+        logging.debug("hmi_or_cc_parameter_set")
 
         if self.next_hmi_pedalboard_loading:
             callback(False)
-            logging.error("hmi parameter set ignored, pedalboard loading is in progress")
+            logging.error("hmi_or_cc_parameter_set, pedalboard loading is in progress")
             return
 
-        abort_catcher = self.abort_previous_loading_progress("hmi_parameter_set")
+        abort_catcher = self.abort_previous_loading_progress("hmi_or_cc_parameter_set")
 
-        instance_id, portsymbol = self.get_addressed_port_info(hw_id)
         try:
             instance = self.mapper.get_instance(instance_id)
         except KeyError:
-            print("WARNING: hmi_parameter_set requested for non-existing plugin")
+            print("WARNING: hmi_or_cc_parameter_set requested for non-existing plugin")
             callback(False)
             return
 
@@ -4722,10 +4763,11 @@ _:b%i
         save_port_value = True
 
         if port_addressing is not None:
+            cctype = port_addressing.get('cctype', 0x0)
             hmitype = port_addressing.get('hmitype', 0x0)
-            if hmitype & FLAG_CONTROL_TRIGGER:
+            if hmitype & FLAG_CONTROL_TRIGGER or cctype & CC_MODE_TRIGGER:
                 save_port_value = False
-            elif hmitype & FLAG_CONTROL_MOMENTARY:
+            elif hmitype & FLAG_CONTROL_MOMENTARY or cctype & CC_MODE_MOMENTARY:
                 if port_addressing['momentary'] == 1 and port_addressing['minimum'] == value:
                     save_port_value = False
                 elif port_addressing['momentary'] == 2 and port_addressing['maximum'] == value:
@@ -4805,25 +4847,25 @@ _:b%i
         else:
             oldvalue = pluginData['ports'].get(portsymbol, None)
             if oldvalue is None:
-                print("WARNING: hmi_parameter_set requested for non-existing port", portsymbol)
+                print("WARNING: hmi_or_cc_parameter_set requested for non-existing port", portsymbol)
                 callback(False)
                 return
 
             if port_addressing is not None:
-                if port_addressing.get('hmitype', 0x0) & FLAG_CONTROL_ENUMERATION:
+                if hmitype & FLAG_CONTROL_ENUMERATION or cctype & CC_MODE_OPTIONS:
                     value = get_nearest_valid_scalepoint_value(value, port_addressing['options'])[1]
 
                 group_actuators = self.addressings.get_group_actuators(port_addressing['actuator_uri'])
 
                 if port_addressing.get('tempo', None):
                     # compute new port value based on received divider value
-                    allports = get_plugin_control_inputs_and_monitored_outputs(pluginData['uri'])
+                    extinfo = get_plugin_info_essentials(pluginData['uri'])
 
-                    if 'error' in allports.keys() and allports['error']:
+                    if 'error' in extinfo.keys() and extinfo['error']:
                         callback(False)
                         return
 
-                    ports = [p for p in allports['inputs'] if p['symbol'] == portsymbol]
+                    ports = [p for p in extinfo['controlInputs'] if p['symbol'] == portsymbol]
 
                     if not ports:
                         callback(False)
@@ -5010,7 +5052,7 @@ _:b%i
                   ))
 
         try:
-            yield gen.Task(self.hmi_parameter_set, hw_id, value)
+            yield gen.Task(self.hmi_or_cc_parameter_set, instance_id, portsymbol, value, hw_id)
         except Exception as e:
             logging.exception(e)
 

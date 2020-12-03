@@ -96,7 +96,7 @@ $('document').ready(function() {
             $("#ram-bar").css("width", (100.0-memload).toFixed().toString()+"%")
             $("#ram-bar-text").text("RAM "+memload.toString()+"%")
 
-            if (cpufreq !== "0" && cpufreq !== "0") {
+            if (cpufreq !== "0" && cputemp !== "0") {
                 $("#mod-cpu-stats").html(sprintf("%.1f GHz / %d &deg;C",
                                                  parseInt(cpufreq)/1000000,
                                                  parseInt(cputemp)/1000))
@@ -124,12 +124,12 @@ $('document').ready(function() {
         }
 
         if (cmd == "patch_set") {
-            data          = data.split(" ",5)
-            var instance  = data[0]
-            var writable  = parseInt(data[1]) != 0
-            var uri       = data[2]
-            var valuetype = data[3]
-            var valuedata = data[4]
+            var sdata     = data.split(" ",4)
+            var instance  = sdata[0]
+            var writable  = parseInt(sdata[1]) != 0
+            var uri       = sdata[2]
+            var valuetype = sdata[3]
+            var valuedata = data.substr(sdata.join(" ").length+1)
 
             if (writable) {
                 desktop.pedalboard.pedalboard("setWritableParameterValue", instance, uri, valuetype, valuedata);

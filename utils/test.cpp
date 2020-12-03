@@ -50,7 +50,8 @@ void scanPlugins()
             get_plugin_info(plugins[i]->uri);
             get_plugin_gui(plugins[i]->uri);
             get_plugin_gui_mini(plugins[i]->uri);
-            get_plugin_control_inputs_and_monitored_outputs(plugins[i]->uri);
+            get_plugin_control_inputs(plugins[i]->uri);
+            get_plugin_info_essentials(plugins[i]->uri);
         }
     }
 #endif
@@ -92,7 +93,8 @@ int main()
     get_plugin_info(PLUGIN_TEST_URI);
     get_plugin_gui(PLUGIN_TEST_URI);
     get_plugin_gui_mini(PLUGIN_TEST_URI);
-    get_plugin_control_inputs_and_monitored_outputs(PLUGIN_TEST_URI);
+    get_plugin_control_inputs(PLUGIN_TEST_URI);
+    get_plugin_info_essentials(PLUGIN_TEST_URI);
 # undef PLUGIN_TEST_URI
 # endif
     cleanup();

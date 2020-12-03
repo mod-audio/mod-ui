@@ -111,19 +111,35 @@ typedef struct {
 } PluginPorts;
 
 typedef struct {
+    int64_t min;
+    int64_t max;
+    int64_t def;
+} PluginLongParameterRanges;
+
+typedef struct {
+    char type;
+    union {
+        PluginPortRanges f;
+        PluginLongParameterRanges l;
+        const char* s;
+    };
+} PluginParameterRanges;
+
+typedef struct {
     bool valid;
+    bool readable;
+    bool writable;
     const char* uri;
     const char* label;
     const char* type;
     // for regular controls
-    PluginPortRanges ranges;
+    PluginParameterRanges ranges;
     PluginPortUnits units;
     const char* comment;
     const char* shortName;
     // for path stuff
     const char* const* fileTypes;
     const char* const* supportedExtensions;
-    // TODO see what else is needed
 } PluginParameter;
 
 typedef struct {
