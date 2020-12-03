@@ -117,10 +117,11 @@ typedef struct {
 } PluginLongParameterRanges;
 
 typedef struct {
-    bool isLong;
+    char type;
     union {
         PluginPortRanges f;
         PluginLongParameterRanges l;
+        const char* s;
     };
 } PluginParameterRanges;
 

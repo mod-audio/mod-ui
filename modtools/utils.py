@@ -128,7 +128,16 @@ def structToDict(struct):
 
 def unionToDict(struct):
     if isinstance(struct, PluginParameterRanges):
-        return structToDict(struct.l if struct.isLong else struct.f)
+        if struct.type == b'f':
+            return structToDict(struct.f)
+        if struct.type == b'l':
+            return structToDict(struct.l)
+        if struct.type == b's':
+            return {
+                'minimum': "",
+                'maximum': "",
+                'default': charPtrToString(struct.s),
+            }
     return None
 
 # ------------------------------------------------------------------------------------------------------------
@@ -245,12 +254,13 @@ class _PluginParameterRangesU(Union):
     _fields_ = [
         ("f", PluginPortRanges),
         ("l", PluginLongParameterRanges),
+        ("s", c_char_p),
     ]
 
 class PluginParameterRanges(Structure):
     _anonymous_ = ("u",)
     _fields_ = [
-        ("isLong", c_bool),
+        ("type", c_char),
         ("u", _PluginParameterRangesU),
     ]
 

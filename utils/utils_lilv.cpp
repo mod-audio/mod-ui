@@ -31,6 +31,7 @@
 #include "lv2/lv2plug.in/ns/ext/patch/patch.h"
 #include "lv2/lv2plug.in/ns/ext/port-props/port-props.h"
 #include "lv2/lv2plug.in/ns/ext/presets/presets.h"
+#include "lv2/lv2plug.in/ns/ext/state/state.h"
 #include "lv2/lv2plug.in/ns/extensions/units/units.h"
 
 #include "sha1/sha1.h"
@@ -283,6 +284,7 @@ struct NamespaceDefinitions {
     LilvNode* const pprops_rangeSteps;
     LilvNode* const patch_writable;
     LilvNode* const pset_Preset;
+    LilvNode* const state_state;
     LilvNode* const units_render;
     LilvNode* const units_symbol;
     LilvNode* const units_unit;
@@ -342,6 +344,7 @@ struct NamespaceDefinitions {
           pprops_rangeSteps        (lilv_new_uri(W, LV2_PORT_PROPS__rangeSteps         )),
           patch_writable           (lilv_new_uri(W, LV2_PATCH__writable                )),
           pset_Preset              (lilv_new_uri(W, LV2_PRESETS__Preset                )),
+          state_state              (lilv_new_uri(W, LV2_STATE__state                   )),
           units_render             (lilv_new_uri(W, LV2_UNITS__render                  )),
           units_symbol             (lilv_new_uri(W, LV2_UNITS__symbol                  )),
           units_unit               (lilv_new_uri(W, LV2_UNITS__unit                    )) {}
@@ -402,6 +405,7 @@ struct NamespaceDefinitions {
         lilv_node_free(pprops_rangeSteps);
         lilv_node_free(patch_writable);
         lilv_node_free(pset_Preset);
+        lilv_node_free(state_state);
         lilv_node_free(units_render);
         lilv_node_free(units_symbol);
         lilv_node_free(units_unit);
@@ -2429,6 +2433,9 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
             PluginParameter* const params = new PluginParameter[count+1];
             memset(params, 0, sizeof(PluginParameter) * (count+1));
 
+            // used to fetch default values
+            LilvNode* const statenode = lilv_world_get(W, lilv_plugin_get_uri(p), ns.state_state, nullptr);
+
             count = 0;
             LILV_FOREACH(nodes, itpatches, patches)
             {
@@ -2470,9 +2477,35 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
                 param.label = strdup(lilv_node_as_string(labelNode));
                 param.type  = strdup(lilv_node_as_string(rangeNode));
 
+                const char* const atomType = (strncmp(param.type, LV2_ATOM_PREFIX, strlen(LV2_ATOM_PREFIX)) == 0)
+                                           ? param.type + strlen(LV2_ATOM_PREFIX)
+                                           : "";
+
                 // ----------------------------------------------------------------------------------------------------
                 // ranges
 
+                if (strcmp(atomType, "Path") == 0 || strcmp(atomType, "String") == 0 || strcmp(atomType, "URI") == 0)
+                {
+                    param.ranges.type = 's';
+
+                    if (LilvNode* const keynode = lilv_new_uri(W, param.uri))
+                    {
+                        if (LilvNode* const valuenode = lilv_world_get(W, statenode, keynode, nullptr))
+                        {
+                            if (strcmp(atomType, "Path") == 0)
+                                param.ranges.s = lilv_file_abspath(lilv_node_as_string(valuenode));
+                            else if (strcmp(atomType, "URI") == 0)
+                                param.ranges.s = strdup(lilv_node_as_uri(valuenode));
+                            else
+                                param.ranges.s = strdup(lilv_node_as_string(valuenode));
+
+                            lilv_node_free(valuenode);
+                        }
+
+                        lilv_node_free(keynode);
+                    }
+                }
+                else
                 {
                     LilvNode* xminimum = lilv_world_get(W, patch, ns.mod_minimum, nullptr);
                     if (xminimum == nullptr)
@@ -2488,11 +2521,11 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
 
                     if (xminimum != nullptr && xmaximum != nullptr)
                     {
-                        const bool isLong = strcmp(param.type, LV2_ATOM__Long) == 0;
+                        const bool isLong = strcmp(atomType, "Long") == 0;
 
                         if (isLong)
                         {
-                            param.ranges.isLong = true;
+                            param.ranges.type = 'l';
                             param.ranges.l.min = atoll(lilv_node_as_string(xminimum));
                             param.ranges.l.max = atoll(lilv_node_as_string(xmaximum));
 
@@ -2501,6 +2534,7 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
                         }
                         else
                         {
+                            param.ranges.type = 'f';
                             param.ranges.f.min = lilv_node_as_float(xminimum);
                             param.ranges.f.max = lilv_node_as_float(xmaximum);
 
@@ -2523,8 +2557,9 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
                                 param.ranges.f.def = param.ranges.f.min;
                         }
                     }
-                    else if (strcmp(param.type, LV2_ATOM__Bool) == 0)
+                    else if (strcmp(atomType, "Bool") == 0)
                     {
+                        param.ranges.type = 'f';
                         param.ranges.f.min = 0.0f;
                         param.ranges.f.max = 1.0f;
 
@@ -2667,6 +2702,8 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
             }
 
             info.parameters = params;
+
+            lilv_node_free(statenode);
         }
 
         lilv_nodes_free(patches);
@@ -2936,6 +2973,11 @@ static void _clear_parameter_info(const PluginParameter& parameter)
     {
         free((void*)parameter.supportedExtensions[0]);
         delete[] parameter.supportedExtensions;
+    }
+
+    if (parameter.ranges.type == 's')
+    {
+        free((void*)parameter.ranges.s);
     }
 
     if (parameter.units._custom)
