@@ -2059,14 +2059,17 @@ class FilesList(JsonRequestHandler):
 
     @classmethod
     def _get_dir_and_extensions_for_filetype(kls, filetype):
-        if filetype == "audiofile":
-            return ("Audio Files", kls.complete_audiofile_exts)
-
-        elif filetype == "audioloop":
+        if filetype == "audioloop":
             return ("Audio Loops", kls.complete_audiofile_exts)
+
+        elif filetype == "audiorecording":
+            return ("Audio Recordings", kls.complete_audiofile_exts)
 
         elif filetype == "audiosample":
             return ("Audio Samples", kls.complete_audiofile_exts)
+
+        elif filetype == "audiotrack":
+            return ("Audio Track", kls.complete_audiofile_exts)
 
         elif filetype == "h2drumkit":
             return ("Hydrogen Drumkits", ("h2drumkit",))
@@ -2074,14 +2077,20 @@ class FilesList(JsonRequestHandler):
         elif filetype == "ir":
             return ("Impulse Responses", kls.hq_audiofile_exts)
 
-        elif filetype == "midi":
-            return ("MIDI Files", (".mid", ".midi"))
+        elif filetype == "midiclips":
+            return ("MIDI Clips", (".mid", ".midi"))
+
+        elif filetype == "midisongs":
+            return ("MIDI Songs", (".mid", ".midi"))
 
         elif filetype == "sf2":
             return ("SoundFonts", (".sf2", ".sf3"))
 
         elif filetype == "sfz":
             return ("SFZ Instruments", (".sfz",))
+
+        elif filetype == "cabsim":
+            return ("Speaker Cabinets", kls.hq_audiofile_exts)
 
         else:
             return (None, ())
