@@ -370,6 +370,10 @@ function GUI(effect, options) {
         for (i in parameters) {
             parameteri = parameters[i]
 
+            if (!parameteri.ranges) {
+                continue
+            }
+
             if (parameteri.type === "http://lv2plug.in/ns/ext/atom#Bool") {
                 properties = ["toggled", "integer"]
                 parameteri.ranges.default = parameteri.ranges.default|0
