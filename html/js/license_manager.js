@@ -47,12 +47,17 @@ LicenseManager.prototype.addLicenses = function(license_info, callback) {
 }
 
 // Asynchronously download a list of licenses and saves them to MOD
-LicenseManager.prototype.installLicenses = function(licenseIds, callback) {
+LicenseManager.prototype.installLicenses = function(missingLicenseIds, callback) {
     var self = this;
-    var installedLicenses = licenseIds.length
-    
+    var installedLicenses = missingLicenseIds.length
+
+    if (installedLicenses == 0) {
+        callback(installedLicenses)
+        return
+    }
+
     var installNext = function() {
-        if (licenseIds.length == 0) {
+        if (missingLicenseIds.length == 0) {
             $.ajax({
                 url: '/effect/refresh',
                 cache: false,
@@ -63,7 +68,7 @@ LicenseManager.prototype.installLicenses = function(licenseIds, callback) {
             });
             return
         }
-        self.installLicense(licenseIds.pop(), installNext);
+        self.installLicense(missingLicenseIds.pop(), installNext);
     }
     installNext();
 }
