@@ -267,6 +267,8 @@ class PluginParameterRanges(Structure):
 class PluginParameter(Structure):
     _fields_ = [
         ("valid", c_bool),
+        ("readable", c_bool),
+        ("writable", c_bool),
         ("uri", c_char_p),
         ("label", c_char_p),
         ("type", c_char_p),
