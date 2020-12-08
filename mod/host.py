@@ -2521,9 +2521,10 @@ class Host(object):
                 continue
             instance = pluginData['instance'].replace("/graph/","",1)
             snapshot['data'][instance] = {
-                "bypassed": pluginData['bypassed'],
-                "ports"   : pluginData['ports'].copy(),
-                "preset"  : pluginData['preset'],
+                "bypassed"  : pluginData['bypassed'],
+                "parameters": dict((k,v.copy()) for k,v in pluginData['parameters'].items()),
+                "ports"     : pluginData['ports'].copy(),
+                "preset"    : pluginData['preset'],
             }
 
         return snapshot
@@ -2684,6 +2685,13 @@ class Host(object):
                     addressing['value'] = value
                     if addressing['actuator_uri'] not in used_actuators:
                         used_actuators.append(addressing['actuator_uri'])
+
+            for uri, param in data['parameters'].items():
+                self.msg_callback("patch_set %s 1 %s %s %s" % (instance, uri, param[1], param[0]))
+                try:
+                    yield gen.Task(self.patch_set, instance, uri, param[0])
+                except Exception as e:
+                    logging.exception(e)
 
             # if not bypassed (enabled), do it at the end
             if diffBypass and not data['bypassed']:
