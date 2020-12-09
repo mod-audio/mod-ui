@@ -1215,7 +1215,7 @@ class Addressings(object):
             return None
 
         actuator = next(a for a in self.hw_actuators if a['uri'] == actuator_uri)
-        group_actuators = actuator.get('group', None)
+        group_actuators = actuator.get('actuator_group', None)
         if group_actuators is None or len(group_actuators) == 0:
             return None
         return group_actuators
