@@ -79,8 +79,7 @@
     var DEFAULT_PEDALBOARD = '{{default_pedalboard}}'
     var FAVORITES = {{favorites}}
     var PREFERENCES = {{preferences}}
-    var PAGES_NB = {{pages_nb}}
-    var PAGES_CB = {{pages_cb}}
+    var ADDRESSING_PAGES = {{addressing_pages}}
     var DEBUG = true;
     if (!DEBUG) {
         console = console || {}
@@ -597,8 +596,8 @@ $('document').ready(function() {
         <div id="mod-plugins" class="icon selected" data-message="Constructor"></div>
         <div id="mod-pedalboard" class="icon" data-message="Pedalboards Library"></div>
         <div id="mod-bank" class="icon" data-message="Banks"></div>
-        <div id="mod-cloud-plugins" class="icon" data-message="Plugin Store"></div>
         <div id="mod-file-manager" class="icon" data-message="File Manager"></div>
+        <div id="mod-cloud-plugins" class="icon" data-message="Plugin Store"></div>
         <div id="banks-saving">Auto saving banks...</div>
         <div id="mod-update" class="status icon"></div>
         <div id="mod-status" class="status icon mod-hidden"></div>
