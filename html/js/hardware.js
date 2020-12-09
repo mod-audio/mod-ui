@@ -211,7 +211,7 @@ function HardwareManager(options) {
             modes    = actuator.modes
 
             // usedAddressings = self.addressingsByActuator[actuator.uri]
-            // if (!PAGES_CB && usedAddressings.length >= actuator.max_assigns && usedAddressings.indexOf(key) < 0) {
+            // if (ADDRESSING_PAGES == 0 && usedAddressings.length >= actuator.max_assigns && usedAddressings.indexOf(key) < 0) {
             //     continue
             // }
 
@@ -489,11 +489,11 @@ function HardwareManager(options) {
       var groupTable = $('<table/>').addClass('hmi-table')
       var row, cell, uri, uriAddressings, usedAddressings, addressing, groupActuator, groupAddressings
 
-      if (PAGES_CB && PAGES_NB > 0)
+      if (ADDRESSING_PAGES > 0)
       {
         // build header row
         var headerRow = $('<tr/>')
-        for (var i = 1; i <= PAGES_NB; i++) {
+        for (var i = 1; i <= ADDRESSING_PAGES; i++) {
           headerRow.append($('<th>Page '+i+'</th>'))
         }
         table.append(headerRow)
@@ -501,7 +501,7 @@ function HardwareManager(options) {
         for (var actuatorUri in actuators) {
           row = $('<tr/>')
           usedAddressings = self.addressingsByActuator[actuatorUri]
-          for (var page = 0; page < PAGES_NB; page++) {
+          for (var page = 0; page < ADDRESSING_PAGES; page++) {
             if (startsWith(actuatorUri, deviceOption)) {
               cell = $('<td data-page="'+ page +'" data-uri="'+ actuatorUri +'">'+ actuators[actuatorUri].name+'</td>')
               if (currentAddressing && currentAddressing.uri == actuatorUri && currentAddressing.page == page) {

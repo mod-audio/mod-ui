@@ -1092,7 +1092,7 @@ class Host(object):
             ssname = self.snapshot_name() or DEFAULT_SNAPSHOT_NAME
             msgs.append((self.hmi.set_snapshot_name, [ssname]))
 
-        if self.descriptor.get('pages_cb', False):
+        if self.descriptor.get('addressing_pages', 0):
             msgs.append((self.hmi.set_available_pages, [self.addressings.available_pages]))
 
         if self.isBankFootswitchNavigationOn():
@@ -1987,7 +1987,7 @@ class Host(object):
         group_actuators   = self.addressings.get_group_actuators(actuator_uri)
 
         # If not currently displayed on HMI screen, then we do not need to set the new value
-        if self.addressings.pages_cb:
+        if self.addressings.addressing_pages:
             if current_addressing.get('page', None) != self.addressings.current_page:
                 if callback is not None:
                     callback(True)
@@ -2211,8 +2211,8 @@ class Host(object):
 
         # Send new available pages to hmi if needed
         send_hmi_available_pages = False
-        if self.addressings.pages_cb:
-            for page in range(self.addressings.pages_nb):
+        if self.addressings.addressing_pages:
+            for page in range(self.addressings.addressing_pages):
                 send_hmi_available_pages |= self.check_available_pages(page)
 
         # Send everything that HMI needs
@@ -2737,7 +2737,7 @@ class Host(object):
 
     @gen.coroutine
     def page_load(self, idx, abort_catcher, callback):
-        if not self.addressings.pages_cb:
+        if not self.addressings.addressing_pages:
             print("ERROR: hmi next page not supported")
             callback(False)
             return
@@ -2777,7 +2777,7 @@ class Host(object):
             # NOTE: ignoring callback here, as HMI is handling a request right now
             self.hmi.control_add(next_addressing_data, hw_id, uri, None)
 
-        self.addressings.current_page = idx % self.addressings.pages_nb
+        self.addressings.current_page = idx % self.addressings.addressing_pages
 
         # callback must be last action
         callback(True)
@@ -4299,7 +4299,7 @@ _:b%i
                     logging.exception(e)
 
             # Find out if old addressing page should not be available anymore:
-            if self.addressings.pages_cb and old_actuator_type == Addressings.ADDRESSING_TYPE_HMI:
+            if self.addressings.addressing_pages and old_actuator_type == Addressings.ADDRESSING_TYPE_HMI:
                 send_hmi_available_pages = self.check_available_pages(old_addressing['page'])
 
         if not actuator_uri or actuator_uri == kNullAddressURI:
@@ -4405,7 +4405,7 @@ _:b%i
 
         # Find out if new addressing page should become available
         send_hmi_available_pages = False
-        if self.addressings.pages_cb and self.addressings.is_hmi_actuator(actuator_uri):
+        if self.addressings.addressing_pages and self.addressings.is_hmi_actuator(actuator_uri):
             send_hmi_available_pages = self.check_available_pages(page)
             if send_hmi_available_pages: # while unaddressing, one page has become unavailable (without any addressings)
                 try:
@@ -4702,7 +4702,7 @@ _:b%i
 
         addressings_addrs = addressings['addrs']
 
-        if self.addressings.pages_cb: # device supports pages
+        if self.addressings.addressing_pages: # device supports pages
             try:
                 addressing_data = self.addressings.get_addressing_for_page(addressings_addrs,
                                                                            self.addressings.current_page)

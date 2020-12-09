@@ -96,12 +96,14 @@ class Addressings(object):
         desc = get_hardware_descriptor()
         self.hw_actuators = desc.get('actuators', [])
         self.hw_actuators_uris = tuple(a['uri'] for a in self.hw_actuators)
-        self.pages_nb = desc.get('pages_nb', 0)
-        self.pages_cb = desc.get('pages_cb', 0)
+        self.addressing_pages = int(desc.get('addressing_pages', 0))
         self.current_page = 0
 
-        if self.pages_cb:
-            self.available_pages = [1 if i == 0 else 0 for i in range(self.pages_nb)]
+        if self.addressing_pages:
+            self.available_pages = [1 if i == 0 else 0 for i in range(self.addressing_pages)]
+        else:
+            self.available_pages = []
+            # FIXME
 
         # 'hmi_addressings' uses a structure like this:
         # "/hmi/knob1": {'addrs': [...], 'idx': 0}
@@ -266,8 +268,8 @@ class Addressings(object):
 
                 page = addr.get('page', None)
                 # Dealing with HMI addr from a pedalboard not supporting pages on a device supporting them
-                if self.get_actuator_type(actuator_uri) == self.ADDRESSING_TYPE_HMI and self.pages_cb and self.pages_nb and page is None:
-                    if i < self.pages_nb: # automatically assign the i-th assignment to page i
+                if self.get_actuator_type(actuator_uri) == self.ADDRESSING_TYPE_HMI and self.addressing_pages and page is None:
+                    if i < self.addressing_pages: # automatically assign the i-th assignment to page i
                         page = i
                     else: # cannot address more because we've reached the max nb of pages for current actuator
                         break
@@ -338,9 +340,9 @@ class Addressings(object):
                     logging.exception(e)
 
         # Send available pages (ie with addressings) to hmi
-        if self.pages_cb:
-            self.available_pages = []
-            for i in range(self.pages_nb):
+        self.available_pages = []
+        if self.addressing_pages:
+            for i in range(self.addressing_pages):
                 # Build default available_pages list
                 if i == 0: # For the moment we always boot/load a pedalboard with first page
                     self.available_pages.append(1) # so it should always be available
@@ -526,7 +528,7 @@ class Addressings(object):
 
     def registerMappings(self, msg_callback, instances):
         # HMI
-        group_mappings = [] #{} if self.pages_cb else []
+        group_mappings = [] #{} if self.addressing_pages else []
         for uri, addrs in self.hmi_addressings.items():
             for addr in addrs['addrs']:
                 addr_uri = uri
@@ -861,7 +863,7 @@ class Addressings(object):
                 actuator_hw = self.hmi_uri2hw_map[actuator_uri]
             except KeyError:
                 print("ERROR: Why fails the hardware/URI mapping? Hardcoded number of actuators?")
-            if self.pages_cb:
+            if self.addressing_pages:
                 # if new addressing page is not the same as the currently displayed page
                 if self.current_page != addressing_data['page']:
                     # then no need to send control_add to hmi
@@ -931,7 +933,7 @@ class Addressings(object):
         addressings       = self.hmi_addressings[actuator_uri]
         addressings_addrs = addressings['addrs']
 
-        if self.pages_cb:
+        if self.addressing_pages:
             was_assigned = self.is_page_assigned(addressings_addrs, self.current_page)
 
         for i, addr in enumerate(addressings_addrs):
@@ -947,7 +949,7 @@ class Addressings(object):
         else:
             return False
 
-        if self.pages_cb:
+        if self.addressing_pages:
             return was_assigned
 
         old_idx = addressings['idx']
@@ -1019,7 +1021,7 @@ class Addressings(object):
                 callback(False)
             return
 
-        if self.pages_cb: # device supports pages
+        if self.addressing_pages: # device supports pages
             current_page_assigned = self.is_page_assigned(addressings_addrs, self.current_page)
             if not current_page_assigned:
                 if callback is not None:
@@ -1115,7 +1117,7 @@ class Addressings(object):
             print("ERROR: hmi_get_addr_data failed, empty list")
             return None
 
-        if self.pages_cb: # device supports pages
+        if self.addressing_pages: # device supports pages
             if not self.is_page_assigned(addressings_addrs, self.current_page):
                 return None
             return self.get_addressing_for_page(addressings_addrs, self.current_page)
