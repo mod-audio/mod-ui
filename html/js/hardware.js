@@ -509,10 +509,10 @@ function HardwareManager(options) {
                 hmiUriInput.val(currentAddressing.uri)
                 cell.addClass('selected')
               } else {
-                // Only allow actuator groups to be used when all their “child” actuators are not in use on current page
-                if (actuators[actuatorUri].group) {
-                  for (var i = 0; i < actuators[actuatorUri].group.length; i++) {
-                    uri = actuators[actuatorUri].group[i]
+                // Only allow actuator groups to be used when all their "child" actuators are not in use on current page
+                if (actuators[actuatorUri].actuator_group) {
+                  for (var i = 0; i < actuators[actuatorUri].actuator_group.length; i++) {
+                    uri = actuators[actuatorUri].actuator_group[i]
                     uriAddressings = self.addressingsByActuator[uri]
                     for (var j in uriAddressings) {
                       instance = uriAddressings[j]
@@ -537,25 +537,25 @@ function HardwareManager(options) {
             }
           }
 
-          if (actuators[actuatorUri].group) {
+          if (actuators[actuatorUri].actuator_group) {
             groupTable.append(row)
           } else {
             table.append(row)
           }
         }
 
-        // when addressing an actuator group, all “child” actuators or intersecting actuator groups are no longer available to be addressed to anything else,
+        // when addressing an actuator group, all "child" actuators or intersecting actuator groups are no longer available to be addressed to anything else,
         // except on different pages
         for (var i in HARDWARE_PROFILE) {
-          if (HARDWARE_PROFILE[i].group) {
+          if (HARDWARE_PROFILE[i].actuator_group) {
             groupActuator = HARDWARE_PROFILE[i]
             for (var j in self.addressingsByActuator[groupActuator.uri]) {
               instance = self.addressingsByActuator[groupActuator.uri][j]
               groupAddressings = self.addressingsData[instance]
-              for (var k in groupActuator.group) {
-                table.find('[data-uri="' + groupActuator.group[k] + '"][data-page="' + groupAddressings.page + '"]').addClass('disabled')
+              for (var k in groupActuator.actuator_group) {
+                table.find('[data-uri="' + groupActuator.actuator_group[k] + '"][data-page="' + groupAddressings.page + '"]').addClass('disabled')
                 for (var l = 0 in actuators) {
-                  if (l !== groupActuator.uri && actuators[l].group && actuators[l].group.includes(groupActuator.group[k])) {
+                  if (l !== groupActuator.uri && actuators[l].actuator_group && actuators[l].actuator_group.includes(groupActuator.actuator_group[k])) {
                     groupTable.find('[data-uri="' + l + '"][data-page="' + groupAddressings.page + '"]').addClass('disabled')
                   }
                 }
@@ -576,10 +576,10 @@ function HardwareManager(options) {
               hmiUriInput.val(currentAddressing.uri)
               cell.addClass('selected')
             } else {
-              // Only allow actuator groups to be used when all their “child” actuators are not in use
-              if (actuators[actuatorUri].group) {
-                for (i = 0; i < actuators[actuatorUri].group.length; i++) {
-                  uri = actuators[actuatorUri].group[i]
+              // Only allow actuator groups to be used when all their "child" actuators are not in use
+              if (actuators[actuatorUri].actuator_group) {
+                for (i = 0; i < actuators[actuatorUri].actuator_group.length; i++) {
+                  uri = actuators[actuatorUri].actuator_group[i]
                   uriAddressings = self.addressingsByActuator[uri]
                   if (uriAddressings.length) {
                     cell.addClass('disabled')
@@ -593,20 +593,20 @@ function HardwareManager(options) {
 
             row.append(cell)
           }
-          if (actuators[actuatorUri].group) {
+          if (actuators[actuatorUri].actuator_group) {
             groupTable.append(row)
           } else {
             table.append(row)
           }
         }
 
-        // when addressing an actuator group, all “child” actuators are no longer available to be addressed to anything else
+        // when addressing an actuator group, all "child" actuators are no longer available to be addressed to anything else
         for (var i in HARDWARE_PROFILE) {
-          if (HARDWARE_PROFILE[i].group) {
+          if (HARDWARE_PROFILE[i].actuator_group) {
             groupActuator = HARDWARE_PROFILE[i]
             if (self.addressingsByActuator[groupActuator.uri].length) {
-              for (var j in groupActuator.group) {
-                table.find('[data-uri="' + groupActuator.group[j] + '"]').addClass('disabled')
+              for (var j in groupActuator.actuator_group) {
+                table.find('[data-uri="' + groupActuator.actuator_group[j] + '"]').addClass('disabled')
               }
             }
           }
