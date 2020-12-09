@@ -578,7 +578,12 @@ function HardwareManager(options) {
           }
           actuator = actuators[actuatorUri]
           usedAddressings = self.addressingsByActuator[actuatorUri]
-
+          if (actuator.actuator_group && actuator.group && actuator.group != lastGroupName) {
+              deviceTable.append(table)
+              deviceTable.append($('<div class="group-strike">'+ actuator.group +'</div>'))
+              table = $('<table/>').addClass('hmi-table')
+              lastGroupName = actuator.group
+          }
           row = $('<tr/>')
           cell = $('<td data-uri="'+ actuatorUri +'">'+ actuator.name+'</td>')
 
