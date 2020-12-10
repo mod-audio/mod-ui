@@ -412,6 +412,7 @@ class HMI(object):
 
         cb = callback
 
+        # FIXME this should be based on hw desc "max_assigns" instead of hardcoded
         if not actuator_uri.startswith("/hmi/footswitch") and hmi_set_index:
             cb = control_add_callback
 
@@ -501,8 +502,8 @@ class HMI(object):
     # pages is a list of int (1 if page available else 0)
     def set_available_pages(self, pages, callback):
         msg = CMD_DUOX_PAGES_AVAILABLE
-        for page in pages:
-            msg += " %i" % page
+        for page_enabled in pages:
+            msg += " %i" % int(page_enabled)
         self.send(msg, callback)
 
     # even newer messages. really need to clean this up later..

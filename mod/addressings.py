@@ -100,10 +100,9 @@ class Addressings(object):
         self.current_page = 0
 
         if self.addressing_pages:
-            self.available_pages = [1 if i == 0 else 0 for i in range(self.addressing_pages)]
+            self.available_pages = [True if i == 0 else False for i in range(self.addressing_pages)]
         else:
             self.available_pages = []
-            # FIXME
 
         # 'hmi_addressings' uses a structure like this:
         # "/hmi/knob1": {'addrs': [...], 'idx': 0}
@@ -122,15 +121,12 @@ class Addressings(object):
         self.hmi_hw2uri_map = {}
         self.hmi_uri2hw_map = {}
 
-        i = 0
         for actuator in self.hw_actuators:
             uri = actuator['uri']
             hw_id = actuator['id']
 
             self.hmi_hw2uri_map[hw_id] = uri
             self.hmi_uri2hw_map[uri] = hw_id
-
-            i = i+1
 
     # clear all addressings, leaving metadata intact
     def clear(self):
@@ -268,7 +264,7 @@ class Addressings(object):
 
                 page = addr.get('page', None)
                 # Dealing with HMI addr from a pedalboard not supporting pages on a device supporting them
-                if self.get_actuator_type(actuator_uri) == self.ADDRESSING_TYPE_HMI and self.addressing_pages and page is None:
+                if actuator_type == self.ADDRESSING_TYPE_HMI and self.addressing_pages and page is None:
                     if i < self.addressing_pages: # automatically assign the i-th assignment to page i
                         page = i
                     else: # cannot address more because we've reached the max nb of pages for current actuator
@@ -345,16 +341,16 @@ class Addressings(object):
             for i in range(self.addressing_pages):
                 # Build default available_pages list
                 if i == 0: # For the moment we always boot/load a pedalboard with first page
-                    self.available_pages.append(1) # so it should always be available
+                    self.available_pages.append(True) # so it should always be available
                 else:
-                    self.available_pages.append(0)
+                    self.available_pages.append(False)
 
                 # Loop through HMI addressings
                 def loop_addressings():
                     for uri, addrs in self.hmi_addressings.items():
                         for addr in addrs['addrs']:
                             if addr['page'] == i:
-                                self.available_pages[i] = 1
+                                self.available_pages[i] = True
                                 return
 
                 loop_addressings()
