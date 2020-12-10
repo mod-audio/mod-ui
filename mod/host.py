@@ -65,11 +65,12 @@ from mod.mod_protocol import (
     CMD_TUNER_INPUT,
     CMD_PROFILE_LOAD,
     CMD_PROFILE_STORE,
+    CMD_NEXT_PAGE,
     CMD_DUO_FOOT_NAVIG,
     CMD_DUO_CONTROL_NEXT,
-    CMD_DUOX_NEXT_PAGE,
     CMD_DUOX_SNAPSHOT_LOAD,
     CMD_DUOX_SNAPSHOT_SAVE,
+    CMD_DWARF_CONTROL_SUBPAGE,
     BANK_FUNC_NONE,
     BANK_FUNC_PEDALBOARD_NEXT,
     BANK_FUNC_PEDALBOARD_PREV,
@@ -455,12 +456,15 @@ class Host(object):
         Protocol.register_cmd_callback('ALL', CMD_PROFILE_LOAD, self.hmi_retrieve_profile)
         Protocol.register_cmd_callback('ALL', CMD_PROFILE_STORE, self.hmi_store_profile)
 
+        Protocol.register_cmd_callback('ALL', CMD_NEXT_PAGE, self.hmi_page_load)
+
         Protocol.register_cmd_callback('DUO', CMD_DUO_FOOT_NAVIG, self.hmi_footswitch_navigation)
         Protocol.register_cmd_callback('DUO', CMD_DUO_CONTROL_NEXT, self.hmi_parameter_addressing_next)
 
-        Protocol.register_cmd_callback('DUOX', CMD_DUOX_NEXT_PAGE, self.hmi_page_load)
         Protocol.register_cmd_callback('DUOX', CMD_DUOX_SNAPSHOT_LOAD, self.hmi_snapshot_load)
         Protocol.register_cmd_callback('DUOX', CMD_DUOX_SNAPSHOT_SAVE, self.hmi_snapshot_save)
+
+        Protocol.register_cmd_callback('DWARF', CMD_DWARF_CONTROL_SUBPAGE, self.hmi_parameter_addressing_next)
 
         if not APP:
             IOLoop.instance().add_callback(self.init_host)
@@ -1992,6 +1996,12 @@ class Host(object):
                 if callback is not None:
                     callback(True)
                 return
+            hw_id = self.addressings.hmi_uri2hw_map[actuator_uri]
+            subpage = self.addressings.hmi_hwsubpages[hw_id]
+            if current_addressing.get('subpage', None) != subpage:
+                if callback is not None:
+                    callback(True)
+                return
 
         elif group_actuators is None:
             current_index = addressings['idx']
@@ -2746,6 +2756,10 @@ class Host(object):
         while self.next_hmi_pedalboard_to_load is not None:
             yield gen.sleep(0.25)
 
+        # Move all subpages to 0
+        for hw_id in self.addressings.hmi_hwsubpages:
+            self.addressings.hmi_hwsubpages[hw_id] = 0
+
         for uri, addressings in self.addressings.hmi_addressings.items():
             if abort_catcher.get('abort', False):
                 print("WARNING: Abort triggered during page_load request, caller:", abort_catcher['caller'])
@@ -2759,7 +2773,7 @@ class Host(object):
             if len(addrs) == 0:
                 continue
 
-            page_to_load_assigned = self.addressings.is_page_assigned(addrs, idx)
+            page_to_load_assigned = self.addressings.is_page_assigned(addrs, idx, 0)
 
             # Nothing assigned to current actuator on page to load
             if not page_to_load_assigned:
@@ -2767,7 +2781,7 @@ class Host(object):
 
             # Else, send control_add with new data
             try:
-                next_addressing_data = self.addressings.get_addressing_for_page(addrs, idx)
+                next_addressing_data = self.addressings.get_addressing_for_page(addrs, idx, 0)
             except StopIteration:
                 continue
 
@@ -4209,6 +4223,7 @@ _:b%i
         tempo = extras.get('tempo', False)
         dividers = extras.get('dividers', None)
         page = extras.get('page', None)
+        subpage = extras.get('subpage', None)
         coloured = bool(int(extras.get('coloured', None) or 0))
         momentary = int(extras.get('momentary', None) or 0)
         operational_mode = extras.get('operational_mode', '=')
@@ -4360,7 +4375,7 @@ _:b%i
             for group_actuator_uri in group_actuators:
                 group_addressing = self.addressings.add(instance_id, pluginData['uri'], portsymbol, group_actuator_uri,
                                                         label, minimum, maximum, steps, value,
-                                                        tempo, dividers, page, actuator_uri,
+                                                        tempo, dividers, page, subpage, actuator_uri,
                                                         coloured, momentary, operational_mode)
                                               # group=[a for a in group_actuators if a != group_actuator_uri])
                 if group_addressing is None:
@@ -4381,7 +4396,7 @@ _:b%i
             addressing['actuator_uri'] = actuator_uri
         else:
             addressing = self.addressings.add(instance_id, pluginData['uri'], portsymbol, actuator_uri,
-                                              label, minimum, maximum, steps, value, tempo, dividers, page, None,
+                                              label, minimum, maximum, steps, value, tempo, dividers, page, subpage, None,
                                               coloured, momentary, operational_mode)
 
             if addressing is None:
@@ -4694,8 +4709,9 @@ _:b%i
 
     def get_addressed_port_info(self, hw_id):
         try:
-            actuator_uri = self.addressings.hmi_hw2uri_map[hw_id]
-            addressings = self.addressings.hmi_addressings[actuator_uri]
+            actuator_uri     = self.addressings.hmi_hw2uri_map[hw_id]
+            actuator_subpage = self.addressings.hmi_hwsubpages[hw_id]
+            addressings      = self.addressings.hmi_addressings[actuator_uri]
         except KeyError:
             return (None, None)
 
@@ -4704,7 +4720,8 @@ _:b%i
         if self.addressings.addressing_pages: # device supports pages
             try:
                 addressing_data = self.addressings.get_addressing_for_page(addressings_addrs,
-                                                                           self.addressings.current_page)
+                                                                           self.addressings.current_page,
+                                                                           actuator_subpage)
             except StopIteration:
                 return (None, None)
 
@@ -4887,6 +4904,7 @@ _:b%i
                         'tempo': port_addressing['tempo'],
                         'dividers': value,
                         'page': port_addressing['page'],
+                        'subpage': port_addressing['subpage'],
                         'coloured': port_addressing['coloured'],
                         'momentary': port_addressing['momentary'],
                         'operational_mode': port_addressing['operational_mode'],
@@ -4931,7 +4949,16 @@ _:b%i
 
     def hmi_parameter_addressing_next(self, hw_id, callback):
         logging.debug("hmi parameter addressing next")
-        self.addressings.hmi_load_next_hw(hw_id)
+        # TODO remove subpages stuff, only testing for Dwarf
+        if self.descriptor.get('hmi_subpages', False):
+            self.addressings.hmi_load_subpage(hw_id, None)
+        else:
+            self.addressings.hmi_load_next_hw(hw_id)
+        callback(True)
+
+    def hmi_parameter_load_subpage(self, hw_id, subpage, callback):
+        logging.debug("hmi parameter load subpage")
+        self.addressings.hmi_load_subpage(hw_id, subpage)
         callback(True)
 
     def hmi_next_control_page(self, hw_id, props, callback):

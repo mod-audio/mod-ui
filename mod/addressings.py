@@ -119,6 +119,7 @@ class Addressings(object):
 
         # Store all possible HMI hardcoded values
         self.hmi_hw2uri_map = {}
+        self.hmi_hwsubpages = {}
         self.hmi_uri2hw_map = {}
 
         for actuator in self.hw_actuators:
@@ -126,6 +127,7 @@ class Addressings(object):
             hw_id = actuator['id']
 
             self.hmi_hw2uri_map[hw_id] = uri
+            self.hmi_hwsubpages[hw_id] = 0
             self.hmi_uri2hw_map[uri] = hw_id
 
     # clear all addressings, leaving metadata intact
@@ -263,6 +265,10 @@ class Addressings(object):
                     continue
 
                 page = addr.get('page', None)
+                subpage = addr.get('subpage', None)
+
+                # TODO ignore subpage or not depending if device supports it
+
                 # Dealing with HMI addr from a pedalboard not supporting pages on a device supporting them
                 if actuator_type == self.ADDRESSING_TYPE_HMI and self.addressing_pages and page is None:
                     if i < self.addressing_pages: # automatically assign the i-th assignment to page i
@@ -278,7 +284,7 @@ class Addressings(object):
                 group = addr.get('group', None)
                 addrdata = self.add(instance_id, plugin_uri, portsymbol, actuator_uri,
                                     addr['label'], addr['minimum'], addr['maximum'], addr['steps'], curvalue,
-                                    addr.get('tempo'), addr.get('dividers'), page, group,
+                                    addr.get('tempo'), addr.get('dividers'), page, subpage, group,
                                     coloured, momentary, operational_mode)
 
                 if addrdata is not None:
@@ -451,6 +457,7 @@ class Addressings(object):
                     'tempo'   : addr.get('tempo'),
                     'dividers': addr.get('dividers'),
                     'page'    : addr.get('page'),
+                    'subpage' : addr.get('subpage'),
                     'group'   : addr.get('group'),
                     'coloured': addr.get('coloured', False),
                     'momentary': int(addr.get('momentary', 0)),
@@ -530,6 +537,7 @@ class Addressings(object):
                 addr_uri = uri
                 dividers = "{0}".format(addr.get('dividers', "null")).replace(" ", "").replace("None", "null")
                 page = "{0}".format(addr.get('page', "null")).replace("None", "null")
+                subpage = "{0}".format(addr.get('subpage', "null")).replace("None", "null")
                 group = "{0}".format(addr.get('group', "null")).replace("None", "null")
                 send_hw_map = True
                 if addr.get('group') is not None:
@@ -549,10 +557,11 @@ class Addressings(object):
                             addr.get('tempo', False),
                             dividers,
                             page,
+                            subpage,
                             group,
                             int(addr.get('coloured', False)),
                             int(addr.get('momentary', 0)))
-                    msg_callback("hw_map %s %s %s %f %f %d %s %s %s %s %s 1 %d %d" % args)
+                    msg_callback("hw_map %s %s %s %f %f %d %s %s %s %s %s %s 1 %d %d" % args)
 
         # Virtual addressings (/bpm)
         for uri, addrs in self.virtual_addressings.items():
@@ -569,7 +578,7 @@ class Addressings(object):
                         addr.get('tempo', False),
                         dividers,
                         page)
-                msg_callback("hw_map %s %s %s %f %f %d %s %s %s %s null 1 0 0" % args)
+                msg_callback("hw_map %s %s %s %f %f %d %s %s %s %s null null 1 0 0" % args)
 
         # Control Chain
         for uri, addrs in self.cc_addressings.items():
@@ -585,7 +594,7 @@ class Addressings(object):
                         feedback,
                         int(addr.get('coloured', False)),
                         int(addr.get('momentary', 0)))
-                msg_callback("hw_map %s %s %s %f %f %d %s False null null null %d %d %d" % args)
+                msg_callback("hw_map %s %s %s %f %f %d %s False null null null null %d %d %d" % args)
 
         # MIDI
         for uri, addrs in self.midi_addressings.items():
@@ -613,7 +622,7 @@ class Addressings(object):
     # -----------------------------------------------------------------------------------------------------------------
 
     def add(self, instance_id, plugin_uri, portsymbol, actuator_uri, label, minimum, maximum, steps, value,
-            tempo=False, dividers=None, page=None, group=None, coloured=None, momentary=None, operational_mode=None):
+            tempo=False, dividers=None, page=None, subpage=None, group=None, coloured=None, momentary=None, operational_mode=None):
         actuator_type = self.get_actuator_type(actuator_uri)
         if actuator_type not in (self.ADDRESSING_TYPE_HMI, self.ADDRESSING_TYPE_CC, self.ADDRESSING_TYPE_BPM, self.ADDRESSING_TYPE_CV):
             print("ERROR: Trying to address the wrong way, stop!")
@@ -693,6 +702,7 @@ class Addressings(object):
             'tempo'       : tempo,
             'dividers'    : dividers,
             'page'        : page,
+            'subpage'     : subpage,
             'group'       : group,
             'coloured'    : coloured,
             'momentary'   : momentary,
@@ -856,12 +866,13 @@ class Addressings(object):
 
         if actuator_type == self.ADDRESSING_TYPE_HMI:
             try:
-                actuator_hw = self.hmi_uri2hw_map[actuator_uri]
+                actuator_hw      = self.hmi_uri2hw_map[actuator_uri]
+                actuator_subpage = self.hmi_hwsubpages[actuator_hw]
             except KeyError:
                 print("ERROR: Why fails the hardware/URI mapping? Hardcoded number of actuators?")
             if self.addressing_pages:
                 # if new addressing page is not the same as the currently displayed page
-                if self.current_page != addressing_data['page']:
+                if self.current_page != addressing_data['page'] or actuator_subpage != addressing_data['subpage']:
                     # then no need to send control_add to hmi
                     callback(True)
                     return
@@ -927,10 +938,12 @@ class Addressings(object):
 
     def remove_hmi(self, addressing_data, actuator_uri):
         addressings       = self.hmi_addressings[actuator_uri]
+        actuator_hmi      = self.hmi_uri2hw_map[actuator_uri]
+        actuator_subpage  = self.hmi_hwsubpages[actuator_hmi]
         addressings_addrs = addressings['addrs']
 
         if self.addressing_pages:
-            was_assigned = self.is_page_assigned(addressings_addrs, self.current_page)
+            was_assigned = self.is_page_assigned(addressings_addrs, self.current_page, actuator_subpage)
 
         for i, addr in enumerate(addressings_addrs):
             if addressing_data['actuator_uri'] != addr['actuator_uri']:
@@ -995,18 +1008,19 @@ class Addressings(object):
             else:
                 addressings['addrs'].remove(addressing_data)
 
-    def is_page_assigned(self, addrs, page):
-        return any('page' in a and a['page'] == page for a in addrs)
+    def is_page_assigned(self, addrs, page, subpage):
+        return any('page' in a and a['page'] == page and a['subpage'] == subpage for a in addrs)
 
-    def get_addressing_for_page(self, addrs, page):
+    def get_addressing_for_page(self, addrs, page, subpage):
         # Assumes is_page_assigned(addrs, page) has returned True
-        return next(a for a in addrs if 'page' in a and a['page'] == page)
+        return next(a for a in addrs if 'page' in a and a['page'] == page and a['subpage'] == subpage)
 
     # -----------------------------------------------------------------------------------------------------------------
     # HMI specific functions
 
     def hmi_load_current(self, actuator_uri, callback, skippedPort = (None, None), updateValue = False, send_hmi = True):
         actuator_hmi      = self.hmi_uri2hw_map[actuator_uri]
+        actuator_subpage  = self.hmi_hwsubpages[actuator_hmi]
         addressings       = self.hmi_addressings[actuator_uri]
         addressings_addrs = addressings['addrs']
         addressings_len   = len(addressings['addrs'])
@@ -1018,13 +1032,13 @@ class Addressings(object):
             return
 
         if self.addressing_pages: # device supports pages
-            current_page_assigned = self.is_page_assigned(addressings_addrs, self.current_page)
+            current_page_assigned = self.is_page_assigned(addressings_addrs, self.current_page, actuator_subpage)
             if not current_page_assigned:
                 if callback is not None:
                     callback(False)
                 return
             else:
-                addressing_data = self.get_addressing_for_page(addressings_addrs, self.current_page)
+                addressing_data = self.get_addressing_for_page(addressings_addrs, self.current_page, actuator_subpage)
                 if (addressing_data['instance_id'], addressing_data['port']) == skippedPort:
                     print("skippedPort", skippedPort)
                     if callback is not None:
@@ -1103,8 +1117,21 @@ class Addressings(object):
         # ready to load
         self.hmi_load_current(actuator_uri, None)
 
+    def hmi_load_subpage(self, hw_id, subpage):
+        actuator_uri    = self.hmi_hw2uri_map[hw_id]
+        addressings     = self.hmi_addressings[actuator_uri]
+        addressings_len = len(addressings['addrs'])
+
+        # TODO remove subpages stuff, only testing for Dwarf
+        if subpage is None:
+            self.hmi_hwsubpages[hw_id] = (self.hmi_hwsubpages[hw_id] + 1) % 3
+
+        # ready to load
+        self.hmi_load_current(actuator_uri, None)
+
     def hmi_get_addr_data(self, hw_id):
         actuator_uri      = self.hmi_hw2uri_map[hw_id]
+        actuator_subpage  = self.hmi_hwsubpages[hw_id]
         addressings       = self.hmi_addressings[actuator_uri]
         addressings_addrs = addressings['addrs']
         addressings_len   = len(addressings_addrs)
@@ -1114,9 +1141,9 @@ class Addressings(object):
             return None
 
         if self.addressing_pages: # device supports pages
-            if not self.is_page_assigned(addressings_addrs, self.current_page):
+            if not self.is_page_assigned(addressings_addrs, self.current_page, actuator_subpage):
                 return None
-            return self.get_addressing_for_page(addressings_addrs, self.current_page)
+            return self.get_addressing_for_page(addressings_addrs, self.current_page, actuator_subpage)
 
         else:
             return addressings_addrs[addressings['idx']]
