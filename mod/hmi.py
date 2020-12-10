@@ -35,10 +35,10 @@ from mod.mod_protocol import (
     CMD_SNAPSHOT_NAME_SET,
     CMD_TUNER,
     CMD_MENU_ITEM_CHANGE,
+    CMD_RESET_EEPROM,
     CMD_DUO_CONTROL_INDEX_SET,
     CMD_DUO_BANK_CONFIG,
     CMD_DUOX_PAGES_AVAILABLE,
-    CMD_DUOX_RESET_EEPROM,
     CMD_RESPONSE,
     CMD_RESTORE,
     FLAG_CONTROL_REVERSE,
@@ -410,11 +410,21 @@ class HMI(object):
             index = data['addrs_idx']
             self.control_set_index(hw_id, index, n_controllers, callback)
 
+        def subpage_callback(ok):
+            if not ok:
+                callback(False)
+                return
+            self.control_set_index(hw_id, data['subpage']+1, 3, callback)
+
         cb = callback
 
         # FIXME this should be based on hw desc "max_assigns" instead of hardcoded
         if not actuator_uri.startswith("/hmi/footswitch") and hmi_set_index:
-            cb = control_add_callback
+            # TODO remove subpages stuff, only testing for Dwarf
+            if self.hw_desc.get('hmi_subpages', False):
+                cb = subpage_callback
+            else:
+                cb = control_add_callback
 
         self.send('%s %d %s %d %s %f %f %f %d %s' %
                   ( CMD_CONTROL_ADD,
@@ -512,7 +522,7 @@ class HMI(object):
         self.send(CMD_RESTORE, callback, datatype)
 
     def reset_eeprom(self, callback=None, datatype='int'):
-        self.send(CMD_DUOX_RESET_EEPROM, callback, datatype)
+        self.send(CMD_RESET_EEPROM, callback, datatype)
 
     # FIXME this message should be generic, most likely
     def boot(self, bootdata, callback, datatype='int'):

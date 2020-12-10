@@ -483,11 +483,12 @@ function HardwareManager(options) {
       }
     }
 
-    this.buildDeviceTable = function (deviceTable, currentAddressing, actuators, hmiPageInput, hmiUriInput,
+    this.buildDeviceTable = function (deviceTable, currentAddressing, actuators,
+                                      hmiPageInput, hmiSubPageInput, hmiUriInput,
                                       sensitivity, ledColourMode, momentarySwMode, port) {
       var table = $('<table/>').addClass('hmi-table')
       var row, cell, uri, uriAddressings, usedAddressings, addressing
-      var actuator, actuatorName, groupActuator, groupAddressings, lastGroupName
+      var actuator, actuatorName, actuatorSubPages, groupActuator, groupAddressings, lastGroupName
 
       if (ADDRESSING_PAGES > 0)
       {
@@ -510,16 +511,19 @@ function HardwareManager(options) {
               table = $('<table/>').addClass('hmi-table')
               lastGroupName = actuator.group
           }
-          var actPages = actuator.static_assigns && actuator.max_assigns > 1 ? actuator.max_assigns : 1
-          for (var actPage = 0; actPage < actPages; actPage++) {
+          actuatorSubPages = actuator.subpages || 1
+          for (var actSubPage = 0; actSubPage < actuatorSubPages; actSubPage++) {
             row = $('<tr/>')
             for (var addrPage = 0; addrPage < ADDRESSING_PAGES; addrPage++) {
-              actuatorName = actPages > 1 ? (actPage + 1).toString()
-                                          : (lastGroupName ? (actuator.gname || actuator.name)
-                                                           : actuator.name);
-              cell = $('<td data-page="'+ addrPage +'" data-uri="'+ actuatorUri +'">'+ actuatorName +'</td>')
-              if (currentAddressing && currentAddressing.uri == actuatorUri && currentAddressing.page == addrPage) {
+              actuatorName = actuatorSubPages > 1 ? (actSubPage + 1).toString()
+                                                  : (lastGroupName ? (actuator.gname || actuator.name) : actuator.name)
+              cell = $('<td data-page="'+ addrPage +'" data-subpage="'+ actSubPage +'" data-uri="'+ actuatorUri +'">'+ actuatorName +'</td>')
+              if (currentAddressing &&
+                  currentAddressing.uri == actuatorUri &&
+                  currentAddressing.page == addrPage &&
+                  (currentAddressing.subpage == null || currentAddressing.subpage == actSubPage)) {
                 hmiPageInput.val(currentAddressing.page)
+                hmiSubPageInput.val(currentAddressing.subpage)
                 hmiUriInput.val(currentAddressing.uri)
                 cell.addClass('selected')
               } else {
@@ -541,7 +545,8 @@ function HardwareManager(options) {
                 for (var i in usedAddressings) {
                   instance = usedAddressings[i]
                   addressing = self.addressingsData[instance]
-                  if (addressing.page == addrPage) {
+                  if (addressing.page == addrPage &&
+                      (addressing.subpage == null || addressing.subpage == actSubPage)) {
                     cell.addClass('disabled')
                   }
                 }
@@ -634,9 +639,11 @@ function HardwareManager(options) {
         }
         var actuatorUri = $(this).attr('data-uri')
         var page = $(this).attr('data-page')
+        var subpage = $(this).attr('data-subpage')
 
         // Update hidden inputs value
         hmiPageInput.val(page)
+        hmiSubPageInput.val(subpage)
         hmiUriInput.val(actuatorUri)
 
         // Remove 'selected' class to all cells then add it to the clicked one
@@ -670,6 +677,7 @@ function HardwareManager(options) {
         var typeSelect = form.find('select[name=type]')
         var typeInput = form.find('input[name=type]')
         var hmiPageInput = form.find('input[name=hmi-page]')
+        var hmiSubPageInput = form.find('input[name=hmi-subpage]')
         var hmiUriInput = form.find('input[name=hmi-uri]')
         var deviceTable = form.find('.device-table')
         var sensitivity = form.find('select[name=steps]')
@@ -815,7 +823,8 @@ function HardwareManager(options) {
 
             actuators = self.availableActuators(instance, port, this.checked)
             deviceTable.empty()
-            self.buildDeviceTable(deviceTable, currentAddressing, actuators, hmiPageInput, hmiUriInput,
+            self.buildDeviceTable(deviceTable, currentAddressing, actuators,
+                                  hmiPageInput, hmiSubPageInput, hmiUriInput,
                                   sensitivity, ledColourMode, momentarySwMode, port)
           })
           dividerOptions = self.buildDividerOptions(divider, port, currentAddressing.dividers)
@@ -859,7 +868,8 @@ function HardwareManager(options) {
 
         self.buildSensitivityOptions(sensitivity, port, currentAddressing.steps)
 
-        self.buildDeviceTable(deviceTable, currentAddressing, actuators, hmiPageInput, hmiUriInput,
+        self.buildDeviceTable(deviceTable, currentAddressing, actuators,
+                              hmiPageInput, hmiSubPageInput, hmiUriInput,
                               sensitivity, ledColourMode, momentarySwMode, port)
 
         // Hide advanced settings options if current addressing actuator does not support them
@@ -877,6 +887,7 @@ function HardwareManager(options) {
               actuators,
               typeInput,
               hmiPageInput,
+              hmiSubPageInput,
               hmiUriInput,
               ccActuatorSelect,
               cvPortSelect,
@@ -931,6 +942,7 @@ function HardwareManager(options) {
                   actuators,
                   typeInput,
                   hmiPageInput,
+                  hmiSubPageInput,
                   hmiUriInput,
                   ccActuatorSelect,
                   cvPortSelect,
@@ -967,6 +979,7 @@ function HardwareManager(options) {
       dividerValue,
       dividerOptions,
       page,
+      subpage,
       colouredValue,
       momentarySwValue,
       operationalModeValue,
@@ -999,6 +1012,7 @@ function HardwareManager(options) {
             dividers: dividerValue,
             feedback: actuator.feedback === false ? false : true, // backwards compatible, true by default
             page: page || null,
+            subpage: subpage || null,
             coloured: colouredValue,
             momentary: momentarySwValue,
             operationalMode: operationalModeValue,
@@ -1071,6 +1085,7 @@ function HardwareManager(options) {
       actuators,
       typeInput,
       hmiPageInput,
+      hmiSubPageInput,
       hmiUriInput,
       ccActuatorSelect,
       cvPortSelect,
@@ -1091,6 +1106,7 @@ function HardwareManager(options) {
         var currentAddressing = self.addressingsData[instanceAndSymbol] || {}
 
         var page = hmiPageInput.val()
+        var subpage = hmiSubPageInput.val()
         var typeInputVal = typeInput.val()
         var uri = kNullAddressURI
         if (typeInputVal === deviceOption && hmiUriInput.val()) {
@@ -1185,6 +1201,7 @@ function HardwareManager(options) {
                     dividerValue,
                     dividerOptions,
                     page,
+                    subpage,
                     colouredValue,
                     momentarySwValue,
                     operationalModeValue,
@@ -1211,6 +1228,7 @@ function HardwareManager(options) {
             dividerValue,
             dividerOptions,
             page,
+            subpage,
             colouredValue,
             momentarySwValue,
             operationalModeValue,
@@ -1221,7 +1239,7 @@ function HardwareManager(options) {
 
     this.addHardwareMapping = function (instance, portSymbol, actuator_uri,
                                         label, minimum, maximum, steps,
-                                        tempo, dividers, page, group, feedback, coloured, momentary) {
+                                        tempo, dividers, page, subpage, group, feedback, coloured, momentary) {
         var instanceAndSymbol = instance+"/"+portSymbol
         self.addressingsByActuator  [actuator_uri].push(instanceAndSymbol)
         self.addressingsByPortSymbol[instanceAndSymbol] = actuator_uri
@@ -1235,6 +1253,7 @@ function HardwareManager(options) {
             dividers: dividers,
             feedback: feedback,
             page    : page,
+            subpage : subpage,
             group   : group,
             coloured: coloured,
             momentary: momentary

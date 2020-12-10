@@ -35,6 +35,8 @@ CMD_ARGS = {
         'c': [int,int,],
         'upr': [int],
         'ups': [int],
+        'lp': [int],
+        'reset_eeprom': [],
         'enc_clicked': [int],
         'enc_left': [int],
         'enc_right': [int],
@@ -54,14 +56,13 @@ CMD_ARGS = {
     },
     'DUOX': {
         'boot': [int,int,str,],
-        'lp': [int],
         'ss': [int],
         'sl': [int],
         'sc': [],
         'pa': [int,int,int,int,int,int],
-        'reset_eeprom': [],
     },
     'DWARF': {
+        'cs': [int,int],
     },
 }
 
@@ -96,13 +97,15 @@ CMD_RESPONSE                      = 'r'
 CMD_MENU_ITEM_CHANGE              = 'c'
 CMD_PROFILE_LOAD                  = 'upr'
 CMD_PROFILE_STORE                 = 'ups'
+CMD_NEXT_PAGE                     = 'lp'
+CMD_RESET_EEPROM                  = 'reset_eeprom'
 CMD_SELFTEST_ENCODER_CLICKED      = 'enc_clicked'
 CMD_SELFTEST_ENCODER_LEFT         = 'enc_left'
 CMD_SELFTEST_ENCODER_RIGHT        = 'enc_right'
 CMD_SELFTEST_BUTTON_CLICKED       = 'button_clicked'
 CMD_SELFTEST_CHECK_CALIBRATION    = 'pot_call_check'
 CMD_SELFTEST_CALLIBRATION_OK      = 'pot_call_ok'
-CMD_SELFTEST_ENABLE_SKIP          = 'control_skip_enable'
+CMD_SELFTEST_SKIP_CONTROL_ENABLE  = 'control_skip_enable'
 CMD_SELFTEST_SKIP_CONTROL         = 'control_bad_skip'
 CMD_SELFTEST_SAVE_POT_CALIBRATION = 'save_pot_cal'
 CMD_DUO_BOOT                      = 'boot'
@@ -111,12 +114,11 @@ CMD_DUO_BANK_CONFIG               = 'bc'
 CMD_DUO_CONTROL_NEXT              = 'n'
 CMD_DUO_CONTROL_INDEX_SET         = 'si'
 CMD_DUOX_BOOT                     = 'boot'
-CMD_DUOX_NEXT_PAGE                = 'lp'
 CMD_DUOX_SNAPSHOT_SAVE            = 'ss'
 CMD_DUOX_SNAPSHOT_LOAD            = 'sl'
 CMD_DUOX_SNAPSHOT_CLEAR           = 'sc'
 CMD_DUOX_PAGES_AVAILABLE          = 'pa'
-CMD_DUOX_RESET_EEPROM             = 'reset_eeprom'
+CMD_DWARF_CONTROL_SUBPAGE         = 'cs'
 
 BANK_FUNC_NONE            = 0
 BANK_FUNC_TRUE_BYPASS     = 1

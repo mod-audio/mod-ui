@@ -166,12 +166,13 @@ class Session(object):
 
     # Address a plugin parameter
     def web_parameter_address(self, port, actuator_uri, label, minimum, maximum, value,
-                              steps, tempo, dividers, page, coloured, momentary, operational_mode, callback):
+                              steps, tempo, dividers, page, subpage, coloured, momentary, operational_mode, callback):
         instance, portsymbol = port.rsplit("/",1)
         extras = {
             'tempo': tempo,
             'dividers': dividers,
             'page': page,
+            'subpage': subpage,
             'coloured': coloured,
             'momentary': momentary,
             'operational_mode': operational_mode,
