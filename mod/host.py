@@ -4426,10 +4426,9 @@ _:b%i
         pluginData['addressings'][portsymbol] = addressing
 
         # Find out if new addressing page should become available
-        send_hmi_available_pages = False
         if self.addressings.addressing_pages and self.addressings.is_hmi_actuator(actuator_uri):
-            send_hmi_available_pages = self.check_available_pages(page)
-            if send_hmi_available_pages: # while unaddressing, one page has become unavailable (without any addressings)
+            if self.check_available_pages(page):
+                # while unaddressing, one page has become unavailable (without any addressings)
                 try:
                     yield gen.Task(self.addr_task_set_available_pages, self.addressings.available_pages)
                 except Exception as e:
@@ -4449,12 +4448,12 @@ _:b%i
     def check_available_pages(self, page):
         send_hmi_available_pages = False
         available_pages = self.addressings.available_pages.copy()
-        available_pages[page] = 1 if page == 0 else 0
+        available_pages[page] = True if page == 0 else False
         for uri, addrs in self.addressings.hmi_addressings.items():
             def loop_addr():
                 for addr in addrs['addrs']:
                     if addr['page'] == page:
-                        available_pages[page] = 1
+                        available_pages[page] = True
                         return
             loop_addr()
 
