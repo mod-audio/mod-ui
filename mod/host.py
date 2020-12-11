@@ -464,7 +464,7 @@ class Host(object):
         Protocol.register_cmd_callback('DUOX', CMD_DUOX_SNAPSHOT_LOAD, self.hmi_snapshot_load)
         Protocol.register_cmd_callback('DUOX', CMD_DUOX_SNAPSHOT_SAVE, self.hmi_snapshot_save)
 
-        Protocol.register_cmd_callback('DWARF', CMD_DWARF_CONTROL_SUBPAGE, self.hmi_parameter_addressing_next)
+        Protocol.register_cmd_callback('DWARF', CMD_DWARF_CONTROL_SUBPAGE, self.hmi_parameter_load_subpage)
 
         if not APP:
             IOLoop.instance().add_callback(self.init_host)
