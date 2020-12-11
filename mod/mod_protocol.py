@@ -21,6 +21,8 @@ CMD_ARGS = {
         'b': [int,int],
         'p': [int,int,int],
         'pb': [int,str],
+        'ssg': [int,int],
+        'ssl': [str],
         'pr': [],
         'ps': [],
         'pn': [str,],
@@ -83,6 +85,8 @@ CMD_INITIAL_STATE                 = 'is'
 CMD_BANKS                         = 'b'
 CMD_PEDALBOARDS                   = 'p'
 CMD_PEDALBOARD_LOAD               = 'pb'
+CMD_SNAPSHOTS                     = 'ssg'
+CMD_SNAPSHOTS_LOAD                = 'ssl'
 CMD_PEDALBOARD_RESET              = 'pr'
 CMD_PEDALBOARD_SAVE               = 'ps'
 CMD_PEDALBOARD_NAME_SET           = 'pn'

@@ -56,6 +56,8 @@ from mod.mod_protocol import (
     CMD_PEDALBOARD_LOAD,
     CMD_PEDALBOARD_RESET,
     CMD_PEDALBOARD_SAVE,
+    CMD_SNAPSHOTS,
+    CMD_SNAPSHOTS_LOAD,
     CMD_CONTROL_GET,
     CMD_CONTROL_SET,
     CMD_CONTROL_PAGE,
@@ -438,10 +440,13 @@ class Host(object):
         # Register HMI protocol callbacks (they are without arguments here)
         Protocol.register_cmd_callback('ALL', CMD_BANKS, self.hmi_list_banks)
         Protocol.register_cmd_callback('ALL', CMD_PEDALBOARDS, self.hmi_list_bank_pedalboards)
+        Protocol.register_cmd_callback('ALL', CMD_SNAPSHOTS, self.hmi_list_pedalboard_snapshots)
 
         Protocol.register_cmd_callback('ALL', CMD_PEDALBOARD_LOAD, self.hmi_load_bank_pedalboard)
         Protocol.register_cmd_callback('ALL', CMD_PEDALBOARD_RESET, self.hmi_reset_current_pedalboard)
         Protocol.register_cmd_callback('ALL', CMD_PEDALBOARD_SAVE, self.hmi_save_current_pedalboard)
+
+        Protocol.register_cmd_callback('ALL', CMD_SNAPSHOTS_LOAD, self.hmi_load_pedalboard_snapshot)
 
         Protocol.register_cmd_callback('ALL', CMD_CONTROL_GET, self.hmi_parameter_get)
         Protocol.register_cmd_callback('ALL', CMD_CONTROL_SET, self.hmi_parameter_set)
@@ -4563,6 +4568,11 @@ _:b%i
             callback(False)
             return
 
+        # TODO remove subpages stuff, only testing for Dwarf
+        if self.descriptor.get('hmi_subpages', False) and self.descriptor.get('hmi_set_index', False) and bank_id == 0:
+            self.hmi_list_pedalboard_snapshots(props, pedalboard_id, callback)
+            return
+
         dir_up  = props & FLAG_PAGINATION_PAGE_UP
         wrap    = props & FLAG_PAGINATION_WRAP_AROUND
         initial = props & FLAG_PAGINATION_INITIAL_REQ
@@ -4608,6 +4618,48 @@ _:b%i
 
         callback(True, pedalboardsData)
 
+    def hmi_list_pedalboard_snapshots(self, props, snapshot_id, callback):
+        logging.debug("hmi list pedalboards snapshots %d %d", props, snapshot_id)
+
+        dir_up  = props & FLAG_PAGINATION_PAGE_UP
+        wrap    = props & FLAG_PAGINATION_WRAP_AROUND
+        initial = props & FLAG_PAGINATION_INITIAL_REQ
+
+        if not initial:
+            snapshot_id += 1 if dir_up else -1
+
+        numSnapshots = len(self.pedalboard_snapshots)
+
+        if snapshot_id < 0 or snapshot_id >= numSnapshots:
+            if not wrap and snapshot_id > 0:
+                logging.error("hmi wants out of bounds pedalboard snapshot data (%d %d)", props, snapshot_id)
+                callback(True)
+                return
+
+            # wrap around mode, neat
+            if snapshot_id < 0 and wrap:
+                snapshot_id = numSnapshots - 1
+            else:
+                snapshot_id = 0
+
+        if numSnapshots <= 9 or snapshot_id < 4:
+            startIndex = 0
+        elif snapshot_id+4 >= numSnapshots:
+            startIndex = numSnapshots - 9
+        else:
+            startIndex = snapshot_id - 4
+
+        endIndex = min(startIndex+9, numSnapshots)
+        snapshotData = '%d %d %d' % (numSnapshots, startIndex, endIndex)
+
+        for i in range(startIndex, endIndex):
+            snapshotData += ' "%s" %d' % (self.pedalboard_snapshots[i]['name'].replace('"', '')[:31].upper(), i+1)
+
+        logging.debug("hmi list pedalboards snapshots %d %d -> data is '%s'", props, snapshot_id, snapshotData)
+        callback(True, snapshotData)
+
+    # -----------------------------------------------------------------------------------------------------------------
+
     def hmi_load_bank_pedalboard(self, bank_id, pedalboard_id, callback):
         logging.debug("hmi load bank pedalboard")
 
@@ -4621,6 +4673,11 @@ _:b%i
         except:
             print("ERROR: Trying to load pedalboard using invalid pedalboard_id '%s'" % (pedalboard_id))
             callback(False)
+            return
+
+        # TODO remove subpages stuff, only testing for Dwarf
+        if self.descriptor.get('hmi_subpages', False) and self.descriptor.get('hmi_set_index', False) and bank_id == 0:
+            self.hmi_load_pedalboard_snapshot(pedalboard_id, callback)
             return
 
         if self.next_hmi_pedalboard_to_load is not None:
@@ -4706,6 +4763,27 @@ _:b%i
             self.send_notmodified("feature_enable processing 0")
 
         self.reset(hmi_clear_callback)
+
+    def hmi_load_pedalboard_snapshot(self, snapshot_id, callback):
+        logging.debug("hmi load pedalboard snapshot")
+
+        if snapshot_id < 0 or snapshot_id >= len(self.pedalboard_snapshots):
+            print("ERROR: Trying to load pedalboard using out of bounds pedalboard id %i" % (snapshot_id))
+            callback(False)
+            return
+
+        abort_catcher = self.abort_previous_loading_progress("hmi_load_pedalboard_snapshot")
+        callback(True)
+
+        def load_finished(ok):
+            logging.debug("[host] hmi_load_pedalboard_snapshot done for %d", snapshot_id)
+
+        try:
+            self.snapshot_load(snapshot_id, True, abort_catcher, load_finished)
+        except Exception as e:
+            logging.exception(e)
+
+    # -----------------------------------------------------------------------------------------------------------------
 
     def get_addressed_port_info(self, hw_id):
         try:
@@ -4950,7 +5028,7 @@ _:b%i
     def hmi_parameter_addressing_next(self, hw_id, callback):
         logging.debug("hmi parameter addressing next")
         # TODO remove subpages stuff, only testing for Dwarf
-        if self.descriptor.get('hmi_subpages', False):
+        if self.descriptor.get('hmi_subpages', False) and self.descriptor.get('hmi_set_index', False):
             self.addressings.hmi_load_subpage(hw_id, None)
         else:
             self.addressings.hmi_load_next_hw(hw_id)
