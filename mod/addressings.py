@@ -1124,7 +1124,10 @@ class Addressings(object):
 
         # TODO remove subpages stuff, only testing for Dwarf
         if subpage is None:
-            self.hmi_hwsubpages[hw_id] = (self.hmi_hwsubpages[hw_id] + 1) % 3
+            subpage = (self.hmi_hwsubpages[hw_id] + 1) % 3
+
+        # set actuator page
+        self.hmi_hwsubpages[hw_id] = subpage
 
         # ready to load
         self.hmi_load_current(actuator_uri, None)
