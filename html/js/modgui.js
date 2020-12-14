@@ -483,9 +483,11 @@ function GUI(effect, options) {
         options.change(mod_port, value)
 
         // let the HMI know about this change
-        // FIXME totally wrong place for this
-        var paramchange = (self.instance + '/' + symbol + '/' + value)
-        desktop.ParameterSet(paramchange)
+        if (self.instance) {
+            // FIXME totally wrong place for this
+            var paramchange = (self.instance + '/' + symbol + '/' + value)
+            desktop.ParameterSet(paramchange)
+        }
 
         // update our own widgets
         self.setPortWidgetsValue(symbol, value, source, false)
