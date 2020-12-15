@@ -754,7 +754,7 @@ class Addressings(object):
             if group is not None:
                 group_actuator = next((act for act in self.hw_actuators if act['uri'] == group), None)
                 if group_actuator is not None:
-                    if group_actuator['group'].index(actuator_uri) == 0:
+                    if group_actuator['actuator_group'].index(actuator_uri) == 0:
                         hmitype |= FLAG_CONTROL_REVERSE
                     else:
                         hmitype &= ~FLAG_CONTROL_REVERSE
