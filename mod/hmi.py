@@ -510,6 +510,7 @@ class HMI(object):
         self.send(msg, callback)
 
     # pages is a list of int (1 if page available else 0)
+    # NOTE CMD_DUOX_PAGES_AVAILABLE and CMD_DWARF_PAGES_AVAILABLE have the same message prefix
     def set_available_pages(self, pages, callback):
         msg = CMD_DUOX_PAGES_AVAILABLE
         for page_enabled in pages:
