@@ -5017,7 +5017,7 @@ _:b%i
                 # Set reverse enum type if re-addressing first actuator in group
                 group_actuator = next((act for act in self.addressings.hw_actuators if act['uri'] == addressing_data['group']), None)
                 if group_actuator is not None:
-                    if group_actuator['group'].index(group_actuator_uri) == 0:
+                    if group_actuator['actuator_group'].index(group_actuator_uri) == 0:
                         addressing_data['hmitype'] |= FLAG_CONTROL_REVERSE
                     else:
                         addressing_data['hmitype'] &= ~FLAG_CONTROL_REVERSE
