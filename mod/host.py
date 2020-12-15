@@ -5041,8 +5041,8 @@ _:b%i
 
     def hmi_parameter_load_subpage(self, hw_id, subpage, callback):
         logging.debug("hmi parameter load subpage")
-        self.addressings.hmi_load_subpage(hw_id, subpage)
         callback(True)
+        self.addressings.hmi_load_subpage(hw_id, subpage)
 
     def hmi_next_control_page(self, hw_id, props, callback):
         logging.debug("hmi next control page %d %d", hw_id, props)
