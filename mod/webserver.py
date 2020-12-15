@@ -2110,14 +2110,14 @@ class FilesList(JsonRequestHandler):
         elif filetype == "ir":
             return ("Impulse Responses", kls.hq_audiofile_exts)
 
-        elif filetype == "midiclips":
+        elif filetype == "midiclip":
             return ("MIDI Clips", (".mid", ".midi"))
 
-        elif filetype == "midisongs":
+        elif filetype == "midisong":
             return ("MIDI Songs", (".mid", ".midi"))
 
         elif filetype == "sf2":
-            return ("SoundFonts", (".sf2", ".sf3"))
+            return ("SF2 Instruments", (".sf2", ".sf3"))
 
         elif filetype == "sfz":
             return ("SFZ Instruments", (".sfz",))
