@@ -1229,7 +1229,10 @@ class Host(object):
             self.hmi.initial_state(bank_id, pedalboard_id, pedalboards, cb)
 
         if self.hmi.initialized:
-            self.setNavigateWithFootswitches(False, cb_set_initial_state)
+            if self.descriptor.get("hmi_bank_navigation", False):
+                self.setNavigateWithFootswitches(False, cb_set_initial_state)
+            else:
+                self.hmi.initial_state(bank_id, pedalboard_id, pedalboards, cb_migi_pb_prgch)
         else:
             cb_migi_pb_prgch(True)
 
@@ -1256,7 +1259,8 @@ class Host(object):
         def footswitch_bank_callback(_):
             self.setNavigateWithFootswitches(False, footswitch_addr1_callback)
 
-        self.hmi.ui_con(footswitch_bank_callback)
+        cb = footswitch_bank_callback if self.descriptor.get("hmi_bank_navigation", False) else callback
+        self.hmi.ui_con(cb)
 
     def end_session(self, callback):
         self.allpedalboards, badbundles = get_all_good_and_bad_pedalboards()
@@ -4778,7 +4782,8 @@ _:b%i
             self.setNavigateWithFootswitches(self.isBankFootswitchNavigationOn(), load_callback)
 
         def hmi_clear_callback(_):
-            self.hmi.clear(footswitch_callback)
+            cb = footswitch_callback if self.descriptor.get("hmi_bank_navigation", False) else load_callback
+            self.hmi.clear(cb)
 
         if not self.processing_pending_flag:
             self.processing_pending_flag = True
