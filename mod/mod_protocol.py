@@ -65,6 +65,7 @@ CMD_ARGS = {
     },
     'DWARF': {
         'cs': [int,int],
+        'pa': [int,int,int,int,int,int,int,int],
     },
 }
 
@@ -123,6 +124,7 @@ CMD_DUOX_SNAPSHOT_LOAD            = 'sl'
 CMD_DUOX_SNAPSHOT_CLEAR           = 'sc'
 CMD_DUOX_PAGES_AVAILABLE          = 'pa'
 CMD_DWARF_CONTROL_SUBPAGE         = 'cs'
+CMD_DWARF_PAGES_AVAILABLE         = 'pa'
 
 BANK_FUNC_NONE            = 0
 BANK_FUNC_TRUE_BYPASS     = 1
