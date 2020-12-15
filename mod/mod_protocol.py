@@ -22,7 +22,7 @@ CMD_ARGS = {
         'p': [int,int,int],
         'pb': [int,str],
         'ssg': [int,int],
-        'ssl': [str],
+        'ssl': [int],
         'pr': [],
         'ps': [],
         'pn': [str,],
