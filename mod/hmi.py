@@ -191,11 +191,11 @@ class HMI(object):
                         resp = 0 if resp else -1
                         if resp_args is None:
                             self.send_reply("%s %d" % (CMD_RESPONSE, resp))
-                            logging.debug('[hmi]     sent "resp %s"', resp)
+                            logging.debug('[hmi]     sent "%s %s"', CMD_RESPONSE, resp)
 
                         else:
                             self.send_reply("%s %d %s" % (CMD_RESPONSE, resp, resp_args))
-                            logging.debug('[hmi]     sent "resp %s %s"', resp, resp_args)
+                            logging.debug('[hmi]     sent "%s %s %s"', CMD_RESPONSE, resp, resp_args)
 
                         self.handling_response = False
                         if self.queue_idle:
