@@ -96,6 +96,7 @@ class Addressings(object):
         desc = get_hardware_descriptor()
         self.hw_actuators = desc.get('actuators', [])
         self.hw_actuators_uris = tuple(a['uri'] for a in self.hw_actuators)
+        self.has_hmi_subpages = bool(desc.get('hmi_subpages', False))
         self.addressing_pages = int(desc.get('addressing_pages', 0))
         self.current_page = 0
 
@@ -267,14 +268,19 @@ class Addressings(object):
                 page = addr.get('page', None)
                 subpage = addr.get('subpage', None)
 
-                # TODO ignore subpage or not depending if device supports it
+                if actuator_type == self.ADDRESSING_TYPE_HMI:
+                    # Dealing with HMI addr from a pedalboard without subpages in a device with, or vice-versa
+                    if subpage is None and self.has_hmi_subpages:
+                        subpage = 0
+                    elif subpage is not None and not self.has_hmi_subpages:
+                        subpage = None
 
-                # Dealing with HMI addr from a pedalboard not supporting pages on a device supporting them
-                if actuator_type == self.ADDRESSING_TYPE_HMI and self.addressing_pages and page is None:
-                    if i < self.addressing_pages: # automatically assign the i-th assignment to page i
-                        page = i
-                    else: # cannot address more because we've reached the max nb of pages for current actuator
-                        break
+                    # Dealing with HMI addr from a pedalboard not supporting pages on a device supporting them
+                    if self.addressing_pages and page is None:
+                        if i < self.addressing_pages: # automatically assign the i-th assignment to page i
+                            page = i
+                        else: # cannot address more because we've reached the max nb of pages for current actuator
+                            break
 
                 coloured = addr.get('coloured', False)
                 momentary = int(addr.get('momentary', 0))
