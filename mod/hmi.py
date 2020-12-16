@@ -410,21 +410,11 @@ class HMI(object):
             index = data['addrs_idx']
             self.control_set_index(hw_id, index, n_controllers, callback)
 
-        def subpage_callback(ok):
-            if not ok:
-                callback(False)
-                return
-            self.control_set_index(hw_id, data['subpage']+1, 3, callback)
-
         cb = callback
 
         # FIXME this should be based on hw desc "max_assigns" instead of hardcoded
         if not actuator_uri.startswith("/hmi/footswitch") and hmi_set_index:
-            # TODO remove subpages stuff, only testing for Dwarf
-            if self.hw_desc.get('hmi_subpages', False):
-                cb = subpage_callback
-            else:
-                cb = control_add_callback
+            cb = control_add_callback
 
         self.send('%s %d %s %d %s %f %f %f %d %s' %
                   ( CMD_CONTROL_ADD,

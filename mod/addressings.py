@@ -1122,10 +1122,6 @@ class Addressings(object):
         addressings     = self.hmi_addressings[actuator_uri]
         addressings_len = len(addressings['addrs'])
 
-        # TODO remove subpages stuff, only testing for Dwarf
-        if subpage is None:
-            subpage = (self.hmi_hwsubpages[hw_id] + 1) % 3
-
         # set actuator page
         self.hmi_hwsubpages[hw_id] = subpage
 

@@ -4586,17 +4586,11 @@ _:b%i
 
     def hmi_list_bank_pedalboards(self, props, pedalboard_id, bank_id, callback):
         logging.debug("hmi list bank pedalboards %d %d %d", props, pedalboard_id, bank_id)
-        # TODO: do something with page parameter
 
         if bank_id < 0 or bank_id > len(self.banks):
             logging.error("Trying to list pedalboards with an out of bounds bank id (%d %d %d)",
                           props, pedalboard_id, bank_id)
             callback(False)
-            return
-
-        # TODO remove subpages stuff, only testing for Dwarf
-        if self.descriptor.get('hmi_subpages', False) and self.descriptor.get('hmi_set_index', False) and bank_id == 0:
-            self.hmi_list_pedalboard_snapshots(props, pedalboard_id, callback)
             return
 
         dir_up  = props & FLAG_PAGINATION_PAGE_UP
@@ -4699,11 +4693,6 @@ _:b%i
         except:
             print("ERROR: Trying to load pedalboard using invalid pedalboard_id '%s'" % (pedalboard_id))
             callback(False)
-            return
-
-        # TODO remove subpages stuff, only testing for Dwarf
-        if self.descriptor.get('hmi_subpages', False) and self.descriptor.get('hmi_set_index', False) and bank_id == 0:
-            self.hmi_load_pedalboard_snapshot(pedalboard_id, callback)
             return
 
         if self.next_hmi_pedalboard_to_load is not None:
@@ -5054,11 +5043,7 @@ _:b%i
 
     def hmi_parameter_addressing_next(self, hw_id, callback):
         logging.debug("hmi parameter addressing next")
-        # TODO remove subpages stuff, only testing for Dwarf
-        if self.descriptor.get('hmi_subpages', False) and self.descriptor.get('hmi_set_index', False):
-            self.addressings.hmi_load_subpage(hw_id, None)
-        else:
-            self.addressings.hmi_load_next_hw(hw_id)
+        self.addressings.hmi_load_next_hw(hw_id)
         callback(True)
 
     def hmi_parameter_load_subpage(self, hw_id, subpage, callback):
