@@ -69,6 +69,7 @@ function Desktop(elements) {
         settingsIcon: $('<div>'),
         upgradeIcon: $('<div>'),
         upgradeWindow: $('<div>'),
+        bypassButton: $('<div>'),
         bypassLeftButton: $('<div>'),
         bypassRightButton: $('<div>'),
         bufferSizeButton: $('<div>'),
