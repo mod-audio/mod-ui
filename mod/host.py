@@ -121,7 +121,7 @@ from mod.protocol import (
 from mod.settings import (
     APP, LOG, DEFAULT_PEDALBOARD, LV2_PEDALBOARDS_DIR, USER_FILES_DIR,
     PEDALBOARD_INSTANCE, PEDALBOARD_INSTANCE_ID, PEDALBOARD_URI, PEDALBOARD_TMP_DIR,
-    TUNER_URI, TUNER_INSTANCE_ID, TUNER_INPUT_PORT, TUNER_MONITOR_PORT, HMI_TIMEOUT,
+    TUNER_URI, TUNER_INSTANCE_ID, TUNER_INPUT_PORT, TUNER_MONITOR_PORT, HMI_TIMEOUT, MODEL_TYPE,
     UNTITLED_PEDALBOARD_NAME, DEFAULT_SNAPSHOT_NAME,
     MIDI_BEAT_CLOCK_SENDER_URI, MIDI_BEAT_CLOCK_SENDER_INSTANCE_ID, MIDI_BEAT_CLOCK_SENDER_OUTPUT_PORT,
 )
@@ -3897,7 +3897,7 @@ _:b%i
 """ % (arcs, blocks, ports,
        title.replace('"','\\"'),
        self.descriptor.get('name', 'Unknown').replace('"','\\"'),
-       self.descriptor.get('model', 'Unknown').replace('"','\\"'),
+       MODEL_TYPE,
        self.pedalboard_size[0], self.pedalboard_size[1], self.pedalboard_version)
 
         # Arcs (connections)
