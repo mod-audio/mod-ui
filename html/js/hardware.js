@@ -487,8 +487,8 @@ function HardwareManager(options) {
                                       hmiPageInput, hmiSubPageInput, hmiUriInput,
                                       sensitivity, ledColourMode, momentarySwMode, port) {
       var table = $('<table/>').addClass('hmi-table')
-      var row, cell, uri, uriAddressings, usedAddressings, addressing
-      var actuator, actuatorName, actuatorSubPages, groupActuator, groupAddressings, lastGroupName
+      var row, cell, ctable, uri, uriAddressings, usedAddressings, addressing
+      var actuator, actuatorName, actuatorSubPages, groupActuator, groupAddressings, lastGroupName, subpageTables = {}
 
       if (ADDRESSING_PAGES > 0)
       {
@@ -504,19 +504,50 @@ function HardwareManager(options) {
             continue
           }
           actuator = actuators[actuatorUri]
+          actuatorSubPages = actuator.subpages || [null]
           usedAddressings = self.addressingsByActuator[actuatorUri]
-          if (actuator.group && actuator.group != lastGroupName) {
+
+          // pre-create groups for subpages
+          if (actuator.subpages) {
+            for (var i in actuator.subpages) {
+              lastGroupName = actuator.subpages[i]
+              if (!subpageTables[lastGroupName]) {
+                  deviceTable.append(table)
+                  deviceTable.append($('<div class="group-strike">'+ lastGroupName +'</div>'))
+                  table = subpageTables[lastGroupName] = $('<table/>').addClass('hmi-table')
+              } else {
+                  table = subpageTables[lastGroupName]
+              }
+            }
+            ctable = null
+            lastGroupName = null
+
+          // actuator belongs to a new group (compared to last one)
+          } else if (actuator.group && actuator.group != lastGroupName) {
               deviceTable.append(table)
               deviceTable.append($('<div class="group-strike">'+ actuator.group +'</div>'))
-              table = $('<table/>').addClass('hmi-table')
+              ctable = table = $('<table/>').addClass('hmi-table')
               lastGroupName = actuator.group
+
+          // there was a group before, but not anymore, so create a "no-group" group
+          } else if (lastGroupName && !actuator.group) {
+              deviceTable.append(table)
+              deviceTable.append($('<div class="group-strike">No Group</div>'))
+              ctable = table = $('<table/>').addClass('hmi-table')
+              lastGroupName = null
+
+          // no groups ever in use, just act normal
+          } else {
+              ctable = table
           }
-          actuatorSubPages = actuator.subpages || 1
-          for (var actSubPage = 0; actSubPage < actuatorSubPages; actSubPage++) {
+
+          for (var actSubPage = 0; actSubPage < actuatorSubPages.length; actSubPage++) {
             row = $('<tr/>')
+            if (actuator.subpages) {
+                ctable = subpageTables[actuatorSubPages[actSubPage]]
+            }
             for (var addrPage = 0; addrPage < ADDRESSING_PAGES; addrPage++) {
-              actuatorName = actuatorSubPages > 1 ? (actSubPage + 1).toString()
-                                                  : (lastGroupName ? (actuator.gname || actuator.name) : actuator.name)
+              actuatorName = lastGroupName ? (actuator.gname || actuator.name) : actuator.name
               cell = $('<td data-page="'+ addrPage +'" data-subpage="'+ actSubPage +'" data-uri="'+ actuatorUri +'">'+ actuatorName +'</td>')
               if (currentAddressing &&
                   currentAddressing.uri == actuatorUri &&
@@ -553,7 +584,7 @@ function HardwareManager(options) {
               }
               row.append(cell)
             }
-            table.append(row)
+            ctable.append(row)
           }
         }
 
