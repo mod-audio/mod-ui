@@ -840,10 +840,10 @@ class Host(object):
 
     def addr_task_set_available_pages(self, pages, callback):
         if self.hmi.initialized:
-            return self.hmi.set_available_pages(pages, callback)
+            self.hmi.set_available_pages(pages, callback)
+            return
         print("WARNING: Trying to send available pages, HMI not initialized")
         callback(False)
-        return
 
     def addr_task_get_plugin_cv_port_op_mode(self, actuator_uri):
         instance, port = actuator_uri.split(CV_OPTION)[1].rsplit("/", 1)
@@ -1102,7 +1102,8 @@ class Host(object):
             msgs.append((self.hmi.set_snapshot_name, [ssname]))
 
         if self.descriptor.get('addressing_pages', 0):
-            msgs.append((self.hmi.set_available_pages, [self.addressings.available_pages]))
+            pages = self.addressings.get_available_pages()
+            msgs.append((self.hmi.set_available_pages, [pages]))
 
         if self.isBankFootswitchNavigationOn():
             msgs.append((self.hmi.set_profile_value, [MENU_ID_FOOTSWITCH_NAV, 1])) # FIXME profile as name is wrong
@@ -2238,7 +2239,7 @@ class Host(object):
         if self.hmi.initialized:
             if send_hmi_available_pages:
                 try:
-                    yield gen.Task(self.addr_task_set_available_pages, self.addressings.available_pages)
+                    yield gen.Task(self.hmi.set_available_pages, self.addressings.get_available_pages())
                 except Exception as e:
                     logging.exception(e)
 
@@ -4327,9 +4328,10 @@ _:b%i
                 send_hmi_available_pages = self.check_available_pages(old_addressing['page'])
 
         if not actuator_uri or actuator_uri == kNullAddressURI:
-            if send_hmi_available_pages: # while unaddressing, one page has become unavailable (without any addressings)
+            # while unaddressing, one page has become unavailable (without any addressings)
+            if send_hmi_available_pages and self.hmi.initialized:
                 try:
-                    yield gen.Task(self.addr_task_set_available_pages, self.addressings.available_pages)
+                    yield gen.Task(self.hmi.set_available_pages, self.addressings.get_available_pages())
                 except Exception as e:
                     logging.exception(e)
                 return
@@ -4429,10 +4431,10 @@ _:b%i
 
         # Find out if new addressing page should become available
         if self.addressings.addressing_pages and self.addressings.is_hmi_actuator(actuator_uri):
-            if self.check_available_pages(page):
+            if self.check_available_pages(page) and self.hmi.initialized:
                 # while unaddressing, one page has become unavailable (without any addressings)
                 try:
-                    yield gen.Task(self.addr_task_set_available_pages, self.addressings.available_pages)
+                    yield gen.Task(self.hmi.set_available_pages, self.addressings.get_available_pages())
                 except Exception as e:
                     logging.exception(e)
 
