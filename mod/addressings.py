@@ -97,6 +97,7 @@ class Addressings(object):
         self.hw_actuators = desc.get('actuators', [])
         self.hw_actuators_uris = tuple(a['uri'] for a in self.hw_actuators)
         self.has_hmi_subpages = bool(desc.get('hmi_subpages', False))
+        self.hmi_show_empty_pages = bool(desc.get('hmi_show_empty_pages', False))
         self.addressing_pages = int(desc.get('addressing_pages', 0))
         self.current_page = 0
 
@@ -191,6 +192,18 @@ class Addressings(object):
             addressings[uri] = addrs2
 
         return addressings
+
+    def get_available_pages(self):
+        if not self.hmi_show_empty_pages:
+            return self.available_pages
+
+        pages = self.available_pages.copy()
+        rpages = self.available_pages.copy()
+        rpages.reverse()
+        for i in range(self.addressing_pages - rpages.index(True)):
+            pages[i] = True
+
+        return pages
 
     # -----------------------------------------------------------------------------------------------------------------
 
@@ -366,8 +379,9 @@ class Addressings(object):
                                 return
 
                 loop_addressings()
+
             try:
-                yield gen.Task(self._task_set_available_pages, self.available_pages)
+                yield gen.Task(self._task_set_available_pages, self.get_available_pages())
             except Exception as e:
                 logging.exception(e)
 
