@@ -147,7 +147,6 @@ $('document').ready(function() {
         settingsIcon: $('#mod-settings'),
         upgradeIcon: $('#mod-update'),
         upgradeWindow: $('#mod-upgrade'),
-        bypassButton: $("#mod-bypass"),
         bypassLeftButton: $("#mod-bypassLeft"),
         bypassRightButton: $("#mod-bypassRight"),
         bufferSizeButton: $('#mod-buffersize'),
@@ -165,8 +164,6 @@ $('document').ready(function() {
     if (!{{codec_truebypass}}) {
         $('#mod-bypassLeft').hide()
         $('#mod-bypassRight').hide()
-    } else {
-        $('#mod-bypass').hide()
     }
 
     if ({{using_app}}) {
@@ -624,7 +621,6 @@ $('document').ready(function() {
         <div id="mod-cpu-stats" class="icon mod-hidden">0 GHz / 0 &deg;C</div>
         <div id="mod-xruns" class="icon mod-hidden">0 Xruns</div>
         <div id="mod-buffersize" class="icon mod-hidden">{{bufferSize}} frames</div>
-        <div id="mod-bypass" class="icon mod-bypass">Bypass</div>
         <div id="mod-bypassRight" class="icon mod-bypass">Bypass 2</div>
         <div id="mod-bypassLeft" class="icon mod-bypass">Bypass 1</div>
         <div id="mod-show-midi-port" class="icon">MIDI Ports</div>
