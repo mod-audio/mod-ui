@@ -889,7 +889,11 @@ class Addressings(object):
                 actuator_hw      = self.hmi_uri2hw_map[actuator_uri]
                 actuator_subpage = self.hmi_hwsubpages[actuator_hw]
             except KeyError:
-                print("ERROR: Why fails the hardware/URI mapping? Hardcoded number of actuators?")
+                if callback is not None:
+                    callback(False)
+                print("ERROR: Why fail the hardware/URI mapping? Hardcoded number of actuators?")
+                return
+
             if self.addressing_pages:
                 # if new addressing page is not the same as the currently displayed page
                 if self.current_page != addressing_data['page'] or actuator_subpage != addressing_data['subpage']:
@@ -904,6 +908,11 @@ class Addressings(object):
 
         elif actuator_type == self.ADDRESSING_TYPE_CC:
             actuator_hw = self.cc_metadata[actuator_uri]['hw_id']
+
+        else:
+            if callback is not None:
+                callback(False)
+            return
 
         self._task_addressing(actuator_type, actuator_hw, addressing_data, callback, send_hmi=send_hmi)
 
