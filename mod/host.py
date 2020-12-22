@@ -4546,8 +4546,8 @@ _:b%i
         logging.debug("hmi list banks %d %d", dir_up, bank_id)
 
         if self.allpedalboards is None or len(self.allpedalboards) == 0:
-            logging.error("no pedalboards available, cant return any banks (%d %d)", dir_up, bank_id)
-            callback(True, "0 0 0")
+            logging.error("no pedalboards available, return default bank (%d %d)", dir_up, bank_id)
+            callback(True, '1 0 1 "All Pedalboards" 0')
             return
 
         if dir_up in (0, 1):
