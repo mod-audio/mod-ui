@@ -4352,10 +4352,7 @@ _:b%i
         if not actuator_uri or actuator_uri == kNullAddressURI:
             # while unaddressing, one page has become unavailable (without any addressings)
             if send_hmi_available_pages and self.hmi.initialized:
-                try:
-                    yield gen.Task(self.hmi.set_available_pages, self.addressings.get_available_pages())
-                except Exception as e:
-                    logging.exception(e)
+                self.hmi.set_available_pages(self.addressings.get_available_pages(), callback)
                 return
             else:
                 callback(True)
@@ -4447,7 +4444,6 @@ _:b%i
                         yield gen.Task(self.host_and_web_parameter_set, pluginData, instance, instance_id, value, portsymbol)
                     except Exception as e:
                         logging.exception(e)
-
 
         pluginData['addressings'][portsymbol] = addressing
 
