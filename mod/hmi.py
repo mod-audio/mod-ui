@@ -505,7 +505,7 @@ class HMI(object):
         msg = CMD_DUOX_PAGES_AVAILABLE
         for page_enabled in pages:
             msg += " %i" % int(page_enabled)
-        self.send(msg, callback)
+        self.send(msg, callback, 'boolean')
 
     # even newer messages. really need to clean this up later..
 
