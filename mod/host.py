@@ -4581,7 +4581,7 @@ _:b%i
             pedalboard_id += 1 if dir_up else -1
 
         if bank_id == 0:
-            pedalboards = self.allpedalboards
+            pedalboards = self.allpedalboards or [{'title':"Default"}]
         else:
             pedalboards = self.banks[bank_id-1]['pedalboards']
 
