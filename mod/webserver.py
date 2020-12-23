@@ -2087,7 +2087,7 @@ class FilesList(JsonRequestHandler):
     )
 
     hq_audiofile_exts = (
-        "aif", "aifc", "aiff", ".flac", ".w64", ".wav",
+        "aif", "aifc", "aiff", "flac", "w64", "wav",
     )
 
     @classmethod
