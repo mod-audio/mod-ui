@@ -909,11 +909,6 @@ class Addressings(object):
         elif actuator_type == self.ADDRESSING_TYPE_CC:
             actuator_hw = self.cc_metadata[actuator_uri]['hw_id']
 
-        else:
-            if callback is not None:
-                callback(False)
-            return
-
         self._task_addressing(actuator_type, actuator_hw, addressing_data, callback, send_hmi=send_hmi)
 
     def load_current_with_callback(self, actuator_uris, skippedPort, updateValue, from_hmi, abort_catcher, callback):
