@@ -827,7 +827,7 @@ class Addressings(object):
                 if "trigger" in pprops:
                     cctype |= CC_MODE_TRIGGER
 
-                if portsymbol == ":bpm" and "tapTempo" in pprops and actuator_uri.startswith("/hmi/footswitch"):
+                if portsymbol == ":bpm" and "tapTempo" in pprops:
                     cctype |= CC_MODE_TAP_TEMPO
 
                 if tempo or "enumeration" in pprops and len(port_info["scalePoints"]) > 0:
