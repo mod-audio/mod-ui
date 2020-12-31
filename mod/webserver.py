@@ -2073,7 +2073,7 @@ class FilesList(JsonRequestHandler):
             return ("Audio Samples", kls.complete_audiofile_exts)
 
         elif filetype == "audiotrack":
-            return ("Audio Track", kls.complete_audiofile_exts)
+            return ("Audio Tracks", kls.complete_audiofile_exts)
 
         elif filetype == "cabsim":
             return ("Speaker Cabinets", kls.hq_audiofile_exts)
