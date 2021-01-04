@@ -46,7 +46,7 @@ mod-ui depends on mod-host and the JACK server running in order to make sound. S
 
     $ mod-host -n -p 5555 -f 5556
 
-You should also load the `mod-monitor` module into jack (without it you won't be able to connect to output ports):
+You should also load the `mod-monitor` module into jack (without it you won't be able to connect to output ports)::
 
     $ jack_load mod-monitor
 
