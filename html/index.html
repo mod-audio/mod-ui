@@ -261,6 +261,9 @@ $('document').ready(function() {
 <script type="text/javascript" src="js/nprogress.js?v={{version}}"></script>
 <script type="text/javascript" src="js/utils/tempo.js?v={{version}}"></script>
 <script type="text/javascript" src="js/utils/plugins.js?v={{version}}"></script>
+<script type="text/javascript" src="js/utils/janus.js?v={{version}}"></script>
+<script type="text/javascript" src="js/streaming.js?v={{version}}"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/webrtc-adapter/6.4.0/adapter.min.js" ></script>
 
 </head>
 <!-- END HEAD -->
@@ -466,6 +469,7 @@ $('document').ready(function() {
             <div id="pedalboard-info">
                 <h1 class="top bottom {{titleblend}}">{{fulltitle}}</h1>
                 <div class="actions">
+                    <button class="js-audio-stream" id="js-audio-stream">Enable streaming</button>
                     <button class="js-cv-addressing" id="js-cv-addressing-toggle">Manage CV Ports</button>
                     <button class="js-preset" id="js-preset-enabler">Snapshots</button>
                     <div class="mod-hidden" id="js-preset-menu">
@@ -947,6 +951,8 @@ $('document').ready(function() {
         </div>
     </div>
     <!-- TRANSPORT BOX -->
+
+    <div id="stream"></div>
 
 <!-- END WRAPPER -->
 </div>
