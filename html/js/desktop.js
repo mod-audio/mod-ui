@@ -257,7 +257,7 @@ function Desktop(elements) {
 
     this.titleBox = elements.titleBox
 
-    this.ParameterSet = function (paramchange){
+    this.ParameterSet = function (paramchange) {
         $.ajax({
             url: '/effect/parameter/set/' ,
             type: 'POST',
@@ -1544,6 +1544,7 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
         },
 
         pluginParameterChange: function (port, value) {
+            self.pedalboardModified = true
             ws.send(sprintf("param_set %s %f", port, value))
         },
 
@@ -1552,10 +1553,12 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
         },
 
         pluginPatchSet: function (instance, uri, valuetype, value) {
+            self.pedalboardModified = true
             ws.send(sprintf("patch_set %s %s %s %s", instance, uri, valuetype, value))
         },
 
         pluginMove: function (instance, x, y) {
+            self.pedalboardModified = true
             ws.send(sprintf("plugin_pos %s %f %f", instance, x, y))
         },
 
