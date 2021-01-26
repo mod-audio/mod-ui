@@ -907,12 +907,12 @@ function Desktop(elements) {
     },
 
     this.saveBox = elements.saveBox.saveBox({
-        save: function (title, asNew, callback) {
+        save: function (windotTitle, name, asNew, callback) {
             $.ajax({
                 url: '/pedalboard/save',
                 type: 'POST',
                 data: {
-                    title: title,
+                    title: name,
                     asNew: asNew ? 1 : 0
                 },
                 success: function (result) {
@@ -920,7 +920,7 @@ function Desktop(elements) {
                         // dummy call to keep 1 ajax request active while screenshot is generated
                         self.waitForScreenshot(false, function(){})
                         // all set
-                        callback(true, result.bundlepath, title)
+                        callback(true, result.bundlepath, name)
                     } else {
                         callback(false, "Failed to save")
                     }
@@ -936,8 +936,8 @@ function Desktop(elements) {
     })
 
     this.presetSaveBox = elements.presetSaveBox.saveBox({
-        save: function (title, asNew, callback) {
-            callback(true, "", title)
+        save: function (windotTitle, name, asNew, callback) {
+            callback(true, "", name)
         }
     })
 
