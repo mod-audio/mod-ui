@@ -191,7 +191,7 @@ function Desktop(elements) {
             if (port.symbol == ':bypass' || port.symbol == ':presets') {
                 context = {
                     label: label,
-                    name: port.symbol == ':bypass' ? "On/Off" : "Presets"
+                    name: port.symbol == ':bypass' ? "On/Off" : port.name
                 }
                 return Mustache.render(TEMPLATES.bypass_addressing, context)
             }
@@ -1044,7 +1044,7 @@ function Desktop(elements) {
             return new Notification("warn", "Cannot change snapshot while addressed to hardware", 3000)
         }
 
-        desktop.openPresetSaveWindow("", function (newName) {
+        desktop.openPresetSaveWindow("Saving Snapshot", "", function (newName) {
             $.ajax({
                 url: '/snapshot/saveas',
                 data: {
@@ -1872,7 +1872,7 @@ Desktop.prototype.saveCurrentPedalboard = function (asNew, callback) {
         return
     }
 
-    self.saveBox.saveBox('save', self.title, asNew,
+    self.saveBox.saveBox('save', "", self.title, asNew,
         function (ok, errorOrPath, title) {
             if (!ok) {
                 new Error(errorOrPath)
@@ -1911,8 +1911,8 @@ Desktop.prototype.shareCurrentPedalboard = function (callback) {
     $('#pedalboard-sharing .button').click()
 }
 
-Desktop.prototype.openPresetSaveWindow = function (name, callback) {
-    this.presetSaveBox.saveBox('save', name, true,
+Desktop.prototype.openPresetSaveWindow = function (windowTitle, name, callback) {
+    this.presetSaveBox.saveBox('save', windowTitle, name, true,
         function (ok, ignored, newName) {
             callback(newName)
         })
@@ -1923,7 +1923,7 @@ JqueryClass('saveBox', {
         var self = $(this)
 
         options = $.extend({
-            save: function (title, asNew, callback) {
+            save: function (windowTitle, name, asNew, callback) {
                 callback(false, "Not Implemented")
             }
         }, options)
@@ -1963,15 +1963,19 @@ JqueryClass('saveBox', {
         return self
     },
 
-    save: function (title, asNew, callback) {
+    save: function (windowTitle, name, asNew, callback) {
         var self = $(this)
-        self.find('input').val(title)
+        self.find('input').val(name)
         self.data('asNew', asNew)
         self.data('callback', callback)
-        if (title && !asNew)
+        if (windowTitle) {
+            self.find('h1').text(windowTitle)
+        }
+        if (name && !asNew) {
             self.saveBox('send')
-        else
+        } else {
             self.saveBox('edit')
+        }
     },
 
     edit: function () {
@@ -1995,7 +1999,7 @@ JqueryClass('saveBox', {
         self.data('disabled', true)
         self.find('.js-cancel-saving').prop('disabled', true)
         self.find('.js-save').prop('disabled', true)
-        self.data('save')(title, asNew,
+        self.data('save')("", title, asNew,
             function (ok, errorOrPath, realTitle) {
                 if (! ok) {
                     new Bug(errorOrPath)

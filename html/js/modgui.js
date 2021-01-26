@@ -928,7 +928,7 @@ function GUI(effect, options) {
                     if (item) {
                         name = item.text()
                     }
-                    desktop.openPresetSaveWindow(name, function (newName) {
+                    desktop.openPresetSaveWindow("Saving Preset", name, function (newName) {
                         options.presetSaveNew(newName, function (resp) {
                             var newItem = $('<div mod-role="enumeration-option" mod-uri="'+resp.uri+'" mod-path="'+resp.bundle+'">'+newName+'</div>')
                             newItem.appendTo(presetElem.find('.mod-preset-user')).click(presetItemClicked)
@@ -959,7 +959,7 @@ function GUI(effect, options) {
                     if (! path || ! uri) {
                         return
                     }
-                    desktop.openPresetSaveWindow(name, function (newName) {
+                    desktop.openPresetSaveWindow("Renaming Preset", name, function (newName) {
                         options.presetSaveReplace(uri, path, newName, function (resp) {
                             item.text(newName)
                         })
