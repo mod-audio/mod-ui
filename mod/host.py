@@ -2768,9 +2768,13 @@ class Host(object):
         while self.next_hmi_pedalboard_to_load is not None:
             yield gen.sleep(0.25)
 
-        # Move all subpages to 0
-        for hw_id in self.addressings.hmi_hwsubpages:
-            self.addressings.hmi_hwsubpages[hw_id] = 0
+        if self.addressings.has_hmi_subpages:
+            # Move all subpages to 0
+            subpage = 0
+            for hw_id in self.addressings.hmi_hwsubpages:
+                self.addressings.hmi_hwsubpages[hw_id] = 0
+        else:
+            subpage = None
 
         for uri, addressings in self.addressings.hmi_addressings.items():
             if abort_catcher.get('abort', False):
@@ -2785,7 +2789,7 @@ class Host(object):
             if len(addrs) == 0:
                 continue
 
-            page_to_load_assigned = self.addressings.is_page_assigned(addrs, idx, 0)
+            page_to_load_assigned = self.addressings.is_page_assigned(addrs, idx, subpage)
 
             # Nothing assigned to current actuator on page to load
             if not page_to_load_assigned:
@@ -2793,7 +2797,7 @@ class Host(object):
 
             # Else, send control_add with new data
             try:
-                next_addressing_data = self.addressings.get_addressing_for_page(addrs, idx, 0)
+                next_addressing_data = self.addressings.get_addressing_for_page(addrs, idx, subpage)
             except StopIteration:
                 continue
 
