@@ -4254,6 +4254,11 @@ _:b%i
         momentary = int(extras.get('momentary', None) or 0)
         operational_mode = extras.get('operational_mode', '=')
 
+        if page is not None and not self.addressings.addressing_pages:
+            page = None
+        if subpage is not None and not self.addressings.has_hmi_subpages:
+            subpage = None
+
         if pluginData is None:
             print("ERROR: Trying to address non-existing plugin instance %i: '%s'" % (instance_id, instance))
             callback(False)
