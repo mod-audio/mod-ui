@@ -1178,7 +1178,7 @@ class ServerWebSocket(websocket.WebSocketHandler):
             inst = data[0]
             x    = float(data[1])
             y    = float(data[2])
-            SESSION.ws_plugin_position(inst, x, y)
+            SESSION.ws_plugin_position(inst, x, y, self)
 
         elif cmd == "pb_size":
             data   = data[1].split(" ",2)
