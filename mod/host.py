@@ -299,7 +299,7 @@ class Host(object):
         self.prefs = prefs
         self.msg_callback = msg_callback
 
-        self.addr = ("localhost", 5555)
+        self.addr = ("localhost", int(os.getenv("MOD_HOST_SOCKET_PORT", "5555")))
         self.readsock = None
         self.writesock = None
         self.crashed = False
