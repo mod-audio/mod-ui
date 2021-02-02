@@ -1,4 +1,4 @@
-var server = "ws://" + window.location.hostname + ":8188";
+var server = "wss://" + window.location.hostname + window.location.pathname + "janus";
 
 var janus = null;
 var streaming = null;
