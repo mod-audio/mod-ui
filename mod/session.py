@@ -93,6 +93,13 @@ class Session(object):
 
         self.host = Host(self.hmi, self.prefs, self.msg_callback)
 
+        # A websocket to the Online Instance Manager
+        self.online_instance_ws = None
+
+        # If this is an online instance, the loaded virtual device
+        self.virtual_device_id = None
+
+
     def signal_save(self):
         # reuse HMI function
         self.host.hmi_save_current_pedalboard(lambda r:None)
@@ -250,6 +257,7 @@ class Session(object):
         # if this is the last socket, end ui session
         if len(self.websockets) == 0:
             self.host.end_session(callback)
+            self.release_virtual_device(True)
         else:
             callback(True)
 
@@ -401,5 +409,25 @@ class Session(object):
         return port
 
     # END host commands
+
+    ###
+    # Online instance management
+
+    def online_instance_websocket_opened(self, ws, callback):
+        self.online_instance_ws = ws
+        callback(True)
+
+    def online_instance_websocket_closed(self, callback):
+        self.online_instance_ws = None
+        callback(True)
+
+    def load_virtual_device(self, virtual_device_id):
+        self.virtual_device_id = virtual_device_id
+
+    def release_virtual_device(self, notify=False):
+        if notify and self.online_instance_ws is not None and self.virtual_device_id is not None:
+            self.online_instance_ws.write_message("release %s" % self.virtual_device_id)
+        self.virtual_device_id = None
+
 
 SESSION = Session()
