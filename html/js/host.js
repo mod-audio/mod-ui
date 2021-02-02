@@ -140,11 +140,12 @@ $('document').ready(function() {
         }
 
         if (cmd == "plugin_pos") {
-            var sdata = data.split(" ", 3)
-            var instance = sdata[0]
-            var x = sdata[1]
-            var y = sdata[2]
+            data = data.split(" ", 3)
+            var instance = data[0]
+            var x = parseInt(data[1])
+            var y = parseInt(data[2])
             desktop.pedalboard.pedalboard("setPluginPosition", instance, x, y)
+            return
         }
 
         if (cmd == "transport") {
