@@ -335,8 +335,9 @@ class Session(object):
                                                                   uri, valuetype, valuedata), ws)
 
     # Set a plugin block position within the canvas
-    def ws_plugin_position(self, instance, x, y):
+    def ws_plugin_position(self, instance, x, y, ws):
         self.host.set_position(instance, x, y)
+        self.msg_callback_broadcast("plugin_pos %s %d %d" % (instance, x, y), ws)
 
     # set the size of the pedalboard (in 1:1 view, aka "full zoom")
     def ws_pedalboard_size(self, width, height):

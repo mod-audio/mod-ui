@@ -139,6 +139,15 @@ $('document').ready(function() {
             return
         }
 
+        if (cmd == "plugin_pos") {
+            data = data.split(" ", 3)
+            var instance = data[0]
+            var x = parseInt(data[1])
+            var y = parseInt(data[2])
+            desktop.pedalboard.pedalboard("setPluginPosition", instance, x, y)
+            return
+        }
+
         if (cmd == "transport") {
             data         = data.split(" ",4)
             var rolling  = parseInt(data[0]) != 0

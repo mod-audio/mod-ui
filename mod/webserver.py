@@ -1178,7 +1178,7 @@ class ServerWebSocket(websocket.WebSocketHandler):
             inst = data[0]
             x    = float(data[1])
             y    = float(data[2])
-            SESSION.ws_plugin_position(inst, x, y)
+            SESSION.ws_plugin_position(inst, x, y, self)
 
         elif cmd == "pb_size":
             data   = data[1].split(" ",2)
@@ -2080,14 +2080,14 @@ class TokensSave(JsonRequestHandler):
 class FilesList(JsonRequestHandler):
     complete_audiofile_exts = (
         # through libsndfile
-        "aif", "aifc", "aiff", "au", "bwf", "flac", "htk", "iff", "mat4", "mat5", "oga", "ogg",
-        "paf", "pvf", "pvf5", "sd2", "sf", "snd", "svx", "vcc", "w64", "wav", "xi",
+        ".aif", ".aifc", ".aiff", ".au", ".bwf", ".flac", ".htk", ".iff", ".mat4", ".mat5", ".oga", ".ogg",
+        ".paf", ".pvf", ".pvf5", ".sd2", ".sf", ".snd", ".svx", ".vcc", ".w64", ".wav", ".xi",
         # extra through ffmpeg
-        "3g2", "3gp", "aac", "ac3", "amr", "ape", "mp2", "mp3", "mpc", "wma",
+        ".3g2", ".3gp", ".aac", ".ac3", ".amr", ".ape", ".mp2", ".mp3", ".mpc", ".wma",
     )
 
     hq_audiofile_exts = (
-        "aif", "aifc", "aiff", ".flac", ".w64", ".wav",
+        ".aif", ".aifc", ".aiff", ".flac", ".w64", ".wav",
     )
 
     @classmethod
@@ -2102,10 +2102,13 @@ class FilesList(JsonRequestHandler):
             return ("Audio Samples", kls.complete_audiofile_exts)
 
         elif filetype == "audiotrack":
-            return ("Audio Track", kls.complete_audiofile_exts)
+            return ("Audio Tracks", kls.complete_audiofile_exts)
+
+        elif filetype == "cabsim":
+            return ("Speaker Cabinets", kls.hq_audiofile_exts)
 
         elif filetype == "h2drumkit":
-            return ("Hydrogen Drumkits", ("h2drumkit",))
+            return ("Hydrogen Drumkits", (".h2drumkit",))
 
         elif filetype == "ir":
             return ("Impulse Responses", kls.hq_audiofile_exts)
@@ -2121,9 +2124,6 @@ class FilesList(JsonRequestHandler):
 
         elif filetype == "sfz":
             return ("SFZ Instruments", (".sfz",))
-
-        elif filetype == "cabsim":
-            return ("Speaker Cabinets", kls.hq_audiofile_exts)
 
         else:
             return (None, ())
