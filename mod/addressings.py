@@ -129,7 +129,7 @@ class Addressings(object):
             hw_id = actuator['id']
 
             self.hmi_hw2uri_map[hw_id] = uri
-            self.hmi_hwsubpages[hw_id] = 0
+            self.hmi_hwsubpages[hw_id] = 0 if self.has_hmi_subpages else None
             self.hmi_uri2hw_map[uri] = hw_id
 
     # clear all addressings, leaving metadata intact

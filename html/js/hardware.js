@@ -284,7 +284,7 @@ function HardwareManager(options) {
         return filteredDividers
     }
 
-    this.buildSensitivityOptions = function (select, port, curStep) {
+    this.buildSensitivityOptions = function (select, port, actuatorSteps, curStep) {
         select.children().remove()
 
         if (port.properties.indexOf("integer") >= 0 || port.properties.indexOf("toggled") >= 0 || port.properties.indexOf("trigger") >= 0) {
@@ -303,12 +303,34 @@ function HardwareManager(options) {
             return
         }
 
-        var soptions = {
-            17: 'Low',
-            33: 'Medium',
-            65: 'High',
+        var def, soptions = {}
+
+        switch ((actuatorSteps ? actuatorSteps.length : null))
+        {
+        case 1:
+            def = actuatorSteps[0]
+            soptions[def] = 'Default'
+            break
+        case 2:
+            def = actuatorSteps[0]
+            soptions[actuatorSteps[0]] = 'Medium'
+            soptions[actuatorSteps[1]] = 'High'
+            break
+        case 3:
+            def = actuatorSteps[1]
+            soptions[actuatorSteps[0]] = 'Low'
+            soptions[actuatorSteps[1]] = 'Medium'
+            soptions[actuatorSteps[2]] = 'High'
+            break
+        default:
+            def = 33
+            soptions = {
+                17: 'Low',
+                33: 'Medium',
+                65: 'High',
+            }
+            break
         }
-        var def = 33
 
         if (port.rangeSteps) {
             def = port.rangeSteps
@@ -324,6 +346,10 @@ function HardwareManager(options) {
         }
 
         select.val(curStep != null ? curStep : def)
+
+        if (keys.length === 1) {
+            select.parent().parent().hide()
+        }
     }
 
     this.disableMinMaxSteps = function (form, disabled) {
@@ -346,7 +372,9 @@ function HardwareManager(options) {
       return true;
     }
 
-    this.toggleAdvancedItemsVisibility = function (port, sensitivity, ledColourMode, momentarySwMode, currentActuator) {
+    this.toggleAdvancedItemsVisibility = function (port,
+                                                   sensitivity, ledColourMode, momentarySwMode,
+                                                   currentActuator, curStep) {
       if (currentActuator && currentActuator.steps.length !== 0 && this.portSupportsSensitivity(port)) {
         sensitivity.removeClass('disabled').parent().parent().show()
       } else {
@@ -373,6 +401,11 @@ function HardwareManager(options) {
       {
         momentarySwMode.addClass('disabled').parent().parent().hide()
       }
+
+      self.buildSensitivityOptions(sensitivity,
+                                   port,
+                                   currentActuator ? currentActuator.steps : null,
+                                   curStep)
     }
 
     // Show dynamic field content based on selected type of addressing
@@ -422,13 +455,16 @@ function HardwareManager(options) {
 
       // Disabled/Enable save button
       if (currentAddressing && currentAddressing.uri) {
-        if (typeInputVal === ccOption && !self.hasControlChainDevice()) {
+        if (typeInputVal === ccOption && !self.hasControlChainDevice() ||
+            (typeInputVal === cvOption && !self.cvOutputPorts.length)) {
           form.find('.js-save').addClass('disabled')
         } else {
           form.find('.js-save').removeClass('disabled')
         }
       } else {
-        if ((!form.find('input[name=tempo]').prop("checked") && typeInputVal === kNullAddressURI) || (typeInputVal === ccOption && !self.hasControlChainDevice())) {
+        if ((!form.find('input[name=tempo]').prop("checked") && typeInputVal === kNullAddressURI) ||
+            (typeInputVal === ccOption && !self.hasControlChainDevice()) ||
+            (typeInputVal === cvOption && !self.cvOutputPorts.length)) {
           form.find('.js-save').addClass('disabled')
         } else {
           form.find('.js-save').removeClass('disabled')
@@ -438,6 +474,7 @@ function HardwareManager(options) {
       // Hide/show extended specific content
       if (typeInputVal === kNullAddressURI ||
           typeInputVal === kMidiLearnURI || typeInputVal.lastIndexOf(kMidiCustomPrefixURI, 0) === 0 ||
+          (typeInputVal === ccOption && !self.hasControlChainDevice()) ||
           typeInputVal === cvOption ||
           ! this.portSupportsSensitivity(port))
       {
@@ -683,8 +720,13 @@ function HardwareManager(options) {
 
         self.toggleAdvancedItemsVisibility(port,
                                            sensitivity, ledColourMode, momentarySwMode,
-                                           actuators[actuatorUri])
+                                           actuators[actuatorUri],
+                                           currentAddressing.uri === actuatorUri ? currentAddressing.steps : null)
       })
+
+      self.toggleAdvancedItemsVisibility(port,
+                                         sensitivity, ledColourMode, momentarySwMode,
+                                         actuators[currentAddressing.uri], currentAddressing.steps)
     }
 
     this.addOption = function (addressings, actuator, currentAddressing, select) {
@@ -805,7 +847,8 @@ function HardwareManager(options) {
             var actuatorUri = $(this).val()
             self.toggleAdvancedItemsVisibility(port,
                                                sensitivity, ledColourMode, momentarySwMode,
-                                               actuators[actuatorUri])
+                                               actuators[actuatorUri],
+                                               currentAddressing.uri === actuatorUri ? currentAddressing.steps : null)
           })
         }
 
@@ -897,16 +940,9 @@ function HardwareManager(options) {
             }
         }
 
-        self.buildSensitivityOptions(sensitivity, port, currentAddressing.steps)
-
         self.buildDeviceTable(deviceTable, currentAddressing, actuators,
                               hmiPageInput, hmiSubPageInput, hmiUriInput,
                               sensitivity, ledColourMode, momentarySwMode, port)
-
-        // Hide advanced settings options if current addressing actuator does not support them
-        self.toggleAdvancedItemsVisibility(port,
-                                           sensitivity, ledColourMode, momentarySwMode,
-                                           actuators[currentAddressing['uri']])
 
         form.find('.js-save').click(function () {
             if ($(this).hasClass('disabled')) {
