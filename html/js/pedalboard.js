@@ -2694,7 +2694,7 @@ JqueryClass('pedalboard', {
         var self = $(this)
         var plugins = self.data('plugins');
         var plugin = plugins[instance];
-        plugin.css({ top: parseInt(y), left: parseInt(x) })
+        plugin.css({ top: y, left: x })
         self.pedalboard('fitToWindow')
         self.pedalboard('drawPluginJacks', plugin)
     }
