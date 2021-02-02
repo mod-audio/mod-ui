@@ -413,13 +413,11 @@ class Session(object):
     ###
     # Online instance management
 
-    def online_instance_websocket_opened(self, ws, callback):
+    def online_instance_websocket_opened(self, ws):
         self.online_instance_ws = ws
-        callback(True)
 
-    def online_instance_websocket_closed(self, callback):
+    def online_instance_websocket_closed(self):
         self.online_instance_ws = None
-        callback(True)
 
     def load_virtual_device(self, virtual_device_id):
         self.virtual_device_id = virtual_device_id

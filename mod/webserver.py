@@ -1182,16 +1182,14 @@ class ServerWebSocket(websocket.WebSocketHandler):
             print("Unexpected command received over websocket")
 
 class OnlineInstanceWebSocket(websocket.WebSocketHandler):
-    @gen.coroutine
     def open(self):
         print("online instance websocket open")
         self.set_nodelay(True)
-        yield gen.Task(SESSION.online_instance_websocket_opened, self)
+        SESSION.online_instance_websocket_opened(self)
 
-    @gen.coroutine
     def on_close(self):
         print("websocket close")
-        yield gen.Task(SESSION.online_instance_websocket_closed)
+        SESSION.online_instance_websocket_closed()
 
     def on_message(self, message):
         data = message.split(" ",1)
