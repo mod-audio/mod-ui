@@ -496,20 +496,22 @@ body > .mod-settings.mod-window-visible {
     height:131px;
     display:flex;
 }
-.mod-pedal-settings .mod-string-content > span.mod-string-value {
+.mod-pedal-settings .mod-string-content > textarea.mod-string-value {
     flex:1;
     padding:2px;
     border:1px solid #000;
     white-space:pre-wrap;
+    resize: none;
+    background: inherit;
 }
-.mod-pedal-settings .mod-string-content > span.mod-string-value:focus {
+.mod-pedal-settings .mod-string-content > textarea.mod-string-value:focus {
     border: 1px solid #883996;
     background: black;
 }
-.mod-pedal-settings .mod-string-content > span.mod-string-value::selection {
+.mod-pedal-settings .mod-string-content > textarea.mod-string-value::selection {
   background: #883996;
 }
-.mod-pedal-settings .mod-string-content > span.mod-string-value::-moz-selection {
+.mod-pedal-settings .mod-string-content > textarea.mod-string-value::-moz-selection {
   background: #883996;
 }
 
