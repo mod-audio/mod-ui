@@ -674,7 +674,11 @@ function GUI(effect, options) {
             valueField = parameter.valueFields[i]
             valueField.data('value', value)
             if (parameter.string) {
-                valueField.text(value)
+                if (valueField.is("textarea")) {
+                    valueField.val(value)
+                } else {
+                    valueField.text(value)
+                }
             } else {
                 valueField.text(sprintf(parameter.format, value))
             }
@@ -1155,14 +1159,21 @@ function GUI(effect, options) {
             }
         })
         valueField.keydown(function (e) {
+            // everything if string
+            if (port.string) {
+                // special case - if text area, allow shift+enter
+                if (e.keyCode == 13) {
+                    if (!valueField.is("textarea") || !e.shiftKey) {
+                        valueField.blur()
+                        return false
+                    }
+                }
+                return true;
+            }
             // enter
             if (e.keyCode == 13) {
                 valueField.blur()
                 return false
-            }
-            // everything if string
-            if (port.string) {
-                return true;
             }
             // numbers
             if (e.keyCode >= 48 && e.keyCode <= 57) {
@@ -1189,7 +1200,11 @@ function GUI(effect, options) {
         })
         valueField.blur(function () {
             if (port.string) {
-                setValueFn(valueField.text())
+                if (valueField.is("textarea")) {
+                    setValueFn(valueField.val())
+                } else {
+                    setValueFn(valueField.text())
+                }
                 return
             }
             var value = parseFloat(valueField.text())
