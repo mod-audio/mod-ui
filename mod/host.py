@@ -343,7 +343,7 @@ class Host(object):
         self.pedalboard_snapshots  = []
         self.next_hmi_pedalboard_to_load = None
         self.next_hmi_pedalboard_loading = False
-        self.hmi_snapshots = [None, None]
+        self.hmi_snapshots = [None, None, None]
         self.transport_rolling = False
         self.transport_bpb     = 4.0
         self.transport_bpm     = 120.0
@@ -1126,7 +1126,7 @@ class Host(object):
     def reconnect_hmi(self, hmi):
         abort_catcher = self.abort_previous_loading_progress("reconnect_hmi")
         self.hmi = hmi
-        self.hmi_snapshots = [None, None]
+        self.hmi_snapshots = [None, None, None]
         self.next_hmi_pedalboard_to_load = None
         self.next_hmi_pedalboard_loading = False
         self.processing_pending_flag = False
