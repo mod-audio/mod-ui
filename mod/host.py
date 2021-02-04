@@ -343,7 +343,7 @@ class Host(object):
         self.pedalboard_snapshots  = []
         self.next_hmi_pedalboard_to_load = None
         self.next_hmi_pedalboard_loading = False
-        self.hmi_snapshots = [None, None]
+        self.hmi_snapshots = [None, None, None]
         self.transport_rolling = False
         self.transport_bpb     = 4.0
         self.transport_bpm     = 120.0
@@ -1126,7 +1126,7 @@ class Host(object):
     def reconnect_hmi(self, hmi):
         abort_catcher = self.abort_previous_loading_progress("reconnect_hmi")
         self.hmi = hmi
-        self.hmi_snapshots = [None, None]
+        self.hmi_snapshots = [None, None, None]
         self.next_hmi_pedalboard_to_load = None
         self.next_hmi_pedalboard_loading = False
         self.processing_pending_flag = False
@@ -1795,6 +1795,7 @@ class Host(object):
             PEDALBOARD_INSTANCE_ID: PEDALBOARD_INSTANCE
         }
 
+        # load plugins first
         for instance_id, pluginData in self.plugins.items():
             if instance_id == PEDALBOARD_INSTANCE_ID:
                 continue
@@ -1806,6 +1807,18 @@ class Host(object):
                                                                    int(pluginData['bypassed']),
                                                                    int(bool(pluginData['buildEnv']))))
 
+            if crashed:
+                self.send_notmodified("add %s %d" % (pluginData['uri'], instance_id))
+
+        # load plugin state if relevant
+        if crashed and self.pedalboard_path:
+            self.send_notmodified("state_load {}".format(self.pedalboard_path))
+
+        # now load plugin parameters and addressings
+        for instance_id, pluginData in self.plugins.items():
+            if instance_id == PEDALBOARD_INSTANCE_ID:
+                continue
+
             if -1 not in pluginData['bypassCC']:
                 mchnnl, mctrl = pluginData['bypassCC']
                 websocket.write_message("midi_map %s :bypass %i %i 0.0 1.0" % (pluginData['instance'], mchnnl, mctrl))
@@ -1814,7 +1827,6 @@ class Host(object):
                 websocket.write_message("preset %s %s" % (pluginData['instance'], pluginData['preset']))
 
             if crashed:
-                self.send_notmodified("add %s %d" % (pluginData['uri'], instance_id))
                 if pluginData['bypassed']:
                     self.send_notmodified("bypass %d 1" % (instance_id,))
                 if -1 not in pluginData['bypassCC']:
@@ -1990,8 +2002,9 @@ class Host(object):
         current_addressing['value'] = float(value)
 
         if actuator_type == Addressings.ADDRESSING_TYPE_CC:
-            return self.send_modified("cc_value_set %d %s %f" % (instance_id, portsymbol, current_addressing['value']),
-                                      callback, datatype='boolean')
+            self.send_modified("cc_value_set %d %s %f" % (instance_id, portsymbol, current_addressing['value']),
+                               callback, datatype='boolean')
+            return
 
         if actuator_type != Addressings.ADDRESSING_TYPE_HMI:
             if callback is not None:
@@ -4094,13 +4107,6 @@ _:b%i
         self.transport_bpb = bpb
         self.profile.set_tempo_bpb(bpb)
 
-        # If bpb is addressed to an actuator, then set value on hmi if currently displayed
-        if sendHMIAddressing:
-            try:
-                yield gen.Task(self.paramhmi_set, 'pedalboard', ":bpb", bpb)
-            except Exception as e:
-                logging.exception(e)
-
         if sendHost:
             self.send_modified("transport %i %f %f" % (self.transport_rolling,
                                                        self.transport_bpb,
@@ -4113,6 +4119,13 @@ _:b%i
                 pluginData['ports'][bpb_symbol] = bpb
                 if sendHost:
                     self.msg_callback("param_set %s %s %f" % (pluginData['instance'], bpb_symbol, bpb))
+
+        # If bpb is addressed to an actuator, then set value on hmi if currently displayed
+        if sendHMIAddressing:
+            try:
+                yield gen.Task(self.paramhmi_set, 'pedalboard', ":bpb", bpb)
+            except Exception as e:
+                logging.exception(e)
 
         if sendHMI and self.hmi.initialized:
             try:
@@ -4130,6 +4143,19 @@ _:b%i
     def set_transport_bpm(self, bpm, sendHost, sendHMI, sendWeb, sendHMIAddressing, callback=None, datatype='int'):
         self.transport_bpm = bpm
         self.profile.set_tempo_bpm(bpm)
+
+        if sendHost:
+            self.send_modified("transport %i %f %f" % (self.transport_rolling,
+                                                       self.transport_bpb,
+                                                       self.transport_bpm), callback, datatype)
+
+        for pluginData in self.plugins.values():
+            bpm_symbol = pluginData['designations'][self.DESIGNATIONS_INDEX_BPM]
+
+            if bpm_symbol is not None:
+                pluginData['ports'][bpm_symbol] = bpm
+                if sendHost:
+                    self.msg_callback("param_set %s %s %f" % (pluginData['instance'], bpm_symbol, bpm))
 
         for actuator_uri in self.addressings.virtual_addressings:
             addrs = self.addressings.virtual_addressings[actuator_uri]
@@ -4153,19 +4179,6 @@ _:b%i
                 yield gen.Task(self.paramhmi_set, 'pedalboard', ":bpm", bpm)
             except Exception as e:
                 logging.exception(e)
-
-        if sendHost:
-            self.send_modified("transport %i %f %f" % (self.transport_rolling,
-                                                       self.transport_bpb,
-                                                       self.transport_bpm), callback, datatype)
-
-        for pluginData in self.plugins.values():
-            bpm_symbol = pluginData['designations'][self.DESIGNATIONS_INDEX_BPM]
-
-            if bpm_symbol is not None:
-                pluginData['ports'][bpm_symbol] = bpm
-                if sendHost:
-                    self.msg_callback("param_set %s %s %f" % (pluginData['instance'], bpm_symbol, bpm))
 
         if sendHMI and self.hmi.initialized:
             try:
@@ -5178,6 +5191,10 @@ _:b%i
             logging.exception(e)
 
     def hmi_save_current_pedalboard(self, callback):
+        if not self.pedalboard_path:
+            callback(True)
+            return
+
         def host_callback(ok):
             os.sync()
             callback(True)
@@ -5224,7 +5241,7 @@ _:b%i
 
             # if bypassed, do it now
             if diffBypass and bypassed:
-                #self.msg_callback("param_set %s :bypass 1.0" % (instance,))
+                self.msg_callback("param_set %s :bypass 1.0" % (instance,))
                 try:
                     yield gen.Task(self.bypass, instance, True)
                 except Exception as e:
@@ -5232,7 +5249,7 @@ _:b%i
 
             if p['preset'] and pluginData['preset'] != p['preset']:
                 pluginData['preset'] = p['preset']
-                #self.msg_callback("preset %s %s" % (instance, p['preset']))
+                self.msg_callback("preset %s %s" % (instance, p['preset']))
                 try:
                     yield gen.Task(self.send_notmodified, "preset_load %d %s" % (instance_id, p['preset']))
                 except Exception as e:
@@ -5252,7 +5269,7 @@ _:b%i
                     continue
 
                 pluginData['ports'][symbol] = value
-                #self.msg_callback("param_set %s %s %f" % (instance, symbol, value))
+                self.msg_callback("param_set %s %s %f" % (instance, symbol, value))
                 try:
                     yield gen.Task(self.send_notmodified, "param_set %d %s %f" % (instance_id, symbol, value))
                 except Exception as e:
@@ -5266,7 +5283,7 @@ _:b%i
 
             # if not bypassed (enabled), do it at the end
             if diffBypass and not bypassed:
-                #self.msg_callback("param_set %s :bypass 0.0" % (instance,))
+                self.msg_callback("param_set %s :bypass 0.0" % (instance,))
                 try:
                     yield gen.Task(self.bypass, instance, False)
                 except Exception as e:
@@ -5350,7 +5367,7 @@ _:b%i
         try:
             item_str = menu_item_id_to_str(item)
         except ValueError:
-            logging.debug("hmi_menu_item_change - invalid item id `%i`", item)
+            logging.error("hmi_menu_item_change - invalid item id `%i`", item)
             return
 
         logging.debug("hmi_menu_item_change %i:%s %i", item, item_str, value)
