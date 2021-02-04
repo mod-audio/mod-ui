@@ -1795,6 +1795,7 @@ class Host(object):
             PEDALBOARD_INSTANCE_ID: PEDALBOARD_INSTANCE
         }
 
+        # load plugins first
         for instance_id, pluginData in self.plugins.items():
             if instance_id == PEDALBOARD_INSTANCE_ID:
                 continue
@@ -1806,6 +1807,18 @@ class Host(object):
                                                                    int(pluginData['bypassed']),
                                                                    int(bool(pluginData['buildEnv']))))
 
+            if crashed:
+                self.send_notmodified("add %s %d" % (pluginData['uri'], instance_id))
+
+        # load plugin state if relevant
+        if crashed and self.pedalboard_path:
+            self.send_notmodified("state_load {}".format(self.pedalboard_path))
+
+        # now load plugin parameters and addressings
+        for instance_id, pluginData in self.plugins.items():
+            if instance_id == PEDALBOARD_INSTANCE_ID:
+                continue
+
             if -1 not in pluginData['bypassCC']:
                 mchnnl, mctrl = pluginData['bypassCC']
                 websocket.write_message("midi_map %s :bypass %i %i 0.0 1.0" % (pluginData['instance'], mchnnl, mctrl))
@@ -1814,7 +1827,6 @@ class Host(object):
                 websocket.write_message("preset %s %s" % (pluginData['instance'], pluginData['preset']))
 
             if crashed:
-                self.send_notmodified("add %s %d" % (pluginData['uri'], instance_id))
                 if pluginData['bypassed']:
                     self.send_notmodified("bypass %d 1" % (instance_id,))
                 if -1 not in pluginData['bypassCC']:
