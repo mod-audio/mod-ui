@@ -203,12 +203,16 @@ $('document').ready(function() {
             var tempo    = data[7] === "True" ? true : false
             var dividers = JSON.parse(data[8].replace(/'/g, '"'))
             var page     = data[9]
-            if (page != null) {
+            if (page != "null") {
                 page = parseInt(page)
+            } else {
+                page = null
             }
             var subpage  = data[10]
-            if (subpage != null) {
+            if (subpage != "null") {
                 subpage = parseInt(subpage)
+            } else {
+                subpage = null
             }
             var group = data[11]
             var feedback = parseInt(data[12]) == 1
