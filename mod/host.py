@@ -2002,8 +2002,9 @@ class Host(object):
         current_addressing['value'] = float(value)
 
         if actuator_type == Addressings.ADDRESSING_TYPE_CC:
-            return self.send_modified("cc_value_set %d %s %f" % (instance_id, portsymbol, current_addressing['value']),
-                                      callback, datatype='boolean')
+            self.send_modified("cc_value_set %d %s %f" % (instance_id, portsymbol, current_addressing['value']),
+                               callback, datatype='boolean')
+            return
 
         if actuator_type != Addressings.ADDRESSING_TYPE_HMI:
             if callback is not None:
@@ -4106,13 +4107,6 @@ _:b%i
         self.transport_bpb = bpb
         self.profile.set_tempo_bpb(bpb)
 
-        # If bpb is addressed to an actuator, then set value on hmi if currently displayed
-        if sendHMIAddressing:
-            try:
-                yield gen.Task(self.paramhmi_set, 'pedalboard', ":bpb", bpb)
-            except Exception as e:
-                logging.exception(e)
-
         if sendHost:
             self.send_modified("transport %i %f %f" % (self.transport_rolling,
                                                        self.transport_bpb,
@@ -4125,6 +4119,13 @@ _:b%i
                 pluginData['ports'][bpb_symbol] = bpb
                 if sendHost:
                     self.msg_callback("param_set %s %s %f" % (pluginData['instance'], bpb_symbol, bpb))
+
+        # If bpb is addressed to an actuator, then set value on hmi if currently displayed
+        if sendHMIAddressing:
+            try:
+                yield gen.Task(self.paramhmi_set, 'pedalboard', ":bpb", bpb)
+            except Exception as e:
+                logging.exception(e)
 
         if sendHMI and self.hmi.initialized:
             try:
@@ -4142,6 +4143,19 @@ _:b%i
     def set_transport_bpm(self, bpm, sendHost, sendHMI, sendWeb, sendHMIAddressing, callback=None, datatype='int'):
         self.transport_bpm = bpm
         self.profile.set_tempo_bpm(bpm)
+
+        if sendHost:
+            self.send_modified("transport %i %f %f" % (self.transport_rolling,
+                                                       self.transport_bpb,
+                                                       self.transport_bpm), callback, datatype)
+
+        for pluginData in self.plugins.values():
+            bpm_symbol = pluginData['designations'][self.DESIGNATIONS_INDEX_BPM]
+
+            if bpm_symbol is not None:
+                pluginData['ports'][bpm_symbol] = bpm
+                if sendHost:
+                    self.msg_callback("param_set %s %s %f" % (pluginData['instance'], bpm_symbol, bpm))
 
         for actuator_uri in self.addressings.virtual_addressings:
             addrs = self.addressings.virtual_addressings[actuator_uri]
@@ -4165,19 +4179,6 @@ _:b%i
                 yield gen.Task(self.paramhmi_set, 'pedalboard', ":bpm", bpm)
             except Exception as e:
                 logging.exception(e)
-
-        if sendHost:
-            self.send_modified("transport %i %f %f" % (self.transport_rolling,
-                                                       self.transport_bpb,
-                                                       self.transport_bpm), callback, datatype)
-
-        for pluginData in self.plugins.values():
-            bpm_symbol = pluginData['designations'][self.DESIGNATIONS_INDEX_BPM]
-
-            if bpm_symbol is not None:
-                pluginData['ports'][bpm_symbol] = bpm
-                if sendHost:
-                    self.msg_callback("param_set %s %s %f" % (pluginData['instance'], bpm_symbol, bpm))
 
         if sendHMI and self.hmi.initialized:
             try:
@@ -5366,7 +5367,7 @@ _:b%i
         try:
             item_str = menu_item_id_to_str(item)
         except ValueError:
-            logging.debug("hmi_menu_item_change - invalid item id `%i`", item)
+            logging.error("hmi_menu_item_change - invalid item id `%i`", item)
             return
 
         logging.debug("hmi_menu_item_change %i:%s %i", item, item_str, value)
