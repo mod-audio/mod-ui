@@ -5156,6 +5156,10 @@ _:b%i
             logging.exception(e)
 
     def hmi_save_current_pedalboard(self, callback):
+        if not self.pedalboard_path:
+            callback(True)
+            return
+
         def host_callback(ok):
             os.sync()
             callback(True)
@@ -5202,7 +5206,7 @@ _:b%i
 
             # if bypassed, do it now
             if diffBypass and bypassed:
-                #self.msg_callback("param_set %s :bypass 1.0" % (instance,))
+                self.msg_callback("param_set %s :bypass 1.0" % (instance,))
                 try:
                     yield gen.Task(self.bypass, instance, True)
                 except Exception as e:
@@ -5210,7 +5214,7 @@ _:b%i
 
             if p['preset'] and pluginData['preset'] != p['preset']:
                 pluginData['preset'] = p['preset']
-                #self.msg_callback("preset %s %s" % (instance, p['preset']))
+                self.msg_callback("preset %s %s" % (instance, p['preset']))
                 try:
                     yield gen.Task(self.send_notmodified, "preset_load %d %s" % (instance_id, p['preset']))
                 except Exception as e:
@@ -5230,7 +5234,7 @@ _:b%i
                     continue
 
                 pluginData['ports'][symbol] = value
-                #self.msg_callback("param_set %s %s %f" % (instance, symbol, value))
+                self.msg_callback("param_set %s %s %f" % (instance, symbol, value))
                 try:
                     yield gen.Task(self.send_notmodified, "param_set %d %s %f" % (instance_id, symbol, value))
                 except Exception as e:
@@ -5244,7 +5248,7 @@ _:b%i
 
             # if not bypassed (enabled), do it at the end
             if diffBypass and not bypassed:
-                #self.msg_callback("param_set %s :bypass 0.0" % (instance,))
+                self.msg_callback("param_set %s :bypass 0.0" % (instance,))
                 try:
                     yield gen.Task(self.bypass, instance, False)
                 except Exception as e:
