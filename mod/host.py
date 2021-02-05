@@ -2888,6 +2888,11 @@ class Host(object):
                 num = data[2].replace("nooice_capture_","",1)
                 return "nooice%s:nooice_capture_%s" % (num, num)
 
+            # Handle fake input
+            if data[2].startswith("fake_capture_"):
+                num = data[2].replace("fake_capture_", "", 1)
+                return "fake-input:fake_capture_{0}".format(num)
+
             # Handle the Control Voltage ports
             if data[2].startswith("cv_capture_"):
                 num = data[2].replace("cv_capture_", "", 1)
