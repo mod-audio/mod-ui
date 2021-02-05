@@ -393,6 +393,7 @@ function HardwareManager(options) {
 
       if (currentActuator && currentActuator.modes.indexOf(":momentarytoggle:") >= 0 &&
           port.properties.indexOf("enumeration") < 0 &&
+          port.properties.indexOf("tapTempo") < 0 &&
           port.properties.indexOf("trigger") < 0)
       {
         momentarySwMode.removeClass('disabled').parent().parent().show()
