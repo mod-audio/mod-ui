@@ -2722,6 +2722,8 @@ class Host(object):
                         used_actuators.append(addressing['actuator_uri'])
 
             for uri, param in data['parameters'].items():
+                if pluginData['parameters'].get(uri, None) in (param, None):
+                    continue
                 self.msg_callback("patch_set %s 1 %s %s %s" % (instance, uri, param[1], param[0]))
                 try:
                     yield gen.Task(self.patch_set, instance, uri, param[0])
