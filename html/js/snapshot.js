@@ -141,7 +141,7 @@ function SnapshotsManager(options) {
         }
 
         var port = {
-            name: 'Presets',
+            name: 'Snapshots',
             symbol: ':presets',
             ranges: {
                 minimum: -1,
