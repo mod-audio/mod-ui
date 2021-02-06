@@ -2149,6 +2149,7 @@ class FilesList(JsonRequestHandler):
                     retfiles.append({
                         'fullname': os.path.join(root, name),
                         'basename': name,
+                        'filetype': filetype,
                     })
 
         self.write({
