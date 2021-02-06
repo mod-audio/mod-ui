@@ -1163,7 +1163,7 @@ class ServerWebSocket(websocket.WebSocketHandler):
             data = data[1].split(" ",2)
             inst = data[0]
             uri  = data[1]
-            SESSION.ws_patch_get(inst, uri, value, self)
+            SESSION.ws_patch_get(inst, uri, self)
 
         elif cmd == "patch_set":
             data  = data[1].split(" ",3)
