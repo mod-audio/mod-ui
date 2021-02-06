@@ -320,16 +320,10 @@ class Session(object):
 
     # LV2 patch support
     def ws_patch_get(self, instance, uri, ws):
-        def resp(ok):
-            print("host patch_get responded with", ok)
-
-        self.host.patch_get(instance, uri, resp)
+        self.host.patch_get(instance, uri, None)
 
     def ws_patch_set(self, instance, uri, valuetype, valuedata, ws):
-        def resp(ok):
-            print("host patch_set responded with", ok)
-
-        writable = self.host.patch_set(instance, uri, valuedata, resp)
+        writable = self.host.patch_set(instance, uri, valuedata, None)
         self.msg_callback_broadcast("patch_set %s %d %s %c %s" % (instance,
                                                                   1 if writable else 0,
                                                                   uri, valuetype, valuedata), ws)

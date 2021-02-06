@@ -2318,8 +2318,7 @@ class Host(object):
     def patch_get(self, instance, uri, callback):
         instance_id = self.mapper.get_id_without_creating(instance)
 
-        print("mod-host sent param_get %d %s" % (instance_id, uri))
-        self.send_modified("param_get %d %s" % (instance_id, uri), callback, datatype='boolean')
+        self.send_modified("patch_get %d %s" % (instance_id, uri), callback, datatype='boolean')
 
     def patch_set(self, instance, uri, value, callback):
         instance_id = self.mapper.get_id_without_creating(instance)
