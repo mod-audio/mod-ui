@@ -627,10 +627,10 @@ function GUI(effect, options) {
             return parseFloat(value)
         case 'v':
             var snum, stype
-            value = value.split(/-/,3)
-            snum  = parseInt(value[0])
-            stype = value[1]
-            value = value[2].split(/:/,snum)
+            var svalue = value.split(/-/,2)
+            snum  = parseInt(svalue[0])
+            stype = svalue[1]
+            value = value.substr(value.indexOf(stype+'-')+2).split(/:/,snum)
             switch (stype)
             {
             case 'b':
