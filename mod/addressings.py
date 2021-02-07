@@ -898,7 +898,8 @@ class Addressings(object):
                 # if new addressing page is not the same as the currently displayed page
                 if self.current_page != addressing_data['page'] or actuator_subpage != addressing_data['subpage']:
                     # then no need to send control_add to hmi
-                    callback(True)
+                    if callback is not None:
+                        callback(True)
                     return
             else:
                 # HMI specific
