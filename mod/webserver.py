@@ -1176,7 +1176,7 @@ class ServerWebSocket(websocket.WebSocketHandler):
 
         elif cmd == "transport-rolling":
             rolling = bool(int(data[1]))
-            SESSION.host.set_transport_rolling(rolling, True, True, False)
+            SESSION.host.set_transport_rolling(rolling, True, True, False, False)
 
         else:
             print("Unexpected command received over websocket")
