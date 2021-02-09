@@ -378,8 +378,10 @@ class Session(object):
         if self.hmi.initialized:
             def set_pb_name(_):
                 self.hmi.set_pedalboard_name(UNTITLED_PEDALBOARD_NAME, reset_host)
+            def clear_ss_name(_):
+                self.host.hmi_clear_ss_name(set_pb_name)
             def clear_hmi(_):
-                self.hmi.clear(set_pb_name)
+                self.hmi.clear(clear_ss_name)
             self.host.setNavigateWithFootswitches(False, clear_hmi)
         else:
             reset_host(True)
