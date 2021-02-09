@@ -340,7 +340,7 @@ class Host(object):
         self.pedalboard_size     = [0,0]
         self.pedalboard_version  = 0
         self.current_pedalboard_snapshot_id = -1
-        self.pedalboard_snapshots  = []
+        self.pedalboard_snapshots = []
         self.next_hmi_pedalboard_to_load = None
         self.next_hmi_pedalboard_loading = False
         self.next_hmi_bpb = [0, False, False]
@@ -3214,7 +3214,7 @@ class Host(object):
                                                      self.transport_sync))
 
         if bundlepath:
-            self.load_pb_snapshots(pb['plugins'], bundlepath)
+            ssparameters = self.load_pb_snapshots(pb['plugins'], bundlepath)
         self.load_pb_plugins(pb['plugins'], instances, rinstances)
         self.load_pb_connections(pb['connections'], mappedOldMidiIns, mappedOldMidiOuts,
                                                     mappedNewMidiIns, mappedNewMidiOuts)
@@ -3222,6 +3222,18 @@ class Host(object):
         if bundlepath:
             self.send_notmodified("state_load {}".format(bundlepath))
             self.addressings.load(bundlepath, instances, skippedPortAddressings, abort_catcher)
+
+            for instance_id, uri, paramvalue, paramtype in ssparameters:
+                pluginData = self.plugins.get(instance_id, None)
+                if pluginData is None:
+                    continue
+                parameter = pluginData['parameters'].get(uri, None)
+                if parameter is None:
+                    continue
+                if parameter[1] != paramtype:
+                    continue
+                parameter[0] = paramvalue
+                self.send_modified("patch_set %d %s \"%s\"" % (instance_id, uri, paramvalue.replace('"','\\"')))
 
         if abort_catcher is not None and abort_catcher.get('abort', False):
             print("WARNING: Abort triggered during PB load request 2, caller:", abort_catcher['caller'])
@@ -3265,26 +3277,37 @@ class Host(object):
         snapshots = safe_json_load(os.path.join(bundlepath, "presets.json"), list)
 
         if len(snapshots) == 0:
-            return
+            return []
 
         self.current_pedalboard_snapshot_id = 0
         self.pedalboard_snapshots = snapshots
 
         initial_snapshot = snapshots[0]['data']
+        ret_parameters = []
 
         for p in plugins:
             pdata = initial_snapshot.get(p['instance'], None)
 
             if pdata is None:
-                print("WARNING: Pedalboard preset missing data for instance name '%s'" % p['instance'])
+                print("WARNING: Pedalboard snapshot missing data for instance name '%s'" % p['instance'])
                 continue
 
             p['bypassed'] = pdata['bypassed']
 
+            ssports = pdata['ports']
             for port in p['ports']:
-                port['value'] = pdata['ports'].get(port['symbol'], port['value'])
+                port['value'] = ssports.get(port['symbol'], port['value'])
 
             p['preset'] = pdata['preset']
+
+            # parameters were added in v1.10
+            ssparameters = pdata.get('parameters', None)
+
+            if ssparameters is not None:
+                for uri, ssparameter in ssparameters.items():
+                    ret_parameters.append((p['instanceNumber'], uri, ssparameter[0], ssparameter[1]))
+
+        return ret_parameters
 
     def load_pb_plugins(self, plugins, instances, rinstances):
         for p in plugins:
@@ -3577,8 +3600,8 @@ class Host(object):
         self.addressings.save(bundlepath, instances)
 
     def save_state_presets(self, bundlepath):
-        # Write presets.json. NOTE: keep the filename for backwards
-        # compatibility. TODO: Add to global settings.
+        # Write presets.json. NOTE: keep the filename for backwards compatibility.
+        # TODO: Add to global settings.
         snapshots_filepath = os.path.join(bundlepath, "presets.json")
 
         if len(self.pedalboard_snapshots) > 1:
@@ -3605,7 +3628,7 @@ class Host(object):
 
             snapshots = [p for p in self.pedalboard_snapshots if p is not None]
             with TextFileFlusher(snapshots_filepath) as fh:
-                json.dump(snapshots, fh)
+                json.dump(snapshots, fh, indent=4)
 
         elif os.path.exists(snapshots_filepath):
             os.remove(snapshots_filepath)
@@ -5723,6 +5746,15 @@ _:b%i
     def hmi_set_pb_name(self, name):
         if self.hmi.initialized and self.descriptor.get('hmi_set_pb_name', False):
             yield gen.Task(self.hmi.set_pedalboard_name, name)
+
+    @gen.coroutine
+    def hmi_set_pb_and_ss_name(self, pbname):
+        if self.hmi.initialized and self.descriptor.get('hmi_set_pb_name', False):
+            yield gen.Task(self.hmi.set_pedalboard_name, pbname)
+
+            if self.descriptor.get('hmi_set_ss_name', False):
+                ssname = self.snapshot_name() or DEFAULT_SNAPSHOT_NAME
+                yield gen.Task(self.hmi.set_snapshot_name, ssname)
 
     def hmi_clear_ss_name(self, callback):
         if self.hmi.initialized and self.descriptor.get('hmi_set_ss_name', False):

@@ -359,7 +359,7 @@ class Session(object):
             title = ""
 
         if self.hmi.initialized:
-            self.host.hmi_set_pb_name(title or UNTITLED_PEDALBOARD_NAME)
+            self.host.hmi_set_pb_and_ss_name(title or UNTITLED_PEDALBOARD_NAME)
 
         self.pedalboard_changed_callback(True, bundlepath, title)
         return title
