@@ -1948,7 +1948,6 @@ class Host(object):
                 self.send_notmodified("connect %s %s" % (self._fix_host_connection_port(port_from),
                                                          self._fix_host_connection_port(port_to)))
 
-        self.addressings.add_cv_plugin_ports(lambda msg: websocket.write_message(msg))
         self.addressings.registerMappings(lambda msg: websocket.write_message(msg), rinstances)
 
         # TODO: restore HMI and CC addressings if crashed
@@ -3256,7 +3255,6 @@ class Host(object):
             print("WARNING: Abort triggered during PB load request 2, caller:", abort_catcher['caller'])
             return
 
-        self.addressings.add_cv_plugin_ports(self.msg_callback)
         self.addressings.registerMappings(self.msg_callback, rinstances)
 
         self.msg_callback("loading_end %d" % self.current_pedalboard_snapshot_id)
