@@ -550,6 +550,13 @@ class Addressings(object):
             json.dump(addressings, fh, indent=4)
 
     def registerMappings(self, msg_callback, instances):
+        # CV plugin ports
+        for actuator_uri, addrs in self.cv_addressings.items():
+            # pluginData = self._task_get_plugin_data(instance_id)
+            if not self.is_hw_cv_port(actuator_uri):
+                operational_mode = self._task_get_plugin_cv_port_op_mode(actuator_uri)
+                msg_callback("add_cv_port %s %s %s" % (actuator_uri, addrs['name'].replace(" ","_"), operational_mode))
+
         # HMI
         group_mappings = [] #{} if self.addressing_pages else []
         for uri, addrs in self.hmi_addressings.items():
@@ -1342,13 +1349,6 @@ class Addressings(object):
         if actuator_uri.startswith(HW_CV_PREFIX):
             return True
         return False
-
-    def add_cv_plugin_ports(self, msg_callback):
-        for actuator_uri, addrs in self.cv_addressings.items():
-            # pluginData = self._task_get_plugin_data(instance_id)
-            if not self.is_hw_cv_port(actuator_uri):
-                operational_mode = self._task_get_plugin_cv_port_op_mode(actuator_uri)
-                msg_callback("add_cv_port %s %s %s" % (actuator_uri, addrs['name'].replace(" ","_"), operational_mode))
 
     def add_hw_cv_port(self, actuator_uri):
         if not self.is_hw_cv_port(actuator_uri):
