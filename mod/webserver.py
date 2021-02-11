@@ -1192,7 +1192,7 @@ class OnlineInstanceWebSocket(websocket.WebSocketHandler):
         SESSION.online_instance_websocket_closed()
 
     def on_message(self, message):
-        data = message.split(" ",1)
+        data = message.split(" ")
         cmd  = data[0]
 
         if cmd == "load":
@@ -1200,6 +1200,15 @@ class OnlineInstanceWebSocket(websocket.WebSocketHandler):
 
         elif cmd == "release":
             SESSION.release_virtual_device()
+
+        elif cmd == "select_audio":
+            SESSION.host.webrtc_select_audio(int(data[1]), data[2])
+
+        elif cmd == "play":
+            SESSION.host.webrtc_play(int(data[1]))
+
+        elif cmd == "stop":
+            SESSION.host.webrtc_stop(int(data[2]))
 
         else:
             print("Unexpected command received over online instance websocket")

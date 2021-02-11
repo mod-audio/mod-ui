@@ -481,7 +481,6 @@ class Host(object):
             self.player_state[input_number] = {
                 'instance_id': instance_id,
                 'selected_audio': None,
-                'loop': False,
                 'playing': False,
             }
 
@@ -971,20 +970,13 @@ class Host(object):
         # All set, disable HW bypass now
         init_bypass()
 
-    def set_webrtc_audiofile(self, input_number, filename):
+    def webrtc_select_audio(self, input_number, filename):
         state =  self.player_state[input_number]
         state['selected_audio'] = filename.replace('"','\\"')))
         if state['playing']:
             self.send_notmodified("patch_set %d %s \"%s\"" % (state['instance_id'],
                                                               AUDIOFILE_URI,
                                                               filename.replace('"','\\"')))
-
-    def set_webrtc_loop(self, input_number, loop):
-        state =  self.player_state[input_number]
-        state['loop'] = 1 if loop else 0
-        if state['playing']:
-            self.send_notmodified("param_set %d loop %d" % (state['instance_id'], state['loop']))
-            pass #TODO change parameter
 
     def webrtc_play(self, input_number):
         state =  self.player_state[input_number]
@@ -994,8 +986,7 @@ class Host(object):
         self.send_notmodified("patch_set %d %s \"%s\"" % (state['instance_id'],
                                                           AUDIOFILE_URI,
                                                           state['selected_audio']))
-        if state['loop']:
-            self.send_notmodified("param_set %d loop %d" % (state['instance_id'], state['loop']))
+        self.send_notmodified("param_set %d loop_mode 1" % (state['instance_id']))
         state['playing'] = True
 
     def webrtc_stop(self, input_number):
