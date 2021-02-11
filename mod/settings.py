@@ -92,6 +92,13 @@ PEDALBOARDS_LABS_HTTP_ADDRESS = os.environ.pop('MOD_PEDALBOARDS_LABS_HTTP_ADDRES
 CONTROLCHAIN_HTTP_ADDRESS = os.environ.pop('MOD_CONTROLCHAIN_HTTP_ADDRESS',
                                            "http://download.moddevices.com/releases/cc-firmware/v2")
 
+AUDIOFILE_URI = "http://kxstudio.sf.net/carla/plugins/audiofile"
+AUDIOFILE_INSTANCE_IDS = {
+    1: 9991,
+    2: 9992,
+}
+AUDIOFILE_OUTPUT_PORT_PREFIX = "lv2_audio_out_"
+
 MIDI_BEAT_CLOCK_SENDER_URI = "urn:mod:mclk"
 MIDI_BEAT_CLOCK_SENDER_INSTANCE_ID = 9993
 MIDI_BEAT_CLOCK_SENDER_OUTPUT_PORT = "mclk" # This is the LV2 symbol of the plug-ins OutputPort
