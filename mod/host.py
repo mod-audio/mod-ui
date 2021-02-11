@@ -1191,9 +1191,12 @@ class Host(object):
     def reconnect_hmi(self, hmi):
         abort_catcher = self.abort_previous_loading_progress("reconnect_hmi")
         self.hmi = hmi
-        self.hmi_snapshots = [None, None, None]
         self.next_hmi_pedalboard_to_load = None
         self.next_hmi_pedalboard_loading = False
+        self.next_hmi_bpb = [0, False, False]
+        self.next_hmi_bpm = [0, False, False]
+        self.next_hmi_play = [False, False, False]
+        self.hmi_snapshots = [None, None, None]
         self.processing_pending_flag = False
         self.open_connection_if_needed(None)
 
@@ -2018,6 +2021,7 @@ class Host(object):
         self.addressings.clear()
         self.mapper.clear()
         self.snapshot_clear()
+        self.hmi_snapshots = [None, None, None]
 
         self.pedalboard_empty    = True
         self.pedalboard_modified = False
@@ -2724,8 +2728,14 @@ class Host(object):
     @gen.coroutine
     def snapshot_load(self, idx, from_hmi, abort_catcher, callback):
         if idx in (self.HMI_SNAPSHOTS_1, self.HMI_SNAPSHOTS_2, self.HMI_SNAPSHOTS_3):
-            snapshot = self.hmi_snapshots[abs(idx + self.HMI_SNAPSHOTS_OFFSET)]
+            idx = abs(idx + self.HMI_SNAPSHOTS_OFFSET)
+            snapshot = self.hmi_snapshots[idx]
             is_hmi_snapshot = True
+
+            if snapshot is None:
+                print("ERROR: Asked to load an invalid HMI preset, number", idx)
+                callback(False)
+                return
 
         else:
             if idx < 0 or idx >= len(self.pedalboard_snapshots):
@@ -2736,7 +2746,7 @@ class Host(object):
             is_hmi_snapshot = False
 
             if snapshot is None:
-                print("ERROR: Asked to load an invalid pedalboard preset, number", idx)
+                print("ERROR: Asked to load an invalid pedalboard snapshot, number", idx)
                 callback(False)
                 return
 
