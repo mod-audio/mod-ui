@@ -1335,3 +1335,13 @@ svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1001
 .preset-manager .mod-list .mod-button.mod-button-edit {
     right: 113px;
 }
+
+/* = PEDALBOARD - SNAPSHOTS
+================================================ */
+#pedal-presets-list {
+    background-color: inherit;
+}
+#pedal-presets-list-input::selection {
+    background: #883996 !important;
+    color: white !important;
+}
