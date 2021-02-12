@@ -2380,7 +2380,8 @@ class Host(object):
 
         if symbol in pluginData['designations']:
             print("ERROR: Trying to modify a specially designated port '%s', stop!" % symbol)
-            callback(False)
+            if callback is not None:
+                callback(False)
             return
 
         pluginData['ports'][symbol] = value
