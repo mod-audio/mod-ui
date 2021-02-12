@@ -1024,6 +1024,25 @@ function GUI(effect, options) {
                 presetElem.hide()
             }
 
+            if (instance && self.effect.parameters.length)
+            {
+                self.settings.find('.mod-file-list').each(function () {
+                    var elem = $(this)
+                    var list = elem.find('.mod-enumerated-list')
+                    if (list.length == 1 && list[0].childElementCount > 5) {
+                        elem.find('.file-list-btn-expand').click(function () {
+                            if (elem.hasClass('expanded')) {
+                                elem.removeClass('expanded')
+                            } else {
+                                elem.addClass('expanded')
+                            }
+                        })
+                    } else {
+                        elem.find('.file-list-btn-expand').hide()
+                    }
+                })
+            }
+
             if (! instance) {
                 self.settings.find(".js-close").hide()
                 self.settings.find(".mod-address").hide()
