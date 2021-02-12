@@ -428,8 +428,32 @@ body > .mod-settings.mod-window-visible {
     overflow:auto;
     position:relative;
 }
+.mod-pedal-settings .mod-enumerated.mod-file-list .mod-file-list-buttons {
+    position: absolute;
+    top: 0px;
+    right: 0px;
+    margin: 3px;
+}
 .mod-pedal-settings .mod-enumerated.mod-file-list .mod-enumerated-list {
     height:130px;
+}
+.mod-pedal-settings .mod-enumerated.mod-file-list.expanded .mod-enumerated-list {
+    height: calc(100vh - 175px);
+    z-index: 1;
+}
+.mod-pedal-settings .mod-enumerated.mod-file-list .btn-primary {
+    background-color: black;
+    border-color: #773284;
+}
+.mod-pedal-settings .mod-enumerated.mod-file-list .btn-primary:hover {
+    border-color: #4f2157;
+}
+.mod-pedal-settings .mod-enumerated.mod-file-list.expanded .btn-primary {
+    background-color: #773284;
+    border-color: black;
+}
+.mod-pedal-settings .mod-enumerated.mod-file-list.expanded .btn-primary:hover {
+    background-color: #883996;
 }
 
 .mod-pedal-settings .mod-enumerated .mod-enumerated-list > div {
