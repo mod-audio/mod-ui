@@ -215,7 +215,13 @@ def take_screenshot(bundle_path, html_dir, cache_dir, size):
         # read plugin image
         gui = get_plugin_gui(p['uri'])
         screenshot_path = gui.get('screenshot', None)
-        pimg = Image.open(screenshot_path).convert('RGBA') if screenshot_path else default_screenshot
+        if screenshot_path is not None and os.path.isfile(screenshot_path):
+            try:
+                pimg = Image.open(screenshot_path).convert('RGBA')
+            except:
+                screenshot_path = None
+        if screenshot_path is None:
+            pimg = default_screenshot
         p['img'] = pimg
 
         in_ports = data['ports']['audio']['input'] + data['ports']['midi']['input'] + data['ports']['cv']['input']
@@ -226,10 +232,16 @@ def take_screenshot(bundle_path, html_dir, cache_dir, size):
             version = '{0}.{1}'.format(data['version'], data.get('release', 0)).replace('.', '_')
             encoded_uri = base64.b64encode(p['uri'].encode()).decode()
             filename = os.path.join(cache_dir, '{0}_{1}_{2}'.format(__version__.replace('.', '_'), encoded_uri, version))
+            validcache = False
             if os.path.isfile(filename):
                 with open(filename, 'r') as fh:
-                    columns = json.loads(fh.read())
-            else:
+                    try:
+                        columns = json.loads(fh.read())
+                    except:
+                        pass
+                    else:
+                        validcache = 'in_ports' in columns and 'out_ports' in columns
+            if not validcache:
                 columns = {
                     'in_ports': tuple(tuple(c) for c in detect_first_column(pimg, pimg.size[0], len(in_ports))),
                     'out_ports': tuple(tuple(c) for c in detect_first_column(pimg, pimg.size[0], len(out_ports), rtol=True)),
@@ -238,8 +250,9 @@ def take_screenshot(bundle_path, html_dir, cache_dir, size):
                     fh.write(json.dumps(columns))
         else:  # tuna can, we have to guess the position of the connectors
             columns = {
-                # 4 inputs, 16 outputs; plugins don't usually have more than this
-                'in_ports': ((-9, 121), (-9, 146), (-9, 190), (-9, 215), (-9, 259), (-9, -284), (-9, 328), (-9, 353)),
+                # 8 inputs, 16 outputs; plugins don't usually have more than this
+                'in_ports': ((-9, 121), (-9, 146), (-9, 190), (-9, 215), (-9, 259), (-9, 284), (-9, 328), (-9, 353),
+                             (-9, 397), (-9, 422), (-9, 466), (-9, 491), (-9, 535), (-9, 560), (-9, 604), (-9, 629)),
                 'out_ports': ((259, 121), (259, 146), (259, 190), (259, 215), (259, 259), (259, 284), (259, 328), (259, 353),
                               (259, 397), (259, 422), (259, 466), (259, 491), (259, 535), (259, 560), (259, 604), (259, 629),
                               (259, 673), (259, 698), (259, 742), (259, 767), (259, 811), (259, 836), (259, 880), (259, 949),

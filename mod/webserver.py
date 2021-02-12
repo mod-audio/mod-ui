@@ -1163,7 +1163,7 @@ class ServerWebSocket(websocket.WebSocketHandler):
             data = data[1].split(" ",2)
             inst = data[0]
             uri  = data[1]
-            SESSION.ws_patch_get(inst, uri, value, self)
+            SESSION.ws_patch_get(inst, uri, self)
 
         elif cmd == "patch_set":
             data  = data[1].split(" ",3)
@@ -1205,7 +1205,7 @@ class ServerWebSocket(websocket.WebSocketHandler):
 
         elif cmd == "transport-rolling":
             rolling = bool(int(data[1]))
-            SESSION.host.set_transport_rolling(rolling, True, True, False)
+            SESSION.host.set_transport_rolling(rolling, True, True, False, False)
 
         else:
             print("Unexpected command received over websocket")
@@ -2149,6 +2149,7 @@ class FilesList(JsonRequestHandler):
                     retfiles.append({
                         'fullname': os.path.join(root, name),
                         'basename': name,
+                        'filetype': filetype,
                     })
 
         self.write({

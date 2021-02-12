@@ -143,8 +143,15 @@ body {
 
 body {
   background: #111;
-
   min-width: 1024px;
+
+  // iOS/iPadOS device-specific styles
+  &.ios {
+    // prevent vertical inertia scrolling
+    position: fixed;
+    // set 980px min-width to match default virtual viewport width
+    min-width: 980px;
+  }
 }
 
 * {

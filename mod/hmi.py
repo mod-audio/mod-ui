@@ -481,7 +481,8 @@ class HMI(object):
     def set_profile_value(self, key, value, callback):
         # Do not send new bpm value to HMI if its int value is the same
         if key == MENU_ID_TEMPO and not self.set_bpm(value):
-            callback(True)
+            if callback is not None:
+                callback(True)
         else:
             if key == MENU_ID_TEMPO:
                 value = self.bpm # set rounded value for bpm

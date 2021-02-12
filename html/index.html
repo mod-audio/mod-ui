@@ -233,6 +233,25 @@ $('document').ready(function() {
         dataType: 'json'
     });
     */
+
+    // add iOS/iPadOS-specific document body class `.ios`
+    (function () {
+        var isiOSPlatform = [
+            'iPad Simulator',
+            'iPhone Simulator',
+            'iPod Simulator',
+            'iPad',
+            'iPhone',
+            'iPod'
+        ].includes(navigator.platform);
+        var isiPadOS13SUserAgent = (navigator.userAgent.includes("Mac") && "ontouchend" in document);
+        var isiOSUserAgent = /(iPad|iPhone|iPod)/g.test(navigator.userAgent);
+        var isiOS = isiOSPlatform || isiPadOS13SUserAgent || isiOSUserAgent;
+
+        if (isiOS) {
+            $('body').addClass('ios');
+        }
+    })();
 })
 </script>
 
@@ -545,7 +564,7 @@ $('document').ready(function() {
                 <form class="bottom">
                     <div class="controls clearfix">
                         <input type="text" name="pedal-presets-list" value="" id="pedal-presets-list-input"/>
-                        <select class="preset-list" size="9" id="pedal-presets-list" style="background-color:inherit;"></select>
+                        <select class="preset-list" size="9" id="pedal-presets-list"></select>
                     </div>
                     <div class="controls actions">
                         <button class="js-rename btn btn-default">Rename</button>

@@ -627,10 +627,10 @@ function GUI(effect, options) {
             return parseFloat(value)
         case 'v':
             var snum, stype
-            value = value.split(/-/,3)
-            snum  = parseInt(value[0])
-            stype = value[1]
-            value = value[2].split(/:/,snum)
+            var svalue = value.split(/-/,2)
+            snum  = parseInt(svalue[0])
+            stype = svalue[1]
+            value = value.substr(value.indexOf(stype+'-')+2).split(/:/,snum)
             switch (stype)
             {
             case 'b':
@@ -1022,6 +1022,25 @@ function GUI(effect, options) {
             else
             {
                 presetElem.hide()
+            }
+
+            if (instance && self.effect.parameters.length)
+            {
+                self.settings.find('.mod-file-list').each(function () {
+                    var elem = $(this)
+                    var list = elem.find('.mod-enumerated-list')
+                    if (list.length == 1 && list[0].childElementCount > 5) {
+                        elem.find('.file-list-btn-expand').click(function () {
+                            if (elem.hasClass('expanded')) {
+                                elem.removeClass('expanded')
+                            } else {
+                                elem.addClass('expanded')
+                            }
+                        })
+                    } else {
+                        elem.find('.file-list-btn-expand').hide()
+                    }
+                })
             }
 
             if (! instance) {
@@ -2229,7 +2248,7 @@ JqueryClass('film', baseWidget, {
         // in this theoric case.
             rotation = Math.round(filmSteps / 2)
         } else if (portSteps != null) {
-            rotation = Math.round(steps) * Math.round(filmSteps / portSteps)
+            rotation = Math.round(steps) * Math.round((filmSteps - 1) / (portSteps - 1))
         }
 
         rotation = Math.min(filmSteps-1, Math.max(0, rotation))
