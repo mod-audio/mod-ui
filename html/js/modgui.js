@@ -1813,17 +1813,20 @@ var baseWidget = {
         self.data('dragPrecisionVertical', Math.ceil(100 / portSteps))
         self.data('dragPrecisionHorizontal', Math.ceil(portSteps / 10))
 
+        var preferredMomentaryMode
+        if (port.properties.indexOf("preferMomentaryOffByDefault") >= 0) {
+            preferredMomentaryMode = 2
+        } else if (port.properties.indexOf("preferMomentaryOnByDefault") >= 0) {
+            preferredMomentaryMode = 1
+        } else {
+            preferredMomentaryMode = 0
+        }
+        self.data('preferredMomentaryMode', preferredMomentaryMode)
+
         // momentary could have been set already, don't override it
         var momentary = self.data('momentary')
         if (momentary === undefined) {
-            if (port.properties.indexOf("preferMomentaryOffByDefault") >= 0) {
-                momentary = 2
-            } else if (port.properties.indexOf("preferMomentaryOnByDefault") >= 0) {
-                momentary = 1
-            } else {
-                momentary = 0
-            }
-            self.data('momentary', momentary)
+            self.data('momentary', preferredMomentaryMode)
         }
     },
 
@@ -1841,11 +1844,15 @@ var baseWidget = {
         $(this).addClass('disabled').data('enabled', false)
     },
     enable: function () {
-        $(this).removeClass('addressed').removeClass('disabled').data('enabled', true)
+        var self = $(this)
+        self.removeClass('addressed').removeClass('disabled').data('enabled', true)
+        // this is called during unaddressing, we can reset momentary mode here
+        self.data('momentary', self.data('preferredMomentaryMode'))
     },
     address: function (momentary) {
-        $(this).data('enabled', true)
-        $(this).data('momentary', momentary)
+        var self = $(this)
+        self.data('enabled', true)
+        self.data('momentary', momentary)
     },
 
     valueFromSteps: function (steps) {
