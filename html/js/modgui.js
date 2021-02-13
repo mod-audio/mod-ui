@@ -1755,6 +1755,7 @@ function JqueryClass() {
 })(jQuery);
 
 var baseWidget = {
+    // NOTE: for filmstrips, config is called with a delay
     config: function (options) {
         var self = $(this)
             // Very quick bugfix. When pedalboard is unserialized, the disable() of addressed knobs
@@ -1812,15 +1813,18 @@ var baseWidget = {
         self.data('dragPrecisionVertical', Math.ceil(100 / portSteps))
         self.data('dragPrecisionHorizontal', Math.ceil(portSteps / 10))
 
-        var momentary
-        if (port.properties.indexOf("preferMomentaryOffByDefault") >= 0) {
-            momentary = 2
-        } else if (port.properties.indexOf("preferMomentaryOnByDefault") >= 0) {
-            momentary = 1
-        } else {
-            momentary = 0
+        // momentary could have been set already, don't override it
+        var momentary = self.data('momentary')
+        if (momentary === undefined) {
+            if (port.properties.indexOf("preferMomentaryOffByDefault") >= 0) {
+                momentary = 2
+            } else if (port.properties.indexOf("preferMomentaryOnByDefault") >= 0) {
+                momentary = 1
+            } else {
+                momentary = 0
+            }
+            self.data('momentary', momentary)
         }
-        self.data('momentary', momentary)
     },
 
     setValue: function (value, only_gui) {
