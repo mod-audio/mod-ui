@@ -24,15 +24,15 @@
 <meta name="msapplication-TileImage" content="img/favicon/ms-icon-144x144.png">
 <meta name="theme-color" content="#111111">
 
-<link rel="stylesheet" type="text/css" href="css/fontello/css/fontello.css?v={{version}}"/>
 <link rel="stylesheet" type="text/css" href="css/main.css?v={{version}}"/>
 <link rel="stylesheet" type="text/css" href="css/dashboard.css?v={{version}}"/>
-<link rel="stylesheet" type="text/css" href="css/fonts.css?v={{version}}"/>
-<link rel="stylesheet" type="text/css" href="img/icons/icons.css?v={{version}}"/>
-<link rel="stylesheet" type="text/css" href="css/pedals.css?v={{version}}"/>
-<link rel="stylesheet" type="text/css" href="resources/pedals/default.css?v={{version}}"/>
-<link rel="stylesheet" type="text/css" href="js/lib/slick/slick.css?v={{version}}"/>
-<link rel="stylesheet" type="text/css" href="js/lib/slick/slick-theme.css?v={{version}}"/>
+<link rel="preload" href="css/fontello/css/fontello.css?v={{version}}" as="style" onload="this.onload=null;this.rel='stylesheet'">
+<link rel="preload" href="css/fonts.css?v={{version}}" as="style" onload="this.onload=null;this.rel='stylesheet'">
+<link rel="preload" href="css/pedals.css?v={{version}}" as="style" onload="this.onload=null;this.rel='stylesheet'">
+<link rel="preload" href="img/icons/icons.css?v={{version}}" as="style" onload="this.onload=null;this.rel='stylesheet'">
+<link rel="preload" href="js/lib/slick/slick.css?v={{version}}" as="style" onload="this.onload=null;this.rel='stylesheet'">
+<link rel="preload" href="js/lib/slick/slick-theme.css?v={{version}}" as="style" onload="this.onload=null;this.rel='stylesheet'">
+<link rel="preload" href="resources/pedals/default.css?v={{version}}" as="style" onload="this.onload=null;this.rel='stylesheet'">
 
 <style type="text/css">
     /* STYLE FOR LOADING ANIMATION */
@@ -54,7 +54,7 @@
 <script type="text/javascript" src="js/lib/jquery.textareaAutoResize.js?v={{version}}"></script>
 <script type="text/javascript" src="js/lib/arrive.min.js?v={{version}}"></script>
 <script type="text/javascript" src="js/lib/lunr.min.js?v={{version}}"></script>
-<script type="text/javascript" src="js/lib/slick/slick.min.js?v={{version}}"></script>
+<script type="text/javascript" async src="js/lib/slick/slick.min.js?v={{version}}"></script>
 
 <script type="text/javascript">
     {% autoescape None %}
