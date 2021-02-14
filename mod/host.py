@@ -366,7 +366,10 @@ class Host(object):
             self.jack_hwin_prefix  = "mod-monitor:in_"
             self.jack_hwout_prefix = "mod-monitor:out_"
 
+        # used for network-manager
         self.jack_slave_prefix = "mod-slave"
+        # used for usb gadget, MUST have "c" or "p" after this prefix
+        self.jack_usbgadget_prefix = "mod-usbgadget_"
 
         # checked when saving pedal presets
         self.plugins_added = []
@@ -500,6 +503,14 @@ class Host(object):
                 ptype = "audio"
 
             index = 100 + int(name.rsplit("_",1)[-1])
+            title = name.title().replace(" ","_")
+            self.msg_callback("add_hw_port /graph/%s %s %i %s %i" % (name, ptype, int(isOutput), title, index))
+            return
+
+        if name.startswith(self.jack_usbgadget_prefix):
+            name = name[len(self.jack_usbgadget_prefix+2):]
+            ptype = "audio"
+            index = 200 + int(name.rsplit("_",1)[-1])
             title = name.title().replace(" ","_")
             self.msg_callback("add_hw_port /graph/%s %s %i %s %i" % (name, ptype, int(isOutput), title, index))
             return
@@ -2936,10 +2947,14 @@ class Host(object):
             if data[2].startswith(("audio_from_slave_",
                                    "audio_to_slave_",
                                    "midi_from_slave_",
-                                   "midi_to_slave_",
-                                   "USB_Audio_Capture_",
-                                   "USB_Audio_Playback_")):
+                                   "midi_to_slave_")):
                 return "%s:%s" % (self.jack_slave_prefix, data[2])
+
+            if data[2].startswith("USB_Audio_Capture_"):
+                return "%s:%s" % (self.jack_usbgadget_prefix+"c", data[2])
+
+            if data[2].startswith("USB_Audio_Playback_"):
+                return "%s:%s" % (self.jack_usbgadget_prefix+"p", data[2])
 
             if data[2].startswith("nooice_capture_"):
                 num = data[2].replace("nooice_capture_","",1)
