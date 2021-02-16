@@ -2105,13 +2105,13 @@ class FilesList(JsonRequestHandler):
             return ("Audio Tracks", kls.complete_audiofile_exts)
 
         elif filetype == "cabsim":
-            return ("Speaker Cabinets", kls.hq_audiofile_exts)
+            return ("Speaker Cabinets IRs", kls.hq_audiofile_exts)
 
         elif filetype == "h2drumkit":
             return ("Hydrogen Drumkits", (".h2drumkit",))
 
         elif filetype == "ir":
-            return ("Impulse Responses", kls.hq_audiofile_exts)
+            return ("Reverb IRs", kls.hq_audiofile_exts)
 
         elif filetype == "midiclip":
             return ("MIDI Clips", (".mid", ".midi"))
