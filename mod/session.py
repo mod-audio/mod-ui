@@ -26,6 +26,7 @@ from mod.bank import get_last_bank_and_pedalboard
 from mod.development import FakeHost, FakeHMI
 from mod.hmi import HMI
 from mod.recorder import Recorder, Player
+from mod.webrtc_player import WebrtcPlayerManager
 from mod.screenshot import ScreenshotGenerator
 from mod.settings import (LOG,
                           DEV_ENVIRONMENT, DEV_HMI, DEV_HOST,
@@ -98,6 +99,8 @@ class Session(object):
 
         # If this is an online instance, the loaded virtual device
         self.virtual_device_id = None
+
+        self.webrtc_player_manager = WebrtcPlayerManager(self.host)
 
 
     def signal_save(self):
