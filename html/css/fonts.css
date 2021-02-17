@@ -2,6 +2,7 @@
   font-family: 'Ek Mukta';
   font-weight: 200;
   font-style: normal;
+  font-display: swap;
   src: url('../fonts/Ek-Mukta/Ek-Mukta-200/Ek-Mukta-200.eot');
   src: url('../fonts/Ek-Mukta/Ek-Mukta-200/Ek-Mukta-200.eot?#iefix') format('embedded-opentype'),
        local('Ek Mukta ExtraLight'),
@@ -16,6 +17,7 @@
   font-family: 'Ek Mukta';
   font-weight: 400;
   font-style: normal;
+  font-display: swap;
   src: url('../fonts/Ek-Mukta/Ek-Mukta-regular/Ek-Mukta-regular.eot');
   src: url('../fonts/Ek-Mukta/Ek-Mukta-regular/Ek-Mukta-regular.eot?#iefix') format('embedded-opentype'),
        local('Ek Mukta'),
@@ -30,6 +32,7 @@
   font-family: 'Ek Mukta';
   font-weight: 600;
   font-style: normal;
+  font-display: swap;
   src: url('../fonts/Ek-Mukta/Ek-Mukta-600/Ek-Mukta-600.eot');
   src: url('../fonts/Ek-Mukta/Ek-Mukta-600/Ek-Mukta-600.eot?#iefix') format('embedded-opentype'),
        local('Ek Mukta SemiBold'),
@@ -44,6 +47,7 @@
   font-family: 'Ek Mukta';
   font-weight: 700;
   font-style: normal;
+  font-display: swap;
   src: url('../fonts/Ek-Mukta/Ek-Mukta-700/Ek-Mukta-700.eot');
   src: url('../fonts/Ek-Mukta/Ek-Mukta-700/Ek-Mukta-700.eot?#iefix') format('embedded-opentype'),
        local('Ek Mukta Bold'),

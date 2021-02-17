@@ -54,6 +54,9 @@
             {{#path}}
             <div class="mod-enumerated mod-file-list">
                 <span class="mod-enumerated-title">{{label}}</span>
+                <div class="mod-file-list-buttons">
+                    <button class="btn btn-xs btn-primary file-list-btn-expand" title="Expand">EXP</button>
+                </div>
                 <div class="mod-enumerated-list" mod-role="input-parameter" mod-parameter-uri="{{uri}}" mod-widget="custom-select-path">
                     {{#files}}
                     <div mod-role="enumeration-option" mod-parameter-value="{{fullname}}">{{basename}}</div>

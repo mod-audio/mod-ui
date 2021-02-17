@@ -625,27 +625,6 @@ function HardwareManager(options) {
             ctable.append(row)
           }
         }
-
-        // when addressing an actuator group, all "child" actuators or intersecting actuator groups are no longer available to be addressed to anything else,
-        // except on different pages
-        for (var i in HARDWARE_PROFILE) {
-          if (HARDWARE_PROFILE[i].actuator_group) {
-            groupActuator = HARDWARE_PROFILE[i]
-            for (var j in self.addressingsByActuator[groupActuator.uri]) {
-              instance = self.addressingsByActuator[groupActuator.uri][j]
-              groupAddressings = self.addressingsData[instance]
-              for (var k in groupActuator.actuator_group) {
-                table.find('[data-uri="' + groupActuator.actuator_group[k] + '"][data-page="' + groupAddressings.page + '"]').addClass('disabled')
-                for (var l = 0 in actuators) {
-                  if (l !== groupActuator.uri && actuators[l].actuator_group && actuators[l].actuator_group.includes(groupActuator.actuator_group[k])) {
-                    table.find('[data-uri="' + l + '"][data-page="' + groupAddressings.page + '"]').addClass('disabled')
-                  }
-                }
-              }
-
-            }
-          }
-        }
       }
       else
       {
@@ -686,21 +665,46 @@ function HardwareManager(options) {
           row.append(cell)
           table.append(row)
         }
+      }
 
-        // when addressing an actuator group, all "child" actuators are no longer available to be addressed to anything else
+      deviceTable.append(table)
+
+      // when addressing an actuator group, all "child" actuators or intersecting actuator groups are no longer
+      // available to be addressed to anything else except on different pages
+      if (ADDRESSING_PAGES > 0)
+      {
+        for (var i in HARDWARE_PROFILE) {
+          if (HARDWARE_PROFILE[i].actuator_group) {
+            groupActuator = HARDWARE_PROFILE[i]
+            for (var j in self.addressingsByActuator[groupActuator.uri]) {
+              instance = self.addressingsByActuator[groupActuator.uri][j]
+              groupAddressings = self.addressingsData[instance]
+              for (var k in groupActuator.actuator_group) {
+                deviceTable.find('[data-uri="' + groupActuator.actuator_group[k] + '"][data-page="' + groupAddressings.page + '"]').addClass('disabled')
+                for (var l = 0 in actuators) {
+                  if (l !== groupActuator.uri && actuators[l].actuator_group && actuators[l].actuator_group.includes(groupActuator.actuator_group[k])) {
+                    deviceTable.find('[data-uri="' + l + '"][data-page="' + groupAddressings.page + '"]').addClass('disabled')
+                  }
+                }
+              }
+
+            }
+          }
+        }
+      }
+      else
+      {
         for (var i in HARDWARE_PROFILE) {
           if (HARDWARE_PROFILE[i].actuator_group) {
             groupActuator = HARDWARE_PROFILE[i]
             if (self.addressingsByActuator[groupActuator.uri].length) {
               for (var j in groupActuator.actuator_group) {
-                table.find('[data-uri="' + groupActuator.actuator_group[j] + '"]').addClass('disabled')
+                deviceTable.find('[data-uri="' + groupActuator.actuator_group[j] + '"]').addClass('disabled')
               }
             }
           }
         }
       }
-
-      deviceTable.append(table)
 
       deviceTable.find('td').click(function () {
         if ($(this).hasClass('disabled')) {
@@ -1128,7 +1132,7 @@ function HardwareManager(options) {
 
                 // disable this control
                 var feedback = actuator.feedback === false ? false : true // backwards compat, true by default
-                options.setEnabled(instance, port.symbol, false, feedback, true, momentarySwValue)
+                options.setEnabled(instance, port.symbol, false, feedback, true, addressing.momentary)
             }
             // We're unaddressing
             else if (unaddressing)

@@ -37,10 +37,17 @@ function SnapshotsManager(options) {
         }
     })
 
-    options.pedalPresetsOverlay.hide().blur(self.pedalPresetRenamed).keydown(function (e) {
+    options.pedalPresetsOverlay
+    .hide()
+    .blur(self.pedalPresetRenamed)
+    .keydown(function (e) {
+        if (e.keyCode == 27) { // esc
+            return self.hideRenameOverlay()
+        }
         if (e.keyCode == 13) { // enter
             return self.pedalPresetRenamed()
         }
+        return true
     })
 
     options.pedalPresetsWindow.keyup(function (e) {
@@ -48,6 +55,7 @@ function SnapshotsManager(options) {
             options.pedalPresetsList.find('option:selected').click()
             return false
         }
+        return true
     })
 
     options.pedalPresetsWindow.find('.js-cancel').click(function () {
@@ -258,6 +266,7 @@ function SnapshotsManager(options) {
     this.hideRenameOverlay = function () {
         options.editingElem = null
         options.pedalPresetsOverlay.prop("value","").hide()
+        return false
     }
 
     this.pedalPresetRenamed = function () {

@@ -627,10 +627,10 @@ function GUI(effect, options) {
             return parseFloat(value)
         case 'v':
             var snum, stype
-            value = value.split(/-/,3)
-            snum  = parseInt(value[0])
-            stype = value[1]
-            value = value[2].split(/:/,snum)
+            var svalue = value.split(/-/,2)
+            snum  = parseInt(svalue[0])
+            stype = svalue[1]
+            value = value.substr(value.indexOf(stype+'-')+2).split(/:/,snum)
             switch (stype)
             {
             case 'b':
@@ -1022,6 +1022,25 @@ function GUI(effect, options) {
             else
             {
                 presetElem.hide()
+            }
+
+            if (instance && self.effect.parameters.length)
+            {
+                self.settings.find('.mod-file-list').each(function () {
+                    var elem = $(this)
+                    var list = elem.find('.mod-enumerated-list')
+                    if (list.length == 1 && list[0].childElementCount > 5) {
+                        elem.find('.file-list-btn-expand').click(function () {
+                            if (elem.hasClass('expanded')) {
+                                elem.removeClass('expanded')
+                            } else {
+                                elem.addClass('expanded')
+                            }
+                        })
+                    } else {
+                        elem.find('.file-list-btn-expand').hide()
+                    }
+                })
             }
 
             if (! instance) {
@@ -1736,6 +1755,7 @@ function JqueryClass() {
 })(jQuery);
 
 var baseWidget = {
+    // NOTE: for filmstrips, config is called with a delay
     config: function (options) {
         var self = $(this)
             // Very quick bugfix. When pedalboard is unserialized, the disable() of addressed knobs
@@ -1793,15 +1813,21 @@ var baseWidget = {
         self.data('dragPrecisionVertical', Math.ceil(100 / portSteps))
         self.data('dragPrecisionHorizontal', Math.ceil(portSteps / 10))
 
-        var momentary
+        var preferredMomentaryMode
         if (port.properties.indexOf("preferMomentaryOffByDefault") >= 0) {
-            momentary = 2
+            preferredMomentaryMode = 2
         } else if (port.properties.indexOf("preferMomentaryOnByDefault") >= 0) {
-            momentary = 1
+            preferredMomentaryMode = 1
         } else {
-            momentary = 0
+            preferredMomentaryMode = 0
         }
-        self.data('momentary', momentary)
+        self.data('preferredMomentaryMode', preferredMomentaryMode)
+
+        // momentary could have been set already, don't override it
+        var momentary = self.data('momentary')
+        if (momentary === undefined) {
+            self.data('momentary', preferredMomentaryMode)
+        }
     },
 
     setValue: function (value, only_gui) {
@@ -1818,11 +1844,15 @@ var baseWidget = {
         $(this).addClass('disabled').data('enabled', false)
     },
     enable: function () {
-        $(this).removeClass('addressed').removeClass('disabled').data('enabled', true)
+        var self = $(this)
+        self.removeClass('addressed').removeClass('disabled').data('enabled', true)
+        // this is called during unaddressing, we can reset momentary mode here
+        self.data('momentary', self.data('preferredMomentaryMode'))
     },
     address: function (momentary) {
-        $(this).data('enabled', true)
-        $(this).data('momentary', momentary)
+        var self = $(this)
+        self.data('enabled', true)
+        self.data('momentary', momentary)
     },
 
     valueFromSteps: function (steps) {
@@ -2229,7 +2259,7 @@ JqueryClass('film', baseWidget, {
         // in this theoric case.
             rotation = Math.round(filmSteps / 2)
         } else if (portSteps != null) {
-            rotation = Math.round(steps) * Math.round(filmSteps / portSteps)
+            rotation = Math.round(steps) * Math.round((filmSteps - 1) / (portSteps - 1))
         }
 
         rotation = Math.min(filmSteps-1, Math.max(0, rotation))

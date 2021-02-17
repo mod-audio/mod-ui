@@ -90,6 +90,7 @@
          url('../fonts/cooper/cooperhewitt-semibold-webfont.ttf') format('truetype');
     font-weight: 600;
     font-style: normal;
+    font-display: swap;
 }
 @font-face {
     font-family: 'cooper hewitt';
@@ -100,6 +101,7 @@
          url('../fonts/cooper/cooperhewitt-light-webfont.ttf') format('truetype');
     font-weight: 300;
     font-style: normal;
+    font-display: swap;
 }
 @font-face {
     font-family: 'cooper hewitt';
@@ -110,6 +112,7 @@
          url('../fonts/cooper/cooperhewitt-lightitalic-webfont.ttf') format('truetype');
     font-weight: 300;
     font-style: italic;
+    font-display: swap;
 }
 @font-face {
     font-family: 'cooper hewitt';
@@ -120,6 +123,7 @@
          url('../fonts/cooper/cooperhewitt-bookitalic-webfont.ttf') format('truetype');
     font-weight: 400;
     font-style: italic;
+    font-display: swap;
 }
 @font-face {
     font-family: 'cooper hewitt';
@@ -130,6 +134,7 @@
          url('../fonts/cooper/cooperhewitt-book-webfont.ttf') format('truetype');
     font-weight: 400;
     font-style: normal;
+    font-display: swap;
 }
 * {
   outline: 0 !important
@@ -143,8 +148,15 @@ body {
 
 body {
   background: #111;
-
   min-width: 1024px;
+
+  // iOS/iPadOS device-specific styles
+  &.ios {
+    // prevent vertical inertia scrolling
+    position: fixed;
+    // set 980px min-width to match default virtual viewport width
+    min-width: 980px;
+  }
 }
 
 * {

@@ -331,16 +331,10 @@ class Session(object):
 
     # LV2 patch support
     def ws_patch_get(self, instance, uri, ws):
-        def resp(ok):
-            print("host patch_get responded with", ok)
-
-        self.host.patch_get(instance, uri, resp)
+        self.host.patch_get(instance, uri, None)
 
     def ws_patch_set(self, instance, uri, valuetype, valuedata, ws):
-        def resp(ok):
-            print("host patch_set responded with", ok)
-
-        writable = self.host.patch_set(instance, uri, valuedata, resp)
+        writable = self.host.patch_set(instance, uri, valuedata, None)
         self.msg_callback_broadcast("patch_set %s %d %s %c %s" % (instance,
                                                                   1 if writable else 0,
                                                                   uri, valuetype, valuedata), ws)
@@ -376,7 +370,7 @@ class Session(object):
             title = ""
 
         if self.hmi.initialized:
-            self.host.hmi_set_pb_name(title or UNTITLED_PEDALBOARD_NAME)
+            self.host.hmi_set_pb_and_ss_name(title or UNTITLED_PEDALBOARD_NAME)
 
         self.pedalboard_changed_callback(True, bundlepath, title)
         return title
@@ -395,8 +389,10 @@ class Session(object):
         if self.hmi.initialized:
             def set_pb_name(_):
                 self.hmi.set_pedalboard_name(UNTITLED_PEDALBOARD_NAME, reset_host)
+            def clear_ss_name(_):
+                self.host.hmi_clear_ss_name(set_pb_name)
             def clear_hmi(_):
-                self.hmi.clear(set_pb_name)
+                self.hmi.clear(clear_ss_name)
             self.host.setNavigateWithFootswitches(False, clear_hmi)
         else:
             reset_host(True)

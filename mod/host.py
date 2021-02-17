@@ -343,9 +343,12 @@ class Host(object):
         self.pedalboard_size     = [0,0]
         self.pedalboard_version  = 0
         self.current_pedalboard_snapshot_id = -1
-        self.pedalboard_snapshots  = []
+        self.pedalboard_snapshots = []
         self.next_hmi_pedalboard_to_load = None
         self.next_hmi_pedalboard_loading = False
+        self.next_hmi_bpb = [0, False, False]
+        self.next_hmi_bpm = [0, False, False]
+        self.next_hmi_play = [False, False, False]
         self.hmi_snapshots = [None, None, None]
         self.transport_rolling = False
         self.transport_bpb     = 4.0
@@ -366,7 +369,10 @@ class Host(object):
             self.jack_hwin_prefix  = "mod-monitor:in_"
             self.jack_hwout_prefix = "mod-monitor:out_"
 
+        # used for network-manager
         self.jack_slave_prefix = "mod-slave"
+        # used for usb gadget, MUST have "c" or "p" after this prefix
+        self.jack_usbgadget_prefix = "mod-usbgadget_"
 
         # checked when saving pedal presets
         self.plugins_added = []
@@ -500,6 +506,14 @@ class Host(object):
                 ptype = "audio"
 
             index = 100 + int(name.rsplit("_",1)[-1])
+            title = name.title().replace(" ","_")
+            self.msg_callback("add_hw_port /graph/%s %s %i %s %i" % (name, ptype, int(isOutput), title, index))
+            return
+
+        if name.startswith(self.jack_usbgadget_prefix):
+            name = name[len(self.jack_usbgadget_prefix+2):]
+            ptype = "audio"
+            index = 200 + int(name.rsplit("_",1)[-1])
             title = name.title().replace(" ","_")
             self.msg_callback("add_hw_port /graph/%s %s %i %s %i" % (name, ptype, int(isOutput), title, index))
             return
@@ -868,6 +882,67 @@ class Host(object):
         return "+"
 
     # -----------------------------------------------------------------------------------------------------------------
+    # HMI messages postponed for later
+
+    @gen.coroutine
+    def process_postponed_messages(self):
+        if self.next_hmi_bpb[1] or self.next_hmi_bpb[2]:
+            bpb, sendHMI, sendHMIAddressing = self.next_hmi_bpb
+            self.next_hmi_bpb[1] = self.next_hmi_bpb[2] = False
+
+            if sendHMIAddressing:
+                try:
+                    yield gen.Task(self.paramhmi_set, 'pedalboard', ":bpb", bpb)
+                except Exception as e:
+                    logging.exception(e)
+
+            if sendHMI:
+                try:
+                    yield gen.Task(self.hmi.set_profile_value, MENU_ID_BEATS_PER_BAR, bpb)
+                except Exception as e:
+                    logging.exception(e)
+
+        if self.next_hmi_bpm[1] or self.next_hmi_bpm[2]:
+            bpm, sendHMI, sendHMIAddressing = self.next_hmi_bpm
+            self.next_hmi_bpm[1] = self.next_hmi_bpm[2] = False
+
+            if sendHMIAddressing:
+                try:
+                    yield gen.Task(self.paramhmi_set, 'pedalboard', ":bpm", bpm)
+                except Exception as e:
+                    logging.exception(e)
+
+            if sendHMI:
+                try:
+                    yield gen.Task(self.hmi.set_profile_value, MENU_ID_TEMPO, bpm)
+                except Exception as e:
+                    logging.exception(e)
+
+            for actuator_uri in self.addressings.hmi_addressings:
+                addrs = self.addressings.hmi_addressings[actuator_uri]['addrs']
+                for addr in addrs:
+                    try:
+                        yield gen.Task(self.set_param_from_bpm, addr, bpm)
+                    except Exception as e:
+                        logging.exception(e)
+
+        if self.next_hmi_play[1] or self.next_hmi_play[2]:
+            rolling, sendHMI, sendHMIAddressing = self.next_hmi_play
+            self.next_hmi_play[1] = self.next_hmi_play[2] = False
+
+            if sendHMIAddressing:
+                try:
+                    yield gen.Task(self.paramhmi_set, 'pedalboard', ":rolling", int(rolling))
+                except Exception as e:
+                    logging.exception(e)
+
+            if sendHMI:
+                try:
+                    yield gen.Task(self.hmi.set_profile_value, MENU_ID_PLAY_STATUS, int(rolling))
+                except Exception as e:
+                    logging.exception(e)
+
+    # -----------------------------------------------------------------------------------------------------------------
     # Initialization
 
     def ping_hmi(self):
@@ -1061,6 +1136,7 @@ class Host(object):
                 self.process_write_queue()
             else:
                 self._idle = True
+                self.process_postponed_messages()
 
         self._idle = False
         self._queue = []
@@ -1152,9 +1228,12 @@ class Host(object):
     def reconnect_hmi(self, hmi):
         abort_catcher = self.abort_previous_loading_progress("reconnect_hmi")
         self.hmi = hmi
-        self.hmi_snapshots = [None, None, None]
         self.next_hmi_pedalboard_to_load = None
         self.next_hmi_pedalboard_loading = False
+        self.next_hmi_bpb = [0, False, False]
+        self.next_hmi_bpm = [0, False, False]
+        self.next_hmi_play = [False, False, False]
+        self.hmi_snapshots = [None, None, None]
         self.processing_pending_flag = False
         self.open_connection_if_needed(None)
 
@@ -1621,6 +1700,7 @@ class Host(object):
             logging.debug("[host] popped from queue: %s", msg)
         except IndexError:
             self._idle = True
+            self.process_postponed_messages()
             return
 
         if self.writesock is None:
@@ -1908,7 +1988,6 @@ class Host(object):
                 self.send_notmodified("connect %s %s" % (self._fix_host_connection_port(port_from),
                                                          self._fix_host_connection_port(port_to)))
 
-        self.addressings.add_cv_plugin_ports(lambda msg: websocket.write_message(msg))
         self.addressings.registerMappings(lambda msg: websocket.write_message(msg), rinstances)
 
         # TODO: restore HMI and CC addressings if crashed
@@ -1979,6 +2058,7 @@ class Host(object):
         self.addressings.clear()
         self.mapper.clear()
         self.snapshot_clear()
+        self.hmi_snapshots = [None, None, None]
 
         self.pedalboard_empty    = True
         self.pedalboard_modified = False
@@ -2075,12 +2155,14 @@ class Host(object):
         if group_actuators is not None:
             if len(group_actuators) != 2:
                 logging.error("paramhmi_set has len(group_actuators) != 2")
-                callback(False)
+                if callback is not None:
+                    callback(False)
                 return
 
             def set_2nd_hmi_value(ok):
                 if not ok:
-                    callback(False)
+                    if callback is not None:
+                        callback(False)
                     return
                 hw_id2 = self.addressings.hmi_uri2hw_map[group_actuators[1]]
                 #self.hmi.control_set(hw_id2, float(value), callback)
@@ -2335,7 +2417,8 @@ class Host(object):
 
         if symbol in pluginData['designations']:
             print("ERROR: Trying to modify a specially designated port '%s', stop!" % symbol)
-            callback(False)
+            if callback is not None:
+                callback(False)
             return
 
         pluginData['ports'][symbol] = value
@@ -2344,8 +2427,7 @@ class Host(object):
     def patch_get(self, instance, uri, callback):
         instance_id = self.mapper.get_id_without_creating(instance)
 
-        print("mod-host sent param_get %d %s" % (instance_id, uri))
-        self.send_modified("param_get %d %s" % (instance_id, uri), callback, datatype='boolean')
+        self.send_modified("patch_get %d %s" % (instance_id, uri), callback, datatype='boolean')
 
     def patch_set(self, instance, uri, value, callback):
         instance_id = self.mapper.get_id_without_creating(instance)
@@ -2662,8 +2744,14 @@ class Host(object):
     @gen.coroutine
     def snapshot_load(self, idx, from_hmi, abort_catcher, callback):
         if idx in (self.HMI_SNAPSHOTS_1, self.HMI_SNAPSHOTS_2, self.HMI_SNAPSHOTS_3):
-            snapshot = self.hmi_snapshots[abs(idx + self.HMI_SNAPSHOTS_OFFSET)]
+            idx = abs(idx + self.HMI_SNAPSHOTS_OFFSET)
+            snapshot = self.hmi_snapshots[idx]
             is_hmi_snapshot = True
+
+            if snapshot is None:
+                print("ERROR: Asked to load an invalid HMI preset, number", idx)
+                callback(False)
+                return
 
         else:
             if idx < 0 or idx >= len(self.pedalboard_snapshots):
@@ -2674,7 +2762,7 @@ class Host(object):
             is_hmi_snapshot = False
 
             if snapshot is None:
-                print("ERROR: Asked to load an invalid pedalboard preset, number", idx)
+                print("ERROR: Asked to load an invalid pedalboard snapshot, number", idx)
                 callback(False)
                 return
 
@@ -2748,6 +2836,8 @@ class Host(object):
                         used_actuators.append(addressing['actuator_uri'])
 
             for uri, param in data['parameters'].items():
+                if pluginData['parameters'].get(uri, None) in (param, None):
+                    continue
                 self.msg_callback("patch_set %s 1 %s %s %s" % (instance, uri, param[1], param[0]))
                 try:
                     yield gen.Task(self.patch_set, instance, uri, param[0])
@@ -2883,10 +2973,14 @@ class Host(object):
             if data[2].startswith(("audio_from_slave_",
                                    "audio_to_slave_",
                                    "midi_from_slave_",
-                                   "midi_to_slave_",
-                                   "USB_Audio_Capture_",
-                                   "USB_Audio_Playback_")):
+                                   "midi_to_slave_")):
                 return "%s:%s" % (self.jack_slave_prefix, data[2])
+
+            if data[2].startswith("USB_Audio_Capture_"):
+                return "%s:%s" % (self.jack_usbgadget_prefix+"c", data[2])
+
+            if data[2].startswith("USB_Audio_Playback_"):
+                return "%s:%s" % (self.jack_usbgadget_prefix+"p", data[2])
 
             if data[2].startswith("nooice_capture_"):
                 num = data[2].replace("nooice_capture_","",1)
@@ -3150,7 +3244,7 @@ class Host(object):
                                                                                       ccData['channel'],
                                                                                       ccData['control'],
                                                                                       0.0, 1.0)
-                self.set_transport_rolling(pb['timeInfo']['rolling'], False, True, False)
+                self.set_transport_rolling(pb['timeInfo']['rolling'], False, True, False, False)
 
         else: # time not available
             self.set_transport_bpb(self.transport_bpb, False, True, False, False)
@@ -3171,7 +3265,7 @@ class Host(object):
                                                      self.transport_sync))
 
         if bundlepath:
-            self.load_pb_snapshots(pb['plugins'], bundlepath)
+            ssparameters = self.load_pb_snapshots(pb['plugins'], bundlepath)
         self.load_pb_plugins(pb['plugins'], instances, rinstances)
         self.load_pb_connections(pb['connections'], mappedOldMidiIns, mappedOldMidiOuts,
                                                     mappedNewMidiIns, mappedNewMidiOuts)
@@ -3180,11 +3274,22 @@ class Host(object):
             self.send_notmodified("state_load {}".format(bundlepath))
             self.addressings.load(bundlepath, instances, skippedPortAddressings, abort_catcher)
 
+            for instance_id, uri, paramvalue, paramtype in ssparameters:
+                pluginData = self.plugins.get(instance_id, None)
+                if pluginData is None:
+                    continue
+                parameter = pluginData['parameters'].get(uri, None)
+                if parameter is None:
+                    continue
+                if parameter[1] != paramtype:
+                    continue
+                parameter[0] = paramvalue
+                self.send_modified("patch_set %d %s \"%s\"" % (instance_id, uri, paramvalue.replace('"','\\"')))
+
         if abort_catcher is not None and abort_catcher.get('abort', False):
             print("WARNING: Abort triggered during PB load request 2, caller:", abort_catcher['caller'])
             return
 
-        self.addressings.add_cv_plugin_ports(self.msg_callback)
         self.addressings.registerMappings(self.msg_callback, rinstances)
 
         self.msg_callback("loading_end %d" % self.current_pedalboard_snapshot_id)
@@ -3222,26 +3327,37 @@ class Host(object):
         snapshots = safe_json_load(os.path.join(bundlepath, "presets.json"), list)
 
         if len(snapshots) == 0:
-            return
+            return []
 
         self.current_pedalboard_snapshot_id = 0
         self.pedalboard_snapshots = snapshots
 
         initial_snapshot = snapshots[0]['data']
+        ret_parameters = []
 
         for p in plugins:
             pdata = initial_snapshot.get(p['instance'], None)
 
             if pdata is None:
-                print("WARNING: Pedalboard preset missing data for instance name '%s'" % p['instance'])
+                print("WARNING: Pedalboard snapshot missing data for instance name '%s'" % p['instance'])
                 continue
 
             p['bypassed'] = pdata['bypassed']
 
+            ssports = pdata['ports']
             for port in p['ports']:
-                port['value'] = pdata['ports'].get(port['symbol'], port['value'])
+                port['value'] = ssports.get(port['symbol'], port['value'])
 
             p['preset'] = pdata['preset']
+
+            # parameters were added in v1.10
+            ssparameters = pdata.get('parameters', None)
+
+            if ssparameters is not None:
+                for uri, ssparameter in ssparameters.items():
+                    ret_parameters.append((p['instanceNumber'], uri, ssparameter[0], ssparameter[1]))
+
+        return ret_parameters
 
     def load_pb_plugins(self, plugins, instances, rinstances):
         for p in plugins:
@@ -3534,8 +3650,8 @@ class Host(object):
         self.addressings.save(bundlepath, instances)
 
     def save_state_presets(self, bundlepath):
-        # Write presets.json. NOTE: keep the filename for backwards
-        # compatibility. TODO: Add to global settings.
+        # Write presets.json. NOTE: keep the filename for backwards compatibility.
+        # TODO: Add to global settings.
         snapshots_filepath = os.path.join(bundlepath, "presets.json")
 
         if len(self.pedalboard_snapshots) > 1:
@@ -3562,7 +3678,7 @@ class Host(object):
 
             snapshots = [p for p in self.pedalboard_snapshots if p is not None]
             with TextFileFlusher(snapshots_filepath) as fh:
-                json.dump(snapshots, fh)
+                json.dump(snapshots, fh, indent=4)
 
         elif os.path.exists(snapshots_filepath):
             os.remove(snapshots_filepath)
@@ -4002,7 +4118,8 @@ _:b%i
     # Set new param value after bpm change
     def set_param_from_bpm(self, addr, bpm, callback):
         if not addr.get('tempo', False):
-            callback(False)
+            if callback is not None:
+                callback(False)
             return
 
         # compute new port value based on new bpm
@@ -4011,11 +4128,12 @@ _:b%i
             port_value = convert_seconds_to_port_value_equivalent(port_value, addr['unit'])
 
         instance_id = addr['instance_id']
-        portsymbol   = addr['port']
-        instance = self.mapper.get_instance(instance_id)
+        portsymbol  = addr['port']
+        instance    = self.mapper.get_instance(instance_id)
         pluginData  = self.plugins.get(instance_id, None)
         if pluginData is None:
-            callback(False)
+            if callback is not None:
+                callback(False)
             return
 
         self.host_and_web_parameter_set(pluginData, instance, instance_id, port_value, portsymbol, callback)
@@ -4112,14 +4230,9 @@ _:b%i
                 logging.exception(e)
 
     @gen.coroutine
-    def set_transport_bpb(self, bpb, sendHost, sendHMI, sendWeb, sendHMIAddressing=True, callback=None, datatype='int'):
+    def set_transport_bpb(self, bpb, sendHost, sendHMI, sendWeb, sendHMIAddressing, callback=None, datatype='int'):
         self.transport_bpb = bpb
         self.profile.set_tempo_bpb(bpb)
-
-        if sendHost:
-            self.send_modified("transport %i %f %f" % (self.transport_rolling,
-                                                       self.transport_bpb,
-                                                       self.transport_bpm), callback, datatype)
 
         for pluginData in self.plugins.values():
             bpb_symbol = pluginData['designations'][self.DESIGNATIONS_INDEX_BPB]
@@ -4129,18 +4242,13 @@ _:b%i
                 if sendHost:
                     self.msg_callback("param_set %s %s %f" % (pluginData['instance'], bpb_symbol, bpb))
 
-        # If bpb is addressed to an actuator, then set value on hmi if currently displayed
-        if sendHMIAddressing:
-            try:
-                yield gen.Task(self.paramhmi_set, 'pedalboard', ":bpb", bpb)
-            except Exception as e:
-                logging.exception(e)
-
-        if sendHMI and self.hmi.initialized:
-            try:
-                yield gen.Task(self.hmi.set_profile_value, MENU_ID_BEATS_PER_BAR, bpb)
-            except Exception as e:
-                logging.exception(e)
+        # Changing HMI state from here is very problematic, we deal with this later
+        if self.hmi.initialized and (sendHMI or sendHMIAddressing):
+            self.next_hmi_bpb[0] = bpb
+            if sendHMI:
+                self.next_hmi_bpb[1] = True
+            if sendHMIAddressing:
+                self.next_hmi_bpb[2] = True
 
         if sendWeb:
             self.msg_callback("transport %i %f %f %s" % (self.transport_rolling,
@@ -4148,15 +4256,15 @@ _:b%i
                                                          self.transport_bpm,
                                                          self.transport_sync))
 
-    @gen.coroutine
-    def set_transport_bpm(self, bpm, sendHost, sendHMI, sendWeb, sendHMIAddressing, callback=None, datatype='int'):
-        self.transport_bpm = bpm
-        self.profile.set_tempo_bpm(bpm)
-
         if sendHost:
             self.send_modified("transport %i %f %f" % (self.transport_rolling,
                                                        self.transport_bpb,
                                                        self.transport_bpm), callback, datatype)
+
+    @gen.coroutine
+    def set_transport_bpm(self, bpm, sendHost, sendHMI, sendWeb, sendHMIAddressing, callback=None, datatype='int'):
+        self.transport_bpm = bpm
+        self.profile.set_tempo_bpm(bpm)
 
         for pluginData in self.plugins.values():
             bpm_symbol = pluginData['designations'][self.DESIGNATIONS_INDEX_BPM]
@@ -4174,26 +4282,13 @@ _:b%i
                 except Exception as e:
                     logging.exception(e)
 
-        for actuator_uri in self.addressings.hmi_addressings:
-            addrs = self.addressings.hmi_addressings[actuator_uri]['addrs']
-            for addr in addrs:
-                try:
-                    yield gen.Task(self.set_param_from_bpm, addr, bpm)
-                except Exception as e:
-                    logging.exception(e)
-
-        # If bpm is addressed to an actuator, then set value on hmi if currently displayed
-        if sendHMIAddressing:
-            try:
-                yield gen.Task(self.paramhmi_set, 'pedalboard', ":bpm", bpm)
-            except Exception as e:
-                logging.exception(e)
-
-        if sendHMI and self.hmi.initialized:
-            try:
-                yield gen.Task(self.hmi.set_profile_value, MENU_ID_TEMPO, bpm)
-            except Exception as e:
-                logging.exception(e)
+        # Changing HMI state from here is very problematic, we deal with this later
+        if self.hmi.initialized and (sendHMI or sendHMIAddressing):
+            self.next_hmi_bpm[0] = bpm
+            if sendHMI:
+                self.next_hmi_bpm[1] = True
+            if sendHMIAddressing:
+                self.next_hmi_bpm[2] = True
 
         if sendWeb:
             self.msg_callback("transport %i %f %f %s" % (self.transport_rolling,
@@ -4201,14 +4296,14 @@ _:b%i
                                                          self.transport_bpm,
                                                          self.transport_sync))
 
-    @gen.coroutine
-    def set_transport_rolling(self, rolling, sendHost, sendHMI, sendWeb, callback=None, datatype='int'):
-        self.transport_rolling = rolling
-
         if sendHost:
-            self.send_notmodified("transport %i %f %f" % (self.transport_rolling,
-                                                          self.transport_bpb,
-                                                          self.transport_bpm), callback, datatype)
+            self.send_modified("transport %i %f %f" % (self.transport_rolling,
+                                                       self.transport_bpb,
+                                                       self.transport_bpm), callback, datatype)
+
+    @gen.coroutine
+    def set_transport_rolling(self, rolling, sendHost, sendHMI, sendWeb, sendHMIAddressing, callback=None, datatype='int'):
+        self.transport_rolling = rolling
 
         speed = 1.0 if rolling else 0.0
 
@@ -4220,17 +4315,24 @@ _:b%i
                 if sendHost:
                     self.msg_callback("param_set %s %s %f" % (pluginData['instance'], speed_symbol, speed))
 
-        if sendHMI and self.hmi.initialized:
-            try:
-                yield gen.Task(self.hmi.set_profile_value, MENU_ID_PLAY_STATUS, int(rolling))
-            except Exception as e:
-                logging.exception(e)
+        # Changing HMI state from here is very problematic, we deal with this later
+        if self.hmi.initialized and (sendHMI or sendHMIAddressing):
+            self.next_hmi_play[0] = rolling
+            if sendHMI:
+                self.next_hmi_play[1] = True
+            if sendHMIAddressing:
+                self.next_hmi_play[2] = True
 
         if sendWeb:
             self.msg_callback("transport %i %f %f %s" % (self.transport_rolling,
                                                          self.transport_bpb,
                                                          self.transport_bpm,
                                                          self.transport_sync))
+
+        if sendHost:
+            self.send_notmodified("transport %i %f %f" % (self.transport_rolling,
+                                                          self.transport_bpb,
+                                                          self.transport_bpm), callback, datatype)
 
     #def set_midi_program_change_pedalboard_bank_channel(self, channel):
         #if self.profile.set_midi_prgch_channel("bank", channel):
@@ -4945,7 +5047,7 @@ _:b%i
                     callback(False)
                     return
                 # NOTE: we cannot wait for HMI callback while giving a response to HMI
-                self.control_set_other_group_actuator(group_actuators, hw_id, port_addressing, value, callback)
+                self.control_set_other_group_actuator(group_actuators, hw_id, port_addressing, value, None)
                 callback(True)
 
             cb = group_callback if group_actuators is not None else callback
@@ -4965,17 +5067,20 @@ _:b%i
                     logging.exception(e)
 
         elif instance_id == PEDALBOARD_INSTANCE_ID:
-            # NOTE do not use try/except to send callback here, since the callback is not the last action
             if portsymbol in (":bpb", ":bpm", ":rolling"):
-                callback(True)
-                callback = None
-                if portsymbol == ":bpb":
-                    self.set_transport_bpb(value, True, True, True, False)
-                elif portsymbol == ":bpm":
-                    self.set_transport_bpm(value, True, True, True, False)
-                elif portsymbol == ":rolling":
-                    rolling = bool(value > 0.5)
-                    self.set_transport_rolling(rolling, True, False, True)
+                try:
+                    if portsymbol == ":bpb":
+                        self.set_transport_bpb(value, True, True, True, False, callback)
+                    elif portsymbol == ":bpm":
+                        self.set_transport_bpm(value, True, True, True, False, callback)
+                    elif portsymbol == ":rolling":
+                        rolling = bool(value > 0.5)
+                        self.set_transport_rolling(rolling, True, True, True, False, callback)
+                    else:
+                        callback(False)
+                except Exception as e:
+                    callback(False)
+                    logging.exception(e)
             else:
                 print("ERROR: Trying to set value for the wrong pedalboard port:", portsymbol)
                 callback(False)
@@ -5080,7 +5185,8 @@ _:b%i
                         addressing_data['hmitype'] &= ~FLAG_CONTROL_REVERSE
                 self.addressings.load_addr(group_actuator_uri, addressing_data, callback)
                 return
-        callback(True)
+        if callback is not None:
+            callback(True)
 
     def hmi_parameter_addressing_next(self, hw_id, callback):
         logging.debug("hmi parameter addressing next")
@@ -5466,7 +5572,7 @@ _:b%i
         """Set the transport state."""
         logging.debug("hmi menu set play status to `%i`", playing)
 
-        self.set_transport_rolling(bool(playing), True, False, True, callback)
+        self.set_transport_rolling(bool(playing), True, False, True, True, callback)
 
     def hmi_menu_set_clk_src(self, mode, callback):
         """Set the tempo and transport sync mode."""
@@ -5570,7 +5676,6 @@ _:b%i
         """Set the Jack BPM."""
         logging.debug("hmi menu set tempo bpm to `%i`", bpm)
 
-        self.hmi.set_bpm(bpm)
         self.set_transport_bpm(bpm, True, False, True, True, callback)
 
     def hmi_menu_set_tempo_bpb(self, bpb, callback):
@@ -5691,6 +5796,15 @@ _:b%i
     def hmi_set_pb_name(self, name):
         if self.hmi.initialized and self.descriptor.get('hmi_set_pb_name', False):
             yield gen.Task(self.hmi.set_pedalboard_name, name)
+
+    @gen.coroutine
+    def hmi_set_pb_and_ss_name(self, pbname):
+        if self.hmi.initialized and self.descriptor.get('hmi_set_pb_name', False):
+            yield gen.Task(self.hmi.set_pedalboard_name, pbname)
+
+            if self.descriptor.get('hmi_set_ss_name', False):
+                ssname = self.snapshot_name() or DEFAULT_SNAPSHOT_NAME
+                yield gen.Task(self.hmi.set_snapshot_name, ssname)
 
     def hmi_clear_ss_name(self, callback):
         if self.hmi.initialized and self.descriptor.get('hmi_set_ss_name', False):
