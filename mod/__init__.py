@@ -101,7 +101,7 @@ def check_environment():
             fh.write("[]")
 
     # remove previous update file
-    if os.path.exists(UPDATE_MOD_OS_FILE):
+    if os.path.exists(UPDATE_MOD_OS_FILE) and not os.path.exists("/root/check-upgrade-system"):
         os.remove(UPDATE_MOD_OS_FILE)
         os.sync()
 

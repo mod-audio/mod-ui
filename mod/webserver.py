@@ -157,7 +157,8 @@ def run_command(args, cwd, callback):
         if ret is None:
             return
         ioloop.remove_handler(fileno)
-        callback((ret,) + proc.communicate())
+        if callback is not None:
+            callback((ret,) + proc.communicate())
 
     ioloop.add_handler(proc.stdout.fileno(), end_fileno, 16)
 
@@ -2105,13 +2106,13 @@ class FilesList(JsonRequestHandler):
             return ("Audio Tracks", kls.complete_audiofile_exts)
 
         elif filetype == "cabsim":
-            return ("Speaker Cabinets", kls.hq_audiofile_exts)
+            return ("Speaker Cabinets IRs", kls.hq_audiofile_exts)
 
         elif filetype == "h2drumkit":
             return ("Hydrogen Drumkits", (".h2drumkit",))
 
         elif filetype == "ir":
-            return ("Impulse Responses", kls.hq_audiofile_exts)
+            return ("Reverb IRs", kls.hq_audiofile_exts)
 
         elif filetype == "midiclip":
             return ("MIDI Clips", (".mid", ".midi"))
@@ -2295,6 +2296,20 @@ def signal_device_firmware_updated():
     os.remove(UPDATE_CC_FIRMWARE_FILE)
     SESSION.signal_device_updated()
 
+def signal_boot_check():
+    with open("/root/boot-system-check", 'r') as fh:
+        countRead = fh.read().strip()
+        countNumb = int(countRead) if countRead else 0
+
+    with TextFileFlusher("/root/boot-system-check") as fh:
+        fh.write("%i\n" % (countNumb+1))
+
+    run_command(["hmi-reset"], None, signal_boot_check_step2)
+
+def signal_boot_check_step2(r):
+    os.sync()
+    run_command(["reboot"], None, None)
+
 def signal_upgrade_check():
     with open("/root/check-upgrade-system", 'r') as fh:
         countRead = fh.read().strip()
@@ -2312,7 +2327,10 @@ def signal_recv(sig, _=0):
         else:
             func = SESSION.signal_save
     elif sig == SIGUSR2:
-        if os.path.exists("/root/check-upgrade-system") and \
+        if os.path.exists("/root/boot-system-check") and \
+           os.path.exists("/etc/systemd/system/boot-system-check.service"):
+            func = signal_boot_check
+        elif os.path.exists("/root/check-upgrade-system") and \
            os.path.exists("/etc/systemd/system/upgrade-system-check.service"):
             func = signal_upgrade_check
         else:
