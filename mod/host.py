@@ -124,7 +124,7 @@ from mod.settings import (
     TUNER_URI, TUNER_INSTANCE_ID, TUNER_INPUT_PORT, TUNER_MONITOR_PORT, HMI_TIMEOUT, MODEL_TYPE,
     UNTITLED_PEDALBOARD_NAME, DEFAULT_SNAPSHOT_NAME,
     MIDI_BEAT_CLOCK_SENDER_URI, MIDI_BEAT_CLOCK_SENDER_INSTANCE_ID, MIDI_BEAT_CLOCK_SENDER_OUTPUT_PORT,
-    AUDIOFILE_URI, AUDIOFILE_INSTANCE_IDS, AUDIOFILE_OUTPUT_PORT_PREFIX,
+    AUDIOFILE_URI, AUDIOFILE_PARAM_URI, AUDIOFILE_INSTANCE_IDS, AUDIOFILE_OUTPUT_PORT_PREFIX,
     WEBRTC_PLAYER_AUDIO_DIR,
 )
 from mod.tuner import (
@@ -1042,14 +1042,14 @@ class Host(object):
         self.send_notmodified_debug("add %s %d" % (AUDIOFILE_URI, instance_id))
         self.send_notmodified_debug("connect effect_%i:%s%d fake-input:source_%d" % (instance_id, AUDIOFILE_OUTPUT_PORT_PREFIX, input_number, input_number))
         self.send_notmodified_debug("patch_set %d %s \"%s\"" % (instance_id,
-                                                                AUDIOFILE_URI,
+                                                                AUDIOFILE_PARAM_URI,
                                                                 filename))
         self.send_notmodified_debug("param_set %d loop_mode 1" % instance_id)
 
     def webrtc_select_audio(self, input_number, filename):
         instance_id = AUDIOFILE_INSTANCE_IDS[input_number]
         self.send_notmodified_debug("patch_set %d %s \"%s\"" % (instance_id,
-                                                                AUDIOFILE_URI,
+                                                                AUDIOFILE_PARAM_URI,
                                                                 filename))
 
     def webrtc_stop(self, input_number):
