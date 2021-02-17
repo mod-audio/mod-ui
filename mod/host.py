@@ -125,6 +125,7 @@ from mod.settings import (
     UNTITLED_PEDALBOARD_NAME, DEFAULT_SNAPSHOT_NAME,
     MIDI_BEAT_CLOCK_SENDER_URI, MIDI_BEAT_CLOCK_SENDER_INSTANCE_ID, MIDI_BEAT_CLOCK_SENDER_OUTPUT_PORT,
     AUDIOFILE_URI, AUDIOFILE_INSTANCE_IDS, AUDIOFILE_OUTPUT_PORT_PREFIX,
+    WEBRTC_PLAYER_AUDIO_DIR,
 )
 from mod.tuner import (
     find_freqnotecents,
@@ -474,15 +475,6 @@ class Host(object):
         Protocol.register_cmd_callback('DUOX', CMD_DUOX_SNAPSHOT_SAVE, self.hmi_snapshot_save)
 
         Protocol.register_cmd_callback('DWARF', CMD_DWARF_CONTROL_SUBPAGE, self.hmi_parameter_load_subpage)
-
-        # Setup input player
-        self.player_state = {}
-        for input_number, instance_id in AUDIOFILE_INSTANCE_IDS.items():
-            self.player_state[input_number] = {
-                'instance_id': instance_id,
-                'selected_audio': None,
-                'playing': False,
-            }
 
         if not APP:
             IOLoop.instance().add_callback(self.init_host)
@@ -970,29 +962,28 @@ class Host(object):
         # All set, disable HW bypass now
         init_bypass()
 
-    def webrtc_select_audio(self, input_number, filename):
-        state =  self.player_state[input_number]
-        state['selected_audio'] = filename.replace('"','\\"')))
-        if state['playing']:
-            self.send_notmodified("patch_set %d %s \"%s\"" % (state['instance_id'],
-                                                              AUDIOFILE_URI,
-                                                              filename.replace('"','\\"')))
+    def webrtc_play(self, input_number, filename):
+        instance_id = AUDIOFILE_INSTANCE_IDS[input_number]
+        self.send_notmodified_debug("add %s %d" % (AUDIOFILE_URI, instance_id))
+        self.send_notmodified_debug("connect effect_%i:%s%d fake-input:source_%d" % (instance_id, AUDIOFILE_OUTPUT_PORT_PREFIX, input_number, input_number))
+        self.send_notmodified_debug("patch_set %d %s \"%s\"" % (instance_id,
+                                                                AUDIOFILE_URI,
+                                                                filename))
+        self.send_notmodified_debug("param_set %d loop_mode 1" % instance_id)
 
-    def webrtc_play(self, input_number):
-        state =  self.player_state[input_number]
-        # Setup audiofile for webrtc
-        self.send_notmodified("add %s %d" % (AUDIOFILE_URI, state['instance_id']))
-        self.send_notmodified("connect effect_%i:%s2 fake-input:source_2" % (state['instance_id'], AUDIOFILE_OUTPUT_PORT_PREFIX))
-        self.send_notmodified("patch_set %d %s \"%s\"" % (state['instance_id'],
-                                                          AUDIOFILE_URI,
-                                                          state['selected_audio']))
-        self.send_notmodified("param_set %d loop_mode 1" % (state['instance_id']))
-        state['playing'] = True
+    def webrtc_select_audio(self, input_number, filename):
+        instance_id = AUDIOFILE_INSTANCE_IDS[input_number]
+        self.send_notmodified_debug("patch_set %d %s \"%s\"" % (instance_id,
+                                                                AUDIOFILE_URI,
+                                                                filename))
 
     def webrtc_stop(self, input_number):
-        state = self.player_state[input_number]
-        self.send_notmodified("remove %d" % state['instance_id'])
-        state['playing'] = False
+        instance_id = AUDIOFILE_INSTANCE_IDS[input_number]
+        self.send_notmodified_debug("remove %d" % instance_id)
+
+    def send_notmodified_debug(self, msg):
+        print(msg)
+        self.send_notmodified(msg)
 
     def init_jack(self):
         self.audioportsIn  = []

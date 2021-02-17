@@ -1201,17 +1201,25 @@ class OnlineInstanceWebSocket(websocket.WebSocketHandler):
         elif cmd == "release":
             SESSION.release_virtual_device()
 
-        elif cmd == "select_audio":
-            SESSION.host.webrtc_select_audio(int(data[1]), data[2])
-
-        elif cmd == "play":
-            SESSION.host.webrtc_play(int(data[1]))
-
-        elif cmd == "stop":
-            SESSION.host.webrtc_stop(int(data[2]))
-
         else:
             print("Unexpected command received over online instance websocket")
+
+class PlayerWebSocket(websocket.WebSocketHandler):
+    def open(self):
+        print("player websocket open")
+        self.set_nodelay(True)
+        SESSION.webrtc_player_manager.add_client(self)
+
+    def on_close(self):
+        print("player websocket close")
+        SESSION.webrtc_player_manager.remove_client(self)
+
+    def on_message(self, serialized):
+        message = json.loads(serialized)
+        SESSION.webrtc_player_manager.handle(message)
+
+    def send(self, msg):
+        self.write_message(json.dumps(msg))
 
 
 class PackageUninstall(JsonRequestHandler):
@@ -2285,6 +2293,7 @@ application = web.Application(
 
             (r"/websocket/?$", ServerWebSocket),
             (r"/online_instance/?$", OnlineInstanceWebSocket),
+            (r"/webrtc_player/?$", PlayerWebSocket),
 
             (r"/(.*)", TimelessStaticFileHandler, {"path": HTML_DIR}),
         ],
