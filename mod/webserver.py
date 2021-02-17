@@ -2175,16 +2175,16 @@ settings = {'log_function': lambda handler: None} if not LOG else {}
 application = web.Application(
         EffectInstaller.urls('effect/install') +
         [
-            (r"/system/info", SystemInfo),
-            (r"/system/prefs", SystemPreferences),
-            (r"/system/exechange", SystemExeChange),
-            (r"/system/cleanup", SystemCleanup),
+            #(r"/system/info", SystemInfo),
+            #(r"/system/prefs", SystemPreferences),
+            #(r"/system/exechange", SystemExeChange),
+            #(r"/system/cleanup", SystemCleanup),
 
-            (r"/update/download/", UpdateDownload),
-            (r"/update/begin", UpdateBegin),
+            #(r"/update/download/", UpdateDownload),
+            #(r"/update/begin", UpdateBegin),
 
-            (r"/controlchain/download/", ControlChainDownload),
-            (r"/controlchain/cancel/", ControlChainCancel),
+            #(r"/controlchain/download/", ControlChainDownload),
+            #(r"/controlchain/cancel/", ControlChainCancel),
 
             (r"/resources/(.*)", EffectResource),
 
@@ -2214,7 +2214,7 @@ application = web.Application(
             (r"/effect/connect/*(/[A-Za-z0-9_/]+[^/]),([A-Za-z0-9_/]+[^/])/?", EffectConnect),
             (r"/effect/disconnect/*(/[A-Za-z0-9_/]+[^/]),([A-Za-z0-9_/]+[^/])/?", EffectDisconnect),
 
-            (r"/package/uninstall", PackageUninstall),
+            #(r"/package/uninstall", PackageUninstall),
 
             # pedalboard stuff
             (r"/pedalboard/list", PedalboardList),
@@ -2266,8 +2266,8 @@ application = web.Application(
 
             (r"/reset/?", DashboardClean),
 
-            (r"/sdk/install/?", SDKEffectInstaller),
-            (r"/sdk/update", SDKEffectUpdater),
+            #(r"/sdk/install/?", SDKEffectInstaller),
+            #(r"/sdk/update", SDKEffectUpdater),
 
             (r"/jack/get_midi_devices", JackGetMidiDevices),
             (r"/jack/set_midi_devices", JackSetMidiDevices),
@@ -2281,9 +2281,9 @@ application = web.Application(
             (r"/hello/?", Hello),
 
             (r"/truebypass/(Left|Right)/(true|false)", TrueBypass),
-            (r"/set_buffersize/(128|256)", SetBufferSize),
+            #(r"/set_buffersize/(128|256)", SetBufferSize),
             (r"/reset_xruns/", ResetXruns),
-            (r"/switch_cpu_freq/", SwitchCpuFreq),
+            #(r"/switch_cpu_freq/", SwitchCpuFreq),
 
             (r"/save_user_id/", SaveUserId),
 
