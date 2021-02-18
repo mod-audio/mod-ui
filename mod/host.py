@@ -4968,6 +4968,10 @@ _:b%i
 
     def hmi_parameter_set(self, hw_id, value, callback):
         logging.debug("hmi parameter set")
+        if self.next_hmi_pedalboard_loading:
+            callback(False)
+            logging.error("hmi_parameter_set, pedalboard loading is in progress")
+            return
         instance_id, portsymbol = self.get_addressed_port_info(hw_id)
         self.hmi_or_cc_parameter_set(instance_id, portsymbol, value, hw_id, callback)
 
