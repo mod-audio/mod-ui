@@ -883,6 +883,9 @@ class Host(object):
 
     @gen.coroutine
     def process_postponed_messages(self):
+        if self.next_hmi_pedalboard_loading:
+            return
+
         if self.next_hmi_bpb[1] or self.next_hmi_bpb[2]:
             bpb, sendHMI, sendHMIAddressing = self.next_hmi_bpb
             self.next_hmi_bpb[1] = self.next_hmi_bpb[2] = False
@@ -4819,6 +4822,14 @@ _:b%i
 
     # -----------------------------------------------------------------------------------------------------------------
 
+    def load_different_callback(self, ok):
+        if self.next_hmi_pedalboard_to_load is None:
+            return
+        if ok:
+            print("NOTE: Delayed loading of %i:%i has started" % self.next_hmi_pedalboard_to_load)
+        else:
+            print("ERROR: Delayed loading of %i:%i failed!" % self.next_hmi_pedalboard_to_load)
+
     def hmi_load_bank_pedalboard(self, bank_id, pedalboard_id, callback):
         logging.debug("hmi load bank pedalboard")
 
@@ -4831,6 +4842,7 @@ _:b%i
             pedalboard_id = int(pedalboard_id)
         except:
             print("ERROR: Trying to load pedalboard using invalid pedalboard_id '%s'" % (pedalboard_id))
+            self.next_hmi_pedalboard_to_load = None
             callback(False)
             return
 
@@ -4851,57 +4863,53 @@ _:b%i
             callback(False)
             return
 
-        next_pb_to_load = (bank_id, pedalboard_id)
-        self.next_hmi_pedalboard_loading = True
-        callback(True)
-
         bundlepath = pedalboards[pedalboard_id]['bundle']
+        pbtitle = pedalboards[pedalboard_id]['title']
         abort_catcher = self.abort_previous_loading_progress("host PB load " + bundlepath)
 
-        def load_different_callback(ok):
-            if self.next_hmi_pedalboard_to_load is None:
-                return
-            if ok:
-                print("NOTE: Delayed loading of %i:%i has started" % self.next_hmi_pedalboard_to_load)
-            else:
-                print("ERROR: Delayed loading of %i:%i failed!" % self.next_hmi_pedalboard_to_load)
+        next_pb_to_load = (bank_id, pedalboard_id)
+        self.next_hmi_pedalboard_to_load = next_pb_to_load
+        self.next_hmi_pedalboard_loading = True
+        callback(True)
 
         def load_finish_callback(_):
             self.processing_pending_flag = False
             self.send_notmodified("feature_enable processing 1")
 
-        def load_finish_with_ssname_callback(_):
-            name = self.snapshot_name() or DEFAULT_SNAPSHOT_NAME
-            self.hmi.set_snapshot_name(name, load_finish_callback)
-
-        def pb_host_loaded_callback(_):
-            print("NOTE: Loading of %i:%i finished" % (bank_id, pedalboard_id))
-
+            print("NOTE: Loading of %i:%i finished (2/2)" % (bank_id, pedalboard_id))
             next_pedalboard = self.next_hmi_pedalboard_to_load
             self.next_hmi_pedalboard_to_load = None
+            self.next_hmi_pedalboard_loading = False
 
             if next_pedalboard is None:
                 logging.error("ERROR: Inconsistent state detected when loading next pedalboard (will not activate audio)")
                 return
 
             # Check if there's a pending pedalboard to be loaded
-            if next_pedalboard != (bank_id, pedalboard_id):
-                self.hmi_load_bank_pedalboard(next_pedalboard[0], next_pedalboard[1], load_different_callback)
-            else:
-            # No, so just set title if needed and we are done
-                if self.descriptor.get('hmi_set_pb_name', False):
-                    if self.descriptor.get('hmi_set_ss_name', False):
-                        cb = load_finish_with_ssname_callback
-                    else:
-                        cb = load_finish_callback
-                    self.hmi.set_pedalboard_name(self.pedalboard_name, cb)
+            if next_pedalboard != next_pb_to_load:
+                self.hmi_load_bank_pedalboard(next_pedalboard[0], next_pedalboard[1], self.load_different_callback)
+
+        def load_finish_with_ssname_callback(_):
+            name = self.snapshot_name() or DEFAULT_SNAPSHOT_NAME
+            self.hmi.set_snapshot_name(name, load_finish_callback)
+
+        def hmi_ready_callback(ok):
+            if self.descriptor.get('hmi_set_pb_name', False):
+                if self.descriptor.get('hmi_set_ss_name', False):
+                    cb = load_finish_with_ssname_callback
                 else:
-                    load_finish_callback(True)
+                    cb = load_finish_callback
+                self.hmi.set_pedalboard_name(pbtitle, cb)
+            else:
+                load_finish_callback(True)
+
+        def pb_host_loaded_callback(_):
+            print("NOTE: Loading of %i:%i finished (1/2)" % next_pb_to_load)
+            # Dummy HMI call, just to receive callback when all other HMI messages finish
+            self.hmi.ping(hmi_ready_callback)
 
         def load_callback(_):
             self.bank_id = bank_id
-            self.next_hmi_pedalboard_to_load = next_pb_to_load
-            self.next_hmi_pedalboard_loading = False
             self.load(bundlepath, False, abort_catcher)
             # Dummy host call, just to receive callback when all other host messages finish
             self.send_notmodified("cpu_load", pb_host_loaded_callback, datatype='float_structure')
@@ -4973,6 +4981,10 @@ _:b%i
 
     def hmi_parameter_set(self, hw_id, value, callback):
         logging.debug("hmi parameter set")
+        if self.next_hmi_pedalboard_loading:
+            callback(False)
+            logging.error("hmi_parameter_set, pedalboard loading is in progress")
+            return
         instance_id, portsymbol = self.get_addressed_port_info(hw_id)
         self.hmi_or_cc_parameter_set(instance_id, portsymbol, value, hw_id, callback)
 
@@ -5787,20 +5799,6 @@ _:b%i
         except Exception as e:
             callback(False)
             logging.exception(e)
-
-    @gen.coroutine
-    def hmi_set_pb_name(self, name):
-        if self.hmi.initialized and self.descriptor.get('hmi_set_pb_name', False):
-            yield gen.Task(self.hmi.set_pedalboard_name, name)
-
-    @gen.coroutine
-    def hmi_set_pb_and_ss_name(self, pbname):
-        if self.hmi.initialized and self.descriptor.get('hmi_set_pb_name', False):
-            yield gen.Task(self.hmi.set_pedalboard_name, pbname)
-
-            if self.descriptor.get('hmi_set_ss_name', False):
-                ssname = self.snapshot_name() or DEFAULT_SNAPSHOT_NAME
-                yield gen.Task(self.hmi.set_snapshot_name, ssname)
 
     def hmi_clear_ss_name(self, callback):
         if self.hmi.initialized and self.descriptor.get('hmi_set_ss_name', False):
