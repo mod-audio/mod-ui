@@ -30,7 +30,7 @@ from mod.screenshot import ScreenshotGenerator
 from mod.settings import (LOG,
                           DEV_ENVIRONMENT, DEV_HMI, DEV_HOST,
                           HMI_SERIAL_PORT, HMI_BAUD_RATE, HMI_TIMEOUT,
-                          PREFERENCES_JSON_FILE, UNTITLED_PEDALBOARD_NAME)
+                          PREFERENCES_JSON_FILE, DEFAULT_SNAPSHOT_NAME, UNTITLED_PEDALBOARD_NAME)
 
 if DEV_HOST:
     Host = FakeHost
@@ -196,8 +196,8 @@ class Session(object):
         bundlepath, newPB = self.host.save(title, asNew, callback)
         self.pedalboard_changed_callback(True, bundlepath, title)
 
-        if self.hmi.initialized:
-            self.host.hmi_set_pb_name(title)
+        if self.hmi.initialized and self.host.descriptor.get('hmi_set_pb_name', False):
+            self.hmi_set_pb_name(title)
 
         self.screenshot_generator.schedule_screenshot(bundlepath)
         return bundlepath, newPB
@@ -338,6 +338,21 @@ class Session(object):
         self.host.set_pedalboard_size(width, height)
 
     # -----------------------------------------------------------------------------------------------------------------
+    # web session helpers
+
+    @gen.coroutine
+    def hmi_set_pb_name(self, name):
+        yield gen.Task(self.hmi.set_pedalboard_name, name)
+
+    @gen.coroutine
+    def hmi_set_pb_and_ss_name(self, pbname):
+        yield gen.Task(self.hmi.set_pedalboard_name, pbname)
+
+        if self.host.descriptor.get('hmi_set_ss_name', False):
+            ssname = self.host.snapshot_name() or DEFAULT_SNAPSHOT_NAME
+            yield gen.Task(self.hmi.set_snapshot_name, ssname)
+
+    # -----------------------------------------------------------------------------------------------------------------
     # TODO
     # Everything after this line is yet to be documented
 
@@ -358,8 +373,8 @@ class Session(object):
             bundlepath = ""
             title = ""
 
-        if self.hmi.initialized:
-            self.host.hmi_set_pb_and_ss_name(title or UNTITLED_PEDALBOARD_NAME)
+        if self.hmi.initialized and self.host.descriptor.get('hmi_set_pb_name', False):
+            self.hmi_set_pb_and_ss_name(title or UNTITLED_PEDALBOARD_NAME)
 
         self.pedalboard_changed_callback(True, bundlepath, title)
         return title
