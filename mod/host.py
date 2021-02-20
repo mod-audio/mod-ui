@@ -4800,6 +4800,9 @@ _:b%i
 
     # -----------------------------------------------------------------------------------------------------------------
 
+    def bank_config_enabled_callback(self, _):
+        print("NOTE: bank config done")
+
     def load_different_callback(self, ok):
         if self.next_hmi_pedalboard_to_load is None:
             return
@@ -4866,6 +4869,8 @@ _:b%i
             # Check if there's a pending pedalboard to be loaded
             if next_pedalboard != next_pb_to_load:
                 self.hmi_load_bank_pedalboard(next_pedalboard[0], next_pedalboard[1], self.load_different_callback)
+            elif self.descriptor.get("hmi_bank_navigation", False):
+                self.setNavigateWithFootswitches(self.isBankFootswitchNavigationOn(), self.bank_config_enabled_callback)
 
         def load_finish_with_ssname_callback(_):
             name = self.snapshot_name() or DEFAULT_SNAPSHOT_NAME
@@ -4883,8 +4888,6 @@ _:b%i
 
         def pb_host_loaded_callback(_):
             print("NOTE: Loading of %i:%i finished (1/2)" % next_pb_to_load)
-            if self.descriptor.get("hmi_bank_navigation", False):
-                self.setNavigateWithFootswitches(self.isBankFootswitchNavigationOn(), None)
             # Dummy HMI call, just to receive callback when all other HMI messages finish
             self.hmi.ping(hmi_ready_callback)
 
