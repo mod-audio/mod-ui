@@ -4883,6 +4883,8 @@ _:b%i
 
         def pb_host_loaded_callback(_):
             print("NOTE: Loading of %i:%i finished (1/2)" % next_pb_to_load)
+            if self.descriptor.get("hmi_bank_navigation", False):
+                self.setNavigateWithFootswitches(self.isBankFootswitchNavigationOn(), None)
             # Dummy HMI call, just to receive callback when all other HMI messages finish
             self.hmi.ping(hmi_ready_callback)
 
@@ -4892,12 +4894,8 @@ _:b%i
             # Dummy host call, just to receive callback when all other host messages finish
             self.send_notmodified("cpu_load", pb_host_loaded_callback, datatype='float_structure')
 
-        def footswitch_callback(_):
-            self.setNavigateWithFootswitches(self.isBankFootswitchNavigationOn(), load_callback)
-
         def hmi_clear_callback(_):
-            cb = footswitch_callback if self.descriptor.get("hmi_bank_navigation", False) else load_callback
-            self.hmi.clear(cb)
+            self.hmi.clear(load_callback)
 
         if not self.processing_pending_flag:
             self.processing_pending_flag = True
