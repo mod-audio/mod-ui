@@ -69,6 +69,11 @@ class WebrtcPlayerManager:
 
             elif cmd in ('play', 'stop'):
                 self.link_cmd(cmd, player)
+                if cmd == 'play' and not self.host.transport_rolling:
+                    self.host.set_transport_rolling(True, True, False, True, False)
+                elif cmd == 'stop':
+                    if not self.playing:
+                        self.host.set_transport_rolling(False, True, False, True, False)
 
         self.broadcast(msg)
 
@@ -83,6 +88,13 @@ class WebrtcPlayerManager:
                     'cmd': cmd,
                     'input': pl.input_number,
                 })
+
+    @property
+    def playing(self):
+        for player in self.players.values():
+            if player.playing:
+                return True
+        return False
 
 
 class WebrtcPlayer:
