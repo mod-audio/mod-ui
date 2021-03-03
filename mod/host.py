@@ -632,8 +632,8 @@ class Host(object):
                 return
 
         if atype == Addressings.ADDRESSING_TYPE_CC:
-            label = '"%s"' % data['label'].replace('"', '')
-            unit  = '"%s"' % data['unit'].replace('"', '')
+            label = '"%s"' % data['label'].replace('"', '')[:15]
+            unit  = '"%s"' % data['unit'].replace('"', '')[:15]
 
             rmaximum    = data['maximum']
             rvalue      = data['value']
@@ -651,7 +651,7 @@ class Host(object):
                         rmaximum = currentNum
                         break
 
-                    optdata    = '"%s" %f' % (o[1].replace('"', ''), float(o[0]))
+                    optdata    = '"%s" %f' % (o[1].replace('"', '')[:15], float(o[0]))
                     optdataLen = len(optdata)
 
                     if numBytesFree-optdataLen-2 < 0:
@@ -2834,7 +2834,7 @@ class Host(object):
                     if addressing['actuator_uri'] not in used_actuators:
                         used_actuators.append(addressing['actuator_uri'])
 
-            for uri, param in data['parameters'].items():
+            for uri, param in data.get('parameters', {}).items():
                 if pluginData['parameters'].get(uri, None) in (param, None):
                     continue
                 self.msg_callback("patch_set %s 1 %s %s %s" % (instance, uri, param[1], param[0]))
