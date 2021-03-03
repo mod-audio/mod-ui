@@ -91,6 +91,7 @@ PEDALBOARDS_HTTP_ADDRESS = os.environ.pop('MOD_PEDALBOARDS_HTTP_ADDRESS', "https
 PEDALBOARDS_LABS_HTTP_ADDRESS = os.environ.pop('MOD_PEDALBOARDS_LABS_HTTP_ADDRESS', "https://pedalboards-labs.moddevices.com")
 CONTROLCHAIN_HTTP_ADDRESS = os.environ.pop('MOD_CONTROLCHAIN_HTTP_ADDRESS',
                                            "http://download.moddevices.com/releases/cc-firmware/v2")
+FILE_MANAGER_PORT = os.environ.pop('MOD_FILE_MANAGER_PORT', '8081')
 
 AUDIOFILE_URI = "http://kxstudio.sf.net/carla/plugins/audiofile"
 AUDIOFILE_PARAM_URI = "http://kxstudio.sf.net/carla/file/audio"
