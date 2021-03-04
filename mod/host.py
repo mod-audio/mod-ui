@@ -783,6 +783,11 @@ class Host(object):
                     logging.error("[host] address set value not in list %f", data['value'])
                     callback(False)
                     return
+                # FIXME maybe, this likely will never work
+                logging.error("[host] addr_task_set_value called with an enumeration %s", data['actuator_uri'])
+                callback(False)
+                return
+
             self.send_modified("cc_value_set %d %s %f" % (data['instance_id'], data['port'], data['value']),
                                callback, datatype='boolean')
             return
@@ -2085,11 +2090,18 @@ class Host(object):
         current_addressing['value'] = float(value)
 
         if actuator_type == Addressings.ADDRESSING_TYPE_CC:
-            self.send_modified("cc_value_set %d %s %f" % (instance_id, portsymbol, current_addressing['value']),
-                               callback, datatype='boolean')
+            if current_addressing['cctype'] & CC_MODE_OPTIONS:
+                def readdress(_):
+                    self.addr_task_addressing(Addressings.ADDRESSING_TYPE_CC,
+                                              self.addressings.cc_metadata[actuator_uri]['hw_id'],
+                                              current_addressing, callback)
+                self.send_modified("cc_unmap %d %s" % (instance_id, portsymbol), readdress)
+            else:
+                self.send_modified("cc_value_set %d %s %f" % (instance_id, portsymbol, current_addressing['value']),
+                                  callback, datatype='boolean')
             return
 
-        if actuator_type != Addressings.ADDRESSING_TYPE_HMI:
+        if actuator_type != Addressings.ADDRESSING_TYPE_HMI or not self.hmi.initialized:
             if callback is not None:
                 callback(True)
             return

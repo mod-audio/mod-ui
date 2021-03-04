@@ -952,7 +952,8 @@ class Addressings(object):
                     if (addressing['instance_id'], addressing['port']) == skippedPort:
                         continue
 
-                    if feedback:
+                    # NOTE we never call `value_set` for CC lists, as it breaks pagination
+                    if feedback and (addressing['cctype'] & CC_MODE_OPTIONS) == 0x0:
                         try:
                             yield gen.Task(self._task_set_value, self.ADDRESSING_TYPE_CC, actuator_cc, addressing)
                         except Exception as e:
