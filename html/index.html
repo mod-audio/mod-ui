@@ -24,15 +24,15 @@
 <meta name="msapplication-TileImage" content="img/favicon/ms-icon-144x144.png">
 <meta name="theme-color" content="#111111">
 
+<link rel="stylesheet" type="text/css" href="css/fontello/css/fontello.css?v={{version}}"/>
 <link rel="stylesheet" type="text/css" href="css/main.css?v={{version}}"/>
 <link rel="stylesheet" type="text/css" href="css/dashboard.css?v={{version}}"/>
-<link rel="preload" href="css/fontello/css/fontello.css?v={{version}}" as="style" onload="this.onload=null;this.rel='stylesheet'">
-<link rel="preload" href="css/fonts.css?v={{version}}" as="style" onload="this.onload=null;this.rel='stylesheet'">
-<link rel="preload" href="css/pedals.css?v={{version}}" as="style" onload="this.onload=null;this.rel='stylesheet'">
-<link rel="preload" href="img/icons/icons.css?v={{version}}" as="style" onload="this.onload=null;this.rel='stylesheet'">
-<link rel="preload" href="js/lib/slick/slick.css?v={{version}}" as="style" onload="this.onload=null;this.rel='stylesheet'">
-<link rel="preload" href="js/lib/slick/slick-theme.css?v={{version}}" as="style" onload="this.onload=null;this.rel='stylesheet'">
-<link rel="preload" href="resources/pedals/default.css?v={{version}}" as="style" onload="this.onload=null;this.rel='stylesheet'">
+<link rel="stylesheet" type="text/css" href="css/fonts.css?v={{version}}"/>
+<link rel="stylesheet" type="text/css" href="img/icons/icons.css?v={{version}}"/>
+<link rel="stylesheet" type="text/css" href="css/pedals.css?v={{version}}"/>
+<link rel="stylesheet" type="text/css" href="resources/pedals/default.css?v={{version}}"/>
+<link rel="stylesheet" type="text/css" href="js/lib/slick/slick.css?v={{version}}"/>
+<link rel="stylesheet" type="text/css" href="js/lib/slick/slick-theme.css?v={{version}}"/>
 
 <style type="text/css">
     /* STYLE FOR LOADING ANIMATION */
@@ -56,7 +56,7 @@
 <script type="text/javascript" src="js/lib/lunr.min.js?v={{version}}"></script>
 <script type="text/javascript" src="js/lib/buy-button-storefront.js?v={{version}}"></script>
 <script type="text/javascript" src="js/shopify.js?v={{version}}"></script>
-<script type="text/javascript" async src="js/lib/slick/slick.min.js?v={{version}}"></script>
+<script type="text/javascript" src="js/lib/slick/slick.min.js?v={{version}}"></script>
 
 <script type="text/javascript">
     {% autoescape None %}
@@ -904,7 +904,11 @@ $('document').ready(function() {
                     Update version <b>0.0.0</b>.<br/>
                     Released on 0000-00-00.
                 </p>
-                <p>For more information about this release <a href="#" target="_blank">click here</a>.</p>
+                <p>
+                    Curious about this release? Check out
+                    <a href="#" target="_blank">this forum post</a>
+                    where you can read more details and discuss with our community.
+                </p>
                 <p class="textright">
                     <button class="js-close btn btn-xs btn-danger">Cancel</button>
                     <button class="js-upgrade btn btn-xs btn-info">Download</button>
