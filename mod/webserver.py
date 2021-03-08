@@ -1029,9 +1029,9 @@ class EffectPresetLoad(JsonRequestHandler):
         if not ok:
             self.write(False)
             return
-        if not SESSION.hmi.initialized:
-            self.write(True)
-            return
+        #if not SESSION.hmi.initialized:
+            #self.write(True)
+            #return
 
         instance_id = SESSION.host.mapper.get_id_without_creating(instance)
         data = SESSION.host.addressings.get_presets_as_options(instance_id)
@@ -1049,9 +1049,9 @@ class EffectParameterSet(JsonRequestHandler):
     @web.asynchronous
     @gen.engine
     def post(self):
-        if not SESSION.hmi.initialized:
-            self.write(True)
-            return
+        #if not SESSION.hmi.initialized:
+            #self.write(True)
+            #return
         data = json.loads(self.request.body.decode("utf-8", errors="ignore"))
         symbol, instance, portsymbol, value = data.rsplit("/",3)
         try:
