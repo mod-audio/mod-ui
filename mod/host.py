@@ -5773,7 +5773,7 @@ _:b%i
         callback(result)
 
     def hmi_snapshot_save(self, idx, callback):
-        if idx not in (0, 1):
+        if idx not in (0, 1, 2):
             return callback(False)
 
         self.hmi_snapshots[idx] = self.snapshot_make("HMI")
