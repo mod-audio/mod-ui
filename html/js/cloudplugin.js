@@ -209,6 +209,7 @@ JqueryClass('cloudPluginBox', {
             text: self.data('searchbox').val(),
             summary: "true",
             image_version: VERSION,
+            bin_compat: BIN_COMPAT,
         }
 
         // hide/show featured plugins if searching/not searching
@@ -1032,6 +1033,7 @@ JqueryClass('cloudPluginBox', {
             data: {
                 uri: plugin.uri,
                 image_version: VERSION,
+                bin_compat: BIN_COMPAT,
             },
             success: function (pluginData) {
                 if (pluginData && pluginData.length > 0) {
