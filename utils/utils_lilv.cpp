@@ -4079,6 +4079,10 @@ const PluginInfo_Essentials* get_plugin_info_essentials(const char* const uri_)
         info.monitoredOutputs = pInfo.gui.monitoredOutputs;
         info.parameters       = pInfo.parameters;
         info.buildEnvironment = pInfo.buildEnvironment;
+        info.microVersion     = pInfo.microVersion;
+        info.minorVersion     = pInfo.minorVersion;
+        info.release          = pInfo.release;
+        info.builder          = pInfo.builder;
         return &info;
     }
 
@@ -4103,6 +4107,10 @@ const PluginInfo_Essentials* get_plugin_info_essentials(const char* const uri_)
         info.monitoredOutputs = pInfo.gui.monitoredOutputs;
         info.parameters       = pInfo.parameters;
         info.buildEnvironment = pInfo.buildEnvironment;
+        info.microVersion     = pInfo.microVersion;
+        info.minorVersion     = pInfo.minorVersion;
+        info.release          = pInfo.release;
+        info.builder          = pInfo.builder;
         return &info;
     }
 

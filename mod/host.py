@@ -1890,10 +1890,11 @@ class Host(object):
 
             rinstances[instance_id] = pluginData['instance']
 
-            websocket.write_message("add %s %s %.1f %.1f %d %d" % (pluginData['instance'], pluginData['uri'],
-                                                                   pluginData['x'], pluginData['y'],
-                                                                   int(pluginData['bypassed']),
-                                                                   int(bool(pluginData['buildEnv']))))
+            websocket.write_message("add %s %s %.1f %.1f %d %s %d" % (pluginData['instance'], pluginData['uri'],
+                                                                      pluginData['x'], pluginData['y'],
+                                                                      int(pluginData['bypassed']),
+                                                                      pluginData['sversion'],
+                                                                      int(bool(pluginData['buildEnv']))))
 
             if crashed:
                 self.send_notmodified("add %s %d" % (pluginData['uri'], instance_id))
@@ -2253,6 +2254,11 @@ class Host(object):
                 params[paramuri] = [param['ranges']['default'], paramtype]
                 ranges[paramuri] = (param['ranges']['minimum'], param['ranges']['maximum'])
 
+
+            sversion = "_".join(str(v) for v in (extinfo['builder'],
+                                                 extinfo['microVersion'],
+                                                 extinfo['minorVersion'],
+                                                 extinfo['release']))
             self.plugins[instance_id] = {
                 "instance"    : instance,
                 "uri"         : uri,
@@ -2271,6 +2277,7 @@ class Host(object):
                 "preset"      : "",
                 "mapPresets"  : [],
                 "buildEnv"    : extinfo['buildEnvironment'],
+                "sversion"    : sversion,
             }
 
             for output in extinfo['monitoredOutputs']:
@@ -2280,9 +2287,10 @@ class Host(object):
                 self.plugins_added.append(instance_id)
 
             callback(True)
-            self.msg_callback("add %s %s %.1f %.1f %d %d" % (instance, uri, x, y,
-                                                             int(bypassed),
-                                                             int(bool(extinfo['buildEnvironment']))))
+            self.msg_callback("add %s %s %.1f %.1f %d %s %d" % (instance, uri, x, y,
+                                                                int(bypassed),
+                                                                sversion,
+                                                                int(bool(extinfo['buildEnvironment']))))
 
         self.send_modified("add %s %d" % (uri, instance_id), host_callback, datatype='int')
 
@@ -3453,6 +3461,10 @@ class Host(object):
                 "mapPresets"  : [],
                 "nextPreset"  : "",
                 "buildEnv"    : extinfo['buildEnvironment'],
+                "sversion"    : "_".join(str(v) for v in (extinfo['builder'],
+                                                          extinfo['microVersion'],
+                                                          extinfo['minorVersion'],
+                                                          extinfo['release'])),
             }
 
             self.send_notmodified("add %s %d" % (p['uri'], instance_id))
@@ -3460,10 +3472,11 @@ class Host(object):
             if p['bypassed']:
                 self.send_notmodified("bypass %d 1" % (instance_id,))
 
-            self.msg_callback("add %s %s %.1f %.1f %d %d" % (instance,
-                                                             p['uri'], p['x'], p['y'],
-                                                             int(p['bypassed']),
-                                                             int(bool(extinfo['buildEnvironment']))))
+            self.msg_callback("add %s %s %.1f %.1f %d %s %d" % (instance,
+                                                                p['uri'], p['x'], p['y'],
+                                                                int(p['bypassed']),
+                                                                pluginData['sversion'],
+                                                                int(bool(extinfo['buildEnvironment']))))
 
             if p['bypassCC']['channel'] >= 0 and p['bypassCC']['control'] >= 0:
                 pluginData['addressings'][':bypass'] = self.addressings.add_midi(instance_id, ":bypass",
