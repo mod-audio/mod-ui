@@ -705,11 +705,16 @@ JqueryClass('pedalboard', {
                                   y: Math.min(imgrect.height, Math.max(0, (event.offsetY - imgrect.top))) / imgrect.height };
                 var pad = { left: parseInt(element.css("padding-left")),
                             top: parseInt(element.css("padding-top")) };
+                var renderedVersion = [pluginData.builder,
+                                       pluginData.microVersion,
+                                       pluginData.minorVersion,
+                                       pluginData.release].join('_');
                 $.ajax({
                     url: '/effect/get',
                     data: {
                         uri: pluginData.uri,
                         version: VERSION,
+                        plugin_version: renderedVersion,
                     },
                     success: function (plugin) {
                         new GUI(plugin, options).renderDummyIcon(function (icon) {

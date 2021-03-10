@@ -345,13 +345,14 @@ $('document').ready(function() {
         }
 
         if (cmd == "add") {
-            data         = data.split(" ",6)
+            data         = data.split(" ",7)
             var instance = data[0]
             var uri      = data[1]
             var x        = parseFloat(data[2])
             var y        = parseFloat(data[3])
             var bypassed = parseInt(data[4]) != 0
-            var offBuild = parseInt(data[5]) != 0 // official MOD build coming from store, can be cached
+            var pVersion = data[5]
+            var offBuild = parseInt(data[6]) != 0 // official MOD build coming from store, can be cached
             var plugins  = desktop.pedalboard.data('plugins')
             var skipModified = pb_loading
 
@@ -363,6 +364,7 @@ $('document').ready(function() {
                     data: {
                         uri: uri,
                         version: VERSION,
+                        plugin_version: pVersion,
                     },
                     success: function (pluginData) {
                         var instancekey = '[mod-instance="' + instance + '"]'

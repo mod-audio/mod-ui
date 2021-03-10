@@ -553,11 +553,16 @@ JqueryClass('effectBox', {
         if (plugin.bundles) {
             showInfo()
         } else {
+            var renderedVersion = [plugin.builder,
+                                   plugin.microVersion,
+                                   plugin.minorVersion,
+                                   plugin.release].join('_');
             $.ajax({
                 url: "/effect/get",
                 data: {
                     uri: plugin.uri,
                     version: VERSION,
+                    plugin_version: renderedVersion,
                 },
                 success: function (pluginData) {
                     plugin = $.extend(plugin, pluginData)
@@ -565,7 +570,7 @@ JqueryClass('effectBox', {
                     desktop.pluginIndexerData[plugin.uri] = plugin
                     showInfo()
                 },
-                cache: true,
+                cache: !!plugin.buildEnvironment,
                 dataType: 'json'
             })
         }

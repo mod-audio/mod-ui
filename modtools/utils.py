@@ -346,6 +346,10 @@ class PluginInfo_Essentials(Structure):
         ("monitoredOutputs", POINTER(c_char_p)),
         ("parameters", POINTER(PluginParameter)),
         ("buildEnvironment", c_char_p),
+        ("microVersion", c_int),
+        ("minorVersion", c_int),
+        ("release", c_int),
+        ("builder", c_int),
     ]
 
 class PedalboardMidiControl(Structure):
@@ -723,6 +727,10 @@ def get_plugin_info_essentials(uri):
             'monitoredOutputs': [],
             'parameters': [],
             'buildEnvironment': '',
+            'microVersion': 0,
+            'minorVersion': 0,
+            'release': 0,
+            'builder': 0,
         }
     return structToDict(info.contents)
 

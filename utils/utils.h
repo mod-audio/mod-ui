@@ -203,6 +203,10 @@ typedef struct {
     const char* const* monitoredOutputs;
     const PluginParameter* parameters;
     const char* buildEnvironment;
+    int microVersion;
+    int minorVersion;
+    int release;
+    int builder;
 } PluginInfo_Essentials;
 
 typedef struct {
