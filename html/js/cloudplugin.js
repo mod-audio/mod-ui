@@ -209,6 +209,7 @@ JqueryClass('cloudPluginBox', {
             text: self.data('searchbox').val(),
             summary: "true",
             image_version: VERSION,
+            bin_compat: BIN_COMPAT,
         }
 
         // hide/show featured plugins if searching/not searching
@@ -1092,11 +1093,16 @@ JqueryClass('cloudPluginBox', {
         if ((plugin.bundles && plugin.bundles.length > 0) || ! plugin.installedVersion) {
             localChecked = true
         } else {
+            var renderedVersion = [plugin.builder,
+                                   plugin.microVersion,
+                                   plugin.minorVersion,
+                                   plugin.release].join('_');
             $.ajax({
                 url: "/effect/get",
                 data: {
                     uri: plugin.uri,
                     version: VERSION,
+                    plugin_version: renderedVersion,
                 },
                 success: function (pluginData) {
                     // delete cloud specific fields just in case
@@ -1114,7 +1120,7 @@ JqueryClass('cloudPluginBox', {
                     localChecked = true
                     showInfo()
                 },
-                cache: true,
+                cache: !!plugin.buildEnvironment,
                 dataType: 'json'
             })
         }
@@ -1125,6 +1131,7 @@ JqueryClass('cloudPluginBox', {
             data: {
                 uri: plugin.uri,
                 image_version: VERSION,
+                bin_compat: BIN_COMPAT,
             },
             success: function (pluginData) {
                 if (pluginData && pluginData.length > 0) {

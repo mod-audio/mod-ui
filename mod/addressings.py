@@ -141,6 +141,10 @@ class Addressings(object):
         self.midi_addressings = {}
         self.current_page = 0
 
+        if self.has_hmi_subpages:
+            for hw_id in self.hmi_hwsubpages:
+                self.hmi_hwsubpages[hw_id] = 0
+
     # -----------------------------------------------------------------------------------------------------------------
 
     def get_actuators(self):

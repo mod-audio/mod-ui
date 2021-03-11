@@ -397,7 +397,10 @@ class Session(object):
                 self.host.hmi_clear_ss_name(set_pb_name)
             def clear_hmi(_):
                 self.hmi.clear(clear_ss_name)
-            self.host.setNavigateWithFootswitches(False, clear_hmi)
+            if self.host.descriptor.get("hmi_bank_navigation", False):
+                self.host.setNavigateWithFootswitches(False, clear_hmi)
+            else:
+                clear_hmi(True)
         else:
             reset_host(True)
 
