@@ -373,6 +373,9 @@ MOD_API const PluginPort* get_plugin_control_inputs(const char* uri);
 // get essential plugin info for host control (control inputs, monitored outputs, parameters and build environment)
 MOD_API const PluginInfo_Essentials* get_plugin_info_essentials(const char* uri);
 
+// check if a plugin preset is valid (must exist)
+MOD_API bool is_plugin_preset_valid(const char* plugin, const char* preset);
+
 // trigger a preset rescan for a plugin the next time it's loaded
 MOD_API void rescan_plugin_presets(const char* uri);
 

@@ -130,7 +130,8 @@ from mod.tuner import (
 )
 from modtools.utils import (
     charPtrToString,
-    is_bundle_loaded, add_bundle_to_lilv_world, remove_bundle_from_lilv_world, rescan_plugin_presets,
+    is_bundle_loaded, add_bundle_to_lilv_world, remove_bundle_from_lilv_world,
+    is_plugin_preset_valid, rescan_plugin_presets,
     get_plugin_info, get_plugin_info_essentials, get_pedalboard_info, get_state_port_values,
     list_plugins_in_bundle, get_all_pedalboards, get_pedalboard_plugin_values,
     init_jack, close_jack, get_jack_data,
@@ -2804,17 +2805,22 @@ class Host(object):
                     logging.exception(e)
 
             if data['preset'] and data['preset'] != pluginData['preset']:
-                self.msg_callback("preset %s %s" % (instance, data['preset']))
                 try:
-                    yield gen.Task(self.preset_load_gen_helper, instance, data['preset'], from_hmi, abort_catcher)
-                except Exception as e:
-                    logging.exception(e)
+                    index = pluginData['mapPresets'].index(data['preset'])
+                except ValueError:
+                    pass
+                else:
+                    self.msg_callback("preset %s %s" % (instance, data['preset']))
+                    try:
+                        yield gen.Task(self.preset_load_gen_helper, instance, data['preset'], from_hmi, abort_catcher)
+                    except Exception as e:
+                        logging.exception(e)
 
-                addressing = pluginData['addressings'].get(":presets", None)
-                if addressing is not None:
-                    addressing['value'] = pluginData['mapPresets'].index(data['preset'])
-                    if addressing['actuator_uri'] not in used_actuators:
-                        used_actuators.append(addressing['actuator_uri'])
+                    addressing = pluginData['addressings'].get(":presets", None)
+                    if addressing is not None:
+                        addressing['value'] = index
+                        if addressing['actuator_uri'] not in used_actuators:
+                            used_actuators.append(addressing['actuator_uri'])
 
             for symbol, value in data['ports'].items():
                 if symbol in pluginData['designations'] or pluginData['ports'].get(symbol, None) in (value, None):
@@ -3441,6 +3447,11 @@ class Host(object):
                 paramuri = param['uri']
                 params[paramuri] = [param['ranges']['default'], paramtype]
                 ranges[paramuri] = (param['ranges']['minimum'], param['ranges']['maximum'])
+
+            # make sure preset is valid
+            if p['preset'] and not is_plugin_preset_valid(p['uri'], p['preset']):
+                print("WARNING: preset '%s' was not valid" % p['preset'])
+                p['preset'] = ""
 
             self.plugins[instance_id] = pluginData = {
                 "instance"    : instance,

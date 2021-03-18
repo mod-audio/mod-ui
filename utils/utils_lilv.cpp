@@ -4120,6 +4120,38 @@ const PluginInfo_Essentials* get_plugin_info_essentials(const char* const uri_)
 
 // --------------------------------------------------------------------------------------------------------
 
+// check if a plugin preset is valid (must exist)
+bool is_plugin_preset_valid(const char* const plugin_, const char* const preset)
+{
+    const std::string plugin(plugin_);
+
+    // check if plugin exists
+    if (PLUGNFO.count(plugin) == 0)
+        return false;
+
+    // plugin must have been cached before
+    if (! PLUGNFO[plugin].valid)
+        return false;
+
+    const PluginInfo& pInfo = PLUGNFO[plugin];
+
+    if (pInfo.presets == nullptr)
+        return false;
+
+    for (int i=0;; ++i)
+    {
+        const PluginPreset& prInfo(pInfo.presets[i]);
+
+        if (! prInfo.valid)
+            return false;
+
+        if (strcmp(prInfo.uri, preset) == 0)
+            return true;
+    }
+
+    return false;
+}
+
 // trigger a preset rescan for a plugin the next time it's loaded
 void rescan_plugin_presets(const char* const uri_)
 {

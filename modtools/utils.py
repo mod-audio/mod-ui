@@ -548,6 +548,9 @@ utils.get_plugin_control_inputs.restype  = POINTER(PluginPort)
 utils.get_plugin_info_essentials.argtypes = [c_char_p]
 utils.get_plugin_info_essentials.restype  = POINTER(PluginInfo_Essentials)
 
+utils.is_plugin_preset_valid.argtypes = [c_char_p, c_char_p]
+utils.is_plugin_preset_valid.restype  = c_bool
+
 utils.rescan_plugin_presets.argtypes = [c_char_p]
 utils.rescan_plugin_presets.restype  = None
 
@@ -733,6 +736,10 @@ def get_plugin_info_essentials(uri):
             'builder': 0,
         }
     return structToDict(info.contents)
+
+# check if a plugin preset uri is valid (must exist)
+def is_plugin_preset_valid(plugin, preset):
+    return bool(utils.is_plugin_preset_valid(plugin.encode("utf-8"), preset.encode("utf-8")))
 
 # trigger a preset rescan for a plugin the next time it's loaded
 def rescan_plugin_presets(uri):
