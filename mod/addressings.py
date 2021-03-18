@@ -1316,6 +1316,7 @@ class Addressings(object):
         # check if selected preset is non-existent
         if not handled:
             print("WARNING: get_presets_as_options() called with an invalid preset uri '%s'" % pluginData['preset'])
+            value = 0
             pluginData['preset'] = presets[0]['uri']
 
         return (value, maximum, options, pluginData['preset'])
