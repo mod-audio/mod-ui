@@ -2008,6 +2008,7 @@ JqueryClass('film', baseWidget, {
         })
         self.bind('touchend', function (e) {
             self.film('mouseUp', e.originalEvent.changedTouches[0])
+            self.click()
         })
 
         self.click(function (e) {
@@ -2323,6 +2324,7 @@ JqueryClass('switchWidget', baseWidget, {
         })
         self.bind('touchend', function (e) {
             self.switchWidget('mouseUp', e.originalEvent.changedTouches[0])
+            self.click()
         })
 
         self.click(function (e) {
@@ -2425,6 +2427,7 @@ JqueryClass('bypassWidget', baseWidget, {
         })
         self.bind('touchend', function (e) {
             self.bypassWidget('mouseUp', e.originalEvent.changedTouches[0])
+            self.click()
         })
 
         self.click(function (e) {
