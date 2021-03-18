@@ -440,6 +440,7 @@ body > .mod-settings.mod-window-visible {
 .mod-pedal-settings .mod-enumerated.mod-file-list.expanded .mod-enumerated-list {
     height: calc(100vh - 175px);
     z-index: 1;
+    background: #212121;
 }
 .mod-pedal-settings .mod-enumerated.mod-file-list .btn-primary {
     background-color: black;
