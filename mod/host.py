@@ -2767,6 +2767,7 @@ class Host(object):
             self.current_pedalboard_snapshot_id = idx
             self.plugins[PEDALBOARD_INSTANCE_ID]['preset'] = "file:///%i" % idx
 
+        was_aborted = self.addressings.was_last_load_current_aborted()
         used_actuators = []
 
         for instance, data in snapshot['data'].items():
@@ -2788,8 +2789,9 @@ class Host(object):
 
             pluginData = self.plugins[instance_id]
             diffBypass = pluginData['bypassed'] != data['bypassed']
+            diffPreset = data['preset'] and data['preset'] != pluginData['preset']
 
-            if diffBypass:
+            if was_aborted or diffBypass:
                 addressing = pluginData['addressings'].get(":bypass", None)
                 if addressing is not None:
                     addressing['value'] = 1.0 if data['bypassed'] else 0.0
@@ -2804,17 +2806,18 @@ class Host(object):
                 except Exception as e:
                     logging.exception(e)
 
-            if data['preset'] and data['preset'] != pluginData['preset']:
+            if was_aborted or diffPreset:
                 try:
                     index = pluginData['mapPresets'].index(data['preset'])
                 except ValueError:
                     pass
                 else:
-                    self.msg_callback("preset %s %s" % (instance, data['preset']))
-                    try:
-                        yield gen.Task(self.preset_load_gen_helper, instance, data['preset'], from_hmi, abort_catcher)
-                    except Exception as e:
-                        logging.exception(e)
+                    if diffPreset:
+                        self.msg_callback("preset %s %s" % (instance, data['preset']))
+                        try:
+                            yield gen.Task(self.preset_load_gen_helper, instance, data['preset'], from_hmi, abort_catcher)
+                        except Exception as e:
+                            logging.exception(e)
 
                     addressing = pluginData['addressings'].get(":presets", None)
                     if addressing is not None:
@@ -2823,14 +2826,19 @@ class Host(object):
                             used_actuators.append(addressing['actuator_uri'])
 
             for symbol, value in data['ports'].items():
-                if symbol in pluginData['designations'] or pluginData['ports'].get(symbol, None) in (value, None):
+                if symbol in pluginData['designations']:
                     continue
 
-                self.msg_callback("param_set %s %s %f" % (instance, symbol, value))
-                try:
-                    yield gen.Task(self.param_set, "%s/%s" % (instance, symbol), value)
-                except Exception as e:
-                    logging.exception(e)
+                equal = pluginData['ports'].get(symbol, None) in (value, None)
+                if not was_aborted and equal:
+                    continue
+
+                if not equal:
+                    self.msg_callback("param_set %s %s %f" % (instance, symbol, value))
+                    try:
+                        yield gen.Task(self.param_set, "%s/%s" % (instance, symbol), value)
+                    except Exception as e:
+                        logging.exception(e)
 
                 addressing = pluginData['addressings'].get(symbol, None)
                 if addressing is not None:
@@ -5356,6 +5364,7 @@ _:b%i
         pb_values = get_pedalboard_plugin_values(self.pedalboard_path)
 
         used_actuators = []
+        was_aborted = self.addressings.was_last_load_current_aborted()
 
         for p in pb_values:
             if abort_catcher.get('abort', False):
@@ -5369,8 +5378,9 @@ _:b%i
 
             bypassed    = bool(p['bypassed'])
             diffBypass  = pluginData['bypassed'] != p['bypassed']
+            diffPreset  = p['preset'] and pluginData['preset'] != p['preset']
 
-            if diffBypass:
+            if was_aborted or diffBypass:
                 addressing = pluginData['addressings'].get(":bypass", None)
                 if addressing is not None:
                     addressing['value'] = 1.0 if bypassed else 0.0
@@ -5385,13 +5395,14 @@ _:b%i
                 except Exception as e:
                     logging.exception(e)
 
-            if p['preset'] and pluginData['preset'] != p['preset']:
-                pluginData['preset'] = p['preset']
-                self.msg_callback("preset %s %s" % (instance, p['preset']))
-                try:
-                    yield gen.Task(self.send_notmodified, "preset_load %d %s" % (instance_id, p['preset']))
-                except Exception as e:
-                    logging.exception(e)
+            if was_aborted or diffPreset:
+                if diffPreset:
+                    pluginData['preset'] = p['preset']
+                    self.msg_callback("preset %s %s" % (instance, p['preset']))
+                    try:
+                        yield gen.Task(self.send_notmodified, "preset_load %d %s" % (instance_id, p['preset']))
+                    except Exception as e:
+                        logging.exception(e)
 
                 addressing = pluginData['addressings'].get(":presets", None)
                 if addressing is not None:
@@ -5402,16 +5413,18 @@ _:b%i
             for port in p['ports']:
                 symbol = port['symbol']
                 value  = port['value']
+                equal  = pluginData['ports'][symbol] == value
 
-                if pluginData['ports'][symbol] == value:
+                if not was_aborted or equal:
                     continue
 
-                pluginData['ports'][symbol] = value
-                self.msg_callback("param_set %s %s %f" % (instance, symbol, value))
-                try:
-                    yield gen.Task(self.send_notmodified, "param_set %d %s %f" % (instance_id, symbol, value))
-                except Exception as e:
-                    logging.exception(e)
+                if not equal:
+                    pluginData['ports'][symbol] = value
+                    self.msg_callback("param_set %s %s %f" % (instance, symbol, value))
+                    try:
+                        yield gen.Task(self.send_notmodified, "param_set %d %s %f" % (instance_id, symbol, value))
+                    except Exception as e:
+                        logging.exception(e)
 
                 addressing = pluginData['addressings'].get(symbol, None)
                 if addressing is not None:
