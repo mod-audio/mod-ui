@@ -956,6 +956,9 @@ class Addressings(object):
                     if (addressing['instance_id'], addressing['port']) == skippedPort:
                         continue
 
+                    # reload value
+                    addressing['value'] = self._task_get_port_value(addressing['instance_id'], addressing['port'])
+
                     # NOTE we never call `value_set` for CC lists, as it breaks pagination
                     if feedback and (addressing['cctype'] & CC_MODE_OPTIONS) == 0x0:
                         try:
