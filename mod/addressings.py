@@ -85,6 +85,10 @@ class Addressings(object):
         # First addressings/pedalboard load flag
         self.first_load = True
 
+        # Flag for load_current being active or aborted
+        self.last_load_current_aborted = False
+        self.pending_load_current = False
+
         # Flag and callbacks for Control Chain waiting
         self.waiting_for_cc = not self.cchain.initialized
         self.waiting_for_cc_cbs = []
@@ -140,6 +144,8 @@ class Addressings(object):
         self.virtual_addressings   = dict((key, []) for key in self.virtual_addressings.keys())
         self.midi_addressings = {}
         self.current_page = 0
+        self.last_load_current_aborted = False
+        self.pending_load_current = False
 
         if self.has_hmi_subpages:
             for hw_id in self.hmi_hwsubpages:
@@ -223,6 +229,10 @@ class Addressings(object):
         # Check if this is the first time we load addressings (ie, first time mod-ui starts)
         first_load = self.first_load
         self.first_load = False
+
+        # reset for load_current before fully loading addressings
+        self.last_load_current_aborted = False
+        self.pending_load_current = False
 
         # Check if pedalboard contains addressings first
         datafile = os.path.join(bundlepath, "addressings.json")
@@ -923,13 +933,22 @@ class Addressings(object):
 
         self._task_addressing(actuator_type, actuator_hw, addressing_data, callback, send_hmi=send_hmi)
 
+    def was_last_load_current_aborted(self):
+        ret = self.last_load_current_aborted or self.pending_load_current
+        self.last_load_current_aborted = False
+        return ret
+
     def load_current_with_callback(self, actuator_uris, skippedPort, updateValue, from_hmi, abort_catcher, callback):
         self.load_current(actuator_uris, skippedPort, updateValue, from_hmi, abort_catcher, callback)
 
     @gen.coroutine
     def load_current(self, actuator_uris, skippedPort, updateValue, from_hmi, abort_catcher, callback=None):
+        self.pending_load_current = True
+
         for actuator_uri in actuator_uris:
             if abort_catcher.get('abort', False):
+                self.last_load_current_aborted = True
+                self.pending_load_current = False
                 if callback is not None:
                     callback(False)
                 print("WARNING: Abort triggered during load_current request, caller:", abort_catcher['caller'])
@@ -955,6 +974,14 @@ class Addressings(object):
                 for addressing in addressings:
                     if (addressing['instance_id'], addressing['port']) == skippedPort:
                         continue
+                    if abort_catcher.get('abort', False):
+                        self.last_load_current_aborted = True
+                        self.pending_load_current = False
+                        if callback is not None:
+                            callback(False)
+                        print("WARNING: Abort triggered in CC loop during load_current request, caller:",
+                              abort_catcher['caller'])
+                        return
 
                     # reload value
                     addressing['value'] = self._task_get_port_value(addressing['instance_id'], addressing['port'])
@@ -972,6 +999,8 @@ class Addressings(object):
                             yield gen.Task(self._task_addressing, self.ADDRESSING_TYPE_CC, actuator_cc, addressing)
                         except Exception as e:
                             logging.exception(e)
+
+        self.pending_load_current = False
 
         if callback is not None:
             callback(True)
