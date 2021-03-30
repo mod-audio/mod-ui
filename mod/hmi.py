@@ -96,6 +96,7 @@ class HMI(object):
         self.queue = []
         self.queue_idle = True
         self.initialized = False
+        self.connected = False
         self.handling_response = False
         self.need_flush = 0 # 0 means False, otherwise use it as counter
         self.flush_io = None
