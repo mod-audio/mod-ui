@@ -1338,7 +1338,11 @@ class Host(object):
         if not self.hmi.initialized:
             callback(True)
             return
+        if self.hmi.connected:
+            callback(True)
+            return
 
+        self.hmi.connected = True
         self.ping_hmi_stop()
 
         def footswitch_addr2_callback(_):
@@ -1360,10 +1364,14 @@ class Host(object):
         if not self.hmi.initialized:
             callback(True)
             return
+        if not self.hmi.connected:
+            callback(True)
+            return
 
         def initialize_callback(_):
             self.initialize_hmi(False, callback)
 
+        self.hmi.connected = False
         self.hmi.ui_dis(initialize_callback)
 
         if HMI_TIMEOUT > 0:
