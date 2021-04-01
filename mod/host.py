@@ -73,6 +73,9 @@ from mod.mod_protocol import (
     CMD_DUOX_SNAPSHOT_LOAD,
     CMD_DUOX_SNAPSHOT_SAVE,
     CMD_DWARF_CONTROL_SUBPAGE,
+    CMD_SYSPLUG_COMPR_DISABLE,
+    CMD_SYSPLUG_COMPR_SETUP,
+    CMD_SYSPLUG_VOLUME,
     BANK_FUNC_NONE,
     BANK_FUNC_PEDALBOARD_NEXT,
     BANK_FUNC_PEDALBOARD_PREV,
@@ -480,8 +483,28 @@ class Host(object):
 
         Protocol.register_cmd_callback('DWARF', CMD_DWARF_CONTROL_SUBPAGE, self.hmi_parameter_load_subpage)
 
+        # TESTING
+        Protocol.register_cmd_callback('ALL', CMD_SYSPLUG_COMPR_DISABLE, self.hmi_sysplug_compr_disable)
+        Protocol.register_cmd_callback('ALL', CMD_SYSPLUG_COMPR_SETUP, self.hmi_sysplug_compr_setup)
+        Protocol.register_cmd_callback('ALL', CMD_SYSPLUG_VOLUME, self.hmi_sysplug_volume)
+
         if not APP:
             IOLoop.instance().add_callback(self.init_host)
+
+    # TESTING
+    def hmi_sysplug_compr_disable(self, callback):
+        print("hmi_sysplug_compr_disable")
+        self.send_notmodified("sys_compressor_off", callback)
+
+    # TESTING
+    def hmi_sysplug_compr_setup(self, a, b, c, d, e, f, callback):
+        print("hmi_sysplug_compr_setup", a, b, c, d, e, f)
+        self.send_notmodified("sys_compressor %f %f %f %f %f %f" % (a,b,c,d,e,f), callback)
+
+    # TESTING
+    def hmi_sysplug_volume(self, volume, callback):
+        print("hmi_sysplug_volume", volume)
+        self.send_notmodified("sys_volume %f" % (volume,), callback)
 
     def __del__(self):
         self.msg_callback("stop")
