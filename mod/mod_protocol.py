@@ -33,6 +33,9 @@ CMD_ARGS = {
         'tf': [],
         'ti': [int],
         'restore': [],
+        'syscompr_off': [],
+        'syscompr': [float,float,float,float,float,float],
+        'sysvol': [float],
         'r': [int,],
         'c': [int,int,],
         'upr': [int],
@@ -48,6 +51,19 @@ CMD_ARGS = {
         'control_skip_enable': [],
         'control_bad_skip': [],
         'save_pot_cal': [int,int],
+        'sys_gio': [int,int,float],
+        'sys_ghp': [float],
+        'sys_ams': [],
+        'sys_bts': [],
+        'sys_btd': [],
+        'sys_ctl': [str],
+        'sys_ver': [str],
+        'sys_ser': [],
+        'sys_usb': [int],
+        'sys_rbt': [],
+        'sys_led': [int,int,int,int],
+        'sys_nam': [int,str],
+        'sys_uni': [int,str],
     },
     'DUO': {
         'boot': [int,int,str,],
@@ -62,6 +78,7 @@ CMD_ARGS = {
         'sl': [int],
         'sc': [],
         'pa': [int,int,int,int,int,int],
+        's_contrast': [int,int],
     },
     'DWARF': {
         'cs': [int,int],
@@ -98,6 +115,9 @@ CMD_TUNER_ON                      = 'tn'
 CMD_TUNER_OFF                     = 'tf'
 CMD_TUNER_INPUT                   = 'ti'
 CMD_RESTORE                       = 'restore'
+CMD_SYSPLUG_COMPR_DISABLE         = 'syscompr_off'
+CMD_SYSPLUG_COMPR_SETUP           = 'syscompr'
+CMD_SYSPLUG_VOLUME                = 'sysvol'
 CMD_RESPONSE                      = 'r'
 CMD_MENU_ITEM_CHANGE              = 'c'
 CMD_PROFILE_LOAD                  = 'upr'
@@ -113,6 +133,19 @@ CMD_SELFTEST_CALLIBRATION_OK      = 'pot_call_ok'
 CMD_SELFTEST_SKIP_CONTROL_ENABLE  = 'control_skip_enable'
 CMD_SELFTEST_SKIP_CONTROL         = 'control_bad_skip'
 CMD_SELFTEST_SAVE_POT_CALIBRATION = 'save_pot_cal'
+CMD_SYS_GAIN                      = 'sys_gio'
+CMD_SYS_HP_GAIN                   = 'sys_ghp'
+CMD_SYS_AMIXER_SAVE               = 'sys_ams'
+CMD_SYS_BT_STATUS                 = 'sys_bts'
+CMD_SYS_BT_DISCOVERY              = 'sys_btd'
+CMD_SYS_SYSTEMCTL                 = 'sys_ctl'
+CMD_SYS_VERSION                   = 'sys_ver'
+CMD_SYS_SERIAL                    = 'sys_ser'
+CMD_SYS_USB_MODE                  = 'sys_usb'
+CMD_SYS_REBOOT                    = 'sys_rbt'
+CMD_SYS_CHANGE_LED                = 'sys_led'
+CMD_SYS_CHANGE_NAME               = 'sys_nam'
+CMD_SYS_CHANGE_UNIT               = 'sys_uni'
 CMD_DUO_BOOT                      = 'boot'
 CMD_DUO_FOOT_NAVIG                = 'fn'
 CMD_DUO_BANK_CONFIG               = 'bc'
@@ -123,6 +156,7 @@ CMD_DUOX_SNAPSHOT_SAVE            = 'ss'
 CMD_DUOX_SNAPSHOT_LOAD            = 'sl'
 CMD_DUOX_SNAPSHOT_CLEAR           = 'sc'
 CMD_DUOX_PAGES_AVAILABLE          = 'pa'
+CMD_DUOX_SET_CONTRAST             = 's_contrast'
 CMD_DWARF_CONTROL_SUBPAGE         = 'cs'
 CMD_DWARF_PAGES_AVAILABLE         = 'pa'
 
