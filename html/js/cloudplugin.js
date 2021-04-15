@@ -42,6 +42,7 @@ JqueryClass('cloudPluginBox', {
                 callback({}, "")
             },
             info: null,
+            fake: false,
             isMainWindow: true,
             usingLabs: false,
             windowName: "Plugin Store",
@@ -212,6 +213,10 @@ JqueryClass('cloudPluginBox', {
             bin_compat: BIN_COMPAT,
         }
 
+        if (self.data('fake')) {
+            query.stable = true
+        }
+
         // hide/show featured plugins if searching/not searching
         var usingLabs = self.data('usingLabs')
 
@@ -375,6 +380,12 @@ JqueryClass('cloudPluginBox', {
             cache: false,
             dataType: 'json'
         })
+
+        if (self.data('fake')) {
+            results.local = {}
+            renderResults()
+            return;
+        }
 
         // local search
         if (query.text)
