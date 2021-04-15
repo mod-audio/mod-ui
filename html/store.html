@@ -44,7 +44,12 @@
 <script type="text/javascript" src="js/lib/slick/slick.min.js"></script>
 
 <script type="text/javascript">
-var desktop = null;
+var desktop         = null;
+var BIN_COMPAT      = 'aarch64-a53'; // duox
+var PEDALBOARDS_URL = 'https://pedalboards.moddevices.com';
+var PLUGINS_URL     = 'https://pedalboards.moddevices.com/plugins';
+var SITEURL         = 'https://api.moddevices.com/v2';
+var VERSION         = '1.11.0';
 
 function JqueryClass() {
     var name = arguments[0];
@@ -130,33 +135,20 @@ function makeCloudPluginBox (el, trigger) {
     });
 };
 
-</script>
-
-<script type="text/javascript">
-    // templates
-    var BIN_COMPAT       = 'aarch64-a53'; // duox
-    var PEDALBOARDS_URL  = 'https://pedalboards.moddevices.com';
-    var PLUGINS_URL      = 'https://pedalboards.moddevices.com/plugins';
-    var SITEURL          = 'https://api.moddevices.com/v2';
-    var VERSION          = '1.11.0';
-
-    var cloudPluginBox        = $('#cloud-plugins-library');
-    var cloudPluginBoxTrigger = $('<div>');
-
-    $('document').ready(function() {
-        $(document)
-        .ajaxStart(function(data) {
-            NProgress.start();
-        })
-        .ajaxComplete(function() {
-            NProgress.done();
-        });
-
-        new Desktop({
-            cloudPluginBox: $('#cloud-plugins-library'),
-            cloudPluginBoxTrigger: $('#mod-cloud-plugins'),
-        });
+$('document').ready(function() {
+    $(document)
+    .ajaxStart(function(data) {
+        NProgress.start();
     })
+    .ajaxComplete(function() {
+        NProgress.done();
+    });
+
+    new Desktop({
+        cloudPluginBox: $('#cloud-plugins-library'),
+        cloudPluginBoxTrigger: $('#mod-cloud-plugins'),
+    });
+})
 </script>
 
 <script type="text/javascript" src="js/common.js"></script>
