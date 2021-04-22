@@ -12,7 +12,7 @@ JqueryClass('fileManagerBox', {
         options.open = function () {
             console.log("FileManager open")
             if (! self.data('loaded')) {
-                var url = window.location.protocol + '//' + window.location.hostname + ':8081/'
+                var url = window.location.protocol + '//' + window.location.hostname + ':' + FILE_MANAGER_PORT + '/'
                 self.find('iframe').attr('src', url)
                 self.data('loaded', true)
             }

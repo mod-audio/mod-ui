@@ -64,7 +64,8 @@
     PLUGINS_URL      = '{{plugins_url}}'
     PEDALBOARDS_URL  = '{{pedalboards_url}}'
     PEDALBOARDS_LABS_URL  = '{{pedalboards_labs_url}}'
-    CONTROLCHAIN_URL = '{{controlchain_url}}'
+    CONTROLCHAIN_URL  = '{{controlchain_url}}'
+    FILE_MANAGER_PORT = '{{file_manager_port}}'
     LV2_PLUGIN_DIR   = '{{lv2_plugin_dir}}'
     VERSION          = '{{version}}'
     BIN_COMPAT       = '{{bin_compat}}'
@@ -487,6 +488,7 @@ $('document').ready(function() {
             <div id="pedalboard-info">
                 <h1 class="top bottom {{titleblend}}">{{fulltitle}}</h1>
                 <div class="actions">
+                    <button class="js-audio-stream" id="js-audio-stream">Enable streaming</button>
                     <button class="js-cv-addressing" id="js-cv-addressing-toggle">Manage CV Ports</button>
                     <button class="js-preset" id="js-preset-enabler">Snapshots</button>
                     <div class="mod-hidden" id="js-preset-menu">

@@ -22,7 +22,11 @@ var cached_cpuLoad = null,
     pb_loading     = true
 
 $('document').ready(function() {
-    ws = new WebSocket("ws://" + window.location.host + "/websocket")
+    var wsUrl = document.location.protocol.match(/https/) ? 'wss://' : 'ws://';
+    wsUrl += document.location.host;
+    wsUrl += document.location.pathname;
+    wsUrl += 'websocket';
+    ws = new WebSocket(wsUrl);
 
     var empty    = false,
         modified = false

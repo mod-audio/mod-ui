@@ -28,6 +28,7 @@ from datetime import timedelta
 from signal import signal, SIGUSR1, SIGUSR2
 from tornado import gen, iostream, web, websocket
 from tornado.escape import squeeze, url_escape, xhtml_escape
+from tornado.httpserver import HTTPServer
 from tornado.ioloop import IOLoop
 from tornado.template import Loader
 from tornado.util import unicode_type
@@ -37,7 +38,8 @@ from mod.profile import Profile
 from mod.settings import (APP, LOG, DEV_API,
                           HTML_DIR, DOWNLOAD_TMP_DIR, DEVICE_KEY, DEVICE_WEBSERVER_PORT,
                           CLOUD_HTTP_ADDRESS, CLOUD_LABS_HTTP_ADDRESS,
-                          PLUGINS_HTTP_ADDRESS, PEDALBOARDS_HTTP_ADDRESS, CONTROLCHAIN_HTTP_ADDRESS,
+                          PLUGINS_HTTP_ADDRESS, PEDALBOARDS_HTTP_ADDRESS, CONTROLCHAIN_HTTP_ADDRESS, FILE_MANAGER_PORT,
+                          HTTPS_CERTFILE, HTTPS_KEYFILE,
                           BANKS_JSON_FILE,
                           LV2_PLUGIN_DIR, LV2_PEDALBOARDS_DIR, IMAGE_VERSION,
                           UPDATE_CC_FIRMWARE_FILE, UPDATE_MOD_OS_FILE, USING_256_FRAMES_FILE,
@@ -1685,6 +1687,7 @@ class TemplateHandler(TimelessRequestHandler):
             'pedalboards_url': PEDALBOARDS_HTTP_ADDRESS,
             'pedalboards_labs_url': PEDALBOARDS_LABS_HTTP_ADDRESS,
             'controlchain_url': CONTROLCHAIN_HTTP_ADDRESS,
+            'file_manager_port': FILE_MANAGER_PORT,
             'hardware_profile': b64encode(json.dumps(SESSION.get_hardware_actuators()).encode("utf-8")),
             'version': self.get_argument('v'),
             'bin_compat': hwdesc.get('bin-compat', "Unknown"),
@@ -2328,7 +2331,14 @@ def prepare(isModApp = False):
         signal(SIGUSR2, signal_recv)
         set_process_name("mod-ui")
 
-    application.listen(DEVICE_WEBSERVER_PORT, address="0.0.0.0")
+    if HTTPS_CERTFILE and HTTPS_KEYFILE:
+        http_server = HTTPServer(application, ssl_options={
+            "certfile": HTTPS_CERTFILE,
+            "keyfile": HTTPS_KEYFILE,
+        })
+        http_server.listen(DEVICE_WEBSERVER_PORT, address="0.0.0.0")
+    else:
+        application.listen(DEVICE_WEBSERVER_PORT, address="0.0.0.0")
 
     def checkhost():
         if SESSION.host.readsock is None or SESSION.host.writesock is None:

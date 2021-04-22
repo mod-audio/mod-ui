@@ -91,6 +91,10 @@ PEDALBOARDS_HTTP_ADDRESS = os.environ.pop('MOD_PEDALBOARDS_HTTP_ADDRESS', "https
 PEDALBOARDS_LABS_HTTP_ADDRESS = os.environ.pop('MOD_PEDALBOARDS_LABS_HTTP_ADDRESS', "https://pedalboards-labs.moddevices.com")
 CONTROLCHAIN_HTTP_ADDRESS = os.environ.pop('MOD_CONTROLCHAIN_HTTP_ADDRESS',
                                            "http://download.moddevices.com/releases/cc-firmware/v2")
+FILE_MANAGER_PORT = os.environ.pop('MOD_FILE_MANAGER_PORT', '8081')
+
+HTTPS_CERTFILE = os.environ.pop('MOD_HTTPS_CERTFILE', None)
+HTTPS_KEYFILE = os.environ.pop('MOD_HTTPS_KEYFILE', None)
 
 MIDI_BEAT_CLOCK_SENDER_URI = "urn:mod:mclk"
 MIDI_BEAT_CLOCK_SENDER_INSTANCE_ID = 9993
