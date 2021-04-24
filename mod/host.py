@@ -516,6 +516,14 @@ class Host(object):
             self.msg_callback("add_hw_port /graph/%s %s %i %s %i" % (name, ptype, int(isOutput), title, index))
             return
 
+        if name.startswith("webrtc_"):
+            name  = name.split(":",1)[0]
+            ptype = "audio"
+            index = 300 + int(name.rsplit("_",1)[-1])
+            title = name.title().replace(" ","_")
+            self.msg_callback("add_hw_port /graph/%s %s %i %s %i" % (name, ptype, int(isOutput), title, index))
+            return
+
         if self.midi_aggregated_mode:
             # new ports are ignored under midi aggregated mode
             return
@@ -3000,6 +3008,10 @@ class Host(object):
 
             if data[2].startswith("USB_Audio_Playback_"):
                 return "%s:%s" % (self.jack_usbgadget_prefix+"p", data[2])
+
+            if data[2].startswith("webrtc_"):
+                num = data[2].replace("webrtc_","",1)
+                return "webrtc_%s:webrtc_%s" % (num, num)
 
             if data[2].startswith("nooice_capture_"):
                 num = data[2].replace("nooice_capture_","",1)
