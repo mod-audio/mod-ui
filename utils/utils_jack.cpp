@@ -108,7 +108,8 @@ static void JackPortRegistration(jack_port_id_t port_id, int reg, void*)
         {
             if (strncmp(port_name, "system:midi_", 12) != 0 &&
                 strncmp(port_name, JACK_SLAVE_PREFIX ":", JACK_SLAVE_PREFIX_LEN + 1) != 0 &&
-                strncmp(port_name, "nooice", 5) != 0)
+                strncmp(port_name, "nooice", 6) != 0 &&
+                strncmp(port_name, "webrtc_", 7) != 0)
                 return;
 
             const std::string portName(port_name);
