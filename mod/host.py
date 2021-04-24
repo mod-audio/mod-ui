@@ -517,11 +517,10 @@ class Host(object):
             return
 
         if name.startswith("webrtc_"):
-            name  = name.split(":",1)[0]
-            ptype = "audio"
+            name  = name.split(":",1)[0].split("-",1)[0]
             index = 300 + int(name.rsplit("_",1)[-1])
             title = name.title().replace(" ","_")
-            self.msg_callback("add_hw_port /graph/%s %s %i %s %i" % (name, ptype, int(isOutput), title, index))
+            self.msg_callback("add_hw_port /graph/%s audio %i %s %i" % (name, int(isOutput), title, index))
             return
 
         if self.midi_aggregated_mode:
@@ -1895,6 +1894,17 @@ class Host(object):
                     title = name.split(":",1)[-1].title()
                 title = title.replace(" ","_")
                 websocket.write_message("add_hw_port /graph/%s midi 1 %s %i" % (name.split(":",1)[-1], title, i+1))
+
+        # WebRTC
+        ports = get_jack_hardware_ports(True, False)
+        for i in range(len(ports)):
+            name = ports[i]
+            if not name.startswith("webrtc_"):
+                continue
+            name  = name.split(":",1)[0].split("-",1)[0]
+            index = 300 + int(name.rsplit("_",1)[-1])
+            title = name.title().replace(" ","_")
+            websocket.write_message("add_hw_port /graph/%s audio 0 %s %i" % (name.split(":",1)[-1], title, i+1))
 
         rinstances = {
             PEDALBOARD_INSTANCE_ID: PEDALBOARD_INSTANCE
