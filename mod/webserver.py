@@ -1127,7 +1127,14 @@ class ServerWebSocket(websocket.WebSocketHandler):
         data = message.split(" ",1)
         cmd  = data[0]
 
-        if cmd == "param_set":
+        if cmd == "midi":
+            data      = data[1].split(" ",2)
+            timestamp = float(data[0])
+            mididata  = data[1].split(":")
+            #mididata  = tuple(int(x,16) for x in data[1].split(":"))
+            SESSION.host.send_notmodified("midi_event %f %i %s" % (timestamp, len(mididata), " ".join(mididata)))
+
+        elif cmd == "param_set":
             data  = data[1].split(" ",2)
             port  = data[0]
             value = float(data[1])
