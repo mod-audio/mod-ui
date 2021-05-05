@@ -65,10 +65,16 @@ import serial
 import time
 
 # definitions from lv2-hmi.h
-LV2_HMI_AddressingFlag_Coloured  = 1 << 0
-LV2_HMI_AddressingFlag_Momentary = 1 << 1
-LV2_HMI_AddressingFlag_Reverse   = 1 << 2
-LV2_HMI_AddressingFlag_TapTempo  = 1 << 3
+# LV2_HMI_AddressingCapabilities
+LV2_HMI_AddressingCapability_LED   = 1 << 0
+LV2_HMI_AddressingCapability_Label = 1 << 1
+LV2_HMI_AddressingCapability_Value = 1 << 2
+LV2_HMI_AddressingCapability_Unit  = 1 << 3
+# LV2_HMI_AddressingFlags
+LV2_HMI_AddressingFlag_Coloured    = 1 << 0
+LV2_HMI_AddressingFlag_Momentary   = 1 << 1
+LV2_HMI_AddressingFlag_Reverse     = 1 << 2
+LV2_HMI_AddressingFlag_TapTempo    = 1 << 3
 
 class SerialIOStream(BaseIOStream):
     def __init__(self, sp):
@@ -433,6 +439,21 @@ class HMI(object):
 
         if self.host_map is not None:
             hostcaps = 0x0
+            for actuator in self.hw_desc['actuators']:
+                if actuator['id'] != hw_id:
+                    continue
+                widgets = actuator.get('widgets', None)
+                if widgets is None:
+                    break
+                if "led" in widgets:
+                    hostcaps |= LV2_HMI_AddressingCapability_LED
+                if "label" in widgets:
+                    hostcaps |= LV2_HMI_AddressingCapability_Label
+                if "value" in widgets:
+                    hostcaps |= LV2_HMI_AddressingCapability_Value
+                if "unit" in widgets:
+                    hostcaps |= LV2_HMI_AddressingCapability_Unit
+                break
             hostflags = 0x0
             if flags & FLAG_PAGINATION_ALT_LED_COLOR:
                 hostflags |= LV2_HMI_AddressingFlag_Coloured
