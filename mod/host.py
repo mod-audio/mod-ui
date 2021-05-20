@@ -598,9 +598,10 @@ class Host(object):
         self.last_true_bypass_left = left
         self.last_true_bypass_right = right
 
+    #TODO, This message should be handled by mod-system-control once in place
     def cv_exp_mode_changed(self, expMode):
         if self.hmi.initialized:
-            self.hmi.set_profile_value(MENU_ID_EXP_CV_INPUT, int(expMode), None)
+            self.hmi.expression_overcurrent(None)
 
     def remove_port_from_connections(self, name):
         removed_conns = []
@@ -669,10 +670,14 @@ class Host(object):
             options = "%d %s" % (len(optionsData), " ".join(optionsData))
             options = options.strip()
 
+            device_id, actuator_id = actuator
+            if not isinstance(actuator_id, int):
+                actuator_id = actuator_id[0]
+
             self.send_notmodified("cc_map %d %s %d %d %s %f %f %f %i %i %s %s" % (data['instance_id'],
                                                                                   data['port'],
-                                                                                  actuator[0], # device id
-                                                                                  actuator[1], # actuator id
+                                                                                  device_id,
+                                                                                  actuator_id,
                                                                                   label,
                                                                                   rvalue,
                                                                                   data['minimum'],

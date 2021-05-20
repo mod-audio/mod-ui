@@ -39,6 +39,7 @@ from mod.mod_protocol import (
     CMD_DUO_CONTROL_INDEX_SET,
     CMD_DUO_BANK_CONFIG,
     CMD_DUOX_PAGES_AVAILABLE,
+    CMD_DUOX_EXP_OVERCURRENT,
     CMD_RESPONSE,
     CMD_RESTORE,
     FLAG_CONTROL_REVERSE,
@@ -455,6 +456,10 @@ class HMI(object):
 
     def tuner(self, freq, note, cents, callback):
         self.send('%s %f %s %f' % (CMD_TUNER, freq, note, cents), callback)
+
+    #TODO, This message should be handled by mod-system-control once in place
+    def expression_overcurrent(self, callback):
+        self.send(CMD_DUOX_EXP_OVERCURRENT, callback, 'boolean')
 
     def bank_config(self, hw_id, action, callback):
         """

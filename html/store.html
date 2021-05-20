@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html>
+
+<!-- HEAD -->
+<head>
+<meta charset="UTF-8">
+<title>MOD Plugin Store</title>
+
+<link rel="apple-touch-icon" sizes="57x57" href="img/favicon/apple-icon-57x57.png">
+<link rel="apple-touch-icon" sizes="60x60" href="img/favicon/apple-icon-60x60.png">
+<link rel="apple-touch-icon" sizes="72x72" href="img/favicon/apple-icon-72x72.png">
+<link rel="apple-touch-icon" sizes="76x76" href="img/favicon/apple-icon-76x76.png">
+<link rel="apple-touch-icon" sizes="114x114" href="img/favicon/apple-icon-114x114.png">
+<link rel="apple-touch-icon" sizes="120x120" href="img/favicon/apple-icon-120x120.png">
+<link rel="apple-touch-icon" sizes="144x144" href="img/favicon/apple-icon-144x144.png">
+<link rel="apple-touch-icon" sizes="152x152" href="img/favicon/apple-icon-152x152.png">
+<link rel="apple-touch-icon" sizes="180x180" href="img/favicon/apple-icon-180x180.png">
+<link rel="icon" type="image/png" sizes="192x192" href="img/favicon/android-icon-192x192.png">
+<link rel="icon" type="image/png" sizes="32x32" href="img/favicon/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="96x96" href="img/favicon/favicon-96x96.png">
+<link rel="icon" type="image/png" sizes="16x16" href="img/favicon/favicon-16x16.png">
+<link rel="manifest" href="img/favicon/manifest.json">
+<meta name="msapplication-TileColor" content="#111111">
+<meta name="msapplication-TileImage" content="img/favicon/ms-icon-144x144.png">
+<meta name="theme-color" content="#111111">
+
+<link rel="stylesheet" type="text/css" href="css/fontello/css/fontello.css"/>
+<link rel="stylesheet" type="text/css" href="css/main.css"/>
+<link rel="stylesheet" type="text/css" href="css/dashboard.css"/>
+<link rel="stylesheet" type="text/css" href="css/fonts.css"/>
+<link rel="stylesheet" type="text/css" href="img/icons/icons.css"/>
+<link rel="stylesheet" type="text/css" href="css/pedals.css"/>
+<link rel="stylesheet" type="text/css" href="resources/pedals/default.css"/>
+<link rel="stylesheet" type="text/css" href="js/lib/slick/slick.css"/>
+<link rel="stylesheet" type="text/css" href="js/lib/slick/slick-theme.css"/>
+
+<script type="text/javascript" src="js/lib/jquery-1.9.1.min.js"></script>
+<script type="text/javascript" src="js/lib/jquery-ui-1.10.1.custom.min.js"></script>
+<script type="text/javascript" src="js/lib/jquery.ui.touch-punch.min.js"></script>
+<script type="text/javascript" src="js/lib/jquery.ba-resize.min.js"></script>
+<script type="text/javascript" src="js/lib/mustache.js"></script>
+<script type="text/javascript" src="js/lib/sprintf-0.6.js"></script>
+<script type="text/javascript" src="js/lib/jquery.mousewheel.min.js"></script>
+<script type="text/javascript" src="js/lib/slick/slick.min.js"></script>
+
+<script type="text/javascript">
+var desktop         = null;
+var BIN_COMPAT      = 'aarch64-a53'; // duox
+var PEDALBOARDS_URL = 'https://pedalboards.moddevices.com';
+var PLUGINS_URL     = 'https://pedalboards.moddevices.com/plugins';
+var SITEURL         = 'https://api.moddevices.com/v2';
+var VERSION         = '1.11.0';
+
+function JqueryClass() {
+    var name = arguments[0];
+    var methods = {};
+    for (var i = 1; i < arguments.length; i++) {
+        $.extend(methods, arguments[i]);
+    }
+    (function ($) {
+        $.fn[name] = function (method) {
+            if (methods[method]) {
+                return methods[method].apply(this, Array.prototype.slice.call(arguments, 1));
+            } else if (typeof method === 'object' || !method) {
+                return methods.init.apply(this, arguments);
+            } else {
+                $.error('Method ' + method + ' does not exist on jQuery.' + name);
+            }
+        }
+    })(jQuery);
+}
+
+function version(v) {
+    if (!v || !v.length)
+        return '0.0-0';
+    return ""+v[1]+"."+v[2]+"-"+v[3];
+}
+
+function Desktop(elements) {
+    var self = desktop = this;
+
+    elements = $.extend({
+        cloudPluginBox: $('<div>'),
+        cloudPluginBoxTrigger: $('<div>'),
+    }, elements);
+
+    this.windowManager = new WindowManager();
+
+    this.pedalboardStatsSuccess = false;
+    this.pedalboardStats = {};
+    this.resetPedalboardStats = function() {
+        this.pedalboardStatsSuccess = false;
+        $.ajax({
+            url: SITEURL + '/pedalboards/stats',
+            type: 'GET',
+            success: function(stats) {
+                self.pedalboardStatsSuccess = true;
+                self.pedalboardStats = stats;
+            },
+            cache: false,
+        })
+    };
+    this.getPedalboardHref = function(uri) {
+        if (!this.pedalboardStatsSuccess) {
+            return null;
+        }
+        var base64Uri = btoa(uri);
+        if (!this.pedalboardStats[base64Uri]) {
+            return null;
+        }
+        var encodedUri = encodeURIComponent(uri);
+        return PEDALBOARDS_URL + '/?plugin_uri=' + encodedUri;
+    };
+
+    this.pluginIndexer = {
+        search: function() { return []; },
+    };
+    this.resetPluginIndexer = function (plugins) {};
+
+    this.cloudPluginBox = makeCloudPluginBox(elements.cloudPluginBox,
+                                             elements.cloudPluginBoxTrigger);
+
+    // init
+    this.resetPedalboardStats();
+    this.cloudPluginBox.cloudPluginBox('search');
+}
+
+function makeCloudPluginBox (el, trigger) {
+    var self = this;
+    return el.cloudPluginBox({
+        fake: true,
+        trigger: trigger,
+        windowManager: this.windowManager,
+        list: function (callback) { callback([]) },
+    });
+};
+
+$('document').ready(function() {
+    $(document)
+    .ajaxStart(function(data) {
+        NProgress.start();
+    })
+    .ajaxComplete(function() {
+        NProgress.done();
+    });
+
+    new Desktop({
+        cloudPluginBox: $('#cloud-plugins-library'),
+        cloudPluginBoxTrigger: $('#mod-cloud-plugins'),
+    });
+})
+</script>
+
+<script type="text/javascript" src="js/common.js"></script>
+<script type="text/javascript" src="js/window.js"></script>
+<script type="text/javascript" src="js/notification.js"></script>
+<script type="text/javascript" src="js/cloudplugin.js"></script>
+<script type="text/javascript" src="js/nprogress.js"></script>
+<script type="text/javascript" src="js/utils/plugins.js"></script>
+<script type="text/javascript" src="js/store_templates.js"></script>
+
+<style type="text/css" media="screen">
+    #cloud-plugins-library {
+        display: block !important;
+    }
+    #cloud-plugins-library,
+    #cloud-plugins-library .filter,
+    #cloud-plugins-library .cloud-plugins {
+        bottom: 5px;
+    }
+</style>
+
+</head>
+<!-- END HEAD -->
+
+<!-- BODY -->
+<body class="mod-dark">
+
+<!-- WRAPPER -->
+<div id="wrapper">
+
+    <!-- CLOUD PLUGINS LIBRARY -->
+    <div id="cloud-plugins-library">
+        <div>
+            <header>
+                <h1 class="bottom top">PLUGIN STORE</h1>
+            </header>
+
+            <div class="filter clearfix">
+                <h2>Filter</h2>
+                <!--
+                <div class="control-group mod-hidden">
+                    <div class="switch" id="cloud-plugins-source">
+                      <input type="radio" id="cloud-radio-official" name="plugins-source" value="official" checked="checked">
+                      <label for="official">Official</label>
+                      <input type="radio" id="cloud-radio-labs" name="plugins-source" value="labs">
+                      <label for="labs">Labs</label>
+                      <span class="toggle-outside">
+                        <span class="toggle-inside"></span>
+                      </span>
+                    </div>
+                </div>
+                -->
+                <ul class="categories list list-unstyled">
+                    <li id="cloud-plugin-tab-All">All</li>
+                    <li id="cloud-plugin-tab-ControlVoltage">Control&nbsp;Voltage</li>
+                    <li id="cloud-plugin-tab-Delay">Delay</li>
+                    <li id="cloud-plugin-tab-Distortion">Distortion</li>
+                    <li id="cloud-plugin-tab-Dynamics">Dynamics</li>
+                    <li id="cloud-plugin-tab-Filter">Filter</li>
+                    <li id="cloud-plugin-tab-Generator">Generator</li>
+                    <li id="cloud-plugin-tab-MIDI">MIDI Utility</li>
+                    <li id="cloud-plugin-tab-Modulator">Modulator</li>
+                    <li id="cloud-plugin-tab-Reverb">Reverb</li>
+                    <li id="cloud-plugin-tab-Simulator">Simulator</li>
+                    <li id="cloud-plugin-tab-Spatial">Spatial</li>
+                    <li id="cloud-plugin-tab-Spectral">Spectral</li>
+                    <li id="cloud-plugin-tab-Utility">Utility</li>
+                </ul>
+                <div class="form-group">
+                    <input class="form-control" placeholder="Filter by keyword(s)" type="search"/>
+                </div>
+            </div>
+
+            <div class="cloud-plugins clearfix js-cloud-plugins">
+              <div id="cloudplugin-results-wrapper">
+                    <div class="featured-plugins">
+                      <h2>Featured plugins</h2>
+                      <div class="carousel"></div>
+                    </div>
+                    <h2>Filtered results</h2>
+                    <div id="cloud-plugin-content-All" class="plugins-wrapper"></div>
+                    <div id="cloud-plugin-content-ControlVoltage" class="plugins-wrapper"></div>
+                    <div id="cloud-plugin-content-Delay" class="plugins-wrapper"></div>
+                    <div id="cloud-plugin-content-Distortion" class="plugins-wrapper"></div>
+                    <div id="cloud-plugin-content-Dynamics" class="plugins-wrapper"></div>
+                    <div id="cloud-plugin-content-Filter" class="plugins-wrapper"></div>
+                    <div id="cloud-plugin-content-Generator" class="plugins-wrapper"></div>
+                    <div id="cloud-plugin-content-MIDI" class="plugins-wrapper"></div>
+                    <div id="cloud-plugin-content-Modulator" class="plugins-wrapper"></div>
+                    <div id="cloud-plugin-content-Reverb" class="plugins-wrapper"></div>
+                    <div id="cloud-plugin-content-Simulator" class="plugins-wrapper"></div>
+                    <div id="cloud-plugin-content-Spatial" class="plugins-wrapper"></div>
+                    <div id="cloud-plugin-content-Spectral" class="plugins-wrapper"></div>
+                    <div id="cloud-plugin-content-Utility" class="plugins-wrapper"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- END CLOUD PLUGINS LIBRARY -->
+
+<!-- END WRAPPER -->
+</div>
+
+</body>
+<!-- END BODY -->
+
+</html>
