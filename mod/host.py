@@ -670,10 +670,14 @@ class Host(object):
             options = "%d %s" % (len(optionsData), " ".join(optionsData))
             options = options.strip()
 
+            device_id, actuator_id = actuator
+            if not isinstance(actuator_id, int):
+                actuator_id = actuator_id[0]
+
             self.send_notmodified("cc_map %d %s %d %d %s %f %f %f %i %i %s %s" % (data['instance_id'],
                                                                                   data['port'],
-                                                                                  actuator[0], # device id
-                                                                                  actuator[1], # actuator id
+                                                                                  device_id,
+                                                                                  actuator_id,
                                                                                   label,
                                                                                   rvalue,
                                                                                   data['minimum'],

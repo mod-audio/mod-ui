@@ -17,6 +17,7 @@ CC_MODE_INTEGER     = 0x020
 CC_MODE_LOGARITHMIC = 0x040
 CC_MODE_COLOURED    = 0x100
 CC_MODE_MOMENTARY   = 0x200
+CC_MODE_REVERSE     = 0x400
 
 # ---------------------------------------------------------------------------------------------------------------------
 
@@ -223,6 +224,11 @@ class ControlChainDeviceListener(object):
                 callback()
                 return
 
+            if 'protocol' in dev:
+                protocol_version = tuple(int(v) for v in dev['protocol'].split("."))
+            else:
+                protocol_version = (0,0)
+
             # assign an unique id starting from 0
             dev_unique_id = 0
             for _dev_uri, _1, _2, _3 in self.hw_versions.values():
@@ -270,10 +276,43 @@ class ControlChainDeviceListener(object):
                     'name' : "%s%s:%s" % (dev['label'], dev_label_suffix, actuator['name']),
                     'modes': modes_str,
                     'steps': [],
-                    'feedback': 'protocol' in dev and tuple(int(v) for v in dev['protocol'].split(".")) >= (0,6),
+                    'widgets': [],
+                    'feedback': protocol_version >= (0,6),
                     'max_assigns': actuator['max_assignments'],
                 }
                 self.act_added_cb(dev_id, actuator['id'], metadata)
+
+            for actuatorgroup in dev['actuatorgroups']:
+                modes_str = ":enumeration"
+
+                # check if grouped actuators support colouredlist, retrieve max_assigns
+                for actuator in dev['actuators']:
+                    if actuator['id'] != actuatorgroup['actuator1']:
+                        continue
+                    if actuator['supported_modes'] & CC_MODE_COLOURED:
+                        modes_str += ":colouredlist"
+                    max_assigns = actuator['max_assignments']
+                    break
+                else:
+                    print("WARNING: Control Chain group '%s' is invalid" % actuatorgroup['name'])
+                    continue
+
+                modes_str += ":"
+
+                metadata = {
+                    'uri'  : "%s:%i:%i" % (dev_uri, dev_unique_id, actuatorgroup['id']),
+                    'name' : "%s%s:%s" % (dev['label'], dev_label_suffix, actuatorgroup['name']),
+                    'modes': modes_str,
+                    'steps': [],
+                    'widgets': [],
+                    'feedback': True,
+                    'max_assigns': max_assigns,
+                    'actuator_group': ("%s:%i:%i" % (dev_uri, dev_unique_id, actuatorgroup['actuator1']),
+                                        "%s:%i:%i" % (dev_uri, dev_unique_id, actuatorgroup['actuator2'])),
+                }
+                self.act_added_cb(dev_id, (actuatorgroup['id'],
+                                           actuatorgroup['actuator1'],
+                                           actuatorgroup['actuator2']), metadata)
 
             callback()
 
