@@ -445,6 +445,7 @@ class Host(object):
         self.addressings._task_act_added = self.addr_task_act_added
         self.addressings._task_act_removed = self.addr_task_act_removed
         self.addressings._task_set_available_pages = self.addr_task_set_available_pages
+        self.hmi.set_host_map_callback(self.addr_hmi_map)
 
         # Register HMI protocol callbacks (they are without arguments here)
         Protocol.register_cmd_callback('ALL', CMD_BANKS, self.hmi_list_banks)
@@ -622,6 +623,10 @@ class Host(object):
     # -----------------------------------------------------------------------------------------------------------------
     # Addressing callbacks
 
+    def addr_hmi_map(self, instance_id, portsymbol, hw_id, caps, flags, label, min, max, steps):
+        self.send_notmodified("hmi_map %i %s %i %i %i %s %f %f %i" % (instance_id, portsymbol, hw_id,
+                                                                      caps, flags, label, min, max, steps))
+
     def addr_task_addressing(self, atype, actuator, data, callback, send_hmi=True):
         if atype == Addressings.ADDRESSING_TYPE_HMI:
             if send_hmi and self.hmi.initialized:
@@ -723,6 +728,7 @@ class Host(object):
         if atype == Addressings.ADDRESSING_TYPE_HMI:
             self.pedalboard_modified = True
             if send_hmi:
+                self.send_notmodified("hmi_unmap %i %s" % (instance_id, portsymbol))
                 self.hmi.control_rm(hw_ids, callback)
                 return
             else:

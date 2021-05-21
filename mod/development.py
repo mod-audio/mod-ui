@@ -30,6 +30,9 @@ class FakeHMI(HMI):
     def init(self, callback):
         IOLoop.instance().add_callback(callback)
 
+    def set_host_map_callback(self, host_map):
+        return
+
     def send(self, msg, callback=None, datatype='int'):
         logging.info(msg)
         if callback is None:

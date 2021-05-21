@@ -42,7 +42,9 @@ from mod.mod_protocol import (
     CMD_DUOX_EXP_OVERCURRENT,
     CMD_RESPONSE,
     CMD_RESTORE,
+    FLAG_CONTROL_MOMENTARY,
     FLAG_CONTROL_REVERSE,
+    FLAG_CONTROL_TAP_TEMPO,
     FLAG_PAGINATION_PAGE_UP,
     FLAG_PAGINATION_WRAP_AROUND,
     FLAG_PAGINATION_INITIAL_REQ,
@@ -61,6 +63,18 @@ from mod.mod_protocol import (
 import logging
 import serial
 import time
+
+# definitions from lv2-hmi.h
+# LV2_HMI_AddressingCapabilities
+LV2_HMI_AddressingCapability_LED   = 1 << 0
+LV2_HMI_AddressingCapability_Label = 1 << 1
+LV2_HMI_AddressingCapability_Value = 1 << 2
+LV2_HMI_AddressingCapability_Unit  = 1 << 3
+# LV2_HMI_AddressingFlags
+LV2_HMI_AddressingFlag_Coloured    = 1 << 0
+LV2_HMI_AddressingFlag_Momentary   = 1 << 1
+LV2_HMI_AddressingFlag_Reverse     = 1 << 2
+LV2_HMI_AddressingFlag_TapTempo    = 1 << 3
 
 class SerialIOStream(BaseIOStream):
     def __init__(self, sp):
@@ -104,6 +118,7 @@ class HMI(object):
         self.last_write_time = 0
         self.timeout = timeout # in seconds
         self.reinit_cb = reinit_cb
+        self.host_map = None
         self.hw_desc = get_hardware_descriptor()
         hw_actuators = self.hw_desc.get('actuators', [])
         self.hw_ids = [actuator['id'] for actuator in hw_actuators]
@@ -267,6 +282,9 @@ class HMI(object):
             self.queue_idle = False
             self.last_write_time = time.time()
 
+    def set_host_map_callback(self, host_map):
+        self.host_map = host_map
+
     def reply_protocol_error(self, error):
         #self.send(error) # TODO: proper error handling, needs to be implemented by HMI
         self.send("{} -1".format(CMD_RESPONSE), None)
@@ -402,6 +420,7 @@ class HMI(object):
             options = options.strip()
 
         else:
+            flags = 0x0
             options = "0"
 
         def control_add_callback(ok):
@@ -412,11 +431,39 @@ class HMI(object):
             index = data['addrs_idx']
             self.control_set_index(hw_id, index, n_controllers, callback)
 
-        cb = callback
-
         # FIXME this should be based on hw desc "max_assigns" instead of hardcoded
         if not actuator_uri.startswith("/hmi/footswitch") and hmi_set_index:
             cb = control_add_callback
+        else:
+            cb = callback
+
+        if self.host_map is not None:
+            hostcaps = 0x0
+            for actuator in self.hw_desc['actuators']:
+                if actuator['id'] != hw_id:
+                    continue
+                widgets = actuator.get('widgets', None)
+                if widgets is None:
+                    break
+                if "led" in widgets:
+                    hostcaps |= LV2_HMI_AddressingCapability_LED
+                if "label" in widgets:
+                    hostcaps |= LV2_HMI_AddressingCapability_Label
+                if "value" in widgets:
+                    hostcaps |= LV2_HMI_AddressingCapability_Value
+                if "unit" in widgets:
+                    hostcaps |= LV2_HMI_AddressingCapability_Unit
+                break
+            hostflags = 0x0
+            if flags & FLAG_PAGINATION_ALT_LED_COLOR:
+                hostflags |= LV2_HMI_AddressingFlag_Coloured
+            if var_type & FLAG_CONTROL_MOMENTARY:
+                hostflags |= LV2_HMI_AddressingFlag_Momentary
+            if var_type & FLAG_CONTROL_REVERSE:
+                hostflags |= LV2_HMI_AddressingFlag_Reverse
+            if var_type & FLAG_CONTROL_TAP_TEMPO:
+                hostflags |= LV2_HMI_AddressingFlag_TapTempo
+            self.host_map(data['instance_id'], data['port'], hw_id, hostcaps, hostflags, label, xmin, xmax, steps)
 
         self.send('%s %d %s %d %s %f %f %f %d %s' %
                   ( CMD_CONTROL_ADD,
@@ -445,10 +492,7 @@ class HMI(object):
         removes an addressing
         """
 
-        idsStr = tuple(str(i) for i in hw_ids)
-
-        ids = "%s" % (" ".join(idsStr))
-        ids = ids.strip()
+        ids = " ".join(str(i) for i in hw_ids).strip()
         self.send('%s %s' % (CMD_CONTROL_REMOVE, ids), callback, 'boolean')
 
     def ping(self, callback):
