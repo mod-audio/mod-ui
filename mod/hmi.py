@@ -347,7 +347,7 @@ class HMI(object):
         options = data['options']
         hmi_set_index = self.hw_desc.get('hmi_set_index', False)
 
-        if data.get('group', None) is not None:
+        if data.get('group', None) is not None and self.hw_desc.get('hmi_actuator_group_prefix', True):
             if var_type & FLAG_CONTROL_REVERSE:
                 prefix = "- "
             else:
