@@ -5353,7 +5353,7 @@ _:b%i
 
         label = data['label']
 
-        if data.get('group', None) is not None:
+        if data.get('group', None) is not None and self.descriptor.get('hmi_actuator_group_prefix', True):
             if data['hmitype'] & FLAG_CONTROL_REVERSE:
                 prefix = "- "
             else:
