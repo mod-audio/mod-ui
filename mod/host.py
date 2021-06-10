@@ -3133,6 +3133,10 @@ class Host(object):
                     },
                     'version': 0,
                 }
+
+        if bundlepath == DEFAULT_PEDALBOARD:
+            pb['title'] = "" if isDefault else "Default"
+
         self.msg_callback("loading_start %i 0" % int(isDefault))
         self.msg_callback("size %d %d" % (pb['width'],pb['height']))
 

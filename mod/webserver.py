@@ -1266,8 +1266,9 @@ class PackageUninstall(JsonRequestHandler):
 class PedalboardList(JsonRequestHandler):
     def get(self):
         all = get_all_pedalboards()
-        default_pb = next((p for p in all if p['title'] == 'Default'), None)
+        default_pb = next((p for p in all if p['bundle'] == DEFAULT_PEDALBOARD), None)
         if default_pb:
+            default_pb['title'] = "Default"
             default_pb['broken'] = False
         self.write(all)
 
