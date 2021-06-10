@@ -160,6 +160,9 @@ function InstallationQueue() {
                 if (ok && desktop.cloudAccessToken != null) {
                     self.installNext()
                 } else {
+                    for (var i in callbacks) {
+                        callbacks[i]({ok:false})
+                    }
                     queue = []
                     callbacks = []
                     notification.close()
