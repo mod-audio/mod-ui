@@ -360,15 +360,13 @@ class Host(object):
         self.processing_pending_flag = False
         self.init_plugins_data()
 
-        if APP and os.getenv("MOD_LIVE_ISO") is not None:
-            self.jack_hwin_prefix  = "system:playback_"
-            self.jack_hwout_prefix = "system:capture_"
-        else:
-            self.jack_hwin_prefix  = "mod-monitor:in_"
-            self.jack_hwout_prefix = "mod-monitor:out_"
+        # clients at the end of the chain, all managed by mod-host
+        self.jack_hwin_prefix  = "mod-monitor:in_"
+        self.jack_hwout_prefix = "mod-host:out"
 
         # used for network-manager
         self.jack_slave_prefix = "mod-slave"
+
         # used for usb gadget, MUST have "c" or "p" after this prefix
         self.jack_usbgadget_prefix = "mod-usbgadget_"
 
@@ -3053,11 +3051,17 @@ class Host(object):
             if data[2] == "cv_exp_pedal":
                 return "mod-spi2jack:exp_pedal"
 
-            if self.swapped_audio_channels and data[2] in ("capture_1", "capture_2"):
-                if data[2] == "capture_1":
-                    data[2] = "capture_2"
+            if data[2] in ("capture_1", "capture_2"):
+                if self.swapped_audio_channels:
+                    if data[2] == "capture_1":
+                        return self.jack_hwout_prefix + "2"
+                    else:
+                        return self.jack_hwout_prefix + "1"
                 else:
-                    data[2] = "capture_1"
+                    if data[2] == "capture_1":
+                        return self.jack_hwout_prefix + "1"
+                    else:
+                        return self.jack_hwout_prefix + "2"
 
             # Default guess
             return "system:%s" % data[2]
@@ -3148,6 +3152,10 @@ class Host(object):
                     },
                     'version': 0,
                 }
+
+        if bundlepath == DEFAULT_PEDALBOARD:
+            pb['title'] = "" if isDefault else "Default"
+
         self.msg_callback("loading_start %i 0" % int(isDefault))
         self.msg_callback("size %d %d" % (pb['width'],pb['height']))
 
