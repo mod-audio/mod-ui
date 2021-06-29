@@ -606,10 +606,17 @@ bool disconnect_all_jack_ports(const char* portname)
     if (port == nullptr)
         return false;
 
+    const bool isOutput = jack_port_flags(port) & JackPortIsOutput;
+
     if (const char** const ports = jack_port_get_all_connections(gClient, port))
     {
         for (int i=0; ports[i] != nullptr; ++i)
-            jack_disconnect(gClient, portname, ports[i]);
+        {
+            if (isOutput)
+                jack_disconnect(gClient, portname, ports[i]);
+            else
+                jack_disconnect(gClient, ports[i], portname);
+        }
 
         jack_free(ports);
     }
