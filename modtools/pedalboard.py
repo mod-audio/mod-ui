@@ -195,6 +195,13 @@ def take_screenshot(bundle_path, html_dir, cache_dir, size):
             'connected_img': midi_input_connected,
             'type': 'midi',
         })
+    if pb.get('midi_loopback', False):
+        device_capture.append({
+            'symbol': 'midi_loopback',
+            'img': midi_input_img,
+            'connected_img': midi_input_connected,
+            'type': 'midi',
+        })
     for ix in range(0, pb['hardware']['cv_outs']):
         device_playback.append({
             'symbol': 'cv_playback_{0}'.format(ix + 1),

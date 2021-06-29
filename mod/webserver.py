@@ -1916,12 +1916,12 @@ class SaveUserId(JsonRequestHandler):
 
 class JackGetMidiDevices(JsonRequestHandler):
     def get(self):
-        devsInUse, devList, names, midi_aggregated_mode = SESSION.web_get_midi_device_list()
+        devsInUse, devList, names, midiAggregatedMode = SESSION.web_get_midi_device_list()
         self.write({
             "devsInUse": devsInUse,
             "devList"  : devList,
             "names"    : names,
-            "midiAggregatedMode": midi_aggregated_mode
+            "midiAggregatedMode": midiAggregatedMode
         })
 
 class JackSetMidiDevices(JsonRequestHandler):
@@ -1931,7 +1931,8 @@ class JackSetMidiDevices(JsonRequestHandler):
         data = json.loads(self.request.body.decode("utf-8", errors="ignore"))
         devs = data['devs']
         mode = data['midiAggregatedMode']
-        SESSION.web_set_midi_devices(devs, mode)
+        loop = data['midiLoopback']
+        SESSION.web_set_midi_devices(devs, mode, loop)
         self.write(True)
 
 class FavoritesAdd(JsonRequestHandler):

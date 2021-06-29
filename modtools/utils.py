@@ -626,6 +626,9 @@ utils.connect_jack_midi_output_ports.restype  = c_bool
 utils.disconnect_jack_ports.argtypes = [c_char_p, c_char_p]
 utils.disconnect_jack_ports.restype  = c_bool
 
+utils.disconnect_all_jack_ports.argtypes = [c_char_p]
+utils.disconnect_all_jack_ports.restype  = c_bool
+
 utils.reset_xruns.argtypes = None
 utils.reset_xruns.restype  = None
 
@@ -882,6 +885,9 @@ def connect_jack_midi_output_ports(port):
 
 def disconnect_jack_ports(port1, port2):
     return bool(utils.disconnect_jack_ports(port1.encode("utf-8"), port2.encode("utf-8")))
+
+def disconnect_all_jack_ports(port):
+    return bool(utils.disconnect_all_jack_ports(port.encode("utf-8")))
 
 def reset_xruns():
     utils.reset_xruns()

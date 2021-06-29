@@ -596,6 +596,27 @@ bool disconnect_jack_ports(const char* port1, const char* port2)
     return false;
 }
 
+bool disconnect_all_jack_ports(const char* portname)
+{
+    if (gClient == nullptr)
+        return false;
+
+    jack_port_t* const port = jack_port_by_name(gClient, portname);
+
+    if (port == nullptr)
+        return false;
+
+    if (const char** const ports = jack_port_get_all_connections(gClient, port))
+    {
+        for (int i=0; ports[i] != nullptr; ++i)
+            jack_disconnect(gClient, portname, ports[i]);
+
+        jack_free(ports);
+    }
+
+    return true;
+}
+
 void reset_xruns(void)
 {
     gXrunCount = 0;

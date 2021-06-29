@@ -139,7 +139,7 @@ from modtools.utils import (
     has_serial_midi_input_port, has_serial_midi_output_port,
     has_midi_merger_output_port, has_midi_broadcaster_input_port,
     has_midi_beat_clock_sender_port,
-    connect_jack_ports, connect_jack_midi_output_ports, disconnect_jack_ports,
+    connect_jack_ports, connect_jack_midi_output_ports, disconnect_jack_ports, disconnect_all_jack_ports,
     set_truebypass_value, get_master_volume,
     set_util_callbacks, set_extra_util_callbacks, kPedalboardTimeAvailableBPB,
     kPedalboardTimeAvailableBPM, kPedalboardTimeAvailableRolling
@@ -331,6 +331,8 @@ class Host(object):
         self.cvportsOut = []
         self.midiports = [] # [symbol, alias, pending-connections]
         self.midi_aggregated_mode = True
+        self.midi_loopback_enabled = False
+        self.midi_loopback_port = None
         self.hasSerialMidiIn = False
         self.hasSerialMidiOut = False
         self.first_pedalboard    = True
@@ -1081,6 +1083,21 @@ class Host(object):
                 self.cvportsOut.append(CV_PREFIX + port_name)
             else:
                 self.audioportsOut.append(port_name)
+
+        for port in get_jack_hardware_ports(False, True):
+            if not port.startswith("system:midi_"):
+                continue
+            alias = get_jack_port_alias(port)
+            if not alias:
+                continue
+            if alias == "alsa_pcm:Midi-Through/midi_capture_1":
+                self.midi_loopback_port = port
+                self.midi_loopback_enabled = False
+                disconnect_all_jack_ports(port)
+                break
+        else:
+            self.midi_loopback_port = None
+            self.midi_loopback_enabled = False
 
         self.hasSerialMidiIn = has_serial_midi_input_port()
         self.hasSerialMidiOut = has_serial_midi_output_port()
@@ -1899,6 +1916,9 @@ class Host(object):
                     title = name.split(":",1)[-1].title()
                 title = title.replace(" ","_")
                 websocket.write_message("add_hw_port /graph/%s midi 1 %s %i" % (name.split(":",1)[-1], title, i+1))
+
+        if self.midi_loopback_enabled:
+            websocket.write_message("add_hw_port /graph/midi_loopback midi 1 MIDI_Loopback 42")
 
         rinstances = {
             PEDALBOARD_INSTANCE_ID: PEDALBOARD_INSTANCE
@@ -3013,6 +3033,8 @@ class Host(object):
                 return "mod-midi-merger:out"
             if data[2] == "midi_broadcaster_in":
                 return "mod-midi-broadcaster:in"
+            if data[2] == "midi_loopback":
+                return self.midi_loopback_port
             if data[2].startswith("playback_"):
                 num = data[2].replace("playback_","",1)
                 if num in ("1", "2"):
@@ -3148,6 +3170,7 @@ class Host(object):
                     'width': 0,
                     'height': 0,
                     'midi_separated_mode': False,
+                    'midi_loopback': False,
                     'connections': [],
                     'plugins': [],
                     'timeInfo': {
@@ -3163,10 +3186,14 @@ class Host(object):
         self.msg_callback("size %d %d" % (pb['width'],pb['height']))
 
         midi_aggregated_mode = not pb.get('midi_separated_mode', True)
+        midi_loopback = pb.get('midi_loopback', False)
 
         if self.midi_aggregated_mode != midi_aggregated_mode:
             self.send_notmodified("feature_enable aggregated-midi {}".format(int(midi_aggregated_mode)))
             self.set_midi_devices_change_mode(midi_aggregated_mode)
+
+        if self.midi_loopback_enabled != midi_loopback:
+            self.set_midi_devices_loopback_enabled(midi_loopback)
 
         if not self.midi_aggregated_mode:
             # MIDI Devices might change port names at anytime
@@ -4121,6 +4148,16 @@ _:b%i
         lv2:InputPort .
 """ % (int(not self.midi_aggregated_mode), index)
 
+        # MIDI Loopback
+        index += 1
+        ports += """
+<midi_loopback>
+    ingen:value %i ;
+    lv2:index %i ;
+    a atom:AtomPort ,
+        lv2:InputPort .
+""" % (int(self.midi_loopback_enabled), index)
+
         # Write the main pedalboard file
         pbdata = """\
 @prefix atom:  <http://lv2plug.in/ns/ext/atom#> .
@@ -4160,7 +4197,7 @@ _:b%i
             pbdata += "    ingen:block <%s> ;\n" % args
 
         # Ports
-        portsyms = [":bpb",":bpm",":rolling","midi_separated_mode","control_in","control_out"]
+        portsyms = [":bpb",":bpm",":rolling","midi_separated_mode","midi_loopback","control_in","control_out"]
         if self.hasSerialMidiIn:
             portsyms.append("serial_midi_in")
         if self.hasSerialMidiOut:
@@ -5923,7 +5960,7 @@ _:b%i
     # JACK stuff
 
     # Get list of Hardware MIDI devices
-    # returns (devsInUse, devList, names, midi_aggregated_mode)
+    # returns (devsInUse, devList, names, midiAggregatedMode)
     def get_midi_ports(self):
         out_ports = {}
         full_ports = {}
@@ -5970,6 +6007,12 @@ _:b%i
                 devsInUse.append(port_id)
             names[port_id] = port_alias + (" (in+out)" if port_alias in out_ports else " (in)")
 
+        if self.midi_loopback_port is not None:
+            devList.append(self.midi_loopback_port)
+            names[self.midi_loopback_port] = "MIDI Loopback"
+            if self.midi_loopback_enabled:
+                devsInUse.append(self.midi_loopback_port)
+
         devList.sort()
         return (devsInUse, devList, names, self.midi_aggregated_mode)
 
@@ -5981,9 +6024,9 @@ _:b%i
 
         return portname.split(":",1)[-1].title()
 
-    # Set the selected MIDI devices and aggregated mode
+    # Set the selected MIDI devices, aggregated mode and loopback enabled
     @gen.coroutine
-    def set_midi_devices(self, newDevs, midi_aggregated_mode):
+    def set_midi_devices(self, newDevs, midi_aggregated_mode, midi_loopback_enabled):
         # Change modes first
         if self.midi_aggregated_mode != midi_aggregated_mode:
             try:
@@ -5992,6 +6035,9 @@ _:b%i
             except Exception as e:
                 raise e
             self.set_midi_devices_change_mode(midi_aggregated_mode)
+
+        if self.midi_loopback_enabled != midi_loopback_enabled:
+            self.set_midi_devices_loopback_enabled(midi_loopback_enabled)
 
         # If MIDI aggregated mode is off, we can handle device changes
         if not midi_aggregated_mode:
@@ -6044,6 +6090,18 @@ _:b%i
                 self.msg_callback("add_hw_port /graph/serial_midi_out midi 1 Serial_MIDI_Out 0")
 
         self.midi_aggregated_mode = midi_aggregated_mode
+
+    def set_midi_devices_loopback_enabled(self, midi_loopback_enabled):
+        if self.midi_loopback_port is None:
+            return
+
+        self.midi_loopback_enabled = midi_loopback_enabled
+
+        if midi_loopback_enabled:
+            self.msg_callback.write_message("add_hw_port /graph/midi_loopback midi 1 MIDI_Loopback 42")
+        else:
+            self.msg_callback.write_message("remove_hw_port /graph/midi_loopback")
+            disconnect_all_jack_ports(self.midi_loopback_port)
 
     # Will remove or add new JACK ports (in mod-ui) as needed
     def set_midi_devices_separated(self, newDevs):
