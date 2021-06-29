@@ -6098,9 +6098,9 @@ _:b%i
         self.midi_loopback_enabled = midi_loopback_enabled
 
         if midi_loopback_enabled:
-            self.msg_callback.write_message("add_hw_port /graph/midi_loopback midi 1 MIDI_Loopback 42")
+            self.msg_callback("add_hw_port /graph/midi_loopback midi 1 MIDI_Loopback 42")
         else:
-            self.msg_callback.write_message("remove_hw_port /graph/midi_loopback")
+            self.msg_callback("remove_hw_port /graph/midi_loopback")
             disconnect_all_jack_ports(self.midi_loopback_port)
 
     # Will remove or add new JACK ports (in mod-ui) as needed
