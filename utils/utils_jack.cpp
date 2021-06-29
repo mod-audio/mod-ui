@@ -420,7 +420,7 @@ float get_jack_sample_rate(void)
 
 const char* get_jack_port_alias(const char* portname)
 {
-    static char  aliases[2][0xff];
+    static char  aliases[2][320];
     static char* aliasesptr[2] = {
         aliases[0],
         aliases[1]
@@ -455,7 +455,7 @@ const char* const* get_jack_hardware_ports(const bool isAudio, bool isOutput)
     // hide midi-through capture ports
     if (!isAudio && !isOutput)
     {
-        static char  aliases[2][0xff];
+        static char  aliases[2][320];
         static char* aliasesptr[2] = {
             aliases[0],
             aliases[1]
