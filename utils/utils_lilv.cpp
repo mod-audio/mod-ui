@@ -4677,6 +4677,17 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
                 continue;
             }
 
+            if (strcmp(portsym, "midi_loopback") == 0)
+            {
+                if (LilvNode* const loopback = lilv_world_get(w, hwport, ingen_value, nullptr))
+                {
+                    info.midi_loopback = lilv_node_as_int(loopback) != 0;
+                    lilv_node_free(loopback);
+                }
+                lilv_free(portsym);
+                continue;
+            }
+
             TimePortType timePortType;
             /**/ if (strcmp(portsym, ":bpb") == 0)
                 timePortType = kTimePortTypeBeatsPerBar;
