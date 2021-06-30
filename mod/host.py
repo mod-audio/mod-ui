@@ -1996,7 +1996,8 @@ class Host(object):
                                                                               mchnnl, mctrl, minimum, maximum))
 
                 for portsymbol, addressing in pluginData['addressings'].items():
-                    if self.addressings.get_actuator_type(addressing['actuator_uri']) == Addressings.ADDRESSING_TYPE_CV:
+                    actuator_type = self.addressings.get_actuator_type(addressing['actuator_uri'])
+                    if actuator_type == Addressings.ADDRESSING_TYPE_CV:
                         source_port_name = self.get_jack_source_port_name(addressing['actuator_uri'])
                         self.send_notmodified("cv_map %d %s %s %f %f %s" % (instance_id,
                                                                             portsymbol,
@@ -2004,6 +2005,9 @@ class Host(object):
                                                                             addressing['minimum'],
                                                                             addressing['maximum'],
                                                                             addressing['operational_mode']))
+                    elif actuator_type == Addressings.ADDRESSING_TYPE_HMI:
+                        hw_id = self.addressings.hmi_uri2hw_map[addressing['actuator_uri']]
+                        self.hmi.control_remap(hw_id, addressing)
 
         for port_from, port_to in self.connections:
             websocket.write_message("connect %s %s" % (port_from, port_to))

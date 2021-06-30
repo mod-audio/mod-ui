@@ -482,6 +482,55 @@ class HMI(object):
                   ),
                   cb, 'boolean')
 
+    def control_remap(self, hw_id, data):
+        if self.host_map is None:
+            return
+
+        label = data['label']
+        hmitype = data['hmitype']
+
+        if data.get('group', None) is not None and self.hw_desc.get('hmi_actuator_group_prefix', True):
+            if hmitype & FLAG_CONTROL_REVERSE:
+                prefix = "- "
+            else:
+                prefix = "+ "
+            label = prefix + label
+
+        label = '"%s"' % label.replace('"', "")[:31].upper()
+
+        hostcaps = 0x0
+        for actuator in self.hw_desc['actuators']:
+            if actuator['id'] != hw_id:
+                continue
+            widgets = actuator.get('widgets', None)
+            if widgets is None:
+                break
+            if "led" in widgets:
+                hostcaps |= LV2_HMI_AddressingCapability_LED
+            if "label" in widgets:
+                hostcaps |= LV2_HMI_AddressingCapability_Label
+            if "value" in widgets:
+                hostcaps |= LV2_HMI_AddressingCapability_Value
+            if "unit" in widgets:
+                hostcaps |= LV2_HMI_AddressingCapability_Unit
+            if "indicator" in widgets:
+                hostcaps |= LV2_HMI_AddressingCapability_Indicator
+            break
+
+        hostflags = 0x0
+        if data.get('coloured', False):
+            hostflags |= LV2_HMI_AddressingFlag_Coloured
+        if hmitype & FLAG_CONTROL_MOMENTARY:
+            hostflags |= LV2_HMI_AddressingFlag_Momentary
+        if hmitype & FLAG_CONTROL_REVERSE:
+            hostflags |= LV2_HMI_AddressingFlag_Reverse
+        if hmitype & FLAG_CONTROL_TAP_TEMPO:
+            hostflags |= LV2_HMI_AddressingFlag_TapTempo
+
+        self.host_map(data['instance_id'], data['port'],
+                      hw_id, hostcaps, hostflags, label,
+                      data['minimum'], data['maximum'], data['steps'])
+
     def control_set_index(self, hw_id, index, n_controllers, callback):
         self.send('%s %d %d %d' % (CMD_DUO_CONTROL_INDEX_SET, hw_id, index, n_controllers), callback, 'boolean')
 
