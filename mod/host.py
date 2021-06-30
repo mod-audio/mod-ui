@@ -6100,8 +6100,8 @@ _:b%i
         if midi_loopback_enabled:
             self.msg_callback("add_hw_port /graph/midi_loopback midi 1 MIDI_Loopback 42")
         else:
+            self.remove_port_from_connections(self.midi_loopback_port)
             self.msg_callback("remove_hw_port /graph/midi_loopback")
-            disconnect_all_jack_ports(self.midi_loopback_port)
 
     # Will remove or add new JACK ports (in mod-ui) as needed
     def set_midi_devices_separated(self, newDevs):

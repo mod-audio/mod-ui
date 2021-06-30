@@ -400,12 +400,12 @@ $('document').ready(function() {
         }
 
         if (cmd == "add_cv_port") {
-          data         = data.split(" ", 3)
-          var instance = data[0]
-          var name     = data[1].replace(/_/g," ")
-          var operationalMode = data[2]
-          desktop.hardwareManager.addCvOutputPort(instance, name, operationalMode)
-          return
+            data         = data.split(" ", 3)
+            var instance = data[0]
+            var name     = data[1].replace(/_/g," ")
+            var operationalMode = data[2]
+            desktop.hardwareManager.addCvOutputPort(instance, name, operationalMode)
+            return
         }
 
         if (cmd == "add_hw_port") {
