@@ -20,23 +20,30 @@ CMD_ARGS = {
         'ncp': [int,int],
         'is': [int,int,int,int,int,str,str,],
         'b': [int,int],
+        'bn': [str,],
+        'bd': [int],
+        'ba': [int,int,int,],
+        'br': [int,int,int],
         'p': [int,int,int],
+        'pn': [str,],
         'pb': [int,str],
-        'ssg': [int,int],
-        'ssl': [int],
         'pr': [],
         'ps': [],
-        'pn': [str,],
+        'psa': [str,],
         'pcl': [],
+        'pbd': [int],
+        'sr': [int,int],
+        'ssg': [int,int],
         'sn': [str,],
+        'ssl': [int],
+        'sss': [int],
+        'ssa': [str,],
+        'ssd': [int],
         'ts': [float,str,int],
         'tn': [],
         'tf': [],
         'ti': [int],
         'restore': [],
-        'syscompr_off': [],
-        'syscompr': [float,float,float,float,float,float],
-        'sysvol': [float],
         'r': [int,],
         'c': [int,int,],
         'upr': [int],
@@ -54,6 +61,12 @@ CMD_ARGS = {
         'save_pot_cal': [int,int],
         'sys_gio': [int,int,float],
         'sys_ghp': [float],
+        'sys_ngc': [int],
+        'sys_ngt': [int],
+        'sys_ngd': [int],
+        'sys_cmm': [int],
+        'sys_cmr': [int],
+        'sys_pbg': [int],
         'sys_ams': [],
         'sys_bts': [],
         'sys_btd': [],
@@ -65,6 +78,10 @@ CMD_ARGS = {
         'sys_led': [int,int,],
         'sys_nam': [int,str],
         'sys_uni': [int,str],
+        'sys_val': [int,str],
+        'sys_ind': [int,float],
+        'sys_pch': [int],
+        'sys_spc': [int],
     },
     'DUO': {
         'boot': [int,int,str,],
@@ -104,23 +121,30 @@ CMD_CONTROL_SET                   = 's'
 CMD_CONTROL_PAGE                  = 'ncp'
 CMD_INITIAL_STATE                 = 'is'
 CMD_BANKS                         = 'b'
+CMD_BANK_NEW                      = 'bn'
+CMD_BANK_DELETE                   = 'bd'
+CMD_ADD_PBS_TO_BANK               = 'ba'
+CMD_REORDER_PBS_IN_BANK           = 'br'
 CMD_PEDALBOARDS                   = 'p'
+CMD_PEDALBOARD_NAME_SET           = 'pn'
 CMD_PEDALBOARD_LOAD               = 'pb'
-CMD_SNAPSHOTS                     = 'ssg'
-CMD_SNAPSHOTS_LOAD                = 'ssl'
 CMD_PEDALBOARD_RESET              = 'pr'
 CMD_PEDALBOARD_SAVE               = 'ps'
-CMD_PEDALBOARD_NAME_SET           = 'pn'
+CMD_PEDALBOARD_SAVE_AS            = 'psa'
 CMD_PEDALBOARD_CLEAR              = 'pcl'
+CMD_PEDALBOARD_DELETE             = 'pbd'
+CMD_REORDER_SSS_IN_PB             = 'sr'
+CMD_SNAPSHOTS                     = 'ssg'
 CMD_SNAPSHOT_NAME_SET             = 'sn'
+CMD_SNAPSHOTS_LOAD                = 'ssl'
+CMD_SNAPSHOTS_SAVE                = 'sss'
+CMD_SNAPSHOT_SAVE_AS              = 'ssa'
+CMD_SNAPSHOT_DELETE               = 'ssd'
 CMD_TUNER                         = 'ts'
 CMD_TUNER_ON                      = 'tn'
 CMD_TUNER_OFF                     = 'tf'
 CMD_TUNER_INPUT                   = 'ti'
 CMD_RESTORE                       = 'restore'
-CMD_SYSPLUG_COMPR_DISABLE         = 'syscompr_off'
-CMD_SYSPLUG_COMPR_SETUP           = 'syscompr'
-CMD_SYSPLUG_VOLUME                = 'sysvol'
 CMD_RESPONSE                      = 'r'
 CMD_MENU_ITEM_CHANGE              = 'c'
 CMD_PROFILE_LOAD                  = 'upr'
@@ -138,6 +162,12 @@ CMD_SELFTEST_SKIP_CONTROL         = 'control_bad_skip'
 CMD_SELFTEST_SAVE_POT_CALIBRATION = 'save_pot_cal'
 CMD_SYS_GAIN                      = 'sys_gio'
 CMD_SYS_HP_GAIN                   = 'sys_ghp'
+CMD_SYS_NG_CHANNEL                = 'sys_ngc'
+CMD_SYS_NG_THRESHOLD              = 'sys_ngt'
+CMD_SYS_NG_DECAY                  = 'sys_ngd'
+CMD_SYS_COMP_MODE                 = 'sys_cmm'
+CMD_SYS_COMP_RELEASE              = 'sys_cmr'
+CMD_SYS_COMP_PEDALBOARD_GAIN      = 'sys_pbg'
 CMD_SYS_AMIXER_SAVE               = 'sys_ams'
 CMD_SYS_BT_STATUS                 = 'sys_bts'
 CMD_SYS_BT_DISCOVERY              = 'sys_btd'
@@ -149,6 +179,10 @@ CMD_SYS_REBOOT                    = 'sys_rbt'
 CMD_SYS_CHANGE_LED                = 'sys_led'
 CMD_SYS_CHANGE_NAME               = 'sys_nam'
 CMD_SYS_CHANGE_UNIT               = 'sys_uni'
+CMD_SYS_CHANGE_VALUE              = 'sys_val'
+CMD_SYS_CHANGE_WIDGET_INDICATOR   = 'sys_ind'
+CMD_SYS_PAGE_CHANGE               = 'sys_pch'
+CMD_SYS_SUBPAGE_CHANGE            = 'sys_spc'
 CMD_DUO_BOOT                      = 'boot'
 CMD_DUO_FOOT_NAVIG                = 'fn'
 CMD_DUO_BANK_CONFIG               = 'bc'
