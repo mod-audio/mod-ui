@@ -52,12 +52,22 @@ from mod.control_chain import (
 )
 from mod.mod_protocol import (
     CMD_BANKS,
+    CMD_BANK_NEW,
+    CMD_BANK_DELETE,
+    CMD_ADD_PBS_TO_BANK,
+    CMD_REORDER_PBS_IN_BANK,
     CMD_PEDALBOARDS,
     CMD_PEDALBOARD_LOAD,
     CMD_PEDALBOARD_RESET,
     CMD_PEDALBOARD_SAVE,
+    CMD_PEDALBOARD_SAVE_AS,
+    CMD_PEDALBOARD_DELETE,
+    CMD_REORDER_SSS_IN_PB,
     CMD_SNAPSHOTS,
     CMD_SNAPSHOTS_LOAD,
+    CMD_SNAPSHOTS_SAVE,
+    CMD_SNAPSHOT_SAVE_AS,
+    CMD_SNAPSHOT_DELETE,
     CMD_CONTROL_GET,
     CMD_CONTROL_SET,
     CMD_CONTROL_PAGE,
@@ -455,11 +465,22 @@ class Host(object):
         Protocol.register_cmd_callback('ALL', CMD_PEDALBOARDS, self.hmi_list_bank_pedalboards)
         Protocol.register_cmd_callback('ALL', CMD_SNAPSHOTS, self.hmi_list_pedalboard_snapshots)
 
+        Protocol.register_cmd_callback('ALL', CMD_BANK_NEW, self.hmi_bank_new)
+        Protocol.register_cmd_callback('ALL', CMD_BANK_DELETE, self.hmi_bank_delete)
+        Protocol.register_cmd_callback('ALL', CMD_ADD_PBS_TO_BANK, self.hmi_bank_add_pedalboards)
+        Protocol.register_cmd_callback('ALL', CMD_REORDER_PBS_IN_BANK, self.hmi_bank_reorder_pedalboards)
+
         Protocol.register_cmd_callback('ALL', CMD_PEDALBOARD_LOAD, self.hmi_load_bank_pedalboard)
         Protocol.register_cmd_callback('ALL', CMD_PEDALBOARD_RESET, self.hmi_reset_current_pedalboard)
         Protocol.register_cmd_callback('ALL', CMD_PEDALBOARD_SAVE, self.hmi_save_current_pedalboard)
+        Protocol.register_cmd_callback('ALL', CMD_PEDALBOARD_SAVE_AS, self.hmi_pedalboard_save_as)
+        Protocol.register_cmd_callback('ALL', CMD_PEDALBOARD_DELETE, self.hmi_pedalboard_delete)
+        Protocol.register_cmd_callback('ALL', CMD_REORDER_SSS_IN_PB, self.hmi_pedalboard_reorder_snapshots)
 
-        Protocol.register_cmd_callback('ALL', CMD_SNAPSHOTS_LOAD, self.hmi_load_pedalboard_snapshot)
+        Protocol.register_cmd_callback('ALL', CMD_SNAPSHOTS_LOAD, self.hmi_pedalboard_snapshot_load)
+        Protocol.register_cmd_callback('ALL', CMD_SNAPSHOTS_SAVE, self.hmi_pedalboard_snapshot_save)
+        Protocol.register_cmd_callback('ALL', CMD_SNAPSHOT_SAVE_AS, self.hmi_pedalboard_snapshot_save_as)
+        Protocol.register_cmd_callback('ALL', CMD_SNAPSHOT_DELETE, self.hmi_pedalboard_snapshot_delete)
 
         Protocol.register_cmd_callback('ALL', CMD_CONTROL_GET, self.hmi_parameter_get)
         Protocol.register_cmd_callback('ALL', CMD_CONTROL_SET, self.hmi_parameter_set)
@@ -4930,6 +4951,52 @@ _:b%i
 
     # -----------------------------------------------------------------------------------------------------------------
 
+    def hmi_bank_new(self, name: str, callback):
+        print("hmi_bank_new", name)
+        callback(True)
+
+    def hmi_bank_delete(self, bank_id: int, callback):
+        print("hmi_bank_delete", bank_id)
+        callback(True)
+
+    def hmi_bank_add_pedalboards(self, dest_bank_id: int, source_bank_id: int, pedalboards: tuple, callback):
+        print("hmi_bank_add_pedalboards", dest_bank_id, source_bank_id, pedalboards)
+        callback(True)
+
+    def hmi_bank_reorder_pedalboards(self, bank_id: int, pedalboard_id: int, target_index: int, callback):
+        print("hmi_bank_reorder_pedalboards", bank_id, pedalboard_id, target_index)
+        callback(True)
+
+    # -----------------------------------------------------------------------------------------------------------------
+
+    def hmi_pedalboard_save_as(self, name: str, callback):
+        print("hmi_pedalboard_save_as", name)
+        callback(True)
+
+    def hmi_pedalboard_delete(self, pedalboard_id: int, callback):
+        print("hmi_pedalboard_delete", pedalboard_id)
+        callback(True)
+
+    def hmi_pedalboard_reorder_snapshots(self, pedalboard_id: int, snapshot_id: int, target_index: int, callback):
+        print("hmi_pedalboard_reorder_snapshots", pedalboard_id, snapshot_id, target_index)
+        callback(True)
+
+    # -----------------------------------------------------------------------------------------------------------------
+
+    def hmi_pedalboard_snapshot_save(self, snapshot_id: int, callback):
+        print("hmi_pedalboard_snapshot_save", snapshot_id)
+        callback(True)
+
+    def hmi_pedalboard_snapshot_save_as(self, name: str, callback):
+        print("hmi_pedalboard_snapshot_save_as", name)
+        callback(True)
+
+    def hmi_pedalboard_snapshot_delete(self, snapshot_id: int, callback):
+        print("hmi_pedalboard_snapshot_delete", snapshot_id)
+        callback(True)
+
+    # -----------------------------------------------------------------------------------------------------------------
+
     def bank_config_enabled_callback(self, _):
         print("NOTE: bank config done")
 
@@ -5036,7 +5103,9 @@ _:b%i
 
         self.reset(hmi_clear_callback)
 
-    def hmi_load_pedalboard_snapshot(self, snapshot_id, callback):
+    # -----------------------------------------------------------------------------------------------------------------
+
+    def hmi_pedalboard_snapshot_load(self, snapshot_id, callback):
         logging.debug("hmi load pedalboard snapshot")
 
         if snapshot_id < 0 or snapshot_id >= len(self.pedalboard_snapshots):
@@ -5044,11 +5113,11 @@ _:b%i
             callback(False)
             return
 
-        abort_catcher = self.abort_previous_loading_progress("hmi_load_pedalboard_snapshot")
+        abort_catcher = self.abort_previous_loading_progress("hmi_pedalboard_snapshot_load")
         callback(True)
 
         def load_finished(ok):
-            logging.debug("[host] hmi_load_pedalboard_snapshot done for %d", snapshot_id)
+            logging.debug("[host] hmi_pedalboard_snapshot_load done for %d", snapshot_id)
 
         try:
             self.snapshot_load(snapshot_id, True, abort_catcher, load_finished)
