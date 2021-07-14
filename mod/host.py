@@ -332,6 +332,7 @@ class Host(object):
 
         self.web_connected = False
         self.web_data_ready_counter = 0
+        self.web_data_ready_ok = True
 
         self.allpedalboards = None
         self.banks = None
@@ -1387,6 +1388,8 @@ class Host(object):
 
         self.web_connected = True
         self.web_data_ready_counter = 0
+        self.web_data_ready_ok = True
+        self.send_output_data_ready(None, None)
 
         self.allpedalboards = []
         self.banks = []
@@ -1418,7 +1421,9 @@ class Host(object):
         self.banks = list_banks(badbundles, False)
 
         self.web_connected = False
-        self.send_output_data_ready(None, None)
+        if not self.web_data_ready_ok:
+            self.web_data_ready_ok = True
+            self.send_output_data_ready(None, None)
 
         if not self.hmi.initialized:
             callback(True)
@@ -1452,6 +1457,7 @@ class Host(object):
 
         if msg == "data_finish":
             if self.web_connected:
+                self.web_data_ready_ok = False
                 self.web_data_ready_counter += 1
                 self.msg_callback("data_ready %i" % self.web_data_ready_counter)
                 return

@@ -309,6 +309,7 @@ class Session(object):
     # This indicates web browser side is ready to receive more events
     def ws_data_ready(self, counter):
         if self.host.web_data_ready_counter == counter:
+            self.host.web_data_ready_ok = True
             self.host.send_output_data_ready(None, None)
 
     # Set a plugin parameter
