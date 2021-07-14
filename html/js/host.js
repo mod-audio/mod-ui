@@ -58,6 +58,12 @@ $('document').ready(function() {
         // everything from here onwards has at least 1 argument
         data = data.substr(cmd.length+1);
 
+        if (cmd == "data_ready") {
+            var counter = data
+            ws.send("data_ready " + counter)
+            return
+        }
+
         if (cmd == "stats") {
             data        = data.split(" ",2)
             var cpuLoad = parseFloat(data[0])
@@ -298,9 +304,8 @@ $('document').ready(function() {
                         var cb = function () {
                             var input = $(targetport)
                             desktop.pedalboard.pedalboard('connect', output.find('[mod-role=output-jack]'), input, skipModified)
-                            $(document).unbindArrive(targetport, cb)
                         }
-                        $(document).arrive(targetport, cb)
+                        $('#pedalboard-dashboard').arrive(targetport, { onceOnly: true }, cb)
                     }
                 } else {
                     var cb = function () {
@@ -313,13 +318,11 @@ $('document').ready(function() {
                             var incb = function () {
                                 var input = $(targetport)
                                 desktop.pedalboard.pedalboard('connect', output.find('[mod-role=output-jack]'), input, skipModified)
-                                $(document).unbindArrive(targetport, incb)
                             }
-                            $(document).arrive(targetport, incb)
+                            $('#pedalboard-dashboard').arrive(targetport, { onceOnly: true }, incb)
                         }
-                        $(document).unbindArrive(sourceport, cb)
                     }
-                    $(document).arrive(sourceport, cb)
+                    $('#pedalboard-dashboard').arrive(sourceport, { onceOnly: true }, cb)
                 }
             }
             return
@@ -373,10 +376,8 @@ $('document').ready(function() {
                             var cb = function () {
                                 desktop.pedalboard.pedalboard('scheduleAdapt', false)
                                 desktop.pedalboard.data('wait').stopPlugin(instance, !skipModified)
-
-                                $(document).unbindArrive(instancekey, cb)
                             }
-                            $(document).arrive(instancekey, cb)
+                            $('#pedalboard-dashboard').arrive(instancekey, { onceOnly: true }, cb)
                         }
 
                         desktop.pedalboard.pedalboard("addPlugin", pluginData, instance, bypassed, x, y, {}, null, skipModified)

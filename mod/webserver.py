@@ -1125,7 +1125,12 @@ class ServerWebSocket(websocket.WebSocketHandler):
         data = message.split(" ",1)
         cmd  = data[0]
 
-        if cmd == "param_set":
+        if cmd == "data_ready":
+            counter = int(data[1])
+            SESSION.ws_data_ready(counter)
+            return
+
+        elif cmd == "param_set":
             data  = data[1].split(" ",2)
             port  = data[0]
             value = float(data[1])

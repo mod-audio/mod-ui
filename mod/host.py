@@ -320,6 +320,9 @@ class Host(object):
         self.current_tuner_port = 2 if self.swapped_audio_channels else 1
         self.current_tuner_mute = self.prefs.get("tuner-mutes-outputs", False, bool)
 
+        self.web_connected = False
+        self.web_data_ready_counter = 0
+
         self.allpedalboards = None
         self.banks = None
 
@@ -1361,6 +1364,9 @@ class Host(object):
         if midi_pb_prgch >= 1 and midi_pb_prgch <= 16:
             self.send_notmodified("monitor_midi_program %d 0" % (midi_pb_prgch-1))
 
+        self.web_connected = True
+        self.web_data_ready_counter = 0
+
         self.allpedalboards = []
         self.banks = []
 
@@ -1389,6 +1395,9 @@ class Host(object):
     def end_session(self, callback):
         self.allpedalboards, badbundles = get_all_good_and_bad_pedalboards()
         self.banks = list_banks(badbundles, False)
+
+        self.web_connected = False
+        self.send_output_data_ready(None, None)
 
         if not self.hmi.initialized:
             callback(True)
@@ -1421,6 +1430,11 @@ class Host(object):
         ioloop = IOLoop.instance()
 
         if msg == "data_finish":
+            if self.web_connected:
+                self.web_data_ready_counter += 1
+                self.msg_callback("data_ready %i" % self.web_data_ready_counter)
+                return
+
             now  = ioloop.time()
             diff = now-self.last_data_finish_msg
 
@@ -1695,6 +1709,7 @@ class Host(object):
                                                      self.transport_bpb,
                                                      self.transport_bpm,
                                                      self.transport_sync))
+
     def process_read_queue(self):
         if self.readsock is None:
             return
@@ -1705,7 +1720,7 @@ class Host(object):
         self.last_data_finish_msg = ioloop.time() if now is None else now
 
         if self.last_data_finish_handle is not None:
-            #ioloop.remove_timeout(self.last_data_finish_handle)
+            ioloop.remove_timeout(self.last_data_finish_handle)
             self.last_data_finish_handle = None
 
         self.send_notmodified("output_data_ready", callback)
