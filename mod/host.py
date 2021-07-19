@@ -325,7 +325,8 @@ class Host(object):
         self.descriptor = get_hardware_descriptor()
         self.profile = Profile(self.profile_apply, self.descriptor)
 
-        self.current_tuner_port = 1
+        self.swapped_audio_channels = self.descriptor.get('swapped_audio_channels', False)
+        self.current_tuner_port = 2 if self.swapped_audio_channels else 1
         self.current_tuner_mute = self.prefs.get("tuner-mutes-outputs", False, bool)
 
         self.web_connected = False
@@ -3042,9 +3043,8 @@ class Host(object):
     def _fix_host_connection_port(self, port):
         """Map URL style port names to Jack port names."""
         data = port.split("/")
-        # For example, "/graph/capture_2" becomes ['', 'graph',
-        # 'capture_2']. Plugin paths can be longer, e.g.  ['', 'graph',
-        # 'BBCstereo', 'inR']
+        # For example, "/graph/capture_2" becomes ['', 'graph', 'capture_2'].
+        # Plugin paths can be longer, e.g.  ['', 'graph', 'BBCstereo', 'inR']
 
         if len(data) == 3:
             # Handle special cases
@@ -5635,6 +5635,12 @@ _:b%i
         if input_port not in (1, 2):
             callback(False)
             return
+
+        if self.swapped_audio_channels:
+            if input_port == 1:
+                input_port = 2
+            else:
+                input_port = 1
 
         disconnect_jack_ports("system:capture_%s" % self.current_tuner_port,
                               "effect_%d:%s" % (TUNER_INSTANCE_ID, TUNER_INPUT_PORT))
