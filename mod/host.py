@@ -52,12 +52,22 @@ from mod.control_chain import (
 )
 from mod.mod_protocol import (
     CMD_BANKS,
+    CMD_BANK_NEW,
+    CMD_BANK_DELETE,
+    CMD_ADD_PBS_TO_BANK,
+    CMD_REORDER_PBS_IN_BANK,
     CMD_PEDALBOARDS,
     CMD_PEDALBOARD_LOAD,
     CMD_PEDALBOARD_RESET,
     CMD_PEDALBOARD_SAVE,
+    CMD_PEDALBOARD_SAVE_AS,
+    CMD_PEDALBOARD_DELETE,
+    CMD_REORDER_SSS_IN_PB,
     CMD_SNAPSHOTS,
     CMD_SNAPSHOTS_LOAD,
+    CMD_SNAPSHOTS_SAVE,
+    CMD_SNAPSHOT_SAVE_AS,
+    CMD_SNAPSHOT_DELETE,
     CMD_CONTROL_GET,
     CMD_CONTROL_SET,
     CMD_CONTROL_PAGE,
@@ -316,9 +326,12 @@ class Host(object):
         self.profile = Profile(self.profile_apply, self.descriptor)
 
         self.swapped_audio_channels = self.descriptor.get('swapped_audio_channels', False)
-
         self.current_tuner_port = 2 if self.swapped_audio_channels else 1
         self.current_tuner_mute = self.prefs.get("tuner-mutes-outputs", False, bool)
+
+        self.web_connected = False
+        self.web_data_ready_counter = 0
+        self.web_data_ready_ok = True
 
         self.allpedalboards = None
         self.banks = None
@@ -452,11 +465,22 @@ class Host(object):
         Protocol.register_cmd_callback('ALL', CMD_PEDALBOARDS, self.hmi_list_bank_pedalboards)
         Protocol.register_cmd_callback('ALL', CMD_SNAPSHOTS, self.hmi_list_pedalboard_snapshots)
 
+        Protocol.register_cmd_callback('ALL', CMD_BANK_NEW, self.hmi_bank_new)
+        Protocol.register_cmd_callback('ALL', CMD_BANK_DELETE, self.hmi_bank_delete)
+        Protocol.register_cmd_callback('ALL', CMD_ADD_PBS_TO_BANK, self.hmi_bank_add_pedalboards)
+        Protocol.register_cmd_callback('ALL', CMD_REORDER_PBS_IN_BANK, self.hmi_bank_reorder_pedalboards)
+
         Protocol.register_cmd_callback('ALL', CMD_PEDALBOARD_LOAD, self.hmi_load_bank_pedalboard)
         Protocol.register_cmd_callback('ALL', CMD_PEDALBOARD_RESET, self.hmi_reset_current_pedalboard)
         Protocol.register_cmd_callback('ALL', CMD_PEDALBOARD_SAVE, self.hmi_save_current_pedalboard)
+        Protocol.register_cmd_callback('ALL', CMD_PEDALBOARD_SAVE_AS, self.hmi_pedalboard_save_as)
+        Protocol.register_cmd_callback('ALL', CMD_PEDALBOARD_DELETE, self.hmi_pedalboard_delete)
+        Protocol.register_cmd_callback('ALL', CMD_REORDER_SSS_IN_PB, self.hmi_pedalboard_reorder_snapshots)
 
-        Protocol.register_cmd_callback('ALL', CMD_SNAPSHOTS_LOAD, self.hmi_load_pedalboard_snapshot)
+        Protocol.register_cmd_callback('ALL', CMD_SNAPSHOTS_LOAD, self.hmi_pedalboard_snapshot_load)
+        Protocol.register_cmd_callback('ALL', CMD_SNAPSHOTS_SAVE, self.hmi_pedalboard_snapshot_save)
+        Protocol.register_cmd_callback('ALL', CMD_SNAPSHOT_SAVE_AS, self.hmi_pedalboard_snapshot_save_as)
+        Protocol.register_cmd_callback('ALL', CMD_SNAPSHOT_DELETE, self.hmi_pedalboard_snapshot_delete)
 
         Protocol.register_cmd_callback('ALL', CMD_CONTROL_GET, self.hmi_parameter_get)
         Protocol.register_cmd_callback('ALL', CMD_CONTROL_SET, self.hmi_parameter_set)
@@ -1361,6 +1385,11 @@ class Host(object):
         if midi_pb_prgch >= 1 and midi_pb_prgch <= 16:
             self.send_notmodified("monitor_midi_program %d 0" % (midi_pb_prgch-1))
 
+        self.web_connected = True
+        self.web_data_ready_counter = 0
+        self.web_data_ready_ok = True
+        self.send_output_data_ready(None, None)
+
         self.allpedalboards = []
         self.banks = []
 
@@ -1389,6 +1418,11 @@ class Host(object):
     def end_session(self, callback):
         self.allpedalboards, badbundles = get_all_good_and_bad_pedalboards()
         self.banks = list_banks(badbundles, False)
+
+        self.web_connected = False
+        if not self.web_data_ready_ok:
+            self.web_data_ready_ok = True
+            self.send_output_data_ready(None, None)
 
         if not self.hmi.initialized:
             callback(True)
@@ -1421,6 +1455,12 @@ class Host(object):
         ioloop = IOLoop.instance()
 
         if msg == "data_finish":
+            if self.web_connected:
+                self.web_data_ready_ok = False
+                self.web_data_ready_counter += 1
+                self.msg_callback("data_ready %i" % self.web_data_ready_counter)
+                return
+
             now  = ioloop.time()
             diff = now-self.last_data_finish_msg
 
@@ -1695,6 +1735,7 @@ class Host(object):
                                                      self.transport_bpb,
                                                      self.transport_bpm,
                                                      self.transport_sync))
+
     def process_read_queue(self):
         if self.readsock is None:
             return
@@ -1705,7 +1746,7 @@ class Host(object):
         self.last_data_finish_msg = ioloop.time() if now is None else now
 
         if self.last_data_finish_handle is not None:
-            #ioloop.remove_timeout(self.last_data_finish_handle)
+            ioloop.remove_timeout(self.last_data_finish_handle)
             self.last_data_finish_handle = None
 
         self.send_notmodified("output_data_ready", callback)
@@ -3042,11 +3083,6 @@ class Host(object):
             if data[2].startswith("playback_"):
                 num = data[2].replace("playback_","",1)
                 if num in ("1", "2"):
-                    if self.swapped_audio_channels:
-                        if num == "1":
-                            num = "2"
-                        else:
-                            num = "1"
                     return self.jack_hwin_prefix + num
 
             if data[2].startswith(("audio_from_slave_",
@@ -3080,17 +3116,11 @@ class Host(object):
             if data[2] == "cv_exp_pedal":
                 return "mod-spi2jack:exp_pedal"
 
-            if data[2] in ("capture_1", "capture_2"):
-                if self.swapped_audio_channels:
-                    if data[2] == "capture_1":
-                        return self.jack_hwout_prefix + "2"
-                    else:
-                        return self.jack_hwout_prefix + "1"
-                else:
-                    if data[2] == "capture_1":
-                        return self.jack_hwout_prefix + "1"
-                    else:
-                        return self.jack_hwout_prefix + "2"
+            # Handle global input (for noisegate control)
+            if data[2] == "capture_1":
+                return self.jack_hwout_prefix + "1"
+            if data[2] == "capture_2":
+                return self.jack_hwout_prefix + "2"
 
             # Default guess
             return "system:%s" % data[2]
@@ -4937,6 +4967,52 @@ _:b%i
 
     # -----------------------------------------------------------------------------------------------------------------
 
+    def hmi_bank_new(self, name: str, callback):
+        print("hmi_bank_new", name)
+        callback(True)
+
+    def hmi_bank_delete(self, bank_id: int, callback):
+        print("hmi_bank_delete", bank_id)
+        callback(True)
+
+    def hmi_bank_add_pedalboards(self, dest_bank_id: int, source_bank_id: int, pedalboards: tuple, callback):
+        print("hmi_bank_add_pedalboards", dest_bank_id, source_bank_id, pedalboards)
+        callback(True)
+
+    def hmi_bank_reorder_pedalboards(self, bank_id: int, pedalboard_id: int, target_index: int, callback):
+        print("hmi_bank_reorder_pedalboards", bank_id, pedalboard_id, target_index)
+        callback(True)
+
+    # -----------------------------------------------------------------------------------------------------------------
+
+    def hmi_pedalboard_save_as(self, name: str, callback):
+        print("hmi_pedalboard_save_as", name)
+        callback(True)
+
+    def hmi_pedalboard_delete(self, pedalboard_id: int, callback):
+        print("hmi_pedalboard_delete", pedalboard_id)
+        callback(True)
+
+    def hmi_pedalboard_reorder_snapshots(self, pedalboard_id: int, snapshot_id: int, target_index: int, callback):
+        print("hmi_pedalboard_reorder_snapshots", pedalboard_id, snapshot_id, target_index)
+        callback(True)
+
+    # -----------------------------------------------------------------------------------------------------------------
+
+    def hmi_pedalboard_snapshot_save(self, snapshot_id: int, callback):
+        print("hmi_pedalboard_snapshot_save", snapshot_id)
+        callback(True)
+
+    def hmi_pedalboard_snapshot_save_as(self, name: str, callback):
+        print("hmi_pedalboard_snapshot_save_as", name)
+        callback(True)
+
+    def hmi_pedalboard_snapshot_delete(self, snapshot_id: int, callback):
+        print("hmi_pedalboard_snapshot_delete", snapshot_id)
+        callback(True)
+
+    # -----------------------------------------------------------------------------------------------------------------
+
     def bank_config_enabled_callback(self, _):
         print("NOTE: bank config done")
 
@@ -5043,7 +5119,9 @@ _:b%i
 
         self.reset(hmi_clear_callback)
 
-    def hmi_load_pedalboard_snapshot(self, snapshot_id, callback):
+    # -----------------------------------------------------------------------------------------------------------------
+
+    def hmi_pedalboard_snapshot_load(self, snapshot_id, callback):
         logging.debug("hmi load pedalboard snapshot")
 
         if snapshot_id < 0 or snapshot_id >= len(self.pedalboard_snapshots):
@@ -5051,11 +5129,11 @@ _:b%i
             callback(False)
             return
 
-        abort_catcher = self.abort_previous_loading_progress("hmi_load_pedalboard_snapshot")
+        abort_catcher = self.abort_previous_loading_progress("hmi_pedalboard_snapshot_load")
         callback(True)
 
         def load_finished(ok):
-            logging.debug("[host] hmi_load_pedalboard_snapshot done for %d", snapshot_id)
+            logging.debug("[host] hmi_pedalboard_snapshot_load done for %d", snapshot_id)
 
         try:
             self.snapshot_load(snapshot_id, True, abort_catcher, load_finished)

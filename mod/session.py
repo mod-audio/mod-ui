@@ -305,6 +305,13 @@ class Session(object):
     # Websocket funtions, called when receiving messages from socket (see webserver.py)
     # There are no callbacks for these functions.
 
+    # Receive data ready, with matching counter value
+    # This indicates web browser side is ready to receive more events
+    def ws_data_ready(self, counter):
+        if self.host.web_data_ready_counter == counter:
+            self.host.web_data_ready_ok = True
+            self.host.send_output_data_ready(None, None)
+
     # Set a plugin parameter
     # We use ":bypass" symbol for on/off state
     def ws_parameter_set(self, port, value, ws):
