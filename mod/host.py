@@ -376,8 +376,8 @@ class Host(object):
         self.init_plugins_data()
 
         # clients at the end of the chain, all managed by mod-host
-        self.jack_hwin_prefix  = "mod-monitor:in_"
-        self.jack_hwout_prefix = "mod-host:out"
+        self.jack_hw_capture_prefix = "system:capture_" if APP else "mod-host:out"
+        self.jack_hw_playback_prefix = "system:playback_" if APP else "mod-monitor:in_"
 
         # used for network-manager
         self.jack_slave_prefix = "mod-slave"
@@ -1828,16 +1828,24 @@ class Host(object):
         return self.abort_progress_catcher
 
     def mute(self):
-        disconnect_jack_ports(self.jack_hwout_prefix + "1", "system:playback_1")
-        disconnect_jack_ports(self.jack_hwout_prefix + "2", "system:playback_2")
-        disconnect_jack_ports(self.jack_hwout_prefix + "1", "mod-peakmeter:in_3")
-        disconnect_jack_ports(self.jack_hwout_prefix + "2", "mod-peakmeter:in_4")
+        if self.swapped_audio_channels:
+            disconnect_jack_ports("mod-monitor:out_1", "system:playback_2")
+            disconnect_jack_ports("mod-monitor:out_2", "system:playback_1")
+        else:
+            disconnect_jack_ports("mod-monitor:out_1", "system:playback_1")
+            disconnect_jack_ports("mod-monitor:out_2", "system:playback_2")
+        disconnect_jack_ports("mod-monitor:out_1", "mod-peakmeter:in_3")
+        disconnect_jack_ports("mod-monitor:out_2", "mod-peakmeter:in_4")
 
     def unmute(self):
-        connect_jack_ports(self.jack_hwout_prefix + "1", "system:playback_1")
-        connect_jack_ports(self.jack_hwout_prefix + "2", "system:playback_2")
-        connect_jack_ports(self.jack_hwout_prefix + "1", "mod-peakmeter:in_3")
-        connect_jack_ports(self.jack_hwout_prefix + "2", "mod-peakmeter:in_4")
+        if self.swapped_audio_channels:
+            connect_jack_ports("mod-monitor:out_1", "system:playback_2")
+            connect_jack_ports("mod-monitor:out_2", "system:playback_1")
+        else:
+            connect_jack_ports("mod-monitor:out_1", "system:playback_1")
+            connect_jack_ports("mod-monitor:out_2", "system:playback_2")
+        connect_jack_ports("mod-monitor:out_1", "mod-peakmeter:in_3")
+        connect_jack_ports("mod-monitor:out_2", "mod-peakmeter:in_4")
 
     def report_current_state(self, websocket):
         if websocket is None:
@@ -3083,7 +3091,7 @@ class Host(object):
             if data[2].startswith("playback_"):
                 num = data[2].replace("playback_","",1)
                 if num in ("1", "2"):
-                    return self.jack_hwin_prefix + num
+                    return self.jack_hw_playback_prefix + num
 
             if data[2].startswith(("audio_from_slave_",
                                    "audio_to_slave_",
@@ -3118,9 +3126,9 @@ class Host(object):
 
             # Handle global input (for noisegate control)
             if data[2] == "capture_1":
-                return self.jack_hwout_prefix + "1"
+                return self.jack_hw_capture_prefix + "1"
             if data[2] == "capture_2":
-                return self.jack_hwout_prefix + "2"
+                return self.jack_hw_capture_prefix + "2"
 
             # Default guess
             return "system:%s" % data[2]
