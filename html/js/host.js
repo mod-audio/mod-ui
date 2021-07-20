@@ -304,6 +304,7 @@ $('document').ready(function() {
                         var cb = function () {
                             var input = $(targetport)
                             desktop.pedalboard.pedalboard('connect', output.find('[mod-role=output-jack]'), input, skipModified)
+                            $('#pedalboard-dashboard').unbindArrive(targetport, cb)
                         }
                         $('#pedalboard-dashboard').arrive(targetport, { onceOnly: true }, cb)
                     }
@@ -318,9 +319,11 @@ $('document').ready(function() {
                             var incb = function () {
                                 var input = $(targetport)
                                 desktop.pedalboard.pedalboard('connect', output.find('[mod-role=output-jack]'), input, skipModified)
+                                $('#pedalboard-dashboard').unbindArrive(targetport, incb)
                             }
                             $('#pedalboard-dashboard').arrive(targetport, { onceOnly: true }, incb)
                         }
+                        $('#pedalboard-dashboard').unbindArrive(sourceport, cb)
                     }
                     $('#pedalboard-dashboard').arrive(sourceport, { onceOnly: true }, cb)
                 }
@@ -376,6 +379,7 @@ $('document').ready(function() {
                             var cb = function () {
                                 desktop.pedalboard.pedalboard('scheduleAdapt', false)
                                 desktop.pedalboard.data('wait').stopPlugin(instance, !skipModified)
+                                $('#pedalboard-dashboard').unbindArrive(instancekey, cb)
                             }
                             $('#pedalboard-dashboard').arrive(instancekey, { onceOnly: true }, cb)
                         }
