@@ -1597,7 +1597,7 @@ JqueryClass('pedalboard', {
             targetname2 = '.mod-settings[mod-instance="'+instance+'"] .mod-pedal-settings [mod-port="'+instance+'/'+symbol+'"]'
         }
 
-        if (gui && ($(targetname1).length || $(targetname2).length)) {
+        if (gui && (self.find(targetname1).length || self.find(targetname2).length)) {
             if (enabled || feedback) {
                 gui.enable(symbol)
             } else {
@@ -1610,8 +1610,8 @@ JqueryClass('pedalboard', {
         } else {
             var cb = function () {
                 delete self.data('callbacksToArrive')[callbackId]
-                $('#pedalboard-dashboard').unbindArrive(targetname1, cb)
-                $('#pedalboard-dashboard').unbindArrive(targetname2, cb)
+                self.unbindArrive(targetname1, cb)
+                self.unbindArrive(targetname2, cb)
 
                 var gui = self.pedalboard('getGui', instance)
                 if (enabled || feedback) {
@@ -1637,14 +1637,14 @@ JqueryClass('pedalboard', {
         var callbackId  = instance+'/'+symbol+":value"
         var gui = self.pedalboard('getGui', instance)
 
-        if (gui && ($(targetname1).length || $(targetname2).length)) {
+        if (gui && (self.find(targetname1).length || self.find(targetname2).length)) {
             gui.setPortWidgetsValue(symbol, value, null, true)
 
         } else {
             var cb = function () {
                 delete self.data('callbacksToArrive')[callbackId]
-                $('#pedalboard-dashboard').unbindArrive(targetname1, cb)
-                $('#pedalboard-dashboard').unbindArrive(targetname2, cb)
+                self.unbindArrive(targetname1, cb)
+                self.unbindArrive(targetname2, cb)
 
                 var gui = self.pedalboard('getGui', instance)
                 gui.setPortWidgetsValue(symbol, value, null, true)
@@ -1668,7 +1668,7 @@ JqueryClass('pedalboard', {
 
             var cb = function () {
                 delete self.data('callbacksToArrive')[callbackId]
-                $('#pedalboard-dashboard').unbindArrive(targetname, cb)
+                self.unbindArrive(targetname, cb)
 
                 var gui = self.pedalboard('getGui', instance)
                 gui.setOutputPortValue(symbol, value)
@@ -1691,7 +1691,7 @@ JqueryClass('pedalboard', {
 
             var cb = function () {
                 delete self.data('callbacksToArrive')[callbackId]
-                $('#pedalboard-dashboard').unbindArrive(targetname, cb)
+                self.unbindArrive(targetname, cb)
 
                 var gui = self.pedalboard('getGui', instance)
                 gui.setReadableParameterValue(uri, valuetype, valuedata)
@@ -1708,14 +1708,14 @@ JqueryClass('pedalboard', {
         var callbackId  = instance+'@'+uri+'@value'
         var gui = self.pedalboard('getGui', instance)
 
-        if (gui && ($(targetname1).length || $(targetname2).length)) {
+        if (gui && (self.find(targetname1).length || self.find(targetname2).length)) {
             gui.setWritableParameterValue(uri, valuetype, valuedata, null, true)
 
         } else {
             var cb = function () {
                 delete self.data('callbacksToArrive')[callbackId]
-                $('#pedalboard-dashboard').unbindArrive(targetname1, cb)
-                $('#pedalboard-dashboard').unbindArrive(targetname2, cb)
+                self.unbindArrive(targetname1, cb)
+                self.unbindArrive(targetname2, cb)
 
                 var gui = self.pedalboard('getGui', instance)
                 gui.setWritableParameterValue(uri, valuetype, valuedata, null, true)
@@ -1739,7 +1739,7 @@ JqueryClass('pedalboard', {
 
             var cb = function () {
                 delete self.data('callbacksToArrive')[callbackId]
-                $('#pedalboard-dashboard').unbindArrive(targetname, cb)
+                self.unbindArrive(targetname, cb)
 
                 var gui = self.pedalboard('getGui', instance)
                 gui.selectPreset(value)
@@ -1750,15 +1750,16 @@ JqueryClass('pedalboard', {
     },
 
     addUniqueCallbackToArrive: function (cb, targetname, callbackId, notOnlyOnce) {
-        var callbacks = $(this).data('callbacksToArrive'),
+        var self = $(this);
+        var callbacks = self.data('callbacksToArrive'),
             currentCallback = callbacks[callbackId];
 
         if (currentCallback) {
-            $('#pedalboard-dashboard').unbindArrive(targetname, currentCallback)
+            self.unbindArrive(targetname, currentCallback)
         }
 
         callbacks[callbackId] = cb
-        $('#pedalboard-dashboard').arrive(targetname, { onceOnly: !notOnlyOnce }, cb)
+        self.arrive(targetname, { onceOnly: !notOnlyOnce }, cb)
     },
 
     // Redraw all connections from or to a plugin
