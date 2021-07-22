@@ -60,7 +60,9 @@ $('document').ready(function() {
 
         if (cmd == "data_ready") {
             var counter = data
-            ws.send("data_ready " + counter)
+            setTimeout(function() {
+                ws.send("data_ready " + counter)
+            }, 25)
             return
         }
 
