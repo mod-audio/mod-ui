@@ -2763,7 +2763,7 @@ class Host(object):
 
         return snapshot
 
-    def snapshot_name(self, idx=None):
+    def snapshot_name(self, idx = None):
         if idx is None:
             idx = self.current_pedalboard_snapshot_id
         if idx < 0 or idx >= len(self.pedalboard_snapshots) or self.pedalboard_snapshots[idx] is None:
@@ -2794,7 +2794,7 @@ class Host(object):
         if idx < 0 or idx >= len(self.pedalboard_snapshots) or self.pedalboard_snapshots[idx] is None:
             return False
 
-        name   = self.pedalboard_snapshots[idx]['name']
+        name     = self.pedalboard_snapshots[idx]['name']
         snapshot = self.snapshot_make(name)
         self.pedalboard_snapshots[idx] = snapshot
         return True
@@ -2826,6 +2826,10 @@ class Host(object):
         snapshot_to_remove = self.pedalboard_snapshots[idx]
         self.pedalboard_modified = True
         self.pedalboard_snapshots.remove(snapshot_to_remove)
+
+        if self.current_pedalboard_snapshot_id == idx:
+            self.current_pedalboard_snapshot_id = -1
+
         return True
 
     # helper function for gen.Task, which has troubles calling into a coroutine directly
@@ -4958,13 +4962,20 @@ _:b%i
         callback(True)
 
     def hmi_bank_delete(self, bank_id, callback):
-        if bank_id <= 0:
+        if bank_id <= 0 or bank_id > len(self.banks):
+            print("ERROR: Trying to remove invalid bank id %i" % (bank_id))
             callback(False)
             return
-        if bank_id > len(self.banks):
+
+        # bank 0 is "all pedalboards"
+        bank_id -= 1
+
+        # FIXME decide on this
+        if self.bank_id == bank_id:
             callback(False)
             return
-        self.banks.pop(bank_id-1)
+
+        self.banks.pop(bank_id)
         save_banks(self.banks)
         callback(True)
 
@@ -4982,8 +4993,22 @@ _:b%i
         print("hmi_pedalboard_save_as", name)
         callback(True)
 
-    def hmi_pedalboard_delete(self, pedalboard_id: int, callback):
-        print("hmi_pedalboard_delete", pedalboard_id)
+    def hmi_pedalboard_delete(self, bank_id, pedalboard_id, callback):
+        if bank_id <= 0 or bank_id > len(self.banks):
+            print("ERROR: Trying to remove pedalboard using out of bounds bank id %i" % (bank_id))
+            callback(False)
+            return
+
+        pedalboards = self.banks[bank_id-1]['pedalboards']
+
+        if pedalboard_id < 0 or pedalboard_id >= len(pedalboards):
+            print("ERROR: Trying to remove pedalboard using out of bounds pedalboard id %i" % (pedalboard_id))
+            callback(False)
+            return
+
+        pedalboards.pop(pedalboard_id)
+        save_banks(self.banks)
+
         callback(True)
 
     def hmi_pedalboard_reorder_snapshots(self, pedalboard_id: int, snapshot_id: int, target_index: int, callback):
@@ -5000,8 +5025,16 @@ _:b%i
         print("hmi_pedalboard_snapshot_save_as", name)
         callback(True)
 
-    def hmi_pedalboard_snapshot_delete(self, snapshot_id: int, callback):
-        print("hmi_pedalboard_snapshot_delete", snapshot_id)
+    def hmi_pedalboard_snapshot_delete(self, snapshot_id, callback):
+        if snapshot_id < 0 or snapshot_id >= len(self.pedalboard_snapshots):
+            callback(False)
+            return
+
+        self.pedalboard_snapshots.pop(snapshot_id)
+
+        if self.current_pedalboard_snapshot_id == snapshot_id:
+            self.current_pedalboard_snapshot_id = -1
+
         callback(True)
 
     # -----------------------------------------------------------------------------------------------------------------
@@ -5511,6 +5544,13 @@ _:b%i
 
         logging.debug("hmi save current pedalboard")
         titlesym = symbolify(self.pedalboard_name)[:16]
+
+        # if pedalboard was deleted by HMI management, recreate the whole deal
+        if not os.path.exists(self.pedalboard_path):
+            self.save_state_manifest(self.pedalboard_path, titlesym)
+            self.save_state_addressings(self.pedalboard_path)
+            self.save_state_presets(self.pedalboard_path)
+
         self.save_state_mainfile(self.pedalboard_path, self.pedalboard_name, titlesym)
         self.send_notmodified("state_save {}".format(self.pedalboard_path), host_callback)
 
