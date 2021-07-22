@@ -43,7 +43,7 @@ from mod import (
 )
 from mod.addressings import Addressings
 from mod.bank import (
-    list_banks, get_last_bank_and_pedalboard, save_last_bank_and_pedalboard,
+    list_banks, save_banks, get_last_bank_and_pedalboard, save_last_bank_and_pedalboard,
 )
 from mod.control_chain import (
     CC_MODE_TRIGGER,
@@ -4979,8 +4979,15 @@ _:b%i
         print("hmi_bank_new", name)
         callback(True)
 
-    def hmi_bank_delete(self, bank_id: int, callback):
-        print("hmi_bank_delete", bank_id)
+    def hmi_bank_delete(self, bank_id, callback):
+        if bank_id <= 0:
+            callback(False)
+            return
+        if bank_id > len(self.banks):
+            callback(False)
+            return
+        self.banks.pop(bank_id-1)
+        save_banks(self.banks)
         callback(True)
 
     def hmi_bank_add_pedalboards(self, dest_bank_id: int, source_bank_id: int, pedalboards: tuple, callback):
