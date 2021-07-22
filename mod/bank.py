@@ -54,9 +54,7 @@ def list_banks(brokenpedalbundles = [], shouldSave = True):
 
         if len(validpedals) == 0:
             title = bank['title'].encode("ascii", "ignore").decode("ascii")
-            print("Auto-deleting bank with name '%s', as it does not contain any pedalboards" % title)
-            changed = True
-            continue
+            print("NOTE: bank with name '%s' does not contain any pedalboards" % title)
 
         bank['pedalboards'] = validpedals
         validbanks.append(bank)
@@ -111,8 +109,7 @@ def remove_pedalboard_from_banks(pedalboard):
         # if there's no pedalboards left ignore this bank (ie, delete it)
         if len(newpedalboards) == 0:
             title = bank['title'].encode("ascii", "ignore").decode("ascii")
-            print("Auto-deleting bank with name '%s', as it does not contain any pedalboards" % title)
-            continue
+            print("NOTE: bank with name '%s' does not contain any pedalboards" % title)
 
         bank['pedalboards'] = newpedalboards
         newbanks.append(bank)
