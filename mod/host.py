@@ -3817,9 +3817,10 @@ class Host(object):
                     pluginData = self.plugins[instance_id]
                     instance   = pluginData['instance'].replace("/graph/","",1)
                     snapshot['data'][instance] = {
-                        "bypassed": pluginData['bypassed'],
-                        "ports"   : pluginData['ports'].copy(),
-                        "preset"  : pluginData['preset'],
+                        "bypassed"  : pluginData['bypassed'],
+                        "parameters": dict((k,v.copy()) for k,v in pluginData['parameters'].items()),
+                        "ports"     : pluginData['ports'].copy(),
+                        "preset"    : pluginData['preset'],
                     }
 
             snapshots = [p for p in self.pedalboard_snapshots if p is not None]
