@@ -476,31 +476,19 @@ $('document').ready(function() {
         }
 
         if (cmd == "loading_end") {
-            var snapshotId = parseInt(data)
+            cmd              = data.split(" ",1)
+            var snapshotId   = parseInt(cmd[0])
+            var snapshotName = data.substr(cmd.length+1);
 
-            $.ajax({
-                url: '/snapshot/name',
-                type: 'GET',
-                data: {
-                    id: snapshotId,
-                },
-                success: function (resp) {
-                    desktop.pedalboard.pedalboard('scheduleAdapt', true)
-                    desktop.pedalboardEmpty    = empty && !modified
-                    desktop.pedalboardModified = modified
-                    desktop.pedalboardPresetId = snapshotId
+            desktop.pedalboard.pedalboard('scheduleAdapt', true)
+            desktop.pedalboardEmpty    = empty && !modified
+            desktop.pedalboardModified = modified
+            desktop.pedalboardPresetId = snapshotId
 
-                    if (resp.ok) {
-                        desktop.titleBox.text((desktop.title || 'Untitled') + " - " + resp.name)
-                    }
+            desktop.titleBox.text((desktop.title || 'Untitled') + " - " + snapshotName)
 
-                    pb_loading = false
-                    desktop.init();
-                },
-                cache: false,
-                dataType: 'json'
-            })
-            return
+            pb_loading = false
+            desktop.init();
         }
 
         if (cmd == "size") {
