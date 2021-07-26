@@ -2069,7 +2069,8 @@ class Host(object):
 
         # TODO: restore HMI and CC addressings if crashed
 
-        websocket.write_message("loading_end %d" % self.current_pedalboard_snapshot_id)
+        websocket.write_message("loading_end %d %s" % (self.current_pedalboard_snapshot_id,
+                                                       self.snapshot_name() or DEFAULT_SNAPSHOT_NAME))
 
     # -----------------------------------------------------------------------------------------------------------------
     # Host stuff - add & remove bundles
@@ -3384,13 +3385,12 @@ class Host(object):
                                                      self.transport_bpm,
                                                      self.transport_sync))
 
-        if bundlepath:
-            self.load_pb_snapshots(pb['plugins'], bundlepath)
         self.load_pb_plugins(pb['plugins'], instances, rinstances)
         self.load_pb_connections(pb['connections'], mappedOldMidiIns, mappedOldMidiOuts,
                                                     mappedNewMidiIns, mappedNewMidiOuts)
 
         if bundlepath:
+            self.load_pb_snapshots(bundlepath)
             self.send_notmodified("state_load {}".format(bundlepath))
             self.addressings.load(bundlepath, instances, skippedPortAddressings, abort_catcher)
 
@@ -3400,7 +3400,8 @@ class Host(object):
 
         self.addressings.registerMappings(self.msg_callback, rinstances)
 
-        self.msg_callback("loading_end %d" % self.current_pedalboard_snapshot_id)
+        self.msg_callback("loading_end %d %s" % (self.current_pedalboard_snapshot_id,
+                                                 self.snapshot_name() or DEFAULT_SNAPSHOT_NAME))
 
         if isDefault:
             self.pedalboard_empty    = True
@@ -3428,7 +3429,7 @@ class Host(object):
 
         return self.pedalboard_name
 
-    def load_pb_snapshots(self, plugins, bundlepath):
+    def load_pb_snapshots(self, bundlepath):
         self.plugins_added   = []
         self.plugins_removed = []
 
