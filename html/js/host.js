@@ -177,25 +177,13 @@ $('document').ready(function() {
             return
         }
 
-        if (cmd == "pedal_preset") {
-            var index = parseInt(data)
+        if (cmd == "pedal_snapshot") {
+            cmd       = data.split(" ",1)
+            var index = parseInt(cmd[0])
+            var name  = data.substr(cmd.length+1);
 
-            $.ajax({
-                url: '/snapshot/name',
-                type: 'GET',
-                data: {
-                    id: index,
-                },
-                success: function (resp) {
-                    if (! resp.ok) {
-                        return
-                    }
-                    desktop.pedalboardPresetId = index
-                    desktop.titleBox.text((desktop.title || 'Untitled') + " - " + resp.name)
-                },
-                cache: false,
-                dataType: 'json'
-            })
+            desktop.pedalboardPresetId = index
+            desktop.titleBox.text((desktop.title || 'Untitled') + " - " + name)
             return
         }
 
@@ -488,27 +476,22 @@ $('document').ready(function() {
         }
 
         if (cmd == "loading_end") {
-            var presetId = parseInt(data)
+            var snapshotId = parseInt(data)
 
             $.ajax({
                 url: '/snapshot/name',
                 type: 'GET',
                 data: {
-                    id: presetId,
+                    id: snapshotId,
                 },
                 success: function (resp) {
                     desktop.pedalboard.pedalboard('scheduleAdapt', true)
                     desktop.pedalboardEmpty    = empty && !modified
                     desktop.pedalboardModified = modified
-                    desktop.pedalboardPresetId = presetId
+                    desktop.pedalboardPresetId = snapshotId
 
-                    if (presetId >= 0) {
-                        $('#js-preset-enabler').hide()
-                        $('#js-preset-menu').show().css('display', 'inline-block')
-
-                        if (resp.ok) {
-                            desktop.titleBox.text((desktop.title || 'Untitled') + " - " + resp.name)
-                        }
+                    if (resp.ok) {
+                        desktop.titleBox.text((desktop.title || 'Untitled') + " - " + resp.name)
                     }
 
                     pb_loading = false

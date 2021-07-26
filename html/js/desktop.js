@@ -1456,13 +1456,10 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
                     self.pedalboardBundle = null
                     self.pedalboardEmpty  = true
                     self.pedalboardModified = false
-                    self.pedalboardPresetId = -1
+                    self.pedalboardPresetId = 0
                     self.titleBox.text('Untitled')
                     self.titleBox.addClass("blend")
                     self.transportControls.resetControlsEnabled()
-
-                    $('#js-preset-menu').hide()
-                    $('#js-preset-enabler').show()
 
                     callback(true)
                 },
@@ -1806,11 +1803,6 @@ Desktop.prototype.loadPedalboard = function (bundlepath, callback) {
                 self.pedalboardModified = false
                 self.titleBox.text(resp.name);
                 self.titleBox.removeClass("blend");
-
-                // TODO: decide what to do with this
-                self.pedalboardPresetId = -1
-                $('#js-preset-menu').hide()
-                $('#js-preset-enabler').show()
 
                 callback(true)
             },

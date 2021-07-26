@@ -2957,8 +2957,8 @@ class Host(object):
         self.addressings.load_current(used_actuators, skippedPort, True, from_hmi, abort_catcher)
 
         if not is_hmi_snapshot:
-            # TODO: change to pedal_snapshot?
-            self.msg_callback("pedal_preset %d" % idx)
+            name = self.snapshot_name() or DEFAULT_SNAPSHOT_NAME
+            self.msg_callback("pedal_snapshot %d %s" % (idx, name))
 
             if not from_hmi:
                 try:
@@ -2967,12 +2967,11 @@ class Host(object):
                     logging.exception(e)
 
             if self.descriptor.get('hmi_set_ss_name', False):
-                finalname = (self.snapshot_name() or DEFAULT_SNAPSHOT_NAME)
                 if from_hmi:
-                    self.hmi.set_snapshot_name(finalname, None)
+                    self.hmi.set_snapshot_name(name, None)
                 else:
                     try:
-                        yield gen.Task(self.hmi.set_snapshot_name, finalname)
+                        yield gen.Task(self.hmi.set_snapshot_name, name)
                     except Exception as e:
                         logging.exception(e)
 
@@ -3363,8 +3362,6 @@ class Host(object):
                                                      self.transport_bpm,
                                                      self.transport_sync))
 
-        # TODO restore snapshot id
-
         if bundlepath:
             self.load_pb_snapshots(pb['plugins'], bundlepath)
         self.load_pb_plugins(pb['plugins'], instances, rinstances)
@@ -3410,15 +3407,29 @@ class Host(object):
         return self.pedalboard_name
 
     def load_pb_snapshots(self, plugins, bundlepath):
-        self.snapshot_clear()
+        self.plugins_added   = []
+        self.plugins_removed = []
 
-        # NOTE: keep the filename "presets.json" for backwards compatibility.
-        snapshots = safe_json_load(os.path.join(bundlepath, "presets.json"), list)
+        if os.path.exists(os.path.join(bundlepath, "snapshots.json")):
+            # New file with correct name, loads as dict
+            data = safe_json_load(os.path.join(bundlepath, "snapshots.json"), dict)
+            self.pedalboard_snapshots = data.get('snapshots', [])
+            try:
+                current = int(data.get('current', 0))
+                if current < 0:
+                    raise ValueError
+                if current >= len(self.pedalboard_snapshots):
+                    raise ValueError
+            except:
+                current = 0
+            self.current_pedalboard_snapshot_id = current
+        else:
+            # Old backwards compatible file, loads as list
+            self.pedalboard_snapshots = safe_json_load(os.path.join(bundlepath, "presets.json"), list)
+            self.current_pedalboard_snapshot_id = 0
 
-        if len(snapshots) == 0:
-            return
-
-        self.pedalboard_snapshots = snapshots
+        if not self.pedalboard_snapshots:
+            self.snapshot_clear()
 
     def load_pb_plugins(self, plugins, instances, rinstances):
         for p in plugins:
@@ -3721,9 +3732,6 @@ class Host(object):
         self.addressings.save(bundlepath, instances)
 
     def save_state_snapshots(self, bundlepath):
-        # NOTE: keep the filename for backwards compatibility.
-        snapshots_filepath = os.path.join(bundlepath, "presets.json")
-
         for instance in self.plugins_removed:
             for snapshot in self.pedalboard_snapshots:
                 if snapshot is None:
@@ -3746,9 +3754,17 @@ class Host(object):
                     "preset"    : pluginData['preset'],
                 }
 
-        snapshots = [p for p in self.pedalboard_snapshots if p is not None]
-        with TextFileFlusher(snapshots_filepath) as fh:
-            json.dump(snapshots, fh, indent=4)
+        data = {
+            'current': self.current_pedalboard_snapshot_id,
+            'snapshots': [p for p in self.pedalboard_snapshots if p is not None],
+        }
+
+        with TextFileFlusher(os.path.join(bundlepath, "snapshots.json")) as fh:
+            json.dump(data, fh, indent=4)
+
+        # delete old file if present
+        if os.path.exists(os.path.join(bundlepath, "presets.json")):
+            os.remove(os.path.join(bundlepath, "presets.json"))
 
         self.plugins_added   = []
         self.plugins_removed = []
