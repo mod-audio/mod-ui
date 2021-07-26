@@ -1519,19 +1519,6 @@ class PedalboardTransportSetSyncMode(JsonRequestHandler):
         ok = yield gen.Task(SESSION.web_set_sync_mode, transport_sync)
         self.write(ok)
 
-class SnapshotEnable(JsonRequestHandler):
-    def post(self):
-        SESSION.host.snapshot_init()
-        self.write(True)
-
-class SnapshotDisable(JsonRequestHandler):
-    @web.asynchronous
-    @gen.engine
-    def post(self):
-        yield gen.Task(SESSION.host.snapshot_disable)
-        yield gen.Task(SESSION.host.hmi_clear_ss_name)
-        self.write(True)
-
 class SnapshotSave(JsonRequestHandler):
     def post(self):
         ok = SESSION.host.snapshot_save()
@@ -2234,8 +2221,6 @@ application = web.Application(
             (r"/pedalboard/transport/set_sync_mode/*(/[A-Za-z0-9_:/]+[^/])/?", PedalboardTransportSetSyncMode),
 
             # Pedalboard Snapshot handling
-            (r"/snapshot/enable", SnapshotEnable),
-            (r"/snapshot/disable", SnapshotDisable),
             (r"/snapshot/save", SnapshotSave),
             (r"/snapshot/saveas", SnapshotSaveAs),
             (r"/snapshot/rename", SnapshotRename),

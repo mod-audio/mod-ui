@@ -2134,6 +2134,7 @@ class Host(object):
         self.connections = []
         self.addressings.clear()
         self.mapper.clear()
+        self.init_plugins_data()
         self.snapshot_clear()
         self.hmi_snapshots = [None, None, None]
 
@@ -2145,7 +2146,6 @@ class Host(object):
         self.pedalboard_version  = 0
 
         save_last_bank_and_pedalboard(0, "")
-        self.init_plugins_data()
         self.send_notmodified("remove -1", host_callback, datatype='boolean')
 
     def paramhmi_set(self, instance, portsymbol, value, callback):
@@ -2377,8 +2377,8 @@ class Host(object):
             for output in extinfo['monitoredOutputs']:
                 self.send_notmodified("monitor_output %d %s" % (instance_id, output))
 
-            if len(self.pedalboard_snapshots) > 0:
-                self.plugins_added.append(instance_id)
+            # for snapshots
+            self.plugins_added.append(instance_id)
 
             callback(True)
             self.msg_callback("add %s %s %.1f %.1f %d %s %d" % (instance, uri, x, y,
@@ -2413,10 +2413,10 @@ class Host(object):
                 except Exception as e:
                     logging.exception(e)
 
-        if len(self.pedalboard_snapshots) > 0:
-            self.plugins_removed.append(instance)
-            if instance_id in self.plugins_added:
-                self.plugins_added.remove(instance_id)
+        # for snapshots
+        self.plugins_removed.append(instance)
+        if instance_id in self.plugins_added:
+            self.plugins_added.remove(instance_id)
 
         used_hmi_actuators = []
         used_hw_ids = []
@@ -2792,23 +2792,11 @@ class Host(object):
             return None
         return self.pedalboard_snapshots[idx]['name']
 
-    def snapshot_init(self):
-        snapshot = self.snapshot_make("Default")
-        self.plugins_added   = []
+    def snapshot_clear(self):
+        self.plugins_added   = [iid for iid in self.plugins.keys() if iid != PEDALBOARD_INSTANCE_ID]
         self.plugins_removed = []
         self.current_pedalboard_snapshot_id = 0
-        self.pedalboard_snapshots = [snapshot]
-
-    def snapshot_clear(self):
-        self.plugins_added   = []
-        self.plugins_removed = []
-        self.current_pedalboard_snapshot_id = -1
-        self.pedalboard_snapshots = []
-
-    def snapshot_disable(self, callback):
-        self.snapshot_clear()
-        self.pedalboard_modified = True
-        self.unaddress(PEDALBOARD_INSTANCE, ":presets", True, callback)
+        self.pedalboard_snapshots = [{ "name": DEFAULT_SNAPSHOT_NAME, "data": {} }]
 
     def snapshot_save(self):
         idx = self.current_pedalboard_snapshot_id
@@ -2822,14 +2810,9 @@ class Host(object):
         return True
 
     def snapshot_saveas(self, name):
-        if len(self.pedalboard_snapshots) == 0:
-            self.snapshot_init()
-
-        preset = self.snapshot_make(name)
-        self.pedalboard_snapshots.append(preset)
-
+        snapshot = self.snapshot_make(name)
+        self.pedalboard_snapshots.append(snapshot)
         self.current_pedalboard_snapshot_id = len(self.pedalboard_snapshots)-1
-
         return self.current_pedalboard_snapshot_id
 
     def snapshot_rename(self, idx, name):
@@ -2844,13 +2827,15 @@ class Host(object):
     def snapshot_remove(self, idx):
         if idx < 0 or idx >= len(self.pedalboard_snapshots) or self.pedalboard_snapshots[idx] is None:
             return False
+        if len(self.pedalboard_snapshots) == 1:
+            return False
 
         snapshot_to_remove = self.pedalboard_snapshots[idx]
         self.pedalboard_modified = True
         self.pedalboard_snapshots.remove(snapshot_to_remove)
 
         if self.current_pedalboard_snapshot_id == idx:
-            self.current_pedalboard_snapshot_id = -1
+            self.current_pedalboard_snapshot_id = 0
 
         return True
 
@@ -3400,8 +3385,10 @@ class Host(object):
                                                      self.transport_bpm,
                                                      self.transport_sync))
 
+        # TODO restore snapshot id
+
         if bundlepath:
-            ssparameters = self.load_pb_snapshots(pb['plugins'], bundlepath)
+            self.load_pb_snapshots(pb['plugins'], bundlepath)
         self.load_pb_plugins(pb['plugins'], instances, rinstances)
         self.load_pb_connections(pb['connections'], mappedOldMidiIns, mappedOldMidiOuts,
                                                     mappedNewMidiIns, mappedNewMidiOuts)
@@ -3409,18 +3396,6 @@ class Host(object):
         if bundlepath:
             self.send_notmodified("state_load {}".format(bundlepath))
             self.addressings.load(bundlepath, instances, skippedPortAddressings, abort_catcher)
-
-            for instance_id, uri, paramvalue, paramtype in ssparameters:
-                pluginData = self.plugins.get(instance_id, None)
-                if pluginData is None:
-                    continue
-                parameter = pluginData['parameters'].get(uri, None)
-                if parameter is None:
-                    continue
-                if parameter[1] != paramtype:
-                    continue
-                parameter[0] = paramvalue
-                self.send_modified("patch_set %d %s \"%s\"" % (instance_id, uri, paramvalue.replace('"','\\"')))
 
         if abort_catcher is not None and abort_catcher.get('abort', False):
             print("WARNING: Abort triggered during PB load request 2, caller:", abort_catcher['caller'])
@@ -3463,37 +3438,9 @@ class Host(object):
         snapshots = safe_json_load(os.path.join(bundlepath, "presets.json"), list)
 
         if len(snapshots) == 0:
-            return []
+            return
 
-        self.current_pedalboard_snapshot_id = 0
         self.pedalboard_snapshots = snapshots
-
-        initial_snapshot = snapshots[0]['data']
-        ret_parameters = []
-
-        for p in plugins:
-            pdata = initial_snapshot.get(p['instance'], None)
-
-            if pdata is None:
-                print("WARNING: Pedalboard snapshot missing data for instance name '%s'" % p['instance'])
-                continue
-
-            p['bypassed'] = pdata['bypassed']
-
-            ssports = pdata['ports']
-            for port in p['ports']:
-                port['value'] = ssports.get(port['symbol'], port['value'])
-
-            p['preset'] = pdata['preset']
-
-            # parameters were added in v1.10
-            ssparameters = pdata.get('parameters', None)
-
-            if ssparameters is not None:
-                for uri, ssparameter in ssparameters.items():
-                    ret_parameters.append((p['instanceNumber'], uri, ssparameter[0], ssparameter[1]))
-
-        return ret_parameters
 
     def load_pb_plugins(self, plugins, instances, rinstances):
         for p in plugins:
@@ -3765,7 +3712,7 @@ class Host(object):
     def save_state_to_ttl(self, bundlepath, title, titlesym):
         self.save_state_manifest(bundlepath, titlesym)
         self.save_state_addressings(bundlepath)
-        self.save_state_presets(bundlepath)
+        self.save_state_snapshots(bundlepath)
         self.save_state_mainfile(bundlepath, title, titlesym)
 
     def save_state_manifest(self, bundlepath, titlesym):
@@ -3795,40 +3742,35 @@ class Host(object):
 
         self.addressings.save(bundlepath, instances)
 
-    def save_state_presets(self, bundlepath):
-        # Write presets.json. NOTE: keep the filename for backwards compatibility.
-        # TODO: Add to global settings.
+    def save_state_snapshots(self, bundlepath):
+        # NOTE: keep the filename for backwards compatibility.
         snapshots_filepath = os.path.join(bundlepath, "presets.json")
 
-        if len(self.pedalboard_snapshots) > 1:
-            for instance in self.plugins_removed:
-                for snapshot in self.pedalboard_snapshots:
-                    if snapshot is None:
-                        continue
-                    try:
-                        snapshot['data'].pop(instance.replace("/graph/","",1))
-                    except KeyError:
-                        pass
+        for instance in self.plugins_removed:
+            for snapshot in self.pedalboard_snapshots:
+                if snapshot is None:
+                    continue
+                try:
+                    snapshot['data'].pop(instance.replace("/graph/","",1))
+                except KeyError:
+                    pass
 
-            for instance_id in self.plugins_added:
-                for snapshot in self.pedalboard_snapshots:
-                    if snapshot is None:
-                        continue
-                    pluginData = self.plugins[instance_id]
-                    instance   = pluginData['instance'].replace("/graph/","",1)
-                    snapshot['data'][instance] = {
-                        "bypassed"  : pluginData['bypassed'],
-                        "parameters": dict((k,v.copy()) for k,v in pluginData['parameters'].items()),
-                        "ports"     : pluginData['ports'].copy(),
-                        "preset"    : pluginData['preset'],
-                    }
+        for instance_id in self.plugins_added:
+            for snapshot in self.pedalboard_snapshots:
+                if snapshot is None:
+                    continue
+                pluginData = self.plugins[instance_id]
+                instance   = pluginData['instance'].replace("/graph/","",1)
+                snapshot['data'][instance] = {
+                    "bypassed"  : pluginData['bypassed'],
+                    "parameters": dict((k,v.copy()) for k,v in pluginData['parameters'].items()),
+                    "ports"     : pluginData['ports'].copy(),
+                    "preset"    : pluginData['preset'],
+                }
 
-            snapshots = [p for p in self.pedalboard_snapshots if p is not None]
-            with TextFileFlusher(snapshots_filepath) as fh:
-                json.dump(snapshots, fh, indent=4)
-
-        elif os.path.exists(snapshots_filepath):
-            os.remove(snapshots_filepath)
+        snapshots = [p for p in self.pedalboard_snapshots if p is not None]
+        with TextFileFlusher(snapshots_filepath) as fh:
+            json.dump(snapshots, fh, indent=4)
 
         self.plugins_added   = []
         self.plugins_removed = []
@@ -5052,11 +4994,14 @@ _:b%i
         if snapshot_id < 0 or snapshot_id >= len(self.pedalboard_snapshots):
             callback(False)
             return
+        if len(self.pedalboard_snapshots) == 1:
+            return
 
         self.pedalboard_snapshots.pop(snapshot_id)
 
+        # FIXME undefined behaviour
         if self.current_pedalboard_snapshot_id == snapshot_id:
-            self.current_pedalboard_snapshot_id = -1
+            self.current_pedalboard_snapshot_id = len(self.pedalboard_snapshots)-1
 
         callback(True)
 
@@ -5572,7 +5517,7 @@ _:b%i
         if not os.path.exists(self.pedalboard_path):
             self.save_state_manifest(self.pedalboard_path, titlesym)
             self.save_state_addressings(self.pedalboard_path)
-            self.save_state_presets(self.pedalboard_path)
+            self.save_state_snapshots(self.pedalboard_path)
 
         self.save_state_mainfile(self.pedalboard_path, self.pedalboard_name, titlesym)
         self.send_notmodified("state_save {}".format(self.pedalboard_path), host_callback)
