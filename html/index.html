@@ -114,11 +114,9 @@ $('document').ready(function() {
         saveAsButton: $('#pedalboard-info .js-save-as'),
         resetButton:  $('#pedalboard-info .js-reset'),
         cvAddressingButton:  $('#pedalboard-info .js-cv-addressing'),
-        pedalboardPresetsEnabler: $('#pedalboard-info #js-preset-enabler'),
-        presetSaveButton: $('#pedalboard-info .js-preset-save'),
-        presetSaveAsButton: $('#pedalboard-info .js-preset-save-as'),
-        presetManageButton: $('#pedalboard-info .js-preset-manage'),
-        presetDisableButton: $('#pedalboard-info .js-preset-disable'),
+        snapshotSaveButton: $('#pedalboard-info .js-preset-save'),
+        snapshotSaveAsButton: $('#pedalboard-info .js-preset-save-as'),
+        snapshotManageButton: $('#pedalboard-info .js-preset-manage'),
         transportButton: $('#mod-transport-icon'),
         transportWindow: $('#mod-transport-window'),
         transportPlay: $('#mod-switch-transport-play'),
@@ -488,7 +486,6 @@ $('document').ready(function() {
                 <h1 class="top bottom {{titleblend}}">{{fulltitle}}</h1>
                 <div class="actions">
                     <button class="js-cv-addressing" id="js-cv-addressing-toggle">Manage CV Ports</button>
-                    <button class="js-preset" id="js-preset-enabler">Snapshots</button>
                     <div class="mod-hidden" id="js-preset-menu">
                         <button class="js-preset menu-trigger">Snapshots</button>
                         <ul class="drop-menu clearfix js-pedalboard-presets-menu" style="cursor:pointer;">
@@ -500,7 +497,6 @@ $('document').ready(function() {
                             </li>
                             -->
                             <li class="js-preset-manage">Load / Manage</li>
-                            <li class="js-preset-disable">Disable</li>
                         </ul>
                     </div>
                     <button class="js-reset">New Pedalboard</button>
