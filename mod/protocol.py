@@ -159,16 +159,26 @@ class Protocol(object):
         return self.msg
 
     def parse(self):
+        if not self.msg:
+            raise ProtocolError("wrong arg type for: '%s'" % (self.cmd,))
         if self.is_resp():
             return
 
-        cmd = self.msg.split()
-        if not cmd or cmd[0] not in self.COMMANDS_USED:
-            raise ProtocolError("not found") # Command not found
+        s = self.msg.find(' ')
+        if s > 0:
+            self.cmd = self.msg[:s]
+            if self.cmd not in self.COMMANDS_USED:
+                raise ProtocolError("not found")
+            args = self.msg.split(None, len(self.COMMANDS_ARGS[self.cmd]))
+
+        else:
+            self.cmd = self.msg
+            if self.cmd not in self.COMMANDS_USED:
+                raise ProtocolError("not found")
+            args = []
 
         try:
-            self.cmd = cmd[0]
-            self.args = [ typ(arg) for typ, arg in zip(self.COMMANDS_ARGS[self.cmd], cmd[1:]) ]
+            self.args = [ typ(arg) for typ, arg in zip(self.COMMANDS_ARGS[self.cmd], args[1:]) ]
             if not all(str(a) for a in self.args):
                 raise ValueError
         except ValueError:
