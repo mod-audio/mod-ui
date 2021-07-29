@@ -308,7 +308,7 @@ JqueryClass('effectBox', {
 
         // render plugins
         var plugin
-        function renderNextPlugin(c) {
+        function renderNextPlugin() {
             if (self.data('showPluginsRenderId') != currentRenderId) {
                 // another render is in place, stop this one
                 if (callback) { callback() }
@@ -342,9 +342,7 @@ JqueryClass('effectBox', {
 
             renderedIndex += 1
 
-            c = c || 0;
-            if (c < 20) renderNextPlugin(c+1);
-            else setTimeout(renderNextPlugin, 1);
+            setTimeout(renderNextPlugin, 1);
         }
 
         renderNextPlugin(0)

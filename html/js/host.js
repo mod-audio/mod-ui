@@ -298,9 +298,9 @@ $('document').ready(function() {
                         var cb = function () {
                             var input = $(targetport)
                             desktop.pedalboard.pedalboard('connect', output.find('[mod-role=output-jack]'), input, skipModified)
-                            $(document).unbindArrive(targetport, cb)
+                            $('#pedalboard-dashboard').unbindArrive(targetport, cb)
                         }
-                        $(document).arrive(targetport, cb)
+                        $('#pedalboard-dashboard').arrive(targetport, cb)
                     }
                 } else {
                     var cb = function () {
@@ -313,13 +313,13 @@ $('document').ready(function() {
                             var incb = function () {
                                 var input = $(targetport)
                                 desktop.pedalboard.pedalboard('connect', output.find('[mod-role=output-jack]'), input, skipModified)
-                                $(document).unbindArrive(targetport, incb)
+                                $('#pedalboard-dashboard').unbindArrive(targetport, incb)
                             }
-                            $(document).arrive(targetport, incb)
+                            $('#pedalboard-dashboard').arrive(targetport, incb)
                         }
-                        $(document).unbindArrive(sourceport, cb)
+                        $('#pedalboard-dashboard').unbindArrive(sourceport, cb)
                     }
-                    $(document).arrive(sourceport, cb)
+                    $('#pedalboard-dashboard').arrive(sourceport, cb)
                 }
             }
             return
@@ -374,9 +374,9 @@ $('document').ready(function() {
                                 desktop.pedalboard.pedalboard('scheduleAdapt', false)
                                 desktop.pedalboard.data('wait').stopPlugin(instance, !skipModified)
 
-                                $(document).unbindArrive(instancekey, cb)
+                                $('#pedalboard-dashboard').unbindArrive(instancekey, cb)
                             }
-                            $(document).arrive(instancekey, cb)
+                            $('#pedalboard-dashboard').arrive(instancekey, cb)
                         }
 
                         desktop.pedalboard.pedalboard("addPlugin", pluginData, instance, bypassed, x, y, {}, null, skipModified)
@@ -400,12 +400,12 @@ $('document').ready(function() {
         }
 
         if (cmd == "add_cv_port") {
-          data         = data.split(" ", 3)
-          var instance = data[0]
-          var name     = data[1].replace(/_/g," ")
-          var operationalMode = data[2]
-          desktop.hardwareManager.addCvOutputPort(instance, name, operationalMode)
-          return
+            data         = data.split(" ", 3)
+            var instance = data[0]
+            var name     = data[1].replace(/_/g," ")
+            var operationalMode = data[2]
+            desktop.hardwareManager.addCvOutputPort(instance, name, operationalMode)
+            return
         }
 
         if (cmd == "add_hw_port") {
