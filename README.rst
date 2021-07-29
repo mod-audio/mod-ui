@@ -46,10 +46,6 @@ mod-ui depends on mod-host and the JACK server running in order to make sound. S
 
     $ mod-host -n -p 5555 -f 5556
 
-You should also load the `mod-monitor` module into jack (without it you won't be able to connect to output ports)::
-
-    $ jack_load mod-monitor
-
 If you do not have mod-host, you can tell mod-ui to fake the connection to the audio backend.
 You will not get any audio, but you will be able to load plugins, make connections, save pedalboards and all that. For this, run::
 

@@ -2069,8 +2069,7 @@ class Host(object):
 
         # TODO: restore HMI and CC addressings if crashed
 
-        websocket.write_message("loading_end %d %s" % (self.current_pedalboard_snapshot_id,
-                                                       self.snapshot_name() or DEFAULT_SNAPSHOT_NAME))
+        websocket.write_message("loading_end %d" % self.current_pedalboard_snapshot_id)
 
     # -----------------------------------------------------------------------------------------------------------------
     # Host stuff - add & remove bundles
@@ -3400,8 +3399,7 @@ class Host(object):
 
         self.addressings.registerMappings(self.msg_callback, rinstances)
 
-        self.msg_callback("loading_end %d %s" % (self.current_pedalboard_snapshot_id,
-                                                 self.snapshot_name() or DEFAULT_SNAPSHOT_NAME))
+        self.msg_callback("loading_end %d" % self.current_pedalboard_snapshot_id)
 
         if isDefault:
             self.pedalboard_empty    = True
