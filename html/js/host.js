@@ -418,7 +418,8 @@ $('document').ready(function() {
                   desktop.hardwareManager.addCvOutputPort('/cv' + instance, name, '+')
                 }
             } else {
-                var el = $('<div id="' + instance + '" class="hardware-input" mod-port-index=' + index + ' title="Hardware ' + name + '">')
+                var prefix = name === 'MIDI Loopback' ? 'Virtual' : 'Hardware'
+                var el = $('<div id="' + instance + '" class="hardware-input" mod-port-index=' + index + ' title="' + prefix + ' ' + name + '">')
                 desktop.pedalboard.pedalboard('addHardwareInput', el, instance, type)
             }
 

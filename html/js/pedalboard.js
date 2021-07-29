@@ -562,7 +562,7 @@ JqueryClass('pedalboard', {
                     var hw = $('<div class="ignore-arrive hardware-input" mod-port-index="2" title="All MIDI Out">')
                     self.pedalboard('addHardwareInput', hw, '/graph/midi_merger_out', 'midi')
                 }
-                var portdata, pindex
+                var portdata, pindex, prefix
                 for (var i in data.hardware.midi_ins) {
                     portdata = data.hardware.midi_ins[i]
                     pindex   = parseInt(portdata.symbol.replace("midi_capture_",""))+1
@@ -572,7 +572,8 @@ JqueryClass('pedalboard', {
                 for (var i in data.hardware.midi_outs) {
                     portdata = data.hardware.midi_outs[i]
                     pindex   = parseInt(portdata.symbol.replace("midi_playback_",""))+1
-                    var hw = $('<div class="ignore-arrive hardware-input" mod-port-index=' + pindex + ' title="Hardware ' + portdata.name + '">')
+                    prefix   = portdata.name === 'MIDI Loopback' ? 'Virtual' : 'Hardware'
+                    var hw = $('<div class="ignore-arrive hardware-input" mod-port-index=' + pindex + ' title="' + prefix + ' ' + portdata.name + '">')
                     self.pedalboard('addHardwareInput', hw, '/graph/' + portdata.symbol, 'midi')
                 }
             }

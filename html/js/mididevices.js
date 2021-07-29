@@ -64,7 +64,7 @@ function MidiPortsWindow(options) {
 
                 if (name === "MIDI Loopback") {
                     hasMidiLoopback = true
-                    options.midiPortsWindow.find('#midi-loopback').show().prop('checked', devsInUse.indexOf(dev) >= 0)
+                    options.midiPortsWindow.find('#midi-loopback').prop('checked', devsInUse.indexOf(dev) >= 0).parent().show()
                 } else {
                     elem.appendTo(options.midiPortsList)
                 }
@@ -79,7 +79,7 @@ function MidiPortsWindow(options) {
             }
 
             if (! hasMidiLoopback) {
-                options.midiPortsWindow.find('#midi-loopback').hide().prop('checked', false)
+                options.midiPortsWindow.find('#midi-loopback').prop('checked', false).parent().hide()
             }
 
             options.midiPortsWindow.show()
