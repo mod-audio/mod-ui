@@ -17,6 +17,7 @@ CC_MODE_INTEGER     = 0x020
 CC_MODE_LOGARITHMIC = 0x040
 CC_MODE_COLOURED    = 0x100
 CC_MODE_MOMENTARY   = 0x200
+CC_MODE_REVERSE     = 0x400
 
 # ---------------------------------------------------------------------------------------------------------------------
 
