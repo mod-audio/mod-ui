@@ -529,33 +529,33 @@ $('document').ready(function() {
             <div class="mod-box" id="midi-ports-box">
                 <h1>MIDI Ports List</h1>
                 <form class="bottom">
-                  <fieldset>
-                    <div>
-                      <label>
-                        <input type="checkbox" autocomplete="off" id="midi-loopback">
-                            Enable MIDI Loopback
-                        </input>
-                      </label>
-                    </div>
-                    <div>
-                      <label>
-                        <input type="radio" autocomplete="off" name="midi-mode" value="aggregated" id="midi-mode-aggregate">
-                            Aggregated mode
-                        </input>
-                      </label>
-                    </div>
-                    <div>
-                      <label>
-                          <input type="radio" autocomplete="off" name="midi-mode" value="separated" id="midi-mode-separated">
-                              Separated mode
-                          </input>
-                      </label>
-                    </div>
-                    <div class="controls clearfix" id="midi-ports-list"></div>
-                    <div class="controls actions">
-                        <button class="js-cancel btn btn-danger">Cancel</button>
-                        <button class="js-submit btn btn-success">Save</button>
-                    </div>
+                    <fieldset>
+                        <div>
+                            <label>
+                                <input type="checkbox" autocomplete="off" id="midi-loopback">
+                                    Enable Virtual MIDI Loopback
+                                </input>
+                            </label>
+                        </div>
+                        <div>
+                            <label>
+                                <input type="radio" autocomplete="off" name="midi-mode" value="aggregated" id="midi-mode-aggregate">
+                                    Aggregated mode
+                                </input>
+                            </label>
+                        </div>
+                        <div>
+                            <label>
+                                <input type="radio" autocomplete="off" name="midi-mode" value="separated" id="midi-mode-separated">
+                                    Separated mode
+                                </input>
+                            </label>
+                        </div>
+                        <div class="controls clearfix" id="midi-ports-list"></div>
+                        <div class="controls actions">
+                            <button class="js-cancel btn btn-danger">Cancel</button>
+                            <button class="js-submit btn btn-success">Save</button>
+                        </div>
                     </fieldset>
                 </form>
             </div>
