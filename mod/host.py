@@ -474,7 +474,7 @@ class Host(object):
         Protocol.register_cmd_callback('ALL', CMD_PEDALBOARD_RESET, self.hmi_reset_current_pedalboard)
         Protocol.register_cmd_callback('ALL', CMD_PEDALBOARD_SAVE, self.hmi_save_current_pedalboard)
         Protocol.register_cmd_callback('ALL', CMD_PEDALBOARD_SAVE_AS, self.hmi_pedalboard_save_as)
-        Protocol.register_cmd_callback('ALL', CMD_PEDALBOARD_DELETE, self.hmi_pedalboard_delete)
+        Protocol.register_cmd_callback('ALL', CMD_PEDALBOARD_DELETE, self.hmi_pedalboard_remove_from_bank)
         Protocol.register_cmd_callback('ALL', CMD_REORDER_SSS_IN_PB, self.hmi_pedalboard_reorder_snapshots)
 
         Protocol.register_cmd_callback('ALL', CMD_SNAPSHOTS_LOAD, self.hmi_pedalboard_snapshot_load)
@@ -4917,8 +4917,12 @@ _:b%i
 
     # -----------------------------------------------------------------------------------------------------------------
 
-    def hmi_bank_new(self, name: str, callback):
-        print("hmi_bank_new", name)
+    def hmi_bank_new(self, name, callback):
+        self.banks.append({
+            'title': name,
+            'pedalboards': [],
+        })
+        save_banks(self.banks)
         callback(True)
 
     def hmi_bank_delete(self, bank_id, callback):
@@ -4953,7 +4957,7 @@ _:b%i
         print("hmi_pedalboard_save_as", name)
         callback(True)
 
-    def hmi_pedalboard_delete(self, bank_id, pedalboard_id, callback):
+    def hmi_pedalboard_remove_from_bank(self, bank_id, pedalboard_id, callback):
         if bank_id <= 0 or bank_id > len(self.banks):
             print("ERROR: Trying to remove pedalboard using out of bounds bank id %i" % (bank_id))
             callback(False)
@@ -4981,8 +4985,11 @@ _:b%i
         print("hmi_pedalboard_snapshot_save", snapshot_id)
         callback(True)
 
-    def hmi_pedalboard_snapshot_save_as(self, name: str, callback):
-        print("hmi_pedalboard_snapshot_save_as", name)
+    def hmi_pedalboard_snapshot_save_as(self, name, callback):
+        if any(snapshot['name'] == name for snapshot in self.pedalboard_snapshots):
+            callback(False)
+            return
+        self.snapshot_saveas(name)
         callback(True)
 
     def hmi_pedalboard_snapshot_delete(self, snapshot_id, callback):
@@ -4990,6 +4997,7 @@ _:b%i
             callback(False)
             return
         if len(self.pedalboard_snapshots) == 1:
+            callback(False)
             return
 
         self.pedalboard_snapshots.pop(snapshot_id)
