@@ -376,7 +376,7 @@ class Host(object):
         self.init_plugins_data()
 
         # clients at the end of the chain, all managed by mod-host
-        self.jack_hw_capture_prefix = "system:capture_" if APP else "mod-host:out"
+        self.jack_hw_capture_prefix = "mod-host:out" if self.descriptor.get('has_noisegate', False) else "system:capture_"
         self.jack_hw_playback_prefix = "system:playback_" if APP else "mod-monitor:in_"
 
         # used for network-manager
