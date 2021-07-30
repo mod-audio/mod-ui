@@ -2282,7 +2282,7 @@ application = web.Application(
 
             (r"/(.*)", TimelessStaticFileHandler, {"path": HTML_DIR}),
         ],
-        debug=LOG and False, **settings)
+        debug = bool(LOG >= 2), **settings)
 
 def signal_device_firmware_updated():
     os.remove(UPDATE_CC_FIRMWARE_FILE)
