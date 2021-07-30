@@ -1383,7 +1383,8 @@ class Host(object):
 
     def process_read_message(self, msg):
         msg = msg[:-1].decode("utf-8", errors="ignore")
-        logging.debug("[host] received <- %s", repr(msg))
+        if LOG >= 2 or (LOG and msg[:msg.find(' ')] not in ("data_finis","output_set")):
+            logging.debug("[host] received <- %s", repr(msg))
 
         self.process_read_message_body(msg)
         self.process_read_queue()
@@ -1410,7 +1411,7 @@ class Host(object):
                 self.last_data_finish_handle = ioloop.call_later(diff, self.send_output_data_ready_later)
 
             else:
-                logging.error("[host] data_finish ignored")
+                logging.warning("[host] data_finish ignored")
 
             return
 
@@ -1689,7 +1690,9 @@ class Host(object):
     def process_write_queue(self):
         try:
             msg, callback, datatype = self._queue.pop(0)
-            logging.debug("[host] popped from queue: %s", msg)
+            withlog = LOG >= 2 or (LOG and msg not in ("output_data_ready",))
+            if withlog:
+                logging.debug("[host] popped from queue: %s", msg)
         except IndexError:
             self._idle = True
             self.process_postponed_messages()
@@ -1702,7 +1705,8 @@ class Host(object):
         def check_response(resp):
             if callback is not None:
                 resp = resp.decode("utf-8", errors="ignore")
-                logging.debug("[host] received <- %s", repr(resp))
+                if withlog:
+                    logging.debug("[host] received as response <- %s", repr(resp))
 
                 if datatype == 'string':
                     r = resp
@@ -1717,7 +1721,8 @@ class Host(object):
             self.process_write_queue()
 
         self._idle = False
-        logging.debug("[host] sending -> %s", msg)
+        if withlog:
+            logging.debug("[host] sending -> %s", msg)
 
         encmsg = "%s\0" % str(msg)
         self.writesock.write(encmsg.encode("utf-8"))
@@ -1744,7 +1749,10 @@ class Host(object):
             return
 
         self._queue.append((msg, callback, datatype))
-        logging.debug("[host] idle? -> %i", self._idle)
+
+        if LOG >= 2:
+            logging.debug("[host] idle? -> %i", self._idle)
+
         if self._idle:
             self.process_write_queue()
 

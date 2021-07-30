@@ -57,6 +57,7 @@ from mod.mod_protocol import (
     MENU_ID_SNAPSHOT_PRGCHGE,
     MENU_ID_PB_PRGCHNGE,
 )
+from mod.settings import LOG
 
 import logging
 import serial
@@ -162,7 +163,6 @@ class HMI(object):
 
         if data is not None and data != b'\0':
             self.last_write_time = 0
-            logging.debug('[hmi] received <- %s', data)
             try:
                 msg = Protocol(data.decode("utf-8", errors="ignore"))
             except ProtocolError as e:
@@ -179,13 +179,17 @@ class HMI(object):
                 if msg.is_resp():
                     try:
                         original_msg, callback, datatype = self.queue.pop(0)
-                        logging.debug("[hmi] popped from queue: %s", original_msg)
+                        withlog = LOG >= 2 or (LOG and original_msg not in ("pi",))
+                        if withlog:
+                            logging.debug('[hmi] received <- %s', data)
+                            logging.debug("[hmi] popped from queue: %s", original_msg)
                     except IndexError:
                         # something is wrong / not synced!!
-                        logging.error("[hmi] NOT SYNCED")
+                        logging.error("[hmi] NOT SYNCED after receiving %s", data)
                     else:
                         if callback is not None:
-                            logging.debug("[hmi] calling callback for %s", original_msg)
+                            if withlog:
+                                logging.debug("[hmi] calling callback for %s", original_msg)
                             callback(msg.process_resp(datatype))
                         self.process_queue()
                 else:
@@ -203,6 +207,7 @@ class HMI(object):
                         if self.queue_idle:
                             self.process_queue()
 
+                    logging.debug('[hmi] received <- %s', data)
                     self.handling_response = True
                     msg.run_cmd(_callback)
 
@@ -253,11 +258,13 @@ class HMI(object):
         try:
             msg, callback, datatype = self.queue[0] # fist msg on the queue
         except IndexError:
-            logging.debug("[hmi] queue is empty, nothing to do")
+            if LOG >= 2:
+                logging.debug("[hmi] queue is empty, nothing to do")
             self.queue_idle = True
             self.last_write_time = 0
         else:
-            logging.debug("[hmi] sending -> %s", msg)
+            if LOG >= 2 or (LOG and msg not in ("pi",)):
+                logging.debug("[hmi] sending -> %s", msg)
             try:
                 self.sp.write(msg.encode('utf-8') + b'\0')
             except StreamClosedError as e:
@@ -294,7 +301,8 @@ class HMI(object):
                     #callback(True)
             #else:
             self.queue.append((msg, callback, datatype))
-            logging.debug("[hmi] scheduling -> %s", msg)
+            if LOG >= 2 or (LOG and msg not in ("pi",)):
+                logging.debug("[hmi] scheduling -> %s", msg)
             if self.queue_idle and not self.handling_response:
                 self.process_queue()
             return
