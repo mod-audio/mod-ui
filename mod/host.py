@@ -355,7 +355,7 @@ class Host(object):
         self.pedalboard_path     = ""
         self.pedalboard_size     = [0,0]
         self.pedalboard_version  = 0
-        self.current_pedalboard_snapshot_id = -1
+        self.current_pedalboard_snapshot_id = 0
         self.pedalboard_snapshots = []
         self.next_hmi_pedalboard_to_load = None
         self.next_hmi_pedalboard_loading = False
@@ -467,7 +467,7 @@ class Host(object):
 
         Protocol.register_cmd_callback('ALL', CMD_BANK_NEW, self.hmi_bank_new)
         Protocol.register_cmd_callback('ALL', CMD_BANK_DELETE, self.hmi_bank_delete)
-        Protocol.register_cmd_callback('ALL', CMD_ADD_PBS_TO_BANK, self.hmi_bank_add_pedalboards)
+        Protocol.register_cmd_callback('ALL', CMD_ADD_PBS_TO_BANK, self.hmi_bank_add_pedalboards_or_banks)
         Protocol.register_cmd_callback('ALL', CMD_REORDER_PBS_IN_BANK, self.hmi_bank_reorder_pedalboards)
 
         Protocol.register_cmd_callback('ALL', CMD_PEDALBOARD_LOAD, self.hmi_load_bank_pedalboard)
@@ -839,12 +839,10 @@ class Host(object):
 
     def addr_task_get_plugin_presets(self, uri):
         if uri == PEDALBOARD_URI:
-            if self.current_pedalboard_snapshot_id < 0 or len(self.pedalboard_snapshots) == 0:
-                return []
             self.plugins[PEDALBOARD_INSTANCE_ID]['preset'] = "file:///%i" % self.current_pedalboard_snapshot_id
-            presets = self.pedalboard_snapshots
+            snapshots = self.pedalboard_snapshots
             presets = [{'uri': 'file:///%i'%i,
-                        'label': presets[i]['name']} for i in range(len(presets)) if presets[i] is not None]
+                        'label': snapshots[i]['name']} for i in range(len(snapshots)) if snapshots[i] is not None]
             return presets
         return get_plugin_info(uri)['presets']
 
@@ -4833,7 +4831,7 @@ _:b%i
         if bank_id < 0 or bank_id > len(self.banks):
             logging.error("Trying to list pedalboards with an out of bounds bank id (%d %d %d)",
                           props, pedalboard_id, bank_id)
-            callback(False)
+            callback(False, "0 0 0")
             return
 
         dir_up  = props & FLAG_PAGINATION_PAGE_UP
@@ -4853,7 +4851,7 @@ _:b%i
         if pedalboard_id < 0 or pedalboard_id >= numPedals:
             if not wrap and pedalboard_id > 0:
                 logging.error("hmi wants out of bounds pedalboard data (%d %d %d)", props, pedalboard_id, bank_id)
-                callback(True)
+                callback(False, "0 0 0")
                 return
 
             # wrap around mode, neat
@@ -4863,7 +4861,7 @@ _:b%i
                 pedalboard_id = 0
 
         #if pedalboard_id < 0 or pedalboard_id > numPedals:
-            #callback(True, "")
+            #callback(False, "0 0 0")
             #return
 
         if numPedals <= 9 or pedalboard_id < 4:
@@ -4923,9 +4921,12 @@ _:b%i
 
     # -----------------------------------------------------------------------------------------------------------------
 
-    def hmi_bank_new(self, name, callback):
+    def hmi_bank_new(self, title, callback):
+        if title == "All Pedalboards" or any(bank['title'].upper() == title for bank in self.banks):
+            callback(False)
+            return
         self.banks.append({
-            'title': name,
+            'title': title,
             'pedalboards': [],
         })
         save_banks(self.banks)
@@ -4937,31 +4938,121 @@ _:b%i
             callback(False)
             return
 
-        # bank 0 is "all pedalboards"
+        # bank 0 is "All Pedalboards"
         bank_id -= 1
 
-        # FIXME decide on this
+        # FIXME undefined behaviour
         if self.bank_id == bank_id:
             callback(False)
             return
+
+        if self.bank_id > bank_id:
+            self.bank_id -= 1
 
         self.banks.pop(bank_id)
         save_banks(self.banks)
         callback(True)
 
-    def hmi_bank_add_pedalboards(self, dest_bank_id: int, source_bank_id: int, pedalboards: tuple, callback):
-        print("hmi_bank_add_pedalboards", dest_bank_id, source_bank_id, pedalboards)
+    def hmi_bank_add_pedalboards_or_banks(self, dst_bank_id, src_bank_id, pedalboards_or_banks, callback):
+        if dst_bank_id <= 0 or dst_bank_id > len(self.banks):
+            print("ERROR: Trying to add to invalid bank id %i" % (dst_bank_id))
+            callback(False)
+            return
+        if not pedalboards_or_banks:
+            print("ERROR: There are no banks/pedalboards to add, stop")
+            callback(False)
+            return
+
+        if src_bank_id == -1:
+            self.hmi_bank_add_banks(dst_bank_id, pedalboards_or_banks, callback)
+        else:
+            self.hmi_bank_add_pedalboards(dst_bank_id, src_bank_id, pedalboards_or_banks, callback)
+
+    def hmi_bank_add_banks(self, dst_bank_id, banks, callback):
+        dst_pedalboards = self.banks[dst_bank_id-1]['pedalboards']
+
+        for bank_id_str in banks.split(' '):
+            try:
+                bank_id = int(bank_id_str)
+            except ValueError:
+                print("ERROR: bank with id %s is invalid, cannot convert to integer" % bank_id_str)
+                continue
+            if bank_id <= 0 or bank_id > len(self.banks):
+                print("ERROR: Trying to add out of bounds bank id %i" % bank_id)
+                continue
+            # TODO remove this print after we verify that all works
+            print("DEBUG: added bank", self.banks[bank_id-1]['title'])
+            dst_pedalboards += self.banks[bank_id-1]['pedalboards']
+
+        save_banks(self.banks)
         callback(True)
 
-    def hmi_bank_reorder_pedalboards(self, bank_id: int, pedalboard_id: int, target_index: int, callback):
-        print("hmi_bank_reorder_pedalboards", bank_id, pedalboard_id, target_index)
+    def hmi_bank_add_pedalboards(self, dst_bank_id, src_bank_id, pedalboards, callback):
+        if src_bank_id < 0 or src_bank_id > len(self.banks):
+            print("ERROR: Trying to add pedalboard from invalid bank id %i" % (src_bank_id))
+            callback(False)
+            return
+
+        dst_pedalboards = self.banks[dst_bank_id-1]['pedalboards']
+        src_pedalboards = self.banks[src_bank_id-1]['pedalboards'] if src_bank_id != 0 else self.allpedalboards
+
+        for pedalboard_id_str in pedalboards.split(' '):
+            try:
+                pedalboard_id = int(pedalboard_id_str)
+            except ValueError:
+                print("ERROR: pedalboard with id %s is invalid, cannot convert to integer" % pedalboard_id_str)
+                continue
+            if pedalboard_id >= len(src_pedalboards):
+                print("ERROR: Trying to add out of bounds pedalboard id %i" % pedalboard_id)
+                continue
+            # TODO remove this print after we verify that all works
+            print("DEBUG: added pedalboard", src_pedalboards[pedalboard_id]['title'])
+            dst_pedalboards.append(src_pedalboards[pedalboard_id])
+
+        save_banks(self.banks)
+        callback(True)
+
+    def hmi_bank_reorder_pedalboards(self, bank_id, src, dst, callback):
+        if bank_id <= 0 or bank_id > len(self.banks):
+            print("ERROR: Trying to reorder pedalboards in invalid bank id %i" % (bank_id))
+            callback(False)
+            return
+
+        # bank 0 is "All Pedalboards"
+        bank_id -= 1
+        pedalboards = self.banks[bank_id]['pedalboards']
+
+        if src < 0 or src >= len(pedalboards):
+            callback(False)
+            return
+        if dst < 0 or dst >= len(pedalboards):
+            callback(False)
+            return
+
+        pedalboard = pedalboards.pop(src)
+        pedalboards.insert(dst, pedalboard)
+
         callback(True)
 
     # -----------------------------------------------------------------------------------------------------------------
 
-    def hmi_pedalboard_save_as(self, name: str, callback):
-        print("hmi_pedalboard_save_as", name)
-        callback(True)
+    def hmi_pedalboard_save_as(self, title, callback):
+        if any(pedalboard['title'].upper() == title for pedalboard in self.allpedalboards):
+            callback(False)
+            return
+
+        bundlepath, _ = self.save(title, True, callback)
+        print("hmi_pedalboard_save_as", title, "->", bundlepath)
+
+        pedalboard = {
+            'bundle': bundlepath,
+            'title': title,
+        }
+        self.allpedalboards.append(pedalboard)
+
+        if self.bank_id != 0:
+            self.banks[self.bank_id-1]['pedalboards'].append(pedalboard)
+            save_banks(self.banks)
 
     def hmi_pedalboard_remove_from_bank(self, bank_id, pedalboard_id, callback):
         if bank_id <= 0 or bank_id > len(self.banks):
@@ -4981,18 +5072,35 @@ _:b%i
 
         callback(True)
 
-    def hmi_pedalboard_reorder_snapshots(self, pedalboard_id: int, snapshot_id: int, target_index: int, callback):
-        print("hmi_pedalboard_reorder_snapshots", pedalboard_id, snapshot_id, target_index)
+    def hmi_pedalboard_reorder_snapshots(self, src, dst, callback):
+        if src < 0 or src >= len(self.pedalboard_snapshots) or self.pedalboard_snapshots[src] is None:
+            callback(False)
+            return
+        if dst < 0 or dst >= len(self.pedalboard_snapshots) or self.pedalboard_snapshots[dst] is None:
+            callback(False)
+            return
+
+        if self.current_pedalboard_snapshot_id == src:
+            self.current_pedalboard_snapshot_id = dst
+        else:
+            current = self.pedalboard_snapshots[self.current_pedalboard_snapshot_id]
+
+        snapshot = self.pedalboard_snapshots.pop(src)
+        self.pedalboard_snapshots.insert(dst, snapshot)
+
+        if self.current_pedalboard_snapshot_id != src:
+            self.current_pedalboard_snapshot_id = self.pedalboard_snapshots.index(current)
+
         callback(True)
 
     # -----------------------------------------------------------------------------------------------------------------
 
-    def hmi_pedalboard_snapshot_save(self, snapshot_id: int, callback):
-        print("hmi_pedalboard_snapshot_save", snapshot_id)
-        callback(True)
+    def hmi_pedalboard_snapshot_save(self, callback):
+        ok = self.snapshot_save()
+        callback(ok)
 
     def hmi_pedalboard_snapshot_save_as(self, name, callback):
-        if any(snapshot['name'] == name for snapshot in self.pedalboard_snapshots):
+        if any(snapshot['name'].upper() == name for snapshot in self.pedalboard_snapshots):
             callback(False)
             return
         self.snapshot_saveas(name)

@@ -22,7 +22,7 @@ CMD_ARGS = {
         'b': [int,int],
         'bn': [str,],
         'bd': [int],
-        'ba': [int,int,int,],
+        'ba': [int,int,str,],
         'br': [int,int,int],
         'p': [int,int,int],
         'pn': [str,],
@@ -36,7 +36,7 @@ CMD_ARGS = {
         'ssg': [int,int],
         'sn': [str,],
         'ssl': [int],
-        'sss': [int],
+        'sss': [],
         'ssa': [str,],
         'ssd': [int],
         'ts': [float,str,int],
@@ -74,6 +74,7 @@ CMD_ARGS = {
         'sys_ver': [str],
         'sys_ser': [],
         'sys_usb': [int],
+        'sys_mnr': [int],
         'sys_rbt': [],
         'sys_led': [int,int,],
         'sys_nam': [int,str],
@@ -175,6 +176,7 @@ CMD_SYS_SYSTEMCTL                 = 'sys_ctl'
 CMD_SYS_VERSION                   = 'sys_ver'
 CMD_SYS_SERIAL                    = 'sys_ser'
 CMD_SYS_USB_MODE                  = 'sys_usb'
+CMD_SYS_NOISE_REMOVAL             = 'sys_mnr'
 CMD_SYS_REBOOT                    = 'sys_rbt'
 CMD_SYS_CHANGE_LED                = 'sys_led'
 CMD_SYS_CHANGE_NAME               = 'sys_nam'
