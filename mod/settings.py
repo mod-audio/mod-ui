@@ -26,7 +26,7 @@ DEV_HOST = bool(int(os.environ.get('MOD_DEV_HOST', DEV_ENVIRONMENT)))
 DEV_API = bool(int(os.environ.get('MOD_DEV_API', False)))
 
 APP = bool(int(os.environ.get('MOD_APP', False)))
-LOG = bool(int(os.environ.get('MOD_LOG', False)))
+LOG = int(os.environ.get('MOD_LOG', 0))
 
 API_KEY = os.environ.pop('MOD_API_KEY', None)
 DEVICE_KEY = os.environ.pop('MOD_DEVICE_KEY', None)
