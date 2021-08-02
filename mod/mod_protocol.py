@@ -7,6 +7,7 @@ CMD_ARGS = {
         'pi': [],
         'say': [str,],
         'l': [int,int,int,int,],
+        'displ_bright': [int],
         'glcd_text': [int,int,int,str],
         'glcd_dialog': [str],
         'glcd_draw': [int,int,int,str],
@@ -19,15 +20,25 @@ CMD_ARGS = {
         'ncp': [int,int],
         'is': [int,int,int,int,int,str,str,],
         'b': [int,int],
+        'bn': [str,],
+        'bd': [int],
+        'ba': [int,int,str,],
+        'br': [int,int,int],
         'p': [int,int,int],
+        'pn': [str,],
         'pb': [int,str],
-        'ssg': [int,int],
-        'ssl': [int],
         'pr': [],
         'ps': [],
-        'pn': [str,],
+        'psa': [str,],
         'pcl': [],
+        'pbd': [int,int],
+        'sr': [int,int],
+        'ssg': [int,int],
         'sn': [str,],
+        'ssl': [int],
+        'sss': [],
+        'ssa': [str,],
+        'ssd': [int],
         'ts': [float,str,int],
         'tn': [],
         'tf': [],
@@ -48,6 +59,30 @@ CMD_ARGS = {
         'control_skip_enable': [],
         'control_bad_skip': [],
         'save_pot_cal': [int,int],
+        'sys_gio': [int,int,float],
+        'sys_ghp': [float],
+        'sys_ngc': [int],
+        'sys_ngt': [int],
+        'sys_ngd': [int],
+        'sys_cmm': [int],
+        'sys_cmr': [int],
+        'sys_pbg': [int],
+        'sys_ams': [],
+        'sys_bts': [],
+        'sys_btd': [],
+        'sys_ctl': [str],
+        'sys_ver': [str],
+        'sys_ser': [],
+        'sys_usb': [int],
+        'sys_mnr': [int],
+        'sys_rbt': [],
+        'sys_led': [int,int,],
+        'sys_nam': [int,str],
+        'sys_uni': [int,str],
+        'sys_val': [int,str],
+        'sys_ind': [int,float],
+        'sys_pch': [int],
+        'sys_spc': [int],
     },
     'DUO': {
         'boot': [int,int,str,],
@@ -62,6 +97,8 @@ CMD_ARGS = {
         'sl': [int],
         'sc': [],
         'pa': [int,int,int,int,int,int],
+        's_contrast': [int,int],
+        'exp_overcurrent': [],
     },
     'DWARF': {
         'cs': [int,int],
@@ -72,6 +109,7 @@ CMD_ARGS = {
 CMD_PING                          = 'pi'
 CMD_SAY                           = 'say'
 CMD_LED                           = 'l'
+CMD_DISP_BRIGHTNESS               = 'displ_bright'
 CMD_GLCD_TEXT                     = 'glcd_text'
 CMD_GLCD_DIALOG                   = 'glcd_dialog'
 CMD_GLCD_DRAW                     = 'glcd_draw'
@@ -84,15 +122,25 @@ CMD_CONTROL_SET                   = 's'
 CMD_CONTROL_PAGE                  = 'ncp'
 CMD_INITIAL_STATE                 = 'is'
 CMD_BANKS                         = 'b'
+CMD_BANK_NEW                      = 'bn'
+CMD_BANK_DELETE                   = 'bd'
+CMD_ADD_PBS_TO_BANK               = 'ba'
+CMD_REORDER_PBS_IN_BANK           = 'br'
 CMD_PEDALBOARDS                   = 'p'
+CMD_PEDALBOARD_NAME_SET           = 'pn'
 CMD_PEDALBOARD_LOAD               = 'pb'
-CMD_SNAPSHOTS                     = 'ssg'
-CMD_SNAPSHOTS_LOAD                = 'ssl'
 CMD_PEDALBOARD_RESET              = 'pr'
 CMD_PEDALBOARD_SAVE               = 'ps'
-CMD_PEDALBOARD_NAME_SET           = 'pn'
+CMD_PEDALBOARD_SAVE_AS            = 'psa'
 CMD_PEDALBOARD_CLEAR              = 'pcl'
+CMD_PEDALBOARD_DELETE             = 'pbd'
+CMD_REORDER_SSS_IN_PB             = 'sr'
+CMD_SNAPSHOTS                     = 'ssg'
 CMD_SNAPSHOT_NAME_SET             = 'sn'
+CMD_SNAPSHOTS_LOAD                = 'ssl'
+CMD_SNAPSHOTS_SAVE                = 'sss'
+CMD_SNAPSHOT_SAVE_AS              = 'ssa'
+CMD_SNAPSHOT_DELETE               = 'ssd'
 CMD_TUNER                         = 'ts'
 CMD_TUNER_ON                      = 'tn'
 CMD_TUNER_OFF                     = 'tf'
@@ -113,6 +161,30 @@ CMD_SELFTEST_CALLIBRATION_OK      = 'pot_call_ok'
 CMD_SELFTEST_SKIP_CONTROL_ENABLE  = 'control_skip_enable'
 CMD_SELFTEST_SKIP_CONTROL         = 'control_bad_skip'
 CMD_SELFTEST_SAVE_POT_CALIBRATION = 'save_pot_cal'
+CMD_SYS_GAIN                      = 'sys_gio'
+CMD_SYS_HP_GAIN                   = 'sys_ghp'
+CMD_SYS_NG_CHANNEL                = 'sys_ngc'
+CMD_SYS_NG_THRESHOLD              = 'sys_ngt'
+CMD_SYS_NG_DECAY                  = 'sys_ngd'
+CMD_SYS_COMP_MODE                 = 'sys_cmm'
+CMD_SYS_COMP_RELEASE              = 'sys_cmr'
+CMD_SYS_COMP_PEDALBOARD_GAIN      = 'sys_pbg'
+CMD_SYS_AMIXER_SAVE               = 'sys_ams'
+CMD_SYS_BT_STATUS                 = 'sys_bts'
+CMD_SYS_BT_DISCOVERY              = 'sys_btd'
+CMD_SYS_SYSTEMCTL                 = 'sys_ctl'
+CMD_SYS_VERSION                   = 'sys_ver'
+CMD_SYS_SERIAL                    = 'sys_ser'
+CMD_SYS_USB_MODE                  = 'sys_usb'
+CMD_SYS_NOISE_REMOVAL             = 'sys_mnr'
+CMD_SYS_REBOOT                    = 'sys_rbt'
+CMD_SYS_CHANGE_LED                = 'sys_led'
+CMD_SYS_CHANGE_NAME               = 'sys_nam'
+CMD_SYS_CHANGE_UNIT               = 'sys_uni'
+CMD_SYS_CHANGE_VALUE              = 'sys_val'
+CMD_SYS_CHANGE_WIDGET_INDICATOR   = 'sys_ind'
+CMD_SYS_PAGE_CHANGE               = 'sys_pch'
+CMD_SYS_SUBPAGE_CHANGE            = 'sys_spc'
 CMD_DUO_BOOT                      = 'boot'
 CMD_DUO_FOOT_NAVIG                = 'fn'
 CMD_DUO_BANK_CONFIG               = 'bc'
@@ -123,6 +195,8 @@ CMD_DUOX_SNAPSHOT_SAVE            = 'ss'
 CMD_DUOX_SNAPSHOT_LOAD            = 'sl'
 CMD_DUOX_SNAPSHOT_CLEAR           = 'sc'
 CMD_DUOX_PAGES_AVAILABLE          = 'pa'
+CMD_DUOX_SET_CONTRAST             = 's_contrast'
+CMD_DUOX_EXP_OVERCURRENT          = 'exp_overcurrent'
 CMD_DWARF_CONTROL_SUBPAGE         = 'cs'
 CMD_DWARF_PAGES_AVAILABLE         = 'pa'
 

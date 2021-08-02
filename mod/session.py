@@ -203,14 +203,14 @@ class Session(object):
         return bundlepath, newPB
 
     # Get list of Hardware MIDI devices
-    # returns (devsInUse, devList, names, midi_aggregated_mode)
+    # returns (devsInUse, devList, names, midiAggregatedMode)
     def web_get_midi_device_list(self):
         return self.host.get_midi_ports()
 
     # Set the selected MIDI devices to @a newDevs
     # Will remove or add new JACK ports as needed
-    def web_set_midi_devices(self, newDevs, midi_aggregated_mode):
-        return self.host.set_midi_devices(newDevs, midi_aggregated_mode)
+    def web_set_midi_devices(self, newDevs, midiAggregatedMode, midiLoopback):
+        return self.host.set_midi_devices(newDevs, midiAggregatedMode, midiLoopback)
 
     # Send a ping to HMI and Websockets
     def web_ping(self, callback):
@@ -304,6 +304,13 @@ class Session(object):
     # -----------------------------------------------------------------------------------------------------------------
     # Websocket funtions, called when receiving messages from socket (see webserver.py)
     # There are no callbacks for these functions.
+
+    # Receive data ready, with matching counter value
+    # This indicates web browser side is ready to receive more events
+    def ws_data_ready(self, counter):
+        if self.host.web_data_ready_counter == counter:
+            self.host.web_data_ready_ok = True
+            self.host.send_output_data_ready(None, None)
 
     # Set a plugin parameter
     # We use ":bypass" symbol for on/off state

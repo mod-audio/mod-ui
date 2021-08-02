@@ -62,6 +62,14 @@ $('document').ready(function() {
         // everything from here onwards has at least 1 argument
         data = data.substr(cmd.length+1);
 
+        if (cmd == "data_ready") {
+            var counter = data
+            setTimeout(function() {
+                ws.send("data_ready " + counter)
+            }, 25)
+            return
+        }
+
         if (cmd == "stats") {
             data        = data.split(" ",2)
             var cpuLoad = parseFloat(data[0])
@@ -173,25 +181,13 @@ $('document').ready(function() {
             return
         }
 
-        if (cmd == "pedal_preset") {
-            var index = parseInt(data)
+        if (cmd == "pedal_snapshot") {
+            cmd       = data.split(" ",1)
+            var index = parseInt(cmd[0])
+            var name  = data.substr(cmd.length+1);
 
-            $.ajax({
-                url: '/snapshot/name',
-                type: 'GET',
-                data: {
-                    id: index,
-                },
-                success: function (resp) {
-                    if (! resp.ok) {
-                        return
-                    }
-                    desktop.pedalboardPresetId = index
-                    desktop.titleBox.text((desktop.title || 'Untitled') + " - " + resp.name)
-                },
-                cache: false,
-                dataType: 'json'
-            })
+            desktop.pedalboardPresetId = index
+            desktop.titleBox.text((desktop.title || 'Untitled') + " - " + name)
             return
         }
 
@@ -302,9 +298,9 @@ $('document').ready(function() {
                         var cb = function () {
                             var input = $(targetport)
                             desktop.pedalboard.pedalboard('connect', output.find('[mod-role=output-jack]'), input, skipModified)
-                            $(document).unbindArrive(targetport, cb)
+                            $('#pedalboard-dashboard').unbindArrive(targetport, cb)
                         }
-                        $(document).arrive(targetport, cb)
+                        $('#pedalboard-dashboard').arrive(targetport, { onceOnly: true }, cb)
                     }
                 } else {
                     var cb = function () {
@@ -317,13 +313,13 @@ $('document').ready(function() {
                             var incb = function () {
                                 var input = $(targetport)
                                 desktop.pedalboard.pedalboard('connect', output.find('[mod-role=output-jack]'), input, skipModified)
-                                $(document).unbindArrive(targetport, incb)
+                                $('#pedalboard-dashboard').unbindArrive(targetport, incb)
                             }
-                            $(document).arrive(targetport, incb)
+                            $('#pedalboard-dashboard').arrive(targetport, { onceOnly: true }, incb)
                         }
-                        $(document).unbindArrive(sourceport, cb)
+                        $('#pedalboard-dashboard').unbindArrive(sourceport, cb)
                     }
-                    $(document).arrive(sourceport, cb)
+                    $('#pedalboard-dashboard').arrive(sourceport, { onceOnly: true }, cb)
                 }
             }
             return
@@ -377,10 +373,9 @@ $('document').ready(function() {
                             var cb = function () {
                                 desktop.pedalboard.pedalboard('scheduleAdapt', false)
                                 desktop.pedalboard.data('wait').stopPlugin(instance, !skipModified)
-
-                                $(document).unbindArrive(instancekey, cb)
+                                $('#pedalboard-dashboard').unbindArrive(instancekey, cb)
                             }
-                            $(document).arrive(instancekey, cb)
+                            $('#pedalboard-dashboard').arrive(instancekey, { onceOnly: true }, cb)
                         }
 
                         desktop.pedalboard.pedalboard("addPlugin", pluginData, instance, bypassed, x, y, {}, null, skipModified)
@@ -404,12 +399,12 @@ $('document').ready(function() {
         }
 
         if (cmd == "add_cv_port") {
-          data         = data.split(" ", 3)
-          var instance = data[0]
-          var name     = data[1].replace(/_/g," ")
-          var operationalMode = data[2]
-          desktop.hardwareManager.addCvOutputPort(instance, name, operationalMode)
-          return
+            data         = data.split(" ", 3)
+            var instance = data[0]
+            var name     = data[1].replace(/_/g," ")
+            var operationalMode = data[2]
+            desktop.hardwareManager.addCvOutputPort(instance, name, operationalMode)
+            return
         }
 
         if (cmd == "add_hw_port") {
@@ -427,7 +422,8 @@ $('document').ready(function() {
                   desktop.hardwareManager.addCvOutputPort('/cv' + instance, name, '+')
                 }
             } else {
-                var el = $('<div id="' + instance + '" class="hardware-input" mod-port-index=' + index + ' title="Hardware ' + name + '">')
+                var prefix = name === 'MIDI Loopback' ? 'Virtual' : 'Hardware'
+                var el = $('<div id="' + instance + '" class="hardware-input" mod-port-index=' + index + ' title="' + prefix + ' ' + name + '">')
                 desktop.pedalboard.pedalboard('addHardwareInput', el, instance, type)
             }
 
@@ -485,27 +481,22 @@ $('document').ready(function() {
         }
 
         if (cmd == "loading_end") {
-            var presetId = parseInt(data)
+            var snapshotId = parseInt(data)
 
             $.ajax({
                 url: '/snapshot/name',
                 type: 'GET',
                 data: {
-                    id: presetId,
+                    id: snapshotId,
                 },
                 success: function (resp) {
                     desktop.pedalboard.pedalboard('scheduleAdapt', true)
                     desktop.pedalboardEmpty    = empty && !modified
                     desktop.pedalboardModified = modified
-                    desktop.pedalboardPresetId = presetId
+                    desktop.pedalboardPresetId = snapshotId
 
-                    if (presetId >= 0) {
-                        $('#js-preset-enabler').hide()
-                        $('#js-preset-menu').show().css('display', 'inline-block')
-
-                        if (resp.ok) {
-                            desktop.titleBox.text((desktop.title || 'Untitled') + " - " + resp.name)
-                        }
+                    if (resp.ok) {
+                        desktop.titleBox.text((desktop.title || 'Untitled') + " - " + resp.name)
                     }
 
                     pb_loading = false

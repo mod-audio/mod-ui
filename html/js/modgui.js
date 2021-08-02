@@ -1149,7 +1149,7 @@ function GUI(effect, options) {
     this.renderDummyIcon = function (callback) {
         var render = function () {
             self.preRender()
-            var icon = $('<div class="mod-pedal dummy">')
+            var icon = $('<div class="mod-pedal dummy ignore-arrive">')
             icon.html(Mustache.render(effect.gui.iconTemplate || options.defaultIconTemplate,
                       self.getTemplateData(effect, false)))
             icon.find('[mod-role="input-audio-port"]').addClass("mod-audio-input")

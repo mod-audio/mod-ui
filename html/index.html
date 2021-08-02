@@ -115,11 +115,9 @@ $('document').ready(function() {
         saveAsButton: $('#pedalboard-info .js-save-as'),
         resetButton:  $('#pedalboard-info .js-reset'),
         cvAddressingButton:  $('#pedalboard-info .js-cv-addressing'),
-        pedalboardPresetsEnabler: $('#pedalboard-info #js-preset-enabler'),
-        presetSaveButton: $('#pedalboard-info .js-preset-save'),
-        presetSaveAsButton: $('#pedalboard-info .js-preset-save-as'),
-        presetManageButton: $('#pedalboard-info .js-preset-manage'),
-        presetDisableButton: $('#pedalboard-info .js-preset-disable'),
+        snapshotSaveButton: $('#pedalboard-info .js-preset-save'),
+        snapshotSaveAsButton: $('#pedalboard-info .js-preset-save-as'),
+        snapshotManageButton: $('#pedalboard-info .js-preset-manage'),
         transportButton: $('#mod-transport-icon'),
         transportWindow: $('#mod-transport-window'),
         transportPlay: $('#mod-switch-transport-play'),
@@ -490,8 +488,7 @@ $('document').ready(function() {
                 <div class="actions">
                     <button class="js-audio-stream" id="js-audio-stream">Enable streaming</button>
                     <button class="js-cv-addressing" id="js-cv-addressing-toggle">Manage CV Ports</button>
-                    <button class="js-preset" id="js-preset-enabler">Snapshots</button>
-                    <div class="mod-hidden" id="js-preset-menu">
+                    <div id="js-preset-menu" style="display:inline-block;">
                         <button class="js-preset menu-trigger">Snapshots</button>
                         <ul class="drop-menu clearfix js-pedalboard-presets-menu" style="cursor:pointer;">
                             <li class="js-preset-save">Save</li>
@@ -502,7 +499,6 @@ $('document').ready(function() {
                             </li>
                             -->
                             <li class="js-preset-manage">Load / Manage</li>
-                            <li class="js-preset-disable">Disable</li>
                         </ul>
                     </div>
                     <button class="js-reset">New Pedalboard</button>
@@ -532,26 +528,33 @@ $('document').ready(function() {
             <div class="mod-box" id="midi-ports-box">
                 <h1>MIDI Ports List</h1>
                 <form class="bottom">
-                  <fieldset>
-                    <div>
-                      <label>
-                        <input type="radio" autocomplete="off" name="midi-mode" value="aggregated" id="midi-mode-aggregate">
-                            Aggregated mode
-                        </input>
-                      </label>
-                    </div>
-                    <div>
-                      <label>
-                          <input type="radio" autocomplete="off" name="midi-mode" value="separated" id="midi-mode-separated">
-                              Separated mode
-                          </input>
-                      </label>
-                    </div>
-                    <div class="controls clearfix" id="midi-ports-list"></div>
-                    <div class="controls actions">
-                        <button class="js-cancel btn btn-danger">Cancel</button>
-                        <button class="js-submit btn btn-success">Save</button>
-                    </div>
+                    <fieldset>
+                        <div>
+                            <label>
+                                <input type="checkbox" autocomplete="off" id="midi-loopback">
+                                    Enable Virtual MIDI Loopback
+                                </input>
+                            </label>
+                        </div>
+                        <div>
+                            <label>
+                                <input type="radio" autocomplete="off" name="midi-mode" value="aggregated" id="midi-mode-aggregate">
+                                    Aggregated mode
+                                </input>
+                            </label>
+                        </div>
+                        <div>
+                            <label>
+                                <input type="radio" autocomplete="off" name="midi-mode" value="separated" id="midi-mode-separated">
+                                    Separated mode
+                                </input>
+                            </label>
+                        </div>
+                        <div class="controls clearfix" id="midi-ports-list"></div>
+                        <div class="controls actions">
+                            <button class="js-cancel btn btn-danger">Cancel</button>
+                            <button class="js-submit btn btn-success">Save</button>
+                        </div>
                     </fieldset>
                 </form>
             </div>
@@ -648,7 +651,7 @@ $('document').ready(function() {
     <!-- END MAIN MENU-->
 
     <!-- PLUGINS LIBRARY -->
-    <div id="plugins-library" class="js-main-library mod-init-hidden">
+    <div id="plugins-library" class="js-main-library mod-init-hidden ignore-arrive">
 
         <!-- EFFECTS MENU ITEMS -->
         <ul class="clearfix js-category-tabs">

@@ -17,6 +17,7 @@ from mod.control_chain import (
   CC_MODE_LOGARITHMIC,
   CC_MODE_COLOURED,
   CC_MODE_MOMENTARY,
+  CC_MODE_REVERSE,
   ControlChainDeviceListener,
 )
 from mod.settings import PEDALBOARD_INSTANCE_ID
@@ -158,14 +159,20 @@ class Addressings(object):
 
         for uri in sorted(self.cc_metadata.keys()):
             data = self.cc_metadata[uri]
-            actuators.append({
+            metadata = {
                 'uri': uri,
                 'name' : data['name'],
                 'modes': data['modes'],
                 'steps': data['steps'],
                 'max_assigns': data['max_assigns'],
                 'feedback'   : data['feedback'],
-            })
+                'widgets'    : data['widgets'],
+            }
+            actuator_group = data.get('actuator_group', None)
+            if actuator_group is not None:
+                metadata['actuator_group'] = actuator_group
+
+            actuators.append(metadata)
 
         return actuators
 
@@ -824,7 +831,7 @@ class Addressings(object):
                 if momentary:
                     cctype |= CC_MODE_MOMENTARY
                     if momentary == 2:
-                        cctype |= CC_MODE_COLOURED
+                        cctype |= CC_MODE_REVERSE
 
             elif portsymbol == ":presets":
                 cctype = CC_MODE_OPTIONS|CC_MODE_INTEGER
@@ -837,7 +844,7 @@ class Addressings(object):
                     if momentary:
                         cctype |= CC_MODE_MOMENTARY
                         if momentary == 2:
-                            cctype |= CC_MODE_COLOURED
+                            cctype |= CC_MODE_REVERSE
                 elif "integer" in pprops:
                     cctype = CC_MODE_INTEGER
                 else:

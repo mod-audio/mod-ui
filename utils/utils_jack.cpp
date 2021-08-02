@@ -421,7 +421,7 @@ float get_jack_sample_rate(void)
 
 const char* get_jack_port_alias(const char* portname)
 {
-    static char  aliases[2][0xff];
+    static char  aliases[2][320];
     static char* aliasesptr[2] = {
         aliases[0],
         aliases[1]
@@ -452,6 +452,35 @@ const char* const* get_jack_hardware_ports(const bool isAudio, bool isOutput)
 
     if (ports == nullptr)
         return nullptr;
+
+    // hide midi-through capture ports
+    if (!isAudio && !isOutput)
+    {
+        static char  aliases[2][320];
+        static char* aliasesptr[2] = {
+            aliases[0],
+            aliases[1]
+        };
+
+        for (int i=0; ports[i] != nullptr; ++i)
+        {
+            if (strncmp(ports[i], "system:midi_capture_", 20))
+                continue;
+
+            jack_port_t* const port = jack_port_by_name(gClient, ports[i]);
+
+            if (port == nullptr)
+                continue;
+            if (jack_port_get_aliases(port, aliasesptr) <= 0)
+                continue;
+            if (strncmp(aliases[0], "alsa_pcm:Midi-Through/", 22))
+                continue;
+
+            for (int j=i; ports[j] != nullptr; ++j)
+                ports[j] = ports[j+1];
+            --i;
+        }
+    }
 
     gPortListRet = ports;
 
@@ -566,6 +595,34 @@ bool disconnect_jack_ports(const char* port1, const char* port2)
         return true;
 
     return false;
+}
+
+bool disconnect_all_jack_ports(const char* portname)
+{
+    if (gClient == nullptr)
+        return false;
+
+    jack_port_t* const port = jack_port_by_name(gClient, portname);
+
+    if (port == nullptr)
+        return false;
+
+    const bool isOutput = jack_port_flags(port) & JackPortIsOutput;
+
+    if (const char** const ports = jack_port_get_all_connections(gClient, port))
+    {
+        for (int i=0; ports[i] != nullptr; ++i)
+        {
+            if (isOutput)
+                jack_disconnect(gClient, portname, ports[i]);
+            else
+                jack_disconnect(gClient, ports[i], portname);
+        }
+
+        jack_free(ports);
+    }
+
+    return true;
 }
 
 void reset_xruns(void)

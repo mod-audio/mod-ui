@@ -271,6 +271,7 @@ JqueryClass('pedalboard', {
         // Must be much bigger than screen, so that nothing can be
         // dropped outside it even if mouse goes outside window
         var bg = $('<div>')
+        bg.addClass('ignore-arrive')
         bg.css({
             width: '300%',
             height: '300%',
@@ -529,49 +530,50 @@ JqueryClass('pedalboard', {
                 var symbol
                 for (var i=1, count=data.hardware.audio_ins; i<=count; i++) {
                     symbol = (i < 3) ? ('/graph/capture_' + i) : ('/graph/audio_from_slave_' + (i-2))
-                    var hw = $('<div class="hardware-output" mod-port-index="' + i + '" title="Hardware Capture ' + i + '">')
+                    var hw = $('<div class="ignore-arrive hardware-output" mod-port-index="' + i + '" title="Hardware Capture ' + i + '">')
                     self.pedalboard('addHardwareOutput', hw, symbol, 'audio')
                 }
                 for (var i=1, count=data.hardware.audio_outs; i<=count; i++) {
                     symbol = (i < 3) ? ('/graph/playback_' + i) : ('/graph/audio_to_slave_' + (i-2))
-                    var hw = $('<div class="hardware-input" mod-port-index="' + i + '" title="Hardware Playback ' + i + '">')
+                    var hw = $('<div class="ignore-arrive hardware-input" mod-port-index="' + i + '" title="Hardware Playback ' + i + '">')
                     self.pedalboard('addHardwareInput', hw, '/graph/playback_' + i, 'audio')
                 }
                 for (var i=1, count=data.hardware.cv_ins; i<=count; i++) {
-                    var hw = $('<div class="hardware-output" mod-port-index="' + i + '" title="Hardware CV Capture ' + i + '">')
+                    var hw = $('<div class="ignore-arrive hardware-output" mod-port-index="' + i + '" title="Hardware CV Capture ' + i + '">')
                     self.pedalboard('addHardwareOutput', hw, '/graph/cv_capture_' + i + '_in', 'cv')
                 }
                 for (var i=1, count=data.hardware.cv_outs; i<=count; i++) {
-                    var hw = $('<div class="hardware-input" mod-port-index="' + i + '" title="Hardware CV Playback ' + i + '">')
+                    var hw = $('<div class="ignore-arrive hardware-input" mod-port-index="' + i + '" title="Hardware CV Playback ' + i + '">')
                     self.pedalboard('addHardwareInput', hw, '/graph/cv_playback_' + i + '_out', 'cv')
                 }
                 if (data.hardware.serial_midi_in) {
-                    var hw = $('<div class="hardware-output" mod-port-index="1" title="Hardware DIN MIDI In">')
+                    var hw = $('<div class="ignore-arrive hardware-output" mod-port-index="1" title="Hardware DIN MIDI In">')
                     self.pedalboard('addHardwareOutput', hw, '/graph/serial_midi_in', 'midi')
                 }
                 if (data.hardware.serial_midi_out) {
-                    var hw = $('<div class="hardware-input" mod-port-index="1" title="Hardware DIN MIDI Out">')
+                    var hw = $('<div class="ignore-arrive hardware-input" mod-port-index="1" title="Hardware DIN MIDI Out">')
                     self.pedalboard('addHardwareInput', hw, '/graph/serial_midi_out', 'midi')
                 }
                 if (data.hardware.midi_merger_in) {
-                    var hw = $('<div class="hardware-output" mod-port-index="2" title="All MIDI In">')
+                    var hw = $('<div class="ignore-arrive hardware-output" mod-port-index="2" title="All MIDI In">')
                     self.pedalboard('addHardwareOutput', hw, '/graph/midi_merger_in', 'midi')
                 }
                 if (data.hardware.midi_merger_out) {
-                    var hw = $('<div class="hardware-input" mod-port-index="2" title="All MIDI Out">')
+                    var hw = $('<div class="ignore-arrive hardware-input" mod-port-index="2" title="All MIDI Out">')
                     self.pedalboard('addHardwareInput', hw, '/graph/midi_merger_out', 'midi')
                 }
-                var portdata, pindex
+                var portdata, pindex, prefix
                 for (var i in data.hardware.midi_ins) {
                     portdata = data.hardware.midi_ins[i]
                     pindex   = parseInt(portdata.symbol.replace("midi_capture_",""))+1
-                    var hw = $('<div class="hardware-output" mod-port-index=' + pindex + ' title="Hardware ' + portdata.name + '">')
+                    var hw = $('<div class="ignore-arrive hardware-output" mod-port-index=' + pindex + ' title="Hardware ' + portdata.name + '">')
                     self.pedalboard('addHardwareOutput', hw, '/graph/' + portdata.symbol, 'midi')
                 }
                 for (var i in data.hardware.midi_outs) {
                     portdata = data.hardware.midi_outs[i]
                     pindex   = parseInt(portdata.symbol.replace("midi_playback_",""))+1
-                    var hw = $('<div class="hardware-input" mod-port-index=' + pindex + ' title="Hardware ' + portdata.name + '">')
+                    prefix   = portdata.name === 'MIDI Loopback' ? 'Virtual' : 'Hardware'
+                    var hw = $('<div class="ignore-arrive hardware-input" mod-port-index=' + pindex + ' title="' + prefix + ' ' + portdata.name + '">')
                     self.pedalboard('addHardwareInput', hw, '/graph/' + portdata.symbol, 'midi')
                 }
             }
@@ -693,7 +695,7 @@ JqueryClass('pedalboard', {
         var img = thumb.children("img");
         element.draggable($.extend(draggableOptions, {
             helper: function (event) {
-                var dummy = $('<div class="mod-pedal dummy">');
+                var dummy = $('<div class="mod-pedal ignore-arrive dummy">');
                 var imgrect = img.position();
                 imgrect.width = img.width();
                 imgrect.height = img.height();
@@ -1478,7 +1480,7 @@ JqueryClass('pedalboard', {
                 $('body').bind('mouseup', upHandler)
             })
 
-            var actions = $('<div>').addClass('mod-actions').appendTo(icon)
+            var actions = $('<div>').addClass('ignore-arrive').addClass('mod-actions').appendTo(icon)
             $('<div>').addClass('mod-information').click(function () {
                 self.pedalboard('finishConnection')
                 self.data('showPluginInfo')(pluginData)
@@ -1587,8 +1589,8 @@ JqueryClass('pedalboard', {
         } else {
             var cb = function () {
                 delete self.data('callbacksToArrive')[callbackId]
-                $(document).unbindArrive(targetname1, cb)
-                $(document).unbindArrive(targetname2, cb)
+                self.unbindArrive(targetname1, cb)
+                self.unbindArrive(targetname2, cb)
 
                 var gui = self.pedalboard('getGui', instance)
                 if (enabled || feedback) {
@@ -1620,8 +1622,8 @@ JqueryClass('pedalboard', {
         } else {
             var cb = function () {
                 delete self.data('callbacksToArrive')[callbackId]
-                $(document).unbindArrive(targetname1, cb)
-                $(document).unbindArrive(targetname2, cb)
+                self.unbindArrive(targetname1, cb)
+                self.unbindArrive(targetname2, cb)
 
                 var gui = self.pedalboard('getGui', instance)
                 gui.setPortWidgetsValue(symbol, value, null, true)
@@ -1645,13 +1647,13 @@ JqueryClass('pedalboard', {
 
             var cb = function () {
                 delete self.data('callbacksToArrive')[callbackId]
-                $(document).unbindArrive(targetname, cb)
+                self.unbindArrive(targetname, cb)
 
                 var gui = self.pedalboard('getGui', instance)
                 gui.setOutputPortValue(symbol, value)
             }
 
-            self.pedalboard('addUniqueCallbackToArrive', cb, targetname, callbackId)
+            self.pedalboard('addUniqueCallbackToArrive', cb, targetname, callbackId, true)
         }
     },
 
@@ -1664,11 +1666,11 @@ JqueryClass('pedalboard', {
 
         } else {
             var targetname = '.mod-pedal [mod-instance="'+instance+'"][mod-parameter-uri="'+uri+'"]'
-            var callbackId  = instance+'@'+uri+'@value'
+            var callbackId = instance+'@'+uri+'@value'
 
             var cb = function () {
                 delete self.data('callbacksToArrive')[callbackId]
-                $(document).unbindArrive(targetname, cb)
+                self.unbindArrive(targetname, cb)
 
                 var gui = self.pedalboard('getGui', instance)
                 gui.setReadableParameterValue(uri, valuetype, valuedata)
@@ -1691,8 +1693,8 @@ JqueryClass('pedalboard', {
         } else {
             var cb = function () {
                 delete self.data('callbacksToArrive')[callbackId]
-                $(document).unbindArrive(targetname1, cb)
-                $(document).unbindArrive(targetname2, cb)
+                self.unbindArrive(targetname1, cb)
+                self.unbindArrive(targetname2, cb)
 
                 var gui = self.pedalboard('getGui', instance)
                 gui.setWritableParameterValue(uri, valuetype, valuedata, null, true)
@@ -1716,26 +1718,27 @@ JqueryClass('pedalboard', {
 
             var cb = function () {
                 delete self.data('callbacksToArrive')[callbackId]
-                $(document).unbindArrive(targetname, cb)
+                self.unbindArrive(targetname, cb)
 
                 var gui = self.pedalboard('getGui', instance)
                 gui.selectPreset(value)
             }
 
-            self.pedalboard('addUniqueCallbackToArrive', cb, targetname, callbackId)
+            self.pedalboard('addUniqueCallbackToArrive', cb, targetname, callbackId, true)
         }
     },
 
-    addUniqueCallbackToArrive: function (cb, targetname, callbackId) {
-        var callbacks = $(this).data('callbacksToArrive'),
+    addUniqueCallbackToArrive: function (cb, targetname, callbackId, notOnlyOnce) {
+        var self = $(this);
+        var callbacks = self.data('callbacksToArrive'),
             currentCallback = callbacks[callbackId];
 
         if (currentCallback) {
-            $(document).unbindArrive(targetname, currentCallback)
+            self.unbindArrive(targetname, currentCallback)
         }
 
         callbacks[callbackId] = cb
-        $(document).arrive(targetname, cb)
+        self.arrive(targetname, { onceOnly: !notOnlyOnce }, cb)
     },
 
     // Redraw all connections from or to a plugin
@@ -2048,6 +2051,7 @@ JqueryClass('pedalboard', {
         // The cable is composed by three lines with different style: one for the cable,
         // one for the background shadow and one for the reflecting light.
         var canvas = $('<div>');
+        canvas.addClass('ignore-arrive');
 
         if (output.attr("class").search("mod-audio-") >= 0)
             canvas.addClass("mod-audio");
@@ -2066,6 +2070,7 @@ JqueryClass('pedalboard', {
           });
 
           var cvCheckboxInput = $('<div>');
+          cvCheckboxInput.addClass('ignore-arrive');
 
           // Append checkbox
           var checkbox = $('<input type="checkbox">');
@@ -2354,6 +2359,7 @@ JqueryClass('pedalboard', {
             return
         var jack = output.find('[mod-role=output-jack]')
         var canvas = $('<div>')
+        canvas.addClass('ignore-arrive')
         canvas.css({
             width: '100%',
             height: '100%',
@@ -2622,8 +2628,8 @@ JqueryClass('pedalboard', {
         var jacks = input.find('[mod-role=output-jack]')
         if (jacks.length < 2 || input.data('expanded'))
             return
-        var wrapper = $('<div class="mod-pedal-input-wrapper">')
-        //var arrow = $('<div class="mod-pedal-input-arrow">').appendTo(wrapper)
+        var wrapper = $('<div class="mod-pedal-input-wrapper ignore-arrive">')
+        //var arrow = $('<div class="mod-pedal-input-arrow ignore-arrive">').appendTo(wrapper)
         wrapper.appendTo(input)
 
         //arrow.css('top', wrapper.height() / 2 - 12)

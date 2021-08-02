@@ -35,11 +35,9 @@ function Desktop(elements) {
         saveAsButton: $('<div>'),
         resetButton: $('<div>'),
         cvAddressingButton: $('<div>'),
-        pedalboardPresetsEnabler: $('<div>'),
-        presetSaveButton: $('<div>'),
-        presetSaveAsButton: $('<div>'),
-        presetManageButton: $('<div>'),
-        presetDisableButton: $('<div>'),
+        snapshotSaveButton: $('<div>'),
+        snapshotSaveAsButton: $('<div>'),
+        snapshotManageButton: $('<div>'),
         transportButton: $('<div>'),
         transportWindow: $('<div>'),
         transportPlay: $('<div>'),
@@ -224,7 +222,7 @@ function Desktop(elements) {
     this.pedalboardBundle = null
     this.pedalboardEmpty  = true
     this.pedalboardModified = false
-    this.pedalboardPresetId = -1
+    this.pedalboardPresetId = 0
     this.loadingPeldaboardForFirstTime = true
 
     this.pedalboard = self.makePedalboard(elements.pedalboard, elements.effectBox)
@@ -977,49 +975,7 @@ function Desktop(elements) {
             })
         })
     })
-    elements.pedalboardPresetsEnabler.click(function () {
-        new Notification('info', 'Pedalboard snapshots have been activated', 8000)
-
-        $.ajax({
-            url: '/snapshot/enable',
-            method: 'POST',
-            success: function () {
-                $('#js-preset-enabler').hide()
-                $('#js-preset-menu').show().css('display', 'inline-block')
-                self.titleBox.text((self.title || 'Untitled') + " - Default")
-                self.pedalboardPresetId = 0
-                self.pedalboardModified = true
-            },
-            error: function () {
-                new Bug("Failed to activate pedalboard snapshots")
-            },
-            cache: false,
-        })
-    })
-    elements.presetDisableButton.click(function () {
-        if (!confirm("This action will delete all current pedalboard snapshots. Continue?")) {
-            return
-        }
-
-        self.hardwareManager.removeHardwareMappping("/pedalboard/:presets")
-
-        $.ajax({
-            url: '/snapshot/disable',
-            method: 'POST',
-            success: function () {
-                self.pedalboardPresetId = -1
-                self.pedalboardModified = true
-                self.titleBox.text(self.title || 'Untitled')
-                $('#js-preset-menu').hide()
-                $('#js-preset-enabler').show()
-            },
-            error: function () {
-                new Bug("Failed to disable pedalboard snapshots")
-            },
-            cache: false,
-        })
-    })
-    elements.presetSaveButton.click(function () {
+    elements.snapshotSaveButton.click(function () {
         if (self.pedalboardPresetId < 0) {
             return new Notification('warn', 'Nothing to save', 1500)
         }
@@ -1038,7 +994,7 @@ function Desktop(elements) {
             dataType: 'json',
         })
     })
-    elements.presetSaveAsButton.click(function () {
+    elements.snapshotSaveAsButton.click(function () {
         var addressed = !!self.hardwareManager.addressingsByPortSymbol['/pedalboard/:presets']
         if (addressed) {
             return new Notification("warn", "Cannot change snapshot while addressed to hardware", 3000)
@@ -1067,7 +1023,7 @@ function Desktop(elements) {
             })
         })
     })
-    elements.presetManageButton.click(function () {
+    elements.snapshotManageButton.click(function () {
         if (self.pedalboardPresetId < 0) {
             return new Notification('warn', 'Pedalboard snapshots are not enabled', 1500)
         }
@@ -1500,13 +1456,10 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
                     self.pedalboardBundle = null
                     self.pedalboardEmpty  = true
                     self.pedalboardModified = false
-                    self.pedalboardPresetId = -1
+                    self.pedalboardPresetId = 0
                     self.titleBox.text('Untitled')
                     self.titleBox.addClass("blend")
                     self.transportControls.resetControlsEnabled()
-
-                    $('#js-preset-menu').hide()
-                    $('#js-preset-enabler').show()
 
                     callback(true)
                 },
@@ -1850,11 +1803,6 @@ Desktop.prototype.loadPedalboard = function (bundlepath, callback) {
                 self.pedalboardModified = false
                 self.titleBox.text(resp.name);
                 self.titleBox.removeClass("blend");
-
-                // TODO: decide what to do with this
-                self.pedalboardPresetId = -1
-                $('#js-preset-menu').hide()
-                $('#js-preset-enabler').show()
 
                 callback(true)
             },

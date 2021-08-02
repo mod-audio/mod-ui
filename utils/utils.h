@@ -283,6 +283,7 @@ typedef struct {
     const char* title;
     int width, height;
     bool midi_separated_mode;
+    bool midi_loopback;
     const PedalboardPlugin* plugins;
     const PedalboardConnection* connections;
     PedalboardHardware hardware;
@@ -424,6 +425,7 @@ MOD_API bool has_midi_broadcaster_input_port(void);
 MOD_API bool connect_jack_ports(const char* port1, const char* port2);
 MOD_API bool connect_jack_midi_output_ports(const char* port);
 MOD_API bool disconnect_jack_ports(const char* port1, const char* port2);
+MOD_API bool disconnect_all_jack_ports(const char* port);
 MOD_API void reset_xruns(void);
 
 // alsa stuff

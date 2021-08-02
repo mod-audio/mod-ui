@@ -258,7 +258,7 @@ class JsonRequestHandler(TimelessRequestHandler):
 
 class CachedJsonRequestHandler(JsonRequestHandler):
     def set_default_headers(self):
-        TimelessStaticFileHandler.set_default_headers(self)
+        JsonRequestHandler.set_default_headers(self)
         self.set_header("Cache-Control", "public, max-age=31536000")
         self.set_header("Expires", "Mon, 31 Dec 2035 12:00:00 gmt")
 
@@ -1134,6 +1134,10 @@ class ServerWebSocket(websocket.WebSocketHandler):
             #mididata  = tuple(int(x,16) for x in data[1].split(":"))
             SESSION.host.send_notmodified("midi_event %f %i %s" % (timestamp, len(mididata), " ".join(mididata)))
 
+        elif cmd == "data_ready":
+            counter = int(data[1])
+            SESSION.ws_data_ready(counter)
+
         elif cmd == "param_set":
             data  = data[1].split(" ",2)
             port  = data[0]
@@ -1247,8 +1251,9 @@ class PackageUninstall(JsonRequestHandler):
 class PedalboardList(JsonRequestHandler):
     def get(self):
         all = get_all_pedalboards()
-        default_pb = next((p for p in all if p['title'] == 'Default'), None)
+        default_pb = next((p for p in all if p['bundle'] == DEFAULT_PEDALBOARD), None)
         if default_pb:
+            default_pb['title'] = "Default"
             default_pb['broken'] = False
         self.write(all)
 
@@ -1492,19 +1497,6 @@ class PedalboardTransportSetSyncMode(JsonRequestHandler):
             return
         ok = yield gen.Task(SESSION.web_set_sync_mode, transport_sync)
         self.write(ok)
-
-class SnapshotEnable(JsonRequestHandler):
-    def post(self):
-        SESSION.host.snapshot_init()
-        self.write(True)
-
-class SnapshotDisable(JsonRequestHandler):
-    @web.asynchronous
-    @gen.engine
-    def post(self):
-        yield gen.Task(SESSION.host.snapshot_disable)
-        yield gen.Task(SESSION.host.hmi_clear_ss_name)
-        self.write(True)
 
 class SnapshotSave(JsonRequestHandler):
     def post(self):
@@ -1896,12 +1888,12 @@ class SaveUserId(JsonRequestHandler):
 
 class JackGetMidiDevices(JsonRequestHandler):
     def get(self):
-        devsInUse, devList, names, midi_aggregated_mode = SESSION.web_get_midi_device_list()
+        devsInUse, devList, names, midiAggregatedMode = SESSION.web_get_midi_device_list()
         self.write({
             "devsInUse": devsInUse,
             "devList"  : devList,
             "names"    : names,
-            "midiAggregatedMode": midi_aggregated_mode
+            "midiAggregatedMode": midiAggregatedMode
         })
 
 class JackSetMidiDevices(JsonRequestHandler):
@@ -1911,7 +1903,8 @@ class JackSetMidiDevices(JsonRequestHandler):
         data = json.loads(self.request.body.decode("utf-8", errors="ignore"))
         devs = data['devs']
         mode = data['midiAggregatedMode']
-        SESSION.web_set_midi_devices(devs, mode)
+        loop = data['midiLoopback']
+        SESSION.web_set_midi_devices(devs, mode, loop)
         self.write(True)
 
 class FavoritesAdd(JsonRequestHandler):
@@ -2203,8 +2196,6 @@ application = web.Application(
             (r"/pedalboard/transport/set_sync_mode/*(/[A-Za-z0-9_:/]+[^/])/?", PedalboardTransportSetSyncMode),
 
             # Pedalboard Snapshot handling
-            (r"/snapshot/enable", SnapshotEnable),
-            (r"/snapshot/disable", SnapshotDisable),
             (r"/snapshot/save", SnapshotSave),
             (r"/snapshot/saveas", SnapshotSaveAs),
             (r"/snapshot/rename", SnapshotRename),
@@ -2266,7 +2257,7 @@ application = web.Application(
 
             (r"/(.*)", TimelessStaticFileHandler, {"path": HTML_DIR}),
         ],
-        debug=LOG and False, **settings)
+        debug = bool(LOG >= 2), **settings)
 
 def signal_device_firmware_updated():
     os.remove(UPDATE_CC_FIRMWARE_FILE)
