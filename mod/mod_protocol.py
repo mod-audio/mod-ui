@@ -34,7 +34,7 @@ CMD_ARGS = {
         'pbd': [int,int],
         'sr': [int,int],
         'ssg': [int,int],
-        'sn': [str,],
+        'sn': [int,str,],
         'ssl': [int],
         'sss': [],
         'ssa': [str,],

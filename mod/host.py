@@ -1237,7 +1237,7 @@ class Host(object):
 
         if self.descriptor.get('hmi_set_ss_name', False):
             ssname = self.snapshot_name() or DEFAULT_SNAPSHOT_NAME
-            msgs.append((self.hmi.set_snapshot_name, [ssname]))
+            msgs.append((self.hmi.set_snapshot_name, [self.current_pedalboard_snapshot_id, ssname]))
 
         if self.descriptor.get('addressing_pages', 0):
             pages = self.addressings.get_available_pages()
@@ -2974,10 +2974,10 @@ class Host(object):
 
             if self.descriptor.get('hmi_set_ss_name', False):
                 if from_hmi:
-                    self.hmi.set_snapshot_name(name, None)
+                    self.hmi.set_snapshot_name(name, self.current_pedalboard_snapshot_id, None)
                 else:
                     try:
-                        yield gen.Task(self.hmi.set_snapshot_name, name)
+                        yield gen.Task(self.hmi.set_snapshot_name, self.current_pedalboard_snapshot_id, name)
                     except Exception as e:
                         logging.exception(e)
 
@@ -5198,7 +5198,7 @@ _:b%i
 
         def load_finish_with_ssname_callback(_):
             name = self.snapshot_name() or DEFAULT_SNAPSHOT_NAME
-            self.hmi.set_snapshot_name(name, load_finish_callback)
+            self.hmi.set_snapshot_name(name, self.current_pedalboard_snapshot_id, load_finish_callback)
 
         def hmi_ready_callback(ok):
             if self.descriptor.get('hmi_set_pb_name', False):
@@ -6119,7 +6119,7 @@ _:b%i
 
     def hmi_clear_ss_name(self, callback):
         if self.hmi.initialized and self.descriptor.get('hmi_set_ss_name', False):
-            self.hmi.set_snapshot_name(DEFAULT_SNAPSHOT_NAME, callback)
+            self.hmi.set_snapshot_name(DEFAULT_SNAPSHOT_NAME, self.current_pedalboard_snapshot_id, callback)
         else:
             callback(True)
 
@@ -6128,7 +6128,7 @@ _:b%i
             self.current_pedalboard_snapshot_id == idx and
             self.descriptor.get('hmi_set_ss_name', False)):
             name = self.snapshot_name() or DEFAULT_SNAPSHOT_NAME
-            self.hmi.set_snapshot_name(name, callback)
+            self.hmi.set_snapshot_name(name, self.current_pedalboard_snapshot_id, callback)
         else:
             callback(True)
 
