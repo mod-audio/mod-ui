@@ -357,7 +357,7 @@ class Session(object):
 
         if self.host.descriptor.get('hmi_set_ss_name', False):
             ssname = self.host.snapshot_name() or DEFAULT_SNAPSHOT_NAME
-            yield gen.Task(self.hmi.set_snapshot_name, ssname)
+            yield gen.Task(self.hmi.set_snapshot_name, self.host.current_pedalboard_snapshot_id, ssname)
 
     # -----------------------------------------------------------------------------------------------------------------
     # TODO
