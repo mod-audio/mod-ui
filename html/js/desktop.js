@@ -223,8 +223,8 @@ function Desktop(elements) {
     this.pedalboardEmpty  = true
     this.pedalboardModified = false
     this.pedalboardPresetId = 0
-    this.licenseManager = null
     this.loadingPeldaboardForFirstTime = true
+    this.licenseManager = null
 
     this.pedalboard = self.makePedalboard(elements.pedalboard, elements.effectBox)
 
