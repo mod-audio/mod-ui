@@ -391,6 +391,11 @@ class Host(object):
 
         self.statstimer = PeriodicCallback(self.statstimer_callback, 1000)
 
+        self.memfile  = None
+        self.memtimer = None
+        self.cpufreqfile = None
+        self.thermalfile = None
+
         if os.path.exists("/proc/meminfo"):
             self.memfile  = open("/proc/meminfo", 'r')
             self.memtotal = 0.0
@@ -434,9 +439,6 @@ class Host(object):
                     self.cpufreqfile = open("/sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq", 'r')
                 else:
                     self.cpufreqfile = None
-
-        else:
-            self.memtimer = None
 
         set_util_callbacks(self.jack_bufsize_changed,
                            self.jack_port_appeared,
