@@ -2998,7 +2998,7 @@ class Host(object):
 
             if self.descriptor.get('hmi_set_ss_name', False):
                 if from_hmi:
-                    self.hmi.set_snapshot_name(name, self.current_pedalboard_snapshot_id, None)
+                    self.hmi.set_snapshot_name(self.current_pedalboard_snapshot_id, name, None)
                 else:
                     try:
                         yield gen.Task(self.hmi.set_snapshot_name, self.current_pedalboard_snapshot_id, name)
@@ -5222,7 +5222,7 @@ _:b%i
 
         def load_finish_with_ssname_callback(_):
             name = self.snapshot_name() or DEFAULT_SNAPSHOT_NAME
-            self.hmi.set_snapshot_name(name, self.current_pedalboard_snapshot_id, load_finish_callback)
+            self.hmi.set_snapshot_name(self.current_pedalboard_snapshot_id, name, load_finish_callback)
 
         def hmi_ready_callback(ok):
             if self.descriptor.get('hmi_set_pb_name', False):
@@ -6143,7 +6143,7 @@ _:b%i
 
     def hmi_clear_ss_name(self, callback):
         if self.hmi.initialized and self.descriptor.get('hmi_set_ss_name', False):
-            self.hmi.set_snapshot_name(DEFAULT_SNAPSHOT_NAME, self.current_pedalboard_snapshot_id, callback)
+            self.hmi.set_snapshot_name(self.current_pedalboard_snapshot_id, DEFAULT_SNAPSHOT_NAME, callback)
         else:
             callback(True)
 
@@ -6152,7 +6152,7 @@ _:b%i
             self.current_pedalboard_snapshot_id == idx and
             self.descriptor.get('hmi_set_ss_name', False)):
             name = self.snapshot_name() or DEFAULT_SNAPSHOT_NAME
-            self.hmi.set_snapshot_name(name, self.current_pedalboard_snapshot_id, callback)
+            self.hmi.set_snapshot_name(self.current_pedalboard_snapshot_id, name, callback)
         else:
             callback(True)
 
