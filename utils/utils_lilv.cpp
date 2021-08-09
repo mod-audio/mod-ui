@@ -4169,7 +4169,7 @@ const PedalboardInfo_Mini* const* get_all_pedalboards(void)
 
     // Custom path for pedalboards
     const char* const oldlv2path = getenv("LV2_PATH");
-    setenv("LV2_PATH", "~/.pedalboards/", 1);
+    setenv("LV2_PATH", "/mnt/pedalboards/:~/.pedalboards/", 1);
 
     LilvWorld* const w = lilv_world_new();
     lilv_world_load_all(w);
@@ -4230,7 +4230,7 @@ const char* const* get_broken_pedalboards(void)
 
     // Custom path for pedalboards
     const char* const oldlv2path = getenv("LV2_PATH");
-    setenv("LV2_PATH", "~/.pedalboards/", 1);
+    setenv("LV2_PATH", "/mnt/pedalboards/:~/.pedalboards/", 1);
 
     LilvWorld* const w = lilv_world_new();
     lilv_world_load_all(w);
