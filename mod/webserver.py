@@ -1195,6 +1195,29 @@ class ServerWebSocket(websocket.WebSocketHandler):
         else:
             print("Unexpected command received over websocket")
 
+class OnlineInstanceWebSocket(websocket.WebSocketHandler):
+    def open(self):
+        print("online instance websocket open")
+        self.set_nodelay(True)
+        SESSION.online_instance_websocket_opened(self)
+
+    def on_close(self):
+        print("online instance websocket close")
+        SESSION.online_instance_websocket_closed()
+
+    def on_message(self, message):
+        data = message.split(" ",1)
+        cmd  = data[0]
+
+        if cmd == "load":
+            SESSION.load_virtual_device(data[1])
+
+        elif cmd == "release":
+            SESSION.release_virtual_device()
+
+        else:
+            print("Unexpected command received over online instance websocket")
+
 class PackageUninstall(JsonRequestHandler):
     @web.asynchronous
     @gen.engine
@@ -2254,6 +2277,7 @@ application = web.Application(
             (r"/js/templates.js$", BulkTemplateLoader),
 
             (r"/websocket/?$", ServerWebSocket),
+            (r"/online_instance/?$", OnlineInstanceWebSocket),
 
             (r"/(.*)", TimelessStaticFileHandler, {"path": HTML_DIR}),
         ],

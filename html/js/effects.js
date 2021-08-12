@@ -359,8 +359,8 @@ JqueryClass('effectBox', {
             brand : plugin.brand || "&nbsp;",
             label : plugin.label,
             thumbnail_href: (plugin.gui && plugin.gui.thumbnail)
-                          ? ("/effect/image/thumbnail.png?uri=" + uri + "&v=" + ver)
-                          :  "/resources/pedals/default-thumbnail.png",
+                          ? ("effect/image/thumbnail.png?uri=" + uri + "&v=" + ver)
+                          :  "resources/pedals/default-thumbnail.png",
         }
 
         var div = document.createElement("div");
@@ -427,11 +427,11 @@ JqueryClass('effectBox', {
                 author: plugin.author,
                 uri: plugin.uri,
                 thumbnail_href: (plugin.gui && plugin.gui.thumbnail)
-                              ? "/effect/image/thumbnail.png?uri=" + uri + "&v=" + ver
-                              : "/resources/pedals/default-thumbnail.png",
+                              ? "effect/image/thumbnail.png?uri=" + uri + "&v=" + ver
+                              : "resources/pedals/default-thumbnail.png",
                 screenshot_href: (plugin.gui && plugin.gui.screenshot)
-                              ? "/effect/image/screenshot.png?uri=" + uri + "&v=" + ver
-                              : "/resources/pedals/default-screenshot.png",
+                              ? "effect/image/screenshot.png?uri=" + uri + "&v=" + ver
+                              : "resources/pedals/default-screenshot.png",
                 category: plugin.category[0] || "None",
                 installed_version: version(plugin.installedVersion),
                 latest_version: "DO NOT SHOW THIS!!", // not shown on local plugin bar
