@@ -1,6 +1,6 @@
 /*
  * MOD-UI utilities
- * Copyright (C) 2015-2019 Filipe Coelho <falktx@falktx.com>
+ * Copyright (C) 2015-2021 Filipe Coelho <falktx@falktx.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -20,7 +20,9 @@
 #include <cstdio>
 #include <cstring>
 
+#ifdef HAVE_ALSA
 #include <alsa/asoundlib.h>
+#endif
 #include <jack/jack.h>
 
 #include <algorithm>
@@ -52,6 +54,7 @@ static std::vector<std::string> gRegisteredPorts;
 static std::mutex gPortUnregisterMutex;
 static std::vector<std::string> gUnregisteredPorts;
 
+#ifdef HAVE_ALSA
 static snd_mixer_t* gAlsaMixer = nullptr;
 static snd_mixer_elem_t* gAlsaControlLeft  = nullptr;
 static snd_mixer_elem_t* gAlsaControlRight = nullptr;
@@ -59,21 +62,26 @@ static snd_mixer_elem_t* gAlsaControlCvExp = nullptr;
 static bool gLastAlsaValueLeft  = true;
 static bool gLastAlsaValueRight = true;
 static bool gLastAlsaValueCvExp = false;
+#endif
 
 static JackBufSizeChanged     jack_bufsize_changed_cb = nullptr;
 static JackPortAppeared       jack_port_appeared_cb   = nullptr;
 static JackPortDeleted        jack_port_deleted_cb    = nullptr;
 static TrueBypassStateChanged true_bypass_changed_cb  = nullptr;
+#ifdef HAVE_ALSA
 static CvExpInputModeChanged  cv_exp_mode_changed_cb  = nullptr;
+#endif
 
 // --------------------------------------------------------------------------------------------------------
 
+#ifdef HAVE_ALSA
 static bool _get_alsa_switch_value(snd_mixer_elem_t* const elem)
 {
     int val = 0;
     snd_mixer_selem_get_playback_switch(elem, SND_MIXER_SCHN_MONO, &val);
     return (val != 0);
 }
+#endif
 
 // --------------------------------------------------------------------------------------------------------
 
@@ -153,6 +161,7 @@ static void JackShutdown(void*)
 
 bool init_jack(void)
 {
+#ifdef HAVE_ALSA
     if (gAlsaMixer == nullptr)
     {
         if (snd_mixer_open(&gAlsaMixer, SND_MIXER_ELEM_SIMPLE) == 0)
@@ -197,6 +206,7 @@ bool init_jack(void)
             }
         }
     }
+#endif
 
     if (gClient != nullptr)
     {
@@ -232,6 +242,7 @@ void close_jack(void)
         gPortListRet = nullptr;
     }
 
+#ifdef HAVE_ALSA
     if (gAlsaMixer != nullptr)
     {
         gAlsaControlLeft = nullptr;
@@ -239,6 +250,7 @@ void close_jack(void)
         snd_mixer_close(gAlsaMixer);
         gAlsaMixer = nullptr;
     }
+#endif
 
     if (gClient == nullptr)
     {
@@ -339,6 +351,7 @@ JackData* get_jack_data(bool withTransport)
         jack_bufsize_changed_cb(bufsize);
     }
 
+#ifdef HAVE_ALSA
     if (gAlsaMixer != nullptr && (true_bypass_changed_cb != nullptr || cv_exp_mode_changed_cb != nullptr))
     {
         bool changedBypass = false;
@@ -388,6 +401,7 @@ JackData* get_jack_data(bool withTransport)
             cv_exp_mode_changed_cb(gLastAlsaValueCvExp);
 #endif
     }
+#endif
 
     return &data;
 }
@@ -634,6 +648,7 @@ void reset_xruns(void)
 
 void init_bypass(void)
 {
+#ifdef HAVE_ALSA
     if (gAlsaMixer == nullptr)
         return;
 
@@ -672,15 +687,24 @@ void init_bypass(void)
 
         snd_mixer_selem_id_free(sid);
     }
+#endif
 }
 
 bool get_truebypass_value(bool right)
 {
+#ifdef HAVE_ALSA
     return right ? gLastAlsaValueRight : gLastAlsaValueLeft;
+#else
+    return false;
+
+    // unused
+    (void)right;
+#endif
 }
 
 bool set_truebypass_value(bool right, bool bypassed)
 {
+#ifdef HAVE_ALSA
     if (gAlsaMixer == nullptr)
         return false;
 
@@ -694,12 +718,20 @@ bool set_truebypass_value(bool right, bool bypassed)
         if (gAlsaControlLeft != nullptr)
             return (snd_mixer_selem_set_playback_switch_all(gAlsaControlLeft, bypassed) == 0);
     }
+#endif
 
     return false;
+
+#ifndef HAVE_ALSA
+    // unused
+    (void)right;
+    (void)bypassed;
+#endif
 }
 
 float get_master_volume(bool right)
 {
+#ifdef HAVE_ALSA
     if (gAlsaMixer == nullptr)
         return -127.5f;
 
@@ -727,6 +759,12 @@ float get_master_volume(bool right)
 
     snd_mixer_selem_id_free(sid);
     return val;
+#else
+    return -127.5f;
+
+    // unused
+    (void)right;
+#endif
 }
 
 // --------------------------------------------------------------------------------------------------------
@@ -750,8 +788,10 @@ void set_extra_util_callbacks(CvExpInputModeChanged cvExpInputModeChanged)
 #else
     // unused
     (void)cvExpInputModeChanged;
+#ifdef HAVE_ALSA
     (void)gAlsaControlCvExp;
     (void)gLastAlsaValueCvExp;
+#endif
 #endif
 }
 

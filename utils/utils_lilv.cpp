@@ -485,7 +485,7 @@ static const char* const kBuildEnvironmentLabs = "labs";
 static const char* const kStabilityExperimental = "experimental";
 static const char* const kStabilityStable = "stable";
 static const char* const kStabilityTesting = "testing";
-static const char* const kStabilityUnstable = "unstable";
+// static const char* const kStabilityUnstable = "unstable";
 
 static const char* const kUntitled = "Untitled";
 
@@ -1232,10 +1232,8 @@ const char* const* _get_plugin_categories(const LilvPlugin* const p,
                     category = kCategoryFunctionPlugin;
                 else if (strcmp(cat, "MixerPlugin") == 0)
                     category = kCategoryMixerPlugin;
-                /*
                 else if (strcmp(cat, "MIDIPlugin") == 0)
                     category = kCategoryMIDIPlugin;
-                */
             }
             else if (const char* cat2 = strstr(nodestr, LILV_NS_MOD))
             {
@@ -5245,7 +5243,7 @@ static const uint32_t k_urid_atom_double = 5;
 static LV2_URID lv2_urid_map(LV2_URID_Map_Handle, const char* const uri_)
 {
     if (uri_ == nullptr || uri_[0] == '\0')
-        return 0;
+        return k_urid_null;
 
     static std::vector<std::string> kMapping = {
         LV2_ATOM__Bool,
