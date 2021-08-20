@@ -17,7 +17,7 @@
 
 """
 This module works as an interface for mod-host, it uses a socket to communicate
-with mod-host, the protocol is described in <http://github.com/portalmod/mod-host>
+with mod-host, the protocol is described in <http://github.com/moddevices/mod-host>
 
 The module relies on tornado.ioloop stuff, but you need to start the ioloop
 by yourself:

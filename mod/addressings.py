@@ -687,6 +687,8 @@ class Addressings(object):
                 return None
 
             value, maximum, options, spreset = data
+            minimum = 0
+            steps = maximum
 
         elif instance_id == PEDALBOARD_INSTANCE_ID:
             if portsymbol == ":bpb":
