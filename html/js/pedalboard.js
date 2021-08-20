@@ -1662,7 +1662,7 @@ JqueryClass('pedalboard', {
                 gui.setOutputPortValue(symbol, value)
             }
 
-            self.pedalboard('addUniqueCallbackToArrive', cb, targetname, callbackId, true)
+            self.pedalboard('addUniqueCallbackToArrive', cb, targetname, callbackId)
         }
     },
 
@@ -1730,11 +1730,11 @@ JqueryClass('pedalboard', {
                 gui.selectPreset(value)
             }
 
-            self.pedalboard('addUniqueCallbackToArrive', cb, targetname, callbackId, true)
+            self.pedalboard('addUniqueCallbackToArrive', cb, targetname, callbackId)
         }
     },
 
-    addUniqueCallbackToArrive: function (cb, targetname, callbackId, notOnlyOnce) {
+    addUniqueCallbackToArrive: function (cb, targetname, callbackId) {
         var self = $(this);
         var callbacks = self.data('callbacksToArrive'),
             currentCallback = callbacks[callbackId];
@@ -1744,7 +1744,7 @@ JqueryClass('pedalboard', {
         }
 
         callbacks[callbackId] = cb
-        self.arrive(targetname, { onceOnly: !notOnlyOnce }, cb)
+        self.arrive(targetname, cb)
     },
 
     // Redraw all connections from or to a plugin
