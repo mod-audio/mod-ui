@@ -1735,7 +1735,7 @@ JqueryClass('pedalboard', {
 
     addUniqueCallbackToArrive: function (cb, targetname, callbackId) {
         var self = $(this);
-        var callbacks = $(this).data('callbacksToArrive'),
+        var callbacks = self.data('callbacksToArrive'),
             currentCallback = callbacks[callbackId];
 
         if (currentCallback) {
