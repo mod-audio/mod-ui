@@ -1585,19 +1585,11 @@ JqueryClass('pedalboard', {
 
     setPortEnabled: function (instance, symbol, enabled, feedback, forceAddress, momentaryMode) {
         var self = $(this)
-        var targetname1, targetname2
-        var callbackId  = instance+'/'+symbol+":enabled"
+        var targetname = '.mod-pedal[mod-instance="'+instance+'"]'
+        var callbackId = instance+'/'+symbol+":enabled"
         var gui = self.pedalboard('getGui', instance)
 
-        if (symbol == ":presets") {
-            targetname1 = '.mod-pedal[mod-instance="'+instance+'"] [mod-role="presets"]'
-            targetname2 = '[mod-instance="'+instance+'"] .mod-pedal-settings .mod-presets'
-        } else {
-            targetname1 = '.mod-pedal [mod-port="'+instance+'/'+symbol+'"]'
-            targetname2 = '.mod-pedal-settings [mod-port="'+instance+'/'+symbol+'"]'
-        }
-
-        if (gui && ($(targetname1).length || $(targetname2).length)) {
+        if (gui && self.find(targetname).length) {
             if (enabled || feedback) {
                 gui.enable(symbol)
             } else {
@@ -1610,8 +1602,7 @@ JqueryClass('pedalboard', {
         } else {
             var cb = function () {
                 delete self.data('callbacksToArrive')[callbackId]
-                self.unbindArrive(targetname1, cb)
-                self.unbindArrive(targetname2, cb)
+                self.unbindArrive(targetname, cb)
 
                 var gui = self.pedalboard('getGui', instance)
                 if (enabled || feedback) {
@@ -1625,33 +1616,29 @@ JqueryClass('pedalboard', {
                 }
             }
 
-            self.pedalboard('addUniqueCallbackToArrive', cb, targetname1, callbackId)
-            self.pedalboard('addUniqueCallbackToArrive', cb, targetname2, callbackId)
+            self.pedalboard('addUniqueCallbackToArrive', cb, targetname, callbackId)
         }
     },
 
     setPortWidgetsValue: function (instance, symbol, value) {
         var self = $(this)
-        var targetname1 = '.mod-pedal [mod-port="'+instance+'/'+symbol+'"]'
-        var targetname2 = '.mod-pedal-settings [mod-port="'+instance+'/'+symbol+'"]'
-        var callbackId  = instance+'/'+symbol+":value"
+        var targetname = '.mod-pedal[mod-instance="'+instance+'"]'
+        var callbackId = instance+'/'+symbol+":value"
         var gui = self.pedalboard('getGui', instance)
 
-        if (gui && ($(targetname1).length || $(targetname2).length)) {
+        if (gui && self.find(targetname).length) {
             gui.setPortWidgetsValue(symbol, value, null, true)
 
         } else {
             var cb = function () {
                 delete self.data('callbacksToArrive')[callbackId]
-                self.unbindArrive(targetname1, cb)
-                self.unbindArrive(targetname2, cb)
+                self.unbindArrive(targetname, cb)
 
                 var gui = self.pedalboard('getGui', instance)
                 gui.setPortWidgetsValue(symbol, value, null, true)
             }
 
-            self.pedalboard('addUniqueCallbackToArrive', cb, targetname1, callbackId)
-            self.pedalboard('addUniqueCallbackToArrive', cb, targetname2, callbackId)
+            self.pedalboard('addUniqueCallbackToArrive', cb, targetname, callbackId)
         }
     },
 
@@ -1686,8 +1673,8 @@ JqueryClass('pedalboard', {
             gui.setReadableParameterValue(uri, valuetype, valuedata)
 
         } else {
-            var targetname = '.mod-pedal [mod-instance="'+instance+'"][mod-parameter-uri="'+uri+'"]'
-            var callbackId  = instance+'@'+uri+'@value'
+            var targetname = '.mod-pedal[mod-instance="'+instance+'"]'
+            var callbackId = instance+'@'+uri+'@value'
 
             var cb = function () {
                 delete self.data('callbacksToArrive')[callbackId]
@@ -1703,26 +1690,23 @@ JqueryClass('pedalboard', {
 
     setWritableParameterValue: function (instance, uri, valuetype, valuedata) {
         var self = $(this)
-        var targetname1 = '.mod-pedal [mod-instance="'+instance+'"][mod-parameter-uri="'+uri+'"]'
-        var targetname2 = '.mod-pedal-settings [mod-instance="'+instance+'"][mod-parameter-uri="'+uri+'"]'
-        var callbackId  = instance+'@'+uri+'@value'
+        var targetname = '.mod-pedal[mod-instance="'+instance+'"]'
+        var callbackId = instance+'@'+uri+'@value'
         var gui = self.pedalboard('getGui', instance)
 
-        if (gui && ($(targetname1).length || $(targetname2).length)) {
+        if (gui && self.find(targetname).length) {
             gui.setWritableParameterValue(uri, valuetype, valuedata, null, true)
 
         } else {
             var cb = function () {
                 delete self.data('callbacksToArrive')[callbackId]
-                self.unbindArrive(targetname1, cb)
-                self.unbindArrive(targetname2, cb)
+                self.unbindArrive(targetname, cb)
 
                 var gui = self.pedalboard('getGui', instance)
                 gui.setWritableParameterValue(uri, valuetype, valuedata, null, true)
             }
 
-            self.pedalboard('addUniqueCallbackToArrive', cb, targetname1, callbackId)
-            self.pedalboard('addUniqueCallbackToArrive', cb, targetname2, callbackId)
+            self.pedalboard('addUniqueCallbackToArrive', cb, targetname, callbackId)
         }
     },
 
