@@ -17,7 +17,7 @@
 
 """
 This module works as an interface for mod-host, it uses a socket to communicate
-with mod-host, the protocol is described in <http://github.com/portalmod/mod-host>
+with mod-host, the protocol is described in <http://github.com/moddevices/mod-host>
 
 The module relies on tornado.ioloop stuff, but you need to start the ioloop
 by yourself:
@@ -371,6 +371,7 @@ class Host(object):
         self.last_data_finish_handle = None
         self.last_true_bypass_left = True
         self.last_true_bypass_right = True
+        self.last_cv_exp_mode = False
         self.abort_progress_catcher = {}
         self.processing_pending_flag = False
         self.init_plugins_data()
@@ -632,8 +633,11 @@ class Host(object):
 
     #TODO, This message should be handled by mod-system-control once in place
     def cv_exp_mode_changed(self, expMode):
-        if self.hmi.initialized:
-            self.hmi.expression_overcurrent(None)
+        if self.last_cv_exp_mode != expMode:
+            self.last_cv_exp_mode = expMode
+
+            if self.hmi.initialized and self.profile_applied and not expMode:
+                self.hmi.expression_overcurrent(None)
 
     def remove_port_from_connections(self, name):
         removed_conns = []
@@ -5890,6 +5894,7 @@ _:b%i
         #elif item == MENU_ID_FOOTSWITCH_NAV:
             #pass # TODO
         elif item == MENU_ID_EXP_CV_INPUT:
+            self.last_cv_exp_mode = bool(value)
             self.hmi_menu_set_exp_cv(value, callback)
         elif item == MENU_ID_HP_CV_OUTPUT:
             self.hmi_menu_set_hp_cv(value, callback)
@@ -6463,6 +6468,9 @@ _:b%i
                 yield gen.Task(self.hmi.set_profile_values, self.transport_rolling, values)
             except Exception as e:
                 logging.exception(e)
+
+        if 'inputMode' in values:
+            self.last_cv_exp_mode = bool(values['inputMode'])
 
         self.profile_applied = True
 
