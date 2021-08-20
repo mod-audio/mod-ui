@@ -296,7 +296,7 @@ $('document').ready(function() {
                             desktop.pedalboard.pedalboard('connect', output.find('[mod-role=output-jack]'), input, skipModified)
                             $('#pedalboard-dashboard').unbindArrive(targetport, cb)
                         }
-                        $('#pedalboard-dashboard').arrive(targetport, { onceOnly: true }, cb)
+                        $('#pedalboard-dashboard').arrive(targetport, cb)
                     }
                 } else {
                     var cb = function () {
@@ -311,11 +311,11 @@ $('document').ready(function() {
                                 desktop.pedalboard.pedalboard('connect', output.find('[mod-role=output-jack]'), input, skipModified)
                                 $('#pedalboard-dashboard').unbindArrive(targetport, incb)
                             }
-                            $('#pedalboard-dashboard').arrive(targetport, { onceOnly: true }, incb)
+                            $('#pedalboard-dashboard').arrive(targetport, incb)
                         }
                         $('#pedalboard-dashboard').unbindArrive(sourceport, cb)
                     }
-                    $('#pedalboard-dashboard').arrive(sourceport, { onceOnly: true }, cb)
+                    $('#pedalboard-dashboard').arrive(sourceport, cb)
                 }
             }
             return
@@ -371,7 +371,7 @@ $('document').ready(function() {
                                 desktop.pedalboard.data('wait').stopPlugin(instance, !skipModified)
                                 $('#pedalboard-dashboard').unbindArrive(instancekey, cb)
                             }
-                            $('#pedalboard-dashboard').arrive(instancekey, { onceOnly: true }, cb)
+                            $('#pedalboard-dashboard').arrive(instancekey, cb)
                         }
 
                         desktop.pedalboard.pedalboard("addPlugin", pluginData, instance, bypassed, x, y, {}, null, skipModified)
