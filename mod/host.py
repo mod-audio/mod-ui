@@ -632,7 +632,7 @@ class Host(object):
 
     #TODO, This message should be handled by mod-system-control once in place
     def cv_exp_mode_changed(self, expMode):
-        if self.hmi.initialized:
+        if self.hmi.initialized and self.profile_applied and not expMode:
             self.hmi.expression_overcurrent(None)
 
     def remove_port_from_connections(self, name):
