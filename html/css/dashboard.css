@@ -73,6 +73,13 @@
     display: inline-block;
 }
 
+#pedalboard-info > h1 {
+    max-width: calc(100% - 720px);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 #pedalboard-info .title {
     color:#fff;
     cursor:pointer;
@@ -125,6 +132,9 @@
     position:absolute;
     right:0;
     top:0;
+    height:45px;
+    overflow:hidden;
+    text-align:right;
 }
 
 #pedalboard-info .actions > button {
