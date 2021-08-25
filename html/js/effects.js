@@ -363,6 +363,10 @@ JqueryClass('effectBox', {
                           :  "/resources/pedals/default-thumbnail.png",
         }
 
+        if (window.devicePixelRatio && window.devicePixelRatio >= 2) {
+            plugin_data.thumbnail_href = plugin_data.thumbnail_href.replace("thumbnail","screenshot")
+        }
+
         var div = document.createElement("div");
         div.innerHTML = Mustache.render(TEMPLATES.plugin, plugin_data);
         var rendered = $(Array.prototype.slice.call(div.childNodes, 0));
