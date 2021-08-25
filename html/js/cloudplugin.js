@@ -242,6 +242,10 @@ JqueryClass('cloudPluginBox', {
         // to have all available data
         $.extend(indexed, plugin)
         $.extend(plugin, indexed)
+
+        if (window.devicePixelRatio && window.devicePixelRatio >= 2) {
+            plugin.thumbnail_href = plugin.thumbnail_href.replace("thumbnail","screenshot")
+        }
     },
 
     rebuildSearchIndex: function () {

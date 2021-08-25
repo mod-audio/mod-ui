@@ -386,10 +386,6 @@ class Host(object):
         # used for usb gadget, MUST have "c" or "p" after this prefix
         self.jack_usbgadget_prefix = "mod-usbgadget_"
 
-        # checked when saving pedal presets
-        self.plugins_added = []
-        self.plugins_removed = []
-
         self.statstimer = PeriodicCallback(self.statstimer_callback, 1000)
 
         self.memfile  = None
@@ -2394,8 +2390,13 @@ class Host(object):
             for output in extinfo['monitoredOutputs']:
                 self.send_notmodified("monitor_output %d %s" % (instance_id, output))
 
-            # for snapshots
-            self.plugins_added.append(instance_id)
+            for snapshot in self.pedalboard_snapshots:
+                if snapshot is None:
+                    continue
+                if 'plugins_added' not in snapshot:
+                    snapshot['plugins_added'] = [instance_id]
+                else:
+                    snapshot['plugins_added'].append(instance_id)
 
             callback(True)
             self.msg_callback("add %s %s %.1f %.1f %d %s %d" % (instance, uri, x, y,
@@ -2430,10 +2431,17 @@ class Host(object):
                 except Exception as e:
                     logging.exception(e)
 
-        # for snapshots
-        self.plugins_removed.append(instance)
-        if instance_id in self.plugins_added:
-            self.plugins_added.remove(instance_id)
+        snapshot_instance_name = instance.replace("/graph/","",1)
+        for snapshot in self.pedalboard_snapshots:
+            if snapshot is None:
+                continue
+            if instance_id not in snapshot.get('plugins_added', []):
+                continue
+            snapshot['plugins_added'].remove(instance_id)
+            try:
+                snapshot['data'].pop(snapshot_instance_name)
+            except KeyError:
+                pass
 
         used_hmi_actuators = []
         used_hw_ids = []
@@ -2810,10 +2818,8 @@ class Host(object):
         return self.pedalboard_snapshots[idx]['name']
 
     def snapshot_clear(self):
-        self.plugins_added   = [iid for iid in self.plugins.keys() if iid != PEDALBOARD_INSTANCE_ID]
-        self.plugins_removed = []
         self.current_pedalboard_snapshot_id = 0
-        self.pedalboard_snapshots = [{ "name": DEFAULT_SNAPSHOT_NAME, "data": {} }]
+        self.pedalboard_snapshots = [self.snapshot_make(DEFAULT_SNAPSHOT_NAME)]
 
     def snapshot_save(self):
         idx = self.current_pedalboard_snapshot_id
@@ -2899,13 +2905,9 @@ class Host(object):
 
             instance = "/graph/%s" % instance
 
-            if instance in self.plugins_removed:
-                continue
-
             try:
                 instance_id = self.mapper.get_id_without_creating(instance)
             except KeyError:
-                self.plugins_removed.append(instance)
                 continue
 
             pluginData = self.plugins[instance_id]
@@ -3445,9 +3447,6 @@ class Host(object):
         return self.pedalboard_name
 
     def load_pb_snapshots(self, bundlepath):
-        self.plugins_added   = []
-        self.plugins_removed = []
-
         if os.path.exists(os.path.join(bundlepath, "snapshots.json")):
             # New file with correct name, loads as dict
             data = safe_json_load(os.path.join(bundlepath, "snapshots.json"), dict)
@@ -3770,19 +3769,12 @@ class Host(object):
         self.addressings.save(bundlepath, instances)
 
     def save_state_snapshots(self, bundlepath):
-        for instance in self.plugins_removed:
-            for snapshot in self.pedalboard_snapshots:
-                if snapshot is None:
-                    continue
-                try:
-                    snapshot['data'].pop(instance.replace("/graph/","",1))
-                except KeyError:
-                    pass
-
-        for instance_id in self.plugins_added:
-            for snapshot in self.pedalboard_snapshots:
-                if snapshot is None:
-                    continue
+        for snapshot in self.pedalboard_snapshots:
+            if snapshot is None:
+                continue
+            if 'plugins_added' not in snapshot:
+                continue
+            for instance_id in snapshot.pop('plugins_added'):
                 pluginData = self.plugins[instance_id]
                 instance   = pluginData['instance'].replace("/graph/","",1)
                 snapshot['data'][instance] = {
@@ -3803,9 +3795,6 @@ class Host(object):
         # delete old file if present
         if os.path.exists(os.path.join(bundlepath, "presets.json")):
             os.remove(os.path.join(bundlepath, "presets.json"))
-
-        self.plugins_added   = []
-        self.plugins_removed = []
 
     def save_state_mainfile(self, bundlepath, title, titlesym):
         self.pedalboard_version += 1
