@@ -17,7 +17,7 @@
 
 """
 This module works as an interface for mod-host, it uses a socket to communicate
-with mod-host, the protocol is described in <http://github.com/portalmod/mod-host>
+with mod-host, the protocol is described in <http://github.com/moddevices/mod-host>
 
 The module relies on tornado.ioloop stuff, but you need to start the ioloop
 by yourself:
@@ -371,6 +371,7 @@ class Host(object):
         self.last_data_finish_handle = None
         self.last_true_bypass_left = True
         self.last_true_bypass_right = True
+        self.last_cv_exp_mode = False
         self.abort_progress_catcher = {}
         self.processing_pending_flag = False
         self.init_plugins_data()
@@ -486,7 +487,12 @@ class Host(object):
 
         Protocol.register_cmd_callback('ALL', CMD_CONTROL_GET, self.hmi_parameter_get)
         Protocol.register_cmd_callback('ALL', CMD_CONTROL_SET, self.hmi_parameter_set)
-        Protocol.register_cmd_callback('ALL', CMD_CONTROL_PAGE, self.hmi_next_control_page)
+
+        # TODO support on duo and duox
+        if self.descriptor.get('platform', None) != "dwarf":
+            Protocol.register_cmd_callback('DUO', CMD_CONTROL_PAGE, self.hmi_next_control_page_compat)
+        else:
+            Protocol.register_cmd_callback('ALL', CMD_CONTROL_PAGE, self.hmi_next_control_page)
 
         Protocol.register_cmd_callback('ALL', CMD_TUNER_ON, self.hmi_tuner_on)
         Protocol.register_cmd_callback('ALL', CMD_TUNER_OFF, self.hmi_tuner_off)
@@ -634,8 +640,11 @@ class Host(object):
 
     #TODO, This message should be handled by mod-system-control once in place
     def cv_exp_mode_changed(self, expMode):
-        if self.hmi.initialized:
-            self.hmi.expression_overcurrent(None)
+        if self.last_cv_exp_mode != expMode:
+            self.last_cv_exp_mode = expMode
+
+            if self.hmi.initialized and self.profile_applied and not expMode:
+                self.hmi.expression_overcurrent(None)
 
     def remove_port_from_connections(self, name):
         removed_conns = []
@@ -5535,16 +5544,24 @@ _:b%i
         callback(True)
         self.addressings.hmi_load_subpage(hw_id, subpage)
 
-    def hmi_next_control_page(self, hw_id, props, callback):
-        logging.debug("hmi next control page %d %d", hw_id, props)
+    def hmi_next_control_page_compat(self, hw_id, props, callback):
+        logging.debug("hmi next control page (compat) %d %d", hw_id, props)
         try:
-            self.hmi_next_control_page_real(hw_id, props, callback)
+            self.hmi_next_control_page_real(hw_id, props, None, callback)
+        except Exception as e:
+            callback(False)
+            logging.exception(e)
+
+    def hmi_next_control_page(self, hw_id, props, control_index, callback):
+        logging.debug("hmi next control page %d %d %d", hw_id, props, control_index)
+        try:
+            self.hmi_next_control_page_real(hw_id, props, control_index, callback)
         except Exception as e:
             callback(False)
             logging.exception(e)
 
     @gen.coroutine
-    def hmi_next_control_page_real(self, hw_id, props, callback):
+    def hmi_next_control_page_real(self, hw_id, props, control_index, callback):
         data = self.addressings.hmi_get_addr_data(hw_id)
 
         if data is None:
@@ -5563,16 +5580,20 @@ _:b%i
             callback(False)
             return
 
-        dir_up = props & FLAG_PAGINATION_PAGE_UP
-        wrap   = props & FLAG_PAGINATION_WRAP_AROUND
-
         options = data['options']
         numOpts = len(options)
         value   = self.addr_task_get_port_value(instance_id, portsymbol)
 
-        ivalue, value = get_nearest_valid_scalepoint_value(value, options)
+        # old compat mode
+        if control_index is None:
+            dir_up = props & FLAG_PAGINATION_PAGE_UP
+            ivalue, value = get_nearest_valid_scalepoint_value(value, options)
+            ivalue += 1 if dir_up != 0 else -1
+        # proper new mode
+        else:
+            ivalue = control_index
 
-        ivalue += 1 if dir_up != 0 else -1
+        wrap = props & FLAG_PAGINATION_WRAP_AROUND
 
         if ivalue < 0 or ivalue >= numOpts:
             if not wrap:
@@ -5585,7 +5606,8 @@ _:b%i
             else:
                 ivalue = 0
 
-        value = options[ivalue][0]
+        if control_index is None:
+            value = options[ivalue][0]
 
         # note: the code below matches hmi.py control_add
         optionsData = []
@@ -5636,6 +5658,9 @@ _:b%i
                     data['steps'],
                     options,
                   ))
+
+        if control_index is not None:
+            return
 
         try:
             yield gen.Task(self.hmi_or_cc_parameter_set, instance_id, portsymbol, value, hw_id)
@@ -5869,6 +5894,7 @@ _:b%i
         #elif item == MENU_ID_FOOTSWITCH_NAV:
             #pass # TODO
         elif item == MENU_ID_EXP_CV_INPUT:
+            self.last_cv_exp_mode = bool(value)
             self.hmi_menu_set_exp_cv(value, callback)
         elif item == MENU_ID_HP_CV_OUTPUT:
             self.hmi_menu_set_hp_cv(value, callback)
@@ -6442,6 +6468,9 @@ _:b%i
                 yield gen.Task(self.hmi.set_profile_values, self.transport_rolling, values)
             except Exception as e:
                 logging.exception(e)
+
+        if 'inputMode' in values:
+            self.last_cv_exp_mode = bool(values['inputMode'])
 
         self.profile_applied = True
 
