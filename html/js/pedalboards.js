@@ -220,7 +220,7 @@ JqueryClass('pedalboardBox', {
             return false
         })
 
-        if (pedalboard.bundle == DEFAULT_PEDALBOARD) {
+        if (pedalboard.bundle == DEFAULT_PEDALBOARD || startsWith(pedalboard.bundle, "/mnt/pedalboards/")) {
             rendered.find('.js-remove').hide()
         } else {
             rendered.find('.js-remove').click(function (e) {
