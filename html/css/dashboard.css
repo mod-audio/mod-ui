@@ -73,6 +73,13 @@
     display: inline-block;
 }
 
+#pedalboard-info > h1 {
+    max-width: calc(100% - 720px);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 #pedalboard-info .title {
     color:#fff;
     cursor:pointer;
@@ -125,6 +132,7 @@
     position:absolute;
     right:0;
     top:0;
+    text-align:right;
 }
 
 #pedalboard-info .actions > button {
@@ -1344,4 +1352,10 @@ svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1001
 #pedal-presets-list-input::selection {
     background: #883996 !important;
     color: white !important;
+}
+
+@media only screen and (max-width: 1280px) {
+    #plugins-library .count {
+        display: none;
+    }
 }

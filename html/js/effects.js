@@ -287,7 +287,7 @@ JqueryClass('effectBox', {
         // display plugin count
         for (category in categories) {
             var tab = self.find('#effect-tab-' + category)
-            tab.html(tab.html() + ' (' + categories[category] + ')')
+            tab.find('.count').text('(' + categories[category] + ')')
         }
 
         if (categories[category] == 0) {
@@ -361,6 +361,10 @@ JqueryClass('effectBox', {
             thumbnail_href: (plugin.gui && plugin.gui.thumbnail)
                           ? ("effect/image/thumbnail.png?uri=" + uri + "&v=" + ver)
                           :  "resources/pedals/default-thumbnail.png",
+        }
+
+        if (window.devicePixelRatio && window.devicePixelRatio >= 2) {
+            plugin_data.thumbnail_href = plugin_data.thumbnail_href.replace("thumbnail","screenshot")
         }
 
         var div = document.createElement("div");
@@ -502,7 +506,7 @@ JqueryClass('effectBox', {
                                 self.effectBox('renderPlugin', plugin, self.find('#effect-content-Favorites'))
                             }
 
-                            self.find('#effect-tab-Favorites').html('Favorites (' + FAVORITES.length + ')')
+                            self.find('#effect-tab-Favorites').find('.count').text('(' + FAVORITES.length + ')')
                         },
                         cache: false,
                         dataType: 'json'
@@ -555,15 +559,8 @@ JqueryClass('effectBox', {
     cleanResults: function () {
         var self = $(this)
         self.find('.plugins-wrapper').html('')
-        self.find('ul.js-category-tabs li').each(function () {
-            var content = $(this).html().split(/\s/)
-            if (content.length >= 2 && content[1] == "Utility") {
-                $(this).html(content[0] + " Utility")
-            } else if (content.length >= 2 && content[1] == "gen~") {
-                $(this).html(content[0] + " gen~")
-            } else {
-                $(this).html(content[0])
-            }
+        self.find('ul.js-category-tabs li span.count').each(function () {
+            $(this).text()
         });
         self.effectBox('resetShift')
         self.data('index', {})
