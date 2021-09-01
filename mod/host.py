@@ -4938,13 +4938,14 @@ _:b%i
             callback(False)
             return
 
-        # bank 0 is "All Pedalboards"
-        bank_id -= 1
-
-        if self.bank_id > bank_id:
+        # if bank-to-remove is the current one, reset to "All Pedalboards"
+        if self.bank_id == bank_id:
+            self.bank_id = 0
+        # if current bank is after or same as bank-to-remove, shift back by 1
+        elif self.bank_id >= bank_id:
             self.bank_id -= 1
 
-        self.banks.pop(bank_id)
+        self.banks.pop(bank_id - 1)
         save_banks(self.banks)
         callback(True)
 
