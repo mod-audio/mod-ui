@@ -4941,11 +4941,6 @@ _:b%i
         # bank 0 is "All Pedalboards"
         bank_id -= 1
 
-        # FIXME undefined behaviour
-        if self.bank_id == bank_id:
-            callback(False)
-            return
-
         if self.bank_id > bank_id:
             self.bank_id -= 1
 
