@@ -4922,8 +4922,12 @@ _:b%i
     # -----------------------------------------------------------------------------------------------------------------
 
     def hmi_bank_new(self, title, callback):
-        if title == "All Pedalboards" or any(bank['title'].upper() == title for bank in self.banks):
+        utitle = title.upper()
+        if utitle == "ALL PEDALBOARDS":
             callback(False)
+            return
+        if any(bank['title'].upper() == utitle for bank in self.banks):
+            callback(-2)
             return
         self.banks.append({
             'title': title,
@@ -5033,8 +5037,9 @@ _:b%i
     # -----------------------------------------------------------------------------------------------------------------
 
     def hmi_pedalboard_save_as(self, title, callback):
-        if any(pedalboard['title'].upper() == title for pedalboard in self.allpedalboards):
-            callback(False)
+        utitle = title.upper()
+        if any(pedalboard['title'].upper() == utitle for pedalboard in self.allpedalboards):
+            callback(-2)
             return
 
         bundlepath, _ = self.save(title, True, callback)
@@ -5096,8 +5101,9 @@ _:b%i
         callback(ok)
 
     def hmi_pedalboard_snapshot_save_as(self, name, callback):
-        if any(snapshot['name'].upper() == name for snapshot in self.pedalboard_snapshots):
-            callback(False)
+        uname = name.upper()
+        if any(snapshot['name'].upper() == uname for snapshot in self.pedalboard_snapshots):
+            callback(-2)
             return
         self.snapshot_saveas(name)
         callback(True)
