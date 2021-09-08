@@ -734,6 +734,7 @@ class Addressings(object):
                 # Set min and max to min and max value among dividers
                 minimum = min(options_list)
                 maximum = max(options_list)
+                steps   = len(options_list)
                 options = [(o["value"], o["label"]) for o in divider_options]
 
         # TODO do something with spreset
