@@ -452,7 +452,7 @@ class HMI(object):
         else:
             cb = callback
 
-        if self.host_map is not None:
+        if self.host_map is not None and not hasTempo:
             hostcaps = 0x0
             for actuator in self.hw_desc['actuators']:
                 if actuator['id'] != hw_id:

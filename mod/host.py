@@ -2070,7 +2070,7 @@ class Host(object):
                                                                             addressing['minimum'],
                                                                             addressing['maximum'],
                                                                             addressing['operational_mode']))
-                    elif actuator_type == Addressings.ADDRESSING_TYPE_HMI:
+                    elif actuator_type == Addressings.ADDRESSING_TYPE_HMI and not addressing.get('tempo', False):
                         hw_id = self.addressings.hmi_uri2hw_map[addressing['actuator_uri']]
                         self.hmi.control_remap(hw_id, addressing)
 
