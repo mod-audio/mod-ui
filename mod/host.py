@@ -2070,7 +2070,7 @@ class Host(object):
                                                                             addressing['minimum'],
                                                                             addressing['maximum'],
                                                                             addressing['operational_mode']))
-                    elif actuator_type == Addressings.ADDRESSING_TYPE_HMI:
+                    elif actuator_type == Addressings.ADDRESSING_TYPE_HMI and not addressing.get('tempo', False):
                         hw_id = self.addressings.hmi_uri2hw_map[addressing['actuator_uri']]
                         self.hmi.control_remap(hw_id, addressing)
 
@@ -2254,6 +2254,12 @@ class Host(object):
 
             dividers = get_divider_value(self.transport_bpm, valueseconds)
             dividers = get_nearest_valid_scalepoint_value(dividers, current_addressing['options'])[1]
+
+            if current_addressing['dividers'] == dividers:
+                if callback is not None:
+                    callback(True)
+                return
+
             current_addressing['dividers'] = dividers
 
             if group_actuators is not None:
