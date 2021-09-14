@@ -250,6 +250,197 @@ MENU_ID_MASTER_VOL_PORT  = 42
 MENU_ID_EXP_MODE         = 43
 MENU_ID_TOP              = 44
 
+def cmd_to_str(cmd):
+    if not isinstance(cmd, str):
+        raise ValueError
+    if cmd == "pi":
+        return "CMD_PING"
+    if cmd == "say":
+        return "CMD_SAY"
+    if cmd == "l":
+        return "CMD_LED"
+    if cmd == "displ_bright":
+        return "CMD_DISP_BRIGHTNESS"
+    if cmd == "glcd_text":
+        return "CMD_GLCD_TEXT"
+    if cmd == "glcd_dialog":
+        return "CMD_GLCD_DIALOG"
+    if cmd == "glcd_draw":
+        return "CMD_GLCD_DRAW"
+    if cmd == "uc":
+        return "CMD_GUI_CONNECTED"
+    if cmd == "ud":
+        return "CMD_GUI_DISCONNECTED"
+    if cmd == "a":
+        return "CMD_CONTROL_ADD"
+    if cmd == "d":
+        return "CMD_CONTROL_REMOVE"
+    if cmd == "g":
+        return "CMD_CONTROL_GET"
+    if cmd == "s":
+        return "CMD_CONTROL_SET"
+    if cmd == "ncp":
+        return "CMD_CONTROL_PAGE"
+    if cmd == "is":
+        return "CMD_INITIAL_STATE"
+    if cmd == "b":
+        return "CMD_BANKS"
+    if cmd == "bn":
+        return "CMD_BANK_NEW"
+    if cmd == "bd":
+        return "CMD_BANK_DELETE"
+    if cmd == "ba":
+        return "CMD_ADD_PBS_TO_BANK"
+    if cmd == "br":
+        return "CMD_REORDER_PBS_IN_BANK"
+    if cmd == "p":
+        return "CMD_PEDALBOARDS"
+    if cmd == "pn":
+        return "CMD_PEDALBOARD_NAME_SET"
+    if cmd == "pb":
+        return "CMD_PEDALBOARD_LOAD"
+    if cmd == "pr":
+        return "CMD_PEDALBOARD_RESET"
+    if cmd == "ps":
+        return "CMD_PEDALBOARD_SAVE"
+    if cmd == "psa":
+        return "CMD_PEDALBOARD_SAVE_AS"
+    if cmd == "pcl":
+        return "CMD_PEDALBOARD_CLEAR"
+    if cmd == "pbd":
+        return "CMD_PEDALBOARD_DELETE"
+    if cmd == "sr":
+        return "CMD_REORDER_SSS_IN_PB"
+    if cmd == "ssg":
+        return "CMD_SNAPSHOTS"
+    if cmd == "sn":
+        return "CMD_SNAPSHOT_NAME_SET"
+    if cmd == "ssl":
+        return "CMD_SNAPSHOTS_LOAD"
+    if cmd == "sss":
+        return "CMD_SNAPSHOTS_SAVE"
+    if cmd == "ssa":
+        return "CMD_SNAPSHOT_SAVE_AS"
+    if cmd == "ssd":
+        return "CMD_SNAPSHOT_DELETE"
+    if cmd == "ts":
+        return "CMD_TUNER"
+    if cmd == "tn":
+        return "CMD_TUNER_ON"
+    if cmd == "tf":
+        return "CMD_TUNER_OFF"
+    if cmd == "ti":
+        return "CMD_TUNER_INPUT"
+    if cmd == "restore":
+        return "CMD_RESTORE"
+    if cmd == "r":
+        return "CMD_RESPONSE"
+    if cmd == "c":
+        return "CMD_MENU_ITEM_CHANGE"
+    if cmd == "upr":
+        return "CMD_PROFILE_LOAD"
+    if cmd == "ups":
+        return "CMD_PROFILE_STORE"
+    if cmd == "lp":
+        return "CMD_NEXT_PAGE"
+    if cmd == "reset_eeprom":
+        return "CMD_RESET_EEPROM"
+    if cmd == "enc_clicked":
+        return "CMD_SELFTEST_ENCODER_CLICKED"
+    if cmd == "enc_left":
+        return "CMD_SELFTEST_ENCODER_LEFT"
+    if cmd == "enc_right":
+        return "CMD_SELFTEST_ENCODER_RIGHT"
+    if cmd == "button_clicked":
+        return "CMD_SELFTEST_BUTTON_CLICKED"
+    if cmd == "pot_call_check":
+        return "CMD_SELFTEST_CHECK_CALIBRATION"
+    if cmd == "pot_call_ok":
+        return "CMD_SELFTEST_CALLIBRATION_OK"
+    if cmd == "control_skip_enable":
+        return "CMD_SELFTEST_SKIP_CONTROL_ENABLE"
+    if cmd == "control_bad_skip":
+        return "CMD_SELFTEST_SKIP_CONTROL"
+    if cmd == "save_pot_cal":
+        return "CMD_SELFTEST_SAVE_POT_CALIBRATION"
+    if cmd == "sys_gio":
+        return "CMD_SYS_GAIN"
+    if cmd == "sys_ghp":
+        return "CMD_SYS_HP_GAIN"
+    if cmd == "sys_ngc":
+        return "CMD_SYS_NG_CHANNEL"
+    if cmd == "sys_ngt":
+        return "CMD_SYS_NG_THRESHOLD"
+    if cmd == "sys_ngd":
+        return "CMD_SYS_NG_DECAY"
+    if cmd == "sys_cmm":
+        return "CMD_SYS_COMP_MODE"
+    if cmd == "sys_cmr":
+        return "CMD_SYS_COMP_RELEASE"
+    if cmd == "sys_pbg":
+        return "CMD_SYS_COMP_PEDALBOARD_GAIN"
+    if cmd == "sys_ams":
+        return "CMD_SYS_AMIXER_SAVE"
+    if cmd == "sys_bts":
+        return "CMD_SYS_BT_STATUS"
+    if cmd == "sys_btd":
+        return "CMD_SYS_BT_DISCOVERY"
+    if cmd == "sys_ctl":
+        return "CMD_SYS_SYSTEMCTL"
+    if cmd == "sys_ver":
+        return "CMD_SYS_VERSION"
+    if cmd == "sys_ser":
+        return "CMD_SYS_SERIAL"
+    if cmd == "sys_usb":
+        return "CMD_SYS_USB_MODE"
+    if cmd == "sys_mnr":
+        return "CMD_SYS_NOISE_REMOVAL"
+    if cmd == "sys_rbt":
+        return "CMD_SYS_REBOOT"
+    if cmd == "sys_led":
+        return "CMD_SYS_CHANGE_LED"
+    if cmd == "sys_nam":
+        return "CMD_SYS_CHANGE_NAME"
+    if cmd == "sys_uni":
+        return "CMD_SYS_CHANGE_UNIT"
+    if cmd == "sys_val":
+        return "CMD_SYS_CHANGE_VALUE"
+    if cmd == "sys_ind":
+        return "CMD_SYS_CHANGE_WIDGET_INDICATOR"
+    if cmd == "sys_pch":
+        return "CMD_SYS_PAGE_CHANGE"
+    if cmd == "sys_spc":
+        return "CMD_SYS_SUBPAGE_CHANGE"
+    if cmd == "boot":
+        return "CMD_DUO_BOOT"
+    if cmd == "fn":
+        return "CMD_DUO_FOOT_NAVIG"
+    if cmd == "bc":
+        return "CMD_DUO_BANK_CONFIG"
+    if cmd == "n":
+        return "CMD_DUO_CONTROL_NEXT"
+    if cmd == "si":
+        return "CMD_DUO_CONTROL_INDEX_SET"
+    if cmd == "boot":
+        return "CMD_DUOX_BOOT"
+    if cmd == "ss":
+        return "CMD_DUOX_SNAPSHOT_SAVE"
+    if cmd == "sl":
+        return "CMD_DUOX_SNAPSHOT_LOAD"
+    if cmd == "sc":
+        return "CMD_DUOX_SNAPSHOT_CLEAR"
+    if cmd == "pa":
+        return "CMD_DUOX_PAGES_AVAILABLE"
+    if cmd == "s_contrast":
+        return "CMD_DUOX_SET_CONTRAST"
+    if cmd == "exp_overcurrent":
+        return "CMD_DUOX_EXP_OVERCURRENT"
+    if cmd == "cs":
+        return "CMD_DWARF_CONTROL_SUBPAGE"
+    if cmd == "pa":
+        return "CMD_DWARF_PAGES_AVAILABLE"
+    return "unknown"
+
 def menu_item_id_to_str(idx):
     if not isinstance(idx, int):
         raise ValueError

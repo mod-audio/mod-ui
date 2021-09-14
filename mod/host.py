@@ -155,8 +155,9 @@ from modtools.utils import (
     kPedalboardTimeAvailableBPM, kPedalboardTimeAvailableRolling
 )
 from modtools.tempo import (
+    convert_port_value_to_seconds_equivalent,
     convert_seconds_to_port_value_equivalent,
-    get_divider_options,
+    get_divider_value,
     get_port_value,
 )
 
@@ -796,6 +797,7 @@ class Host(object):
             if not self.hmi.initialized:
                 callback(False)
                 return
+
             if data['hmitype'] & FLAG_CONTROL_ENUMERATION:
                 options = tuple(o[0] for o in data['options'])
                 try:
@@ -804,21 +806,22 @@ class Host(object):
                     logging.error("[host] address set value not in list %f", data['value'])
                     callback(False)
                     return
-                # FIXME the following code does a control_add instead of control_set in case of enums
+                # NOTE the following code does a control_add instead of control_set in case of big enums
                 # Making it work on HMI with pagination could be tricky, so work around this for now
-                actuator_uri = data['actuator_uri']
-                logging.error("[host] addr_task_set_value called with an enumeration %s", actuator_uri)
-                self.addressings.hmi_load_current(actuator_uri, callback)
-                return
+                if not data.get('tempo', False):
+                    actuator_uri = data['actuator_uri']
+                    logging.error("[host] addr_task_set_value called with an enumeration %s", actuator_uri)
+                    self.addressings.hmi_load_current(actuator_uri, callback)
+                    return
             else:
                 value = data['value']
+
             if send_hmi:
                 self.hmi.control_set(actuator, value, callback)
-                return
-            else:
-                if callback is not None:
-                    callback(True)
-                return
+            elif callback is not None:
+                callback(True)
+
+            return
 
         if atype == Addressings.ADDRESSING_TYPE_CC:
             if data['cctype'] & CC_MODE_OPTIONS:
@@ -2185,12 +2188,6 @@ class Host(object):
                 callback(True)
             return
 
-        # Don't bother HMI while it has tempo mapping, since those do not change values here
-        if current_addressing.get('tempo', False):
-            if callback is not None:
-                callback(True)
-            return
-
         actuator_uri  = current_addressing['actuator_uri']
         actuator_type = self.addressings.get_actuator_type(actuator_uri)
 
@@ -2246,6 +2243,35 @@ class Host(object):
                 if callback is not None:
                     callback(True)
                 return
+
+        if current_addressing.get('tempo', False):
+            valueseconds = convert_port_value_to_seconds_equivalent(current_addressing['value'],
+                                                                    current_addressing['unit'])
+            if valueseconds is None:
+                if callback is not None:
+                    callback(True)
+                return
+
+            dividers = get_divider_value(self.transport_bpm, valueseconds)
+            dividers = get_nearest_valid_scalepoint_value(dividers, current_addressing['options'])[1]
+            current_addressing['dividers'] = dividers
+
+            if group_actuators is not None:
+                def set_2nd_hmi_value(ok):
+                    if not ok:
+                        if callback is not None:
+                            callback(False)
+                        return
+                    hw_id2 = self.addressings.hmi_uri2hw_map[group_actuators[1]]
+                    self.hmi.control_set(hw_id2, dividers, callback)
+
+                hw_id1 = self.addressings.hmi_uri2hw_map[group_actuators[0]]
+                self.hmi.control_set(hw_id1, dividers, set_2nd_hmi_value)
+
+            else:
+                hw_id = self.addressings.hmi_uri2hw_map[actuator_uri]
+                self.hmi.control_set(hw_id, dividers, callback)
+            return
 
         # FIXME the following code does a control_add instead of control_set in case of enums
         # Making it work on HMI with pagination could be tricky, so work around this for now
@@ -4680,7 +4706,7 @@ _:b%i
                 if needsValueChange:
                     hw_id = self.addressings.hmi_uri2hw_map[group_actuator_uri]
                     try:
-                        yield gen.Task(self.hmi_or_cc_parameter_set, instance_id, portsymbol, hw_id)
+                        yield gen.Task(self.hmi_or_cc_parameter_set, instance_id, portsymbol, value, hw_id)
                     except Exception as e:
                         logging.exception(e)
                 try:
@@ -4944,9 +4970,16 @@ _:b%i
     # -----------------------------------------------------------------------------------------------------------------
 
     def hmi_bank_new(self, title, callback):
-        if title == "All Pedalboards" or any(bank['title'].upper() == title for bank in self.banks):
+        utitle = title.upper()
+        if utitle == "ALL PEDALBOARDS":
             callback(False)
             return
+
+        for bank in self.banks:
+            if bank['title'].upper() == utitle:
+                callback(-2)
+                return
+
         self.banks.append({
             'title': title,
             'pedalboards': [],
@@ -4960,18 +4993,14 @@ _:b%i
             callback(False)
             return
 
-        # bank 0 is "All Pedalboards"
-        bank_id -= 1
-
-        # FIXME undefined behaviour
+        # if bank-to-remove is the current one, reset to "All Pedalboards"
         if self.bank_id == bank_id:
-            callback(False)
-            return
-
-        if self.bank_id > bank_id:
+            self.bank_id = 0
+        # if current bank is after or same as bank-to-remove, shift back by 1
+        elif self.bank_id >= bank_id:
             self.bank_id -= 1
 
-        self.banks.pop(bank_id)
+        self.banks.pop(bank_id - 1)
         save_banks(self.banks)
         callback(True)
 
@@ -5059,8 +5088,9 @@ _:b%i
     # -----------------------------------------------------------------------------------------------------------------
 
     def hmi_pedalboard_save_as(self, title, callback):
-        if any(pedalboard['title'].upper() == title for pedalboard in self.allpedalboards):
-            callback(False)
+        utitle = title.upper()
+        if any(pedalboard['title'].upper() == utitle for pedalboard in self.allpedalboards):
+            callback(-2)
             return
 
         bundlepath, _ = self.save(title, True, callback)
@@ -5122,8 +5152,9 @@ _:b%i
         callback(ok)
 
     def hmi_pedalboard_snapshot_save_as(self, name, callback):
-        if any(snapshot['name'].upper() == name for snapshot in self.pedalboard_snapshots):
-            callback(False)
+        uname = name.upper()
+        if any(snapshot['name'].upper() == uname for snapshot in self.pedalboard_snapshots):
+            callback(-2)
             return
         self.snapshot_saveas(name)
         callback(True)
@@ -5447,47 +5478,27 @@ _:b%i
                     if not ports:
                         callback(False)
                         return
+
                     port = ports[0]
                     port_value = get_port_value(self.transport_bpm, value, port['units']['symbol'])
                     if port['units']['symbol'] != 'BPM': # convert back into port unit if needed
                         port_value = convert_seconds_to_port_value_equivalent(port_value, port['units']['symbol'])
 
-                    def param_set_callback(ok):
-                        if not ok:
-                            callback(False)
-                            return
-                        if save_port_value:
-                            pluginData['ports'][portsymbol] = port_value
-                        self.send_modified("param_set %d %s %f" % (instance_id, portsymbol, port_value), callback, datatype='boolean')
-                        self.msg_callback("param_set %s %s %f" % (instance, portsymbol, port_value))
+                    port_addressing['dividers'] = value
+                    port_addressing['value'] = port_value
 
-                    def address_callback(ok):
-                        if not ok:
-                            callback(False)
-                            return
-                        # NOTE: we cannot wait for HMI callback while giving a response to HMI
-                        self.control_set_other_group_actuator(group_actuators, hw_id, port_addressing, value, None)
-                        param_set_callback(True)
+                    # NOTE: we cannot wait for HMI callback while giving a response to HMI
+                    if group_actuators is not None:
+                        for group_actuator_uri in group_actuators:
+                            group_hw_id = self.addressings.hmi_uri2hw_map[group_actuator_uri]
+                            if group_hw_id != hw_id:
+                                self.hmi.control_set(group_hw_id, value, None)
+                                break
 
-                    actuator_uri = port_addressing['actuator_uri']
-                    label = port_addressing['label']
-                    minimum = port_addressing['minimum']
-                    maximum = port_addressing['maximum']
-                    steps = port_addressing['steps']
-
-                    extras = {
-                        'tempo': port_addressing['tempo'],
-                        'dividers': value,
-                        'page': port_addressing['page'],
-                        'subpage': port_addressing['subpage'],
-                        'coloured': port_addressing['coloured'],
-                        'momentary': port_addressing['momentary'],
-                        'operational_mode': port_addressing['operational_mode'],
-                    }
-
-                    cb = address_callback if group_actuators else param_set_callback
-                    self.address(instance, portsymbol, actuator_uri, label, minimum, maximum, port_value, steps,
-                                 extras, cb, not_param_set=True, send_hmi=False)
+                    if save_port_value:
+                        pluginData['ports'][portsymbol] = port_value
+                    self.send_modified("param_set %d %s %f" % (instance_id, portsymbol, port_value), callback, datatype='boolean')
+                    self.msg_callback("param_set %s %s %f" % (instance, portsymbol, port_value))
                     return
 
                 if group_actuators is not None:
@@ -5500,26 +5511,26 @@ _:b%i
             self.msg_callback("param_set %s %s %f" % (instance, portsymbol, value))
 
     def control_set_other_group_actuator(self, group_actuators, hw_id, port_addressing, value, callback):
-        addressing_data = port_addressing.copy()
-
-        # Update value in addressing data sent to hmi
-        if addressing_data.get('tempo', False):
-            addressing_data['dividers'] = value
-        else:
-            addressing_data['value'] = value
-
         for group_actuator_uri in group_actuators:
             group_hw_id = self.addressings.hmi_uri2hw_map[group_actuator_uri]
-            if group_hw_id != hw_id:
-                # Set reverse enum type if re-addressing first actuator in group
-                group_actuator = next((act for act in self.addressings.hw_actuators if act['uri'] == addressing_data['group']), None)
-                if group_actuator is not None:
-                    if group_actuator['actuator_group'].index(group_actuator_uri) == 0:
-                        addressing_data['hmitype'] |= FLAG_CONTROL_REVERSE
-                    else:
-                        addressing_data['hmitype'] &= ~FLAG_CONTROL_REVERSE
-                self.addressings.load_addr(group_actuator_uri, addressing_data, callback)
-                return
+            if group_hw_id == hw_id:
+                continue
+
+            # Update value in addressing data sent to hmi
+            addressing_data = port_addressing.copy()
+            addressing_data['value'] = value
+
+            # Set reverse enum type if re-addressing first actuator in group
+            group_actuator = next((act for act in self.addressings.hw_actuators if act['uri'] == addressing_data['group']), None)
+            if group_actuator is not None:
+                if group_actuator['actuator_group'].index(group_actuator_uri) == 0:
+                    addressing_data['hmitype'] |= FLAG_CONTROL_REVERSE
+                else:
+                    addressing_data['hmitype'] &= ~FLAG_CONTROL_REVERSE
+
+            self.addressings.load_addr(group_actuator_uri, addressing_data, callback)
+            return
+
         if callback is not None:
             callback(True)
 
