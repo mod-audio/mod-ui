@@ -58,6 +58,7 @@ from mod.mod_protocol import (
     MENU_ID_MIDI_CLK_SEND,
     MENU_ID_SNAPSHOT_PRGCHGE,
     MENU_ID_PB_PRGCHNGE,
+    cmd_to_str,
 )
 from mod.settings import LOG
 
@@ -197,8 +198,9 @@ class HMI(object):
                         original_msg, callback, datatype = self.queue.pop(0)
                         withlog = LOG >= 2 or (LOG and original_msg not in ("pi",))
                         if withlog:
-                            logging.debug('[hmi] received <- %s', data)
-                            logging.debug("[hmi] popped from queue: %s", original_msg)
+                            logging.debug('[hmi] received response <- %s', data)
+                            logging.debug("[hmi] popped from queue: %s | %s",
+                                          original_msg, cmd_to_str(original_msg.split(" ",1)[0]))
                     except IndexError:
                         # something is wrong / not synced!!
                         logging.error("[hmi] NOT SYNCED after receiving %s", data)
@@ -224,7 +226,10 @@ class HMI(object):
                         if self.queue_idle:
                             self.process_queue()
 
-                    logging.debug('[hmi] received <- %s', data)
+                    if LOG >= 1:
+                        logging.debug('[hmi] received <- %s | %s',
+                                      data, cmd_to_str(data.split(b" ",1)[0].decode("utf-8", errors="ignore")))
+
                     self.handling_response = True
                     msg.run_cmd(_callback)
 
@@ -281,7 +286,7 @@ class HMI(object):
             self.last_write_time = 0
         else:
             if LOG >= 2 or (LOG and msg not in ("pi",)):
-                logging.debug("[hmi] sending -> %s", msg)
+                logging.debug("[hmi] sending -> %s | %s", msg, cmd_to_str(msg.split(" ",1)[0]))
             try:
                 self.sp.write(msg.encode('utf-8') + b'\0')
             except StreamClosedError as e:
@@ -322,7 +327,7 @@ class HMI(object):
             #else:
             self.queue.append((msg, callback, datatype))
             if LOG >= 2 or (LOG and msg not in ("pi",)):
-                logging.debug("[hmi] scheduling -> %s", msg)
+                logging.debug("[hmi] scheduling -> %s | %s", msg, cmd_to_str(msg.split(" ",1)[0]))
             if self.queue_idle and not self.handling_response:
                 self.process_queue()
             return
