@@ -2254,6 +2254,12 @@ class Host(object):
 
             dividers = get_divider_value(self.transport_bpm, valueseconds)
             dividers = get_nearest_valid_scalepoint_value(dividers, current_addressing['options'])[1]
+
+            if current_addressing['dividers'] == dividers:
+                if callback is not None:
+                    callback(True)
+                return
+
             current_addressing['dividers'] = dividers
 
             if group_actuators is not None:
