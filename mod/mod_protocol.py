@@ -50,6 +50,7 @@ CMD_ARGS = {
         'ups': [int],
         'lp': [int],
         'reset_eeprom': [],
+        'screenshot': [int,str],
         'enc_clicked': [int],
         'enc_left': [int],
         'enc_right': [int],
@@ -153,6 +154,7 @@ CMD_PROFILE_LOAD                  = 'upr'
 CMD_PROFILE_STORE                 = 'ups'
 CMD_NEXT_PAGE                     = 'lp'
 CMD_RESET_EEPROM                  = 'reset_eeprom'
+CMD_SCREENSHOT                    = 'screenshot'
 CMD_SELFTEST_ENCODER_CLICKED      = 'enc_clicked'
 CMD_SELFTEST_ENCODER_LEFT         = 'enc_left'
 CMD_SELFTEST_ENCODER_RIGHT        = 'enc_right'
