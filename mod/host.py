@@ -34,6 +34,7 @@ from datetime import timedelta
 from random import randint
 from tornado import gen, iostream
 from tornado.ioloop import IOLoop, PeriodicCallback
+from PIL import Image
 import os, json, socket, time, logging
 import shutil
 
@@ -78,6 +79,7 @@ from mod.mod_protocol import (
     CMD_PROFILE_LOAD,
     CMD_PROFILE_STORE,
     CMD_NEXT_PAGE,
+    CMD_SCREENSHOT,
     CMD_DUO_FOOT_NAVIG,
     CMD_DUO_CONTROL_NEXT,
     CMD_DUOX_SNAPSHOT_LOAD,
@@ -129,7 +131,7 @@ from mod.protocol import (
     Protocol, ProtocolError, process_resp,
 )
 from mod.settings import (
-    APP, LOG, DEFAULT_PEDALBOARD, LV2_PEDALBOARDS_DIR, USER_FILES_DIR,
+    APP, LOG, DEFAULT_PEDALBOARD, DATA_DIR, LV2_PEDALBOARDS_DIR, USER_FILES_DIR,
     PEDALBOARD_INSTANCE, PEDALBOARD_INSTANCE_ID, PEDALBOARD_URI, PEDALBOARD_TMP_DIR,
     TUNER_URI, TUNER_INSTANCE_ID, TUNER_INPUT_PORT, TUNER_MONITOR_PORT, HMI_TIMEOUT, MODEL_TYPE,
     UNTITLED_PEDALBOARD_NAME, DEFAULT_SNAPSHOT_NAME,
@@ -364,6 +366,7 @@ class Host(object):
         self.next_hmi_bpm = [0, False, False]
         self.next_hmi_play = [False, False, False]
         self.hmi_snapshots = [None, None, None]
+        self.hmi_screenshot_data = [None]*8
         self.transport_rolling = False
         self.transport_bpb     = 4.0
         self.transport_bpm     = 120.0
@@ -484,6 +487,8 @@ class Host(object):
 
         Protocol.register_cmd_callback('ALL', CMD_CONTROL_GET, self.hmi_parameter_get)
         Protocol.register_cmd_callback('ALL', CMD_CONTROL_SET, self.hmi_parameter_set)
+
+        Protocol.register_cmd_callback('ALL', CMD_SCREENSHOT, self.hmi_screenshot)
 
         # TODO support on duo and duox
         if self.descriptor.get('platform', None) != "dwarf":
@@ -5517,6 +5522,80 @@ _:b%i
 
         if callback is not None:
             callback(True)
+
+    def hmi_screenshot(self, page, content, callback):
+        self.hmi_screenshot_data[page] = content
+        callback(True)
+
+        if page != 7:
+            return
+
+        # size in pixels, increase as needed
+        pixel_size = 8
+        margin_size = 1
+        border_spacing = 16
+
+        # screen contrast, adjust as needed
+        luminance_background = 220
+        luminance_black = 0
+        luminance_white = 200
+
+        # screen size
+        screen_width_in_pixels = 128
+        screen_height_in_pixels = 64
+
+        # actual image size
+        target_width = border_spacing * 2 + margin_size + (margin_size + pixel_size) * screen_width_in_pixels
+        target_height = border_spacing * 2 + margin_size  + (margin_size + pixel_size) * screen_height_in_pixels
+
+        rawdata = ["0"]*screen_width_in_pixels*screen_height_in_pixels
+
+        for i in range(len(self.hmi_screenshot_data)):
+            o = self.hmi_screenshot_data[i]
+            for j in range(screen_width_in_pixels):
+                v = o[j*2:j*2+2]
+                v = ("%08s" % bin(int(v,16)).replace("0b","")).replace(" ","0")
+                v = "".join(reversed(v))
+
+                x = j % screen_width_in_pixels
+                y = i + int(j / screen_width_in_pixels)
+                for z in range(8):
+                    rawdata[x*screen_height_in_pixels + y*8 + z] = v[z]
+
+        png = Image.new("L", (target_width, target_height), luminance_background)
+        pixels = png.load()
+
+        # draw pixels
+        for w in range(screen_width_in_pixels):
+            for h in range(screen_height_in_pixels):
+                x = border_spacing + margin_size + w * (margin_size + pixel_size)
+                y = border_spacing + margin_size + h * (margin_size + pixel_size)
+
+                v = luminance_black if rawdata[w * screen_height_in_pixels + h] == '1' else luminance_white
+
+                for ix in range(pixel_size):
+                    for iy in range(pixel_size):
+                        pixels[x+ix,y+iy] = v
+
+        # draw grid, optional
+        if luminance_background != luminance_white:
+            for w in range(screen_width_in_pixels):
+                for h in range(screen_height_in_pixels):
+                    x = border_spacing + margin_size + w * (margin_size + pixel_size)
+                    y = border_spacing + margin_size + h * (margin_size + pixel_size)
+
+                    for ix in range(pixel_size + margin_size):
+                        pixels[x+ix, y-margin_size] = luminance_background
+                        pixels[x-margin_size, y+ix] = luminance_background
+
+        counter = 0
+        while True:
+            counter += 1
+            filename = os.path.join(DATA_DIR, "hmi-screenshot-%03d.png" % counter)
+            if not os.path.exists(filename):
+                break
+
+        png.save(filename)
 
     def hmi_parameter_addressing_next(self, hw_id, callback):
         logging.debug("hmi parameter addressing next")
