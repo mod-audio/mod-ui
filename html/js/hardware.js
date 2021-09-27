@@ -287,10 +287,16 @@ function HardwareManager(options) {
     this.buildSensitivityOptions = function (select, port, actuatorSteps, curStep) {
         select.children().remove()
 
-        if (port.properties.indexOf("integer") >= 0 || port.properties.indexOf("toggled") >= 0 || port.properties.indexOf("trigger") >= 0) {
+        if (port.properties.indexOf("enumeration") >= 0 ||
+            port.properties.indexOf("integer") >= 0 ||
+            port.properties.indexOf("toggled") >= 0 ||
+            port.properties.indexOf("trigger") >= 0)
+        {
             var value
-            if (port.properties.indexOf("integer") >= 0) {
-                value = port.ranges.maximum-port.ranges.minimum
+            if (port.properties.indexOf("enumeration") >= 0) {
+                value = port.scalePoints.length - 1
+            } else if (port.properties.indexOf("integer") >= 0) {
+                value = port.ranges.maximum - port.ranges.minimum
             } else {
                 value = 1
             }
@@ -918,6 +924,10 @@ function HardwareManager(options) {
             form.find('.range').hide()
 
         } else if (port.properties.indexOf("enumeration") >= 0) {
+            // enumeration, step is list size - 1
+            var step = port.scalePoints.length - 1
+            min.attr("step", step)
+            max.attr("step", step)
             // hide ranges
             form.find('.range').hide()
 
