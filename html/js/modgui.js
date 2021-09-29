@@ -1774,8 +1774,11 @@ var baseWidget = {
             portSteps = port.scalePoints.length - 1
             dragPrecision = portSteps * 8
         } else if (port.properties.indexOf("integer") >= 0 && port.properties.indexOf("logarithmic") < 0) {
-            dragPrecision = port.ranges.maximum - port.ranges.minimum
-            portSteps = Math.min(300, dragPrecision)
+            portSteps = port.ranges.maximum - port.ranges.minimum
+            while (portSteps > 300) {
+                portSteps /= 2
+            }
+            dragPrecision = portSteps + 50 * Math.log10(1 + Math.pow(2, 1 / portSteps))
         } else {
             portSteps = self.data('filmSteps')
             dragPrecision = portSteps / 2
