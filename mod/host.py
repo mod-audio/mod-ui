@@ -451,8 +451,8 @@ class Host(object):
         self.addressings._task_addressing = self.addr_task_addressing
         self.addressings._task_unaddressing = self.addr_task_unaddressing
         self.addressings._task_set_value = self.addr_task_set_value
-        self.addressings._task_get_plugin_data = self.addr_task_get_plugin_data
         self.addressings._task_get_plugin_cv_port_op_mode = self.addr_task_get_plugin_cv_port_op_mode
+        self.addressings._task_get_plugin_data = self.addr_task_get_plugin_data
         self.addressings._task_get_plugin_presets = self.addr_task_get_plugin_presets
         self.addressings._task_get_port_value = self.addr_task_get_port_value
         self.addressings._task_store_address_data = self.addr_task_store_address_data
@@ -461,7 +461,8 @@ class Host(object):
         self.addressings._task_act_added = self.addr_task_act_added
         self.addressings._task_act_removed = self.addr_task_act_removed
         self.addressings._task_set_available_pages = self.addr_task_set_available_pages
-        self.hmi.set_host_map_callback(self.addr_hmi_map)
+        self.addressings._task_host_hmi_map = self.addr_host_hmi_map
+        self.addressings._task_host_hmi_unmap = self.addr_host_hmi_unmap
 
         # Register HMI protocol callbacks (they are without arguments here)
         Protocol.register_cmd_callback('ALL', CMD_BANKS, self.hmi_list_banks)
@@ -660,12 +661,15 @@ class Host(object):
     # -----------------------------------------------------------------------------------------------------------------
     # Addressing callbacks
 
-    def addr_hmi_map(self, instance_id, portsymbol, hw_id, caps, flags, label, min, max, steps):
+    def addr_host_hmi_map(self, instance_id, portsymbol, hw_id, caps, flags, label, min, max, steps):
         page = self.addressings.current_page
         subpage = self.addressings.hmi_hwsubpages.get(hw_id, 0) or 0
         self.send_notmodified("hmi_map %i %s %i %i %i %i %i %s %f %f %i" % (instance_id, portsymbol,
                                                                             hw_id, page, subpage,
                                                                             caps, flags, label, min, max, steps))
+
+    def addr_host_hmi_unmap(self, instance_id, portsymbol):
+        self.send_notmodified("hmi_unmap %i %s" % (instance_id, portsymbol))
 
     def addr_task_addressing(self, atype, actuator, data, callback, send_hmi=True):
         if atype == Addressings.ADDRESSING_TYPE_HMI:
@@ -768,13 +772,10 @@ class Host(object):
         if atype == Addressings.ADDRESSING_TYPE_HMI:
             self.pedalboard_modified = True
             if send_hmi:
-                self.send_notmodified("hmi_unmap %i %s" % (instance_id, portsymbol))
                 self.hmi.control_rm(hw_ids, callback)
-                return
-            else:
-                if callback is not None:
-                    callback(True)
-                return
+            elif callback is not None:
+                callback(True)
+            return
 
         if atype == Addressings.ADDRESSING_TYPE_CC:
             self.send_modified("cc_unmap %d %s" % (instance_id, portsymbol), callback, datatype='boolean')
@@ -2077,7 +2078,7 @@ class Host(object):
                                                                             addressing['operational_mode']))
                     elif actuator_type == Addressings.ADDRESSING_TYPE_HMI and not addressing.get('tempo', False):
                         hw_id = self.addressings.hmi_uri2hw_map[addressing['actuator_uri']]
-                        self.hmi.control_remap(hw_id, addressing)
+                        self.addressings.remap_host_hmi(hw_id, addressing)
 
         for port_from, port_to in self.connections:
             websocket.write_message("connect %s %s" % (port_from, port_to))

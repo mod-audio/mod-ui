@@ -55,6 +55,19 @@ CV_PREFIX = 'cv_'
 CV_OPTION = '/cv'
 HW_CV_PREFIX = CV_OPTION + '/graph/' + CV_PREFIX
 
+# definitions from lv2-hmi.h
+# LV2_HMI_AddressingCapabilities
+LV2_HMI_AddressingCapability_LED       = 1 << 0
+LV2_HMI_AddressingCapability_Label     = 1 << 1
+LV2_HMI_AddressingCapability_Value     = 1 << 2
+LV2_HMI_AddressingCapability_Unit      = 1 << 3
+LV2_HMI_AddressingCapability_Indicator = 1 << 4
+# LV2_HMI_AddressingFlags
+LV2_HMI_AddressingFlag_Coloured    = 1 << 0
+LV2_HMI_AddressingFlag_Momentary   = 1 << 1
+LV2_HMI_AddressingFlag_Reverse     = 1 << 2
+LV2_HMI_AddressingFlag_TapTempo    = 1 << 3
+
 class Addressings(object):
     ADDRESSING_TYPE_NONE = 0
     ADDRESSING_TYPE_HMI  = 1
@@ -68,6 +81,7 @@ class Addressings(object):
         self._task_addressing = None
         self._task_unaddressing = None
         self._task_set_value = None
+        self._task_get_plugin_cv_port_op_mode = None
         self._task_get_plugin_data = None
         self._task_get_plugin_presets = None
         self._task_get_port_value = None
@@ -77,7 +91,8 @@ class Addressings(object):
         self._task_act_added   = None
         self._task_act_removed = None
         self._task_set_available_pages = None
-        self._task_get_plugin_cv_port_op_mode = None
+        self._task_host_hmi_map = None
+        self._task_host_hmi_unmap = None
 
         self.cchain = ControlChainDeviceListener(self.cc_hardware_added,
                                                  self.cc_hardware_removed,
@@ -820,6 +835,10 @@ class Addressings(object):
             # else:
             #     addressings['addrs'].insert(old_hmi_index, addressing_data)
 
+            if self._task_host_hmi_map is not None and not tempo:
+                hw_id = self.hmi_uri2hw_map[actuator_uri]
+                self.remap_host_hmi(hw_id, addressing_data)
+
         elif actuator_type == self.ADDRESSING_TYPE_BPM:
             addressings = self.virtual_addressings[actuator_uri]
             addressings.append(addressing_data)
@@ -1021,21 +1040,28 @@ class Addressings(object):
         actuator_subpage  = self.hmi_hwsubpages[actuator_hmi]
         addressings_addrs = addressings['addrs']
 
+        actuator_uri = addressing_data['actuator_uri']
+        instance_id = addressing_data['instance_id']
+        portsymbol = addressing_data['port']
+
         if self.addressing_pages:
             was_assigned = self.is_page_assigned(addressings_addrs, self.current_page, actuator_subpage)
 
         for i, addr in enumerate(addressings_addrs):
-            if addressing_data['actuator_uri'] != addr['actuator_uri']:
+            if actuator_uri != addr['actuator_uri']:
                 continue
-            if addressing_data['instance_id'] != addr['instance_id']:
+            if instance_id != addr['instance_id']:
                 continue
-            if addressing_data['port'] != addr['port']:
+            if portsymbol != addr['port']:
                 continue
             index = i
             addressings_addrs.pop(index)
             break
         else:
             return False
+
+        if self._task_host_hmi_unmap is not None:
+            self._task_host_hmi_unmap(instance_id, portsymbol)
 
         if self.addressing_pages:
             return was_assigned
@@ -1227,6 +1253,55 @@ class Addressings(object):
             return addressings_addrs[addressings['idx']]
 
     # def hmi_load_next_page(self, page_to_load, callback):
+
+    def remap_host_hmi(self, hw_id, data):
+        if self._task_host_hmi_map is None:
+            return
+
+        label = data['label']
+        hmitype = data['hmitype']
+
+        if data.get('group', None) is not None and self.hw_desc.get('hmi_actuator_group_prefix', True):
+            if hmitype & FLAG_CONTROL_REVERSE:
+                prefix = "- "
+            else:
+                prefix = "+ "
+            label = prefix + label
+
+        label = '"%s"' % label.replace('"', "")[:31].upper()
+
+        hostcaps = 0x0
+        for actuator in self.hw_actuators:
+            if actuator['id'] != hw_id:
+                continue
+            widgets = actuator.get('widgets', None)
+            if widgets is None:
+                break
+            if "led" in widgets:
+                hostcaps |= LV2_HMI_AddressingCapability_LED
+            if "label" in widgets:
+                hostcaps |= LV2_HMI_AddressingCapability_Label
+            if "value" in widgets:
+                hostcaps |= LV2_HMI_AddressingCapability_Value
+            if "unit" in widgets:
+                hostcaps |= LV2_HMI_AddressingCapability_Unit
+            if "indicator" in widgets:
+                hostcaps |= LV2_HMI_AddressingCapability_Indicator
+            break
+
+        hostflags = 0x0
+        if data.get('coloured', False):
+            hostflags |= LV2_HMI_AddressingFlag_Coloured
+        if hmitype & FLAG_CONTROL_MOMENTARY:
+            hostflags |= LV2_HMI_AddressingFlag_Momentary
+        if hmitype & FLAG_CONTROL_REVERSE:
+            hostflags |= LV2_HMI_AddressingFlag_Reverse
+        if hmitype & FLAG_CONTROL_TAP_TEMPO:
+            hostflags |= LV2_HMI_AddressingFlag_TapTempo
+
+        self._task_host_hmi_map(data['instance_id'], data['port'],
+                                hw_id, hostcaps, hostflags, label,
+                                data['minimum'], data['maximum'], data['steps'])
 
     # -----------------------------------------------------------------------------------------------------------------
     # Control Chain specific functions
