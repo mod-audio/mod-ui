@@ -1258,6 +1258,8 @@ class Addressings(object):
         if self._task_host_hmi_map is None:
             return
 
+        page = data['page'] or 0
+        subpage = data['subpage'] or 0
         label = data['label']
         hmitype = data['hmitype']
 
@@ -1299,9 +1301,8 @@ class Addressings(object):
         if hmitype & FLAG_CONTROL_TAP_TEMPO:
             hostflags |= LV2_HMI_AddressingFlag_TapTempo
 
-        self._task_host_hmi_map(data['instance_id'], data['port'],
-                                hw_id, hostcaps, hostflags, label,
-                                data['minimum'], data['maximum'], data['steps'])
+        self._task_host_hmi_map(data['instance_id'], data['port'], hw_id, page, subpage,
+                                hostcaps, hostflags, label, data['minimum'], data['maximum'], data['steps'])
 
     # -----------------------------------------------------------------------------------------------------------------
     # Control Chain specific functions

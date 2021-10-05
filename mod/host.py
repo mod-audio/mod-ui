@@ -661,9 +661,7 @@ class Host(object):
     # -----------------------------------------------------------------------------------------------------------------
     # Addressing callbacks
 
-    def addr_host_hmi_map(self, instance_id, portsymbol, hw_id, caps, flags, label, min, max, steps):
-        page = self.addressings.current_page
-        subpage = self.addressings.hmi_hwsubpages.get(hw_id, 0) or 0
+    def addr_host_hmi_map(self, instance_id, portsymbol, hw_id, page, subpage, caps, flags, label, min, max, steps):
         self.send_notmodified("hmi_map %i %s %i %i %i %i %i %s %f %f %i" % (instance_id, portsymbol,
                                                                             hw_id, page, subpage,
                                                                             caps, flags, label, min, max, steps))
