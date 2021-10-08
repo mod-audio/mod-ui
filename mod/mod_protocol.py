@@ -91,7 +91,6 @@ CMD_ARGS = {
         'bc': [int,int],
         'n': [int],
         'si': [int,int,int],
-        'ncp': [int,int], # TODO
     },
     'DUOX': {
         'boot': [int,int,str,],

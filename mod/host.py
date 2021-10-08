@@ -491,11 +491,7 @@ class Host(object):
 
         Protocol.register_cmd_callback('ALL', CMD_SCREENSHOT, self.hmi_screenshot)
 
-        # TODO support on duo and duox
-        if self.descriptor.get('platform', None) != "dwarf":
-            Protocol.register_cmd_callback('DUO', CMD_CONTROL_PAGE, self.hmi_next_control_page_compat)
-        else:
-            Protocol.register_cmd_callback('ALL', CMD_CONTROL_PAGE, self.hmi_next_control_page)
+        Protocol.register_cmd_callback('ALL', CMD_CONTROL_PAGE, self.hmi_next_control_page)
 
         Protocol.register_cmd_callback('ALL', CMD_TUNER_ON, self.hmi_tuner_on)
         Protocol.register_cmd_callback('ALL', CMD_TUNER_OFF, self.hmi_tuner_off)
@@ -5628,14 +5624,6 @@ _:b%i
         callback(True)
         self.addressings.hmi_load_subpage(hw_id, subpage)
 
-    def hmi_next_control_page_compat(self, hw_id, props, callback):
-        logging.debug("hmi next control page (compat) %d %d", hw_id, props)
-        try:
-            self.hmi_next_control_page_real(hw_id, props, None, callback)
-        except Exception as e:
-            callback(False)
-            logging.exception(e)
-
     def hmi_next_control_page(self, hw_id, props, control_index, callback):
         logging.debug("hmi next control page %d %d %d", hw_id, props, control_index)
         try:
@@ -5668,14 +5656,14 @@ _:b%i
         numOpts = len(options)
         value   = self.addr_task_get_port_value(instance_id, portsymbol)
 
-        # old compat mode
-        if control_index is None:
-            dir_up = props & FLAG_PAGINATION_PAGE_UP
-            ivalue, value = get_nearest_valid_scalepoint_value(value, options)
-            ivalue += 1 if dir_up != 0 else -1
-        # proper new mode
-        else:
-            ivalue = control_index
+        ## old compat mode
+        #if control_index is None:
+            #dir_up = props & FLAG_PAGINATION_PAGE_UP
+            #ivalue, value = get_nearest_valid_scalepoint_value(value, options)
+            #ivalue += 1 if dir_up != 0 else -1
+        ## proper new mode
+        #else:
+        ivalue = control_index
 
         wrap = props & FLAG_PAGINATION_WRAP_AROUND
 
@@ -5690,8 +5678,8 @@ _:b%i
             else:
                 ivalue = 0
 
-        if control_index is None:
-            value = options[ivalue][0]
+        #if control_index is None:
+            #value = options[ivalue][0]
 
         # note: the code below matches hmi.py control_add
         optionsData = []
@@ -5743,13 +5731,13 @@ _:b%i
                     options,
                   ))
 
-        if control_index is not None:
-            return
+        #if control_index is not None:
+            #return
 
-        try:
-            yield gen.Task(self.hmi_or_cc_parameter_set, instance_id, portsymbol, value, hw_id)
-        except Exception as e:
-            logging.exception(e)
+        #try:
+            #yield gen.Task(self.hmi_or_cc_parameter_set, instance_id, portsymbol, value, hw_id)
+        #except Exception as e:
+            #logging.exception(e)
 
     def hmi_save_current_pedalboard(self, callback):
         if not self.pedalboard_path:
