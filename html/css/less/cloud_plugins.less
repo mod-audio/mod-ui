@@ -283,12 +283,19 @@
         position: absolute;
         top: 10px;
         left: 20px;
-        width: calc(~'100% - 20px');
-        background-size: auto 64px;
-        background-position: 0% 50%;
-        background-repeat: no-repeat;
         margin: 0;
         transition: all 0.33s linear;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+      }
+      figure img {
+        height: auto;
+        margin: 0 auto 3px;
+        width: auto;
+        pointer-events: none;
+        max-width: 256px;
+        max-height: 64px;
       }
       span.price {
         transition: all 0.33s linear;

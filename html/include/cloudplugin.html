@@ -1,9 +1,10 @@
 <div class="cloud-plugin plugin-container available-plugin js-available-effect" mod-role="cloud-plugin" mod-uri="{{uri}}">
     <div class="cloud-plugin-border">
-        <figure class="thumb" style="background-image: url('{{thumbnail_href}}');">
-        {{#demo}}
+        <figure class="thumb">
+            {{#demo}}
             <div class="demo-plugin demo-mask" title="This plugin is for demo purposes only and shall not be used live or in a studio"></div>
-        {{/demo}}
+            {{/demo}}
+            <img src="{{thumbnail_href}}" />
         </figure>
         <div class="description">
             <span class="title">{{label}}</span>
