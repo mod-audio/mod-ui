@@ -15,7 +15,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import os, json
+import os
+import json
+import re
 from mod import safe_json_load, TextFileFlusher
 from mod.settings import BANKS_JSON_FILE, LAST_STATE_JSON_FILE
 
@@ -28,9 +30,28 @@ def list_banks(brokenpedalbundles = [], shouldSave = True):
 
     changed     = False
     checkbroken = len(brokenpedalbundles) > 0
-    validbanks  = []
+    banknames   = []
 
     for bank in banks:
+        # check for unique names
+        title = bank['title']
+        if title in banknames:
+            match = re.match(r'^.* \(([0-9]*)\)$', title)
+            if match is None:
+                title += ' (2)'
+                if title in banknames:
+                    match = re.match(r'^.* \(([0-9]*)\)$', title)
+            while match is not None:
+                num = int(match.groups()[0])
+                title = title[:title.rfind('(')] + '({})'.format(num + 1)
+                if title not in banknames:
+                    break
+                match = re.match(r'^.* \(([0-9]*)\)$', title)
+            bank['title'] = title
+            changed = True
+        banknames.append(title)
+
+        # check for valid pedalboards
         validpedals = []
 
         for pb in bank['pedalboards']:
@@ -57,12 +78,11 @@ def list_banks(brokenpedalbundles = [], shouldSave = True):
             print("NOTE: bank with name '%s' does not contain any pedalboards" % title)
 
         bank['pedalboards'] = validpedals
-        validbanks.append(bank)
 
     if changed and shouldSave:
-        save_banks(validbanks)
+        save_banks(banks)
 
-    return validbanks
+    return banks
 
 # save banks to disk
 def save_banks(banks):

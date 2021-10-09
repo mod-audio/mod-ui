@@ -35,6 +35,7 @@ from random import randint
 from tornado import gen, iostream
 from tornado.ioloop import IOLoop, PeriodicCallback
 from PIL import Image
+import re
 import os, json, socket, time, logging
 import shutil
 
@@ -1055,7 +1056,7 @@ class Host(object):
 
         # load everything
         self.allpedalboards, badbundles = get_all_good_and_bad_pedalboards()
-        self.banks = list_banks(badbundles, False)
+        self.banks = list_banks(badbundles, True)
 
         bank_id, pedalboard = get_last_bank_and_pedalboard()
 
@@ -2821,6 +2822,24 @@ class Host(object):
     # -----------------------------------------------------------------------------------------------------------------
     # Host stuff - pedalboard snapshots
 
+    def _snapshot_unique_name(self, name):
+        names = tuple(pbss['name'] for pbss in self.pedalboard_snapshots)
+
+        if name in names:
+            match = re.match(r'^.* \(([0-9]*)\)$', name)
+            if match is None:
+                name += ' (2)'
+                if name in names:
+                    match = re.match(r'^.* \(([0-9]*)\)$', name)
+            while match is not None:
+                num = int(match.groups()[0])
+                name = name[:name.rfind('(')] + '({})'.format(num + 1)
+                if name not in names:
+                    break
+                match = re.match(r'^.* \(([0-9]*)\)$', name)
+
+        return name
+
     def snapshot_make(self, name):
         self.pedalboard_modified = True
 
@@ -2865,7 +2884,7 @@ class Host(object):
         return True
 
     def snapshot_saveas(self, name):
-        snapshot = self.snapshot_make(name)
+        snapshot = self.snapshot_make(self._snapshot_unique_name(name))
         self.pedalboard_snapshots.append(snapshot)
         self.current_pedalboard_snapshot_id = len(self.pedalboard_snapshots)-1
         return self.current_pedalboard_snapshot_id
@@ -2874,9 +2893,11 @@ class Host(object):
         if idx < 0 or idx >= len(self.pedalboard_snapshots) or self.pedalboard_snapshots[idx] is None:
             return False
 
-        self.pedalboard_modified = True
-        self.pedalboard_snapshots[idx]['name'] = name
+        if self.pedalboard_snapshots[idx]['name'] == name:
+            return True
 
+        self.pedalboard_modified = True
+        self.pedalboard_snapshots[idx]['name'] = self._snapshot_unique_name(name)
         return True
 
     def snapshot_remove(self, idx):
@@ -3497,7 +3518,26 @@ class Host(object):
             self.pedalboard_snapshots = safe_json_load(os.path.join(bundlepath, "presets.json"), list)
             self.current_pedalboard_snapshot_id = 0
 
-        if not self.pedalboard_snapshots:
+        if self.pedalboard_snapshots:
+            # make sure names are unique
+            names = []
+            for pbss in self.pedalboard_snapshots:
+                name = pbss['name']
+                if name in names:
+                    match = re.match(r'^.* \(([0-9]*)\)$', name)
+                    if match is None:
+                        name += ' (2)'
+                        if name in names:
+                            match = re.match(r'^.* \(([0-9]*)\)$', name)
+                    while match is not None:
+                        num = int(match.groups()[0])
+                        name = name[:name.rfind('(')] + '({})'.format(num + 1)
+                        if name not in names:
+                            break
+                        match = re.match(r'^.* \(([0-9]*)\)$', name)
+                    pbss['name'] = name
+                names.append(name)
+        else:
             self.snapshot_clear()
 
     def load_pb_plugins(self, plugins, instances, rinstances):

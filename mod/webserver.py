@@ -1530,12 +1530,14 @@ class SnapshotSaveAs(JsonRequestHandler):
     def get(self):
         title = self.get_argument('title')
         idx   = SESSION.host.snapshot_saveas(title)
+        title = SESSION.host.snapshot_name(idx)
 
         yield gen.Task(SESSION.host.hmi_report_ss_name_if_current, idx)
 
         self.write({
             'ok': idx is not None,
-            'id': idx
+            'id': idx,
+            'title': title,
         })
 
 class SnapshotRename(JsonRequestHandler):
@@ -1546,9 +1548,15 @@ class SnapshotRename(JsonRequestHandler):
         title = self.get_argument('title')
         ok    = SESSION.host.snapshot_rename(idx, title)
 
+        if ok:
+            title = SESSION.host.snapshot_name(idx)
+
         yield gen.Task(SESSION.host.hmi_report_ss_name_if_current, idx)
 
-        self.write(ok)
+        self.write({
+            'ok': ok,
+            'title': title,
+        })
 
 class SnapshotRemove(JsonRequestHandler):
     def get(self):

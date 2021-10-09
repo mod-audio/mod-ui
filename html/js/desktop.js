@@ -1029,7 +1029,7 @@ function Desktop(elements) {
                     }
                     self.pedalboardPresetId = resp.id
                     self.pedalboardModified = true
-                    self.titleBox.text((self.title || 'Untitled') + " - " + newName)
+                    self.titleBox.text((self.title || 'Untitled') + " - " + resp.title)
                     new Notification('info', 'Pedalboard snapshot saved', 2000)
                 },
                 error: function () {
