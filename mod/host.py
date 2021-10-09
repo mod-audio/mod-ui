@@ -1668,33 +1668,19 @@ class Host(object):
 
             if self.hmi.initialized:
                 if rolling_changed:
-                    try:
-                        yield gen.Task(self.hmi.set_profile_value, MENU_ID_PLAY_STATUS, int(rolling))
-                    except Exception as e:
-                        logging.exception(e)
+                    self.next_hmi_play[0] = rolling
+                    self.next_hmi_play[1] = self.next_hmi_play[2] = True
 
                 if bpb_changed:
-                    try:
-                        yield gen.Task(self.hmi.set_profile_value, MENU_ID_BEATS_PER_BAR, bpb)
-                    except Exception as e:
-                        logging.exception(e)
+                    self.next_hmi_bpb[0] = bpb
+                    self.next_hmi_bpb[1] = self.next_hmi_bpb[2] = True
 
                 if bpm_changed:
-                    try:
-                        yield gen.Task(self.hmi.set_profile_value, MENU_ID_TEMPO, bpm)
-                    except Exception as e:
-                        logging.exception(e)
+                    self.next_hmi_bpm[0] = bpm
+                    self.next_hmi_bpm[1] = self.next_hmi_bpm[2] = True
 
                     for actuator_uri in self.addressings.virtual_addressings:
                         addrs = self.addressings.virtual_addressings[actuator_uri]
-                        for addr in addrs:
-                            try:
-                                yield gen.Task(self.set_param_from_bpm, addr, bpm)
-                            except Exception as e:
-                                logging.exception(e)
-
-                    for actuator_uri in self.addressings.hmi_addressings:
-                        addrs = self.addressings.hmi_addressings[actuator_uri]['addrs']
                         for addr in addrs:
                             try:
                                 yield gen.Task(self.set_param_from_bpm, addr, bpm)
