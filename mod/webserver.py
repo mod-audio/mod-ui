@@ -1287,13 +1287,14 @@ class PedalboardSave(JsonRequestHandler):
 
         def saved_cb(ok):
             self.write({
-                'ok': bundlepath is not None,
-                'bundlepath': bundlepath
+                'ok'        : bundlepath is not None,
+                'bundlepath': bundlepath,
+                'title'     : newTitle or title,
             })
 
-        bundlepath, newPB = SESSION.web_save_pedalboard(title, asNew, saved_cb)
+        bundlepath, newTitle = SESSION.web_save_pedalboard(title, asNew, saved_cb)
 
-        if newPB:
+        if newTitle:
             reset_get_all_pedalboards_cache()
         else:
             update_cached_pedalboard_version(bundlepath)

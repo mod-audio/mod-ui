@@ -136,6 +136,28 @@ def get_nearest_valid_scalepoint_value(value, options):
     return (smallestpos, options[smallestpos][0])
 
 
+def get_unique_name(name, names):
+    if name not in names:
+        return None
+
+    regex = r'^.* \(([0-9]*)\)$'
+    match = re.match(regex, name)
+
+    if match is None:
+        name += ' (2)'
+        if name in names:
+            match = re.match(regex, name)
+
+    while match is not None:
+        num = int(match.groups()[0])
+        name = name[:name.rfind('(')] + '({})'.format(num + 1)
+        if name not in names:
+            return name
+        match = re.match(regex, name)
+
+    return name
+
+
 def safe_json_load(path, objtype):
     if not os.path.exists(path):
         return objtype()

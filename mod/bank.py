@@ -17,8 +17,7 @@
 
 import os
 import json
-import re
-from mod import safe_json_load, TextFileFlusher
+from mod import get_unique_name, safe_json_load, TextFileFlusher
 from mod.settings import BANKS_JSON_FILE, LAST_STATE_JSON_FILE
 
 # return list of banks
@@ -34,22 +33,11 @@ def list_banks(brokenpedalbundles = [], shouldSave = True):
 
     for bank in banks:
         # check for unique names
-        title = bank['title']
-        if title in banknames:
-            match = re.match(r'^.* \(([0-9]*)\)$', title)
-            if match is None:
-                title += ' (2)'
-                if title in banknames:
-                    match = re.match(r'^.* \(([0-9]*)\)$', title)
-            while match is not None:
-                num = int(match.groups()[0])
-                title = title[:title.rfind('(')] + '({})'.format(num + 1)
-                if title not in banknames:
-                    break
-                match = re.match(r'^.* \(([0-9]*)\)$', title)
-            bank['title'] = title
+        ntitle = get_unique_name(bank['title'], banknames)
+        if ntitle is not None:
+            bank['title'] = ntitle
             changed = True
-        banknames.append(title)
+        banknames.append(bank['title'])
 
         # check for valid pedalboards
         validpedals = []

@@ -223,6 +223,7 @@ function Desktop(elements) {
     this.pedalboardEmpty  = true
     this.pedalboardModified = false
     this.pedalboardPresetId = 0
+    this.pedalboardPresetName = ''
     this.loadingPeldaboardForFirstTime = true
     this.licenseManager = null
 
@@ -935,7 +936,7 @@ function Desktop(elements) {
                         // dummy call to keep 1 ajax request active while screenshot is generated
                         self.waitForScreenshot(false, function(){})
                         // all set
-                        callback(true, result.bundlepath, name)
+                        callback(true, result.bundlepath, result.title)
                     } else {
                         callback(false, "Failed to save")
                     }
@@ -1028,6 +1029,7 @@ function Desktop(elements) {
                         return
                     }
                     self.pedalboardPresetId = resp.id
+                    self.pedalboardPresetName = resp.title
                     self.pedalboardModified = true
                     self.titleBox.text((self.title || 'Untitled') + " - " + resp.title)
                     new Notification('info', 'Pedalboard snapshot saved', 2000)
@@ -1474,6 +1476,7 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
                     self.pedalboardEmpty  = true
                     self.pedalboardModified = false
                     self.pedalboardPresetId = 0
+                    self.pedalboardPresetName = ''
                     self.titleBox.text('Untitled')
                     self.titleBox.addClass("blend")
                     self.transportControls.resetControlsEnabled()
@@ -1848,7 +1851,6 @@ Desktop.prototype.saveCurrentPedalboard = function (asNew, callback) {
             }
 
             if (asNew || ! self.title) {
-                self.titleBox.text(title)
                 self.titleBox.removeClass("blend");
                 self.previousPedalboardList = null
             }
@@ -1857,6 +1859,7 @@ Desktop.prototype.saveCurrentPedalboard = function (asNew, callback) {
             self.pedalboardBundle = errorOrPath
             self.pedalboardEmpty = false
             self.pedalboardModified = false
+            self.titleBox.text(title + " - " + self.pedalboardPresetName)
 
             if (self.previousPedalboardList != null) {
                 for (var i=0; i<self.previousPedalboardList.length; i++) {
