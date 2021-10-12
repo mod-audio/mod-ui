@@ -35,13 +35,13 @@ from random import randint
 from tornado import gen, iostream
 from tornado.ioloop import IOLoop, PeriodicCallback
 from PIL import Image
-import re
 import os, json, socket, time, logging
 import shutil
 
 from mod import (
     TextFileFlusher,
-    get_hardware_descriptor, get_nearest_valid_scalepoint_value, read_file_contents, safe_json_load, symbolify
+    get_hardware_descriptor, get_nearest_valid_scalepoint_value, get_unique_name,
+    read_file_contents, safe_json_load, symbolify
 )
 from mod.addressings import Addressings
 from mod.bank import (
@@ -146,7 +146,7 @@ from modtools.utils import (
     is_bundle_loaded, add_bundle_to_lilv_world, remove_bundle_from_lilv_world,
     is_plugin_preset_valid, rescan_plugin_presets,
     get_plugin_info, get_plugin_info_essentials, get_pedalboard_info, get_state_port_values,
-    list_plugins_in_bundle, get_all_pedalboards, get_pedalboard_plugin_values,
+    list_plugins_in_bundle, get_all_pedalboards, get_all_pedalboard_names, get_pedalboard_plugin_values,
     init_jack, close_jack, get_jack_data,
     init_bypass, get_jack_port_alias, get_jack_hardware_ports,
     has_serial_midi_input_port, has_serial_midi_output_port,
@@ -2811,21 +2811,7 @@ class Host(object):
 
     def _snapshot_unique_name(self, name):
         names = tuple(pbss['name'] for pbss in self.pedalboard_snapshots)
-
-        if name in names:
-            match = re.match(r'^.* \(([0-9]*)\)$', name)
-            if match is None:
-                name += ' (2)'
-                if name in names:
-                    match = re.match(r'^.* \(([0-9]*)\)$', name)
-            while match is not None:
-                num = int(match.groups()[0])
-                name = name[:name.rfind('(')] + '({})'.format(num + 1)
-                if name not in names:
-                    break
-                match = re.match(r'^.* \(([0-9]*)\)$', name)
-
-        return name
+        return get_unique_name(name, names) or name
 
     def snapshot_make(self, name):
         self.pedalboard_modified = True
@@ -3521,21 +3507,10 @@ class Host(object):
             # make sure names are unique
             names = []
             for pbss in self.pedalboard_snapshots:
-                name = pbss['name']
-                if name in names:
-                    match = re.match(r'^.* \(([0-9]*)\)$', name)
-                    if match is None:
-                        name += ' (2)'
-                        if name in names:
-                            match = re.match(r'^.* \(([0-9]*)\)$', name)
-                    while match is not None:
-                        num = int(match.groups()[0])
-                        name = name[:name.rfind('(')] + '({})'.format(num + 1)
-                        if name not in names:
-                            break
-                        match = re.match(r'^.* \(([0-9]*)\)$', name)
-                    pbss['name'] = name
-                names.append(name)
+                nname = get_unique_name(pbss['name'], names)
+                if nname is not None:
+                    pbss['name'] = nname
+                names.append(pbss['name'])
         else:
             self.snapshot_clear()
 
@@ -3755,16 +3730,19 @@ class Host(object):
                         port_conns.append((port_from, port_to))
 
     def save(self, title, asNew, callback):
-        titlesym = symbolify(title)[:16]
-
         # Save over existing bundlepath
-        if self.pedalboard_path and os.path.exists(self.pedalboard_path) and os.path.isdir(self.pedalboard_path) and \
-            self.pedalboard_path.startswith(LV2_PEDALBOARDS_DIR) and not asNew:
+        if self.pedalboard_path and not asNew and \
+            os.path.isdir(self.pedalboard_path) and self.pedalboard_path.startswith(LV2_PEDALBOARDS_DIR):
             bundlepath = self.pedalboard_path
-            newPedalboard = False
+            titlesym = symbolify(title)[:16]
+            newTitle = None
 
         # Save new
         else:
+            # ensure unique title
+            newTitle = title = get_unique_name(title, get_all_pedalboard_names()) or title
+            titlesym = symbolify(title)[:16]
+
             lv2path = os.path.expanduser("~/.pedalboards/")
             trypath = os.path.join(lv2path, "%s.pedalboard" % titlesym)
 
@@ -3785,10 +3763,9 @@ class Host(object):
                 if not os.path.exists(lv2path):
                     os.mkdir(lv2path)
 
+            # create bundle path
             os.mkdir(bundlepath)
-
             self.pedalboard_path = bundlepath
-            newPedalboard = True
 
         # save ttl
         self.pedalboard_name     = title
@@ -3804,7 +3781,7 @@ class Host(object):
         # ask host to save any needed extra state
         self.send_notmodified("state_save {}".format(bundlepath), state_saved_cb, datatype='boolean')
 
-        return bundlepath, newPedalboard
+        return bundlepath, newTitle
 
     def save_state_to_ttl(self, bundlepath, title, titlesym):
         self.save_state_manifest(bundlepath, titlesym)
