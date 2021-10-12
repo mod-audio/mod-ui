@@ -1946,7 +1946,7 @@ var baseWidget = {
             img.remove()
             self.data('prevent', false)
         }, 500)
-        new Notification("warn", "Cannot change a parameter addressed to hardware", 3000)
+        new Notification("warn", "Parameter value change blocked by the active adressing", 3000)
     }
 }
 
