@@ -2140,7 +2140,8 @@ class FilesList(JsonRequestHandler):
         self.filetypes = filetypes.split(",")
 
     def get(self):
-        retfiles = []
+        retfiles = {}
+        fullnames = []
 
         for filetype in self.filetypes:
             datadir, extensions = self._get_dir_and_extensions_for_filetype(filetype)
@@ -2150,15 +2151,19 @@ class FilesList(JsonRequestHandler):
 
             for root, dirs, files in os.walk(os.path.join(USER_FILES_DIR, datadir)):
                 for name in tuple(name for name in sorted(files) if name.lower().endswith(extensions)):
-                    retfiles.append({
-                        'fullname': os.path.join(root, name),
+                    fullname = os.path.join(root, name)
+                    fullnames.append(fullname)
+                    retfiles[fullname] = {
+                        'fullname': fullname,
                         'basename': name,
                         'filetype': filetype,
-                    })
+                    }
+
+        fullnames.sort()
 
         self.write({
             'ok': True,
-            'files': retfiles,
+            'files': tuple(retfiles[fn] for fn in fullnames),
         })
 
 settings = {'log_function': lambda handler: None} if not LOG else {}
