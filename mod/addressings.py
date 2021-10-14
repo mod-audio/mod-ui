@@ -117,6 +117,7 @@ class Addressings(object):
         self.hw_actuators = desc.get('actuators', [])
         self.hw_actuators_uris = tuple(a['uri'] for a in self.hw_actuators)
         self.has_hmi_subpages = bool(desc.get('hmi_subpages', False))
+        self.hmi_show_actuator_group_prefix = bool(desc.get('hmi_actuator_group_prefix', True))
         self.hmi_show_empty_pages = bool(desc.get('hmi_show_empty_pages', False))
         self.addressing_pages = int(desc.get('addressing_pages', 0))
         self.current_page = 0
@@ -1263,7 +1264,7 @@ class Addressings(object):
         label = data['label']
         hmitype = data['hmitype']
 
-        if data.get('group', None) is not None and self.hw_desc.get('hmi_actuator_group_prefix', True):
+        if data.get('group', None) is not None and self.hmi_show_actuator_group_prefix:
             if hmitype & FLAG_CONTROL_REVERSE:
                 prefix = "- "
             else:
