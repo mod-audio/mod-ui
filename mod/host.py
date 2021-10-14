@@ -5623,8 +5623,8 @@ _:b%i
 
     def hmi_parameter_load_subpage(self, hw_id, subpage, callback):
         logging.debug("hmi parameter load subpage")
-        callback(True)
         self.addressings.hmi_load_subpage(hw_id, subpage)
+        callback(True)
 
     def hmi_next_control_page_compat(self, hw_id, props, callback):
         logging.debug("hmi next control page (compat) %d %d", hw_id, props)
