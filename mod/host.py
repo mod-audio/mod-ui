@@ -456,6 +456,7 @@ class Host(object):
         self.addressings._task_get_plugin_data = self.addr_task_get_plugin_data
         self.addressings._task_get_plugin_presets = self.addr_task_get_plugin_presets
         self.addressings._task_get_port_value = self.addr_task_get_port_value
+        self.addressings._task_get_tempo_divider = self.addr_task_get_tempo_divider
         self.addressings._task_store_address_data = self.addr_task_store_address_data
         self.addressings._task_hw_added = self.addr_task_hw_added
         self.addressings._task_hw_removed = self.addr_task_hw_removed
@@ -881,6 +882,10 @@ class Host(object):
             return float(pluginData['mapPresets'].index(pluginData['preset']))
 
         return pluginData['ports'][portsymbol]
+
+    def addr_task_get_tempo_divider(self, instance_id, portsymbol):
+        pluginData = self.plugins[instance_id]
+        return pluginData['addressings'][portsymbol]['dividers']
 
     def addr_task_store_address_data(self, instance_id, portsymbol, data):
         pluginData = self.plugins[instance_id]

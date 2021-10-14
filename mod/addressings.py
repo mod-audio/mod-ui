@@ -85,6 +85,7 @@ class Addressings(object):
         self._task_get_plugin_data = None
         self._task_get_plugin_presets = None
         self._task_get_port_value = None
+        self._task_get_tempo_divider = None
         self._task_store_address_data = None
         self._task_hw_added    = None
         self._task_hw_removed  = None
@@ -1154,6 +1155,11 @@ class Addressings(object):
                 addressing_data['value'] = self._task_get_port_value(addressing_data['instance_id'],
                                                                      addressing_data['port'])
 
+                if addressing_data.get('tempo', False):
+                    dividers = self._task_get_tempo_divider(addressing_data['instance_id'],
+                                                            addressing_data['port'])
+                    addressing_data['dividers'] = dividers
+
         else:
             addressings_idx = addressings['idx']
             if addressings_len == addressings_idx:
@@ -1179,6 +1185,10 @@ class Addressings(object):
             addressing = addressings_addrs[addressings_idx]
             addressing['value'] = addressing_data['value'] = self._task_get_port_value(addressing['instance_id'],
                                                                                        addressing['port'])
+
+            if addressing_data.get('tempo', False):
+                dividers = self._task_get_tempo_divider(addressing['instance_id'], addressing['port'])
+                addressing['dividers'] = addressing_data['dividers'] = dividers
 
         # NOTE we never call `control_set` for HMI lists, as it breaks pagination
         if updateValue and not (addressing_data['hmitype'] & FLAG_CONTROL_ENUMERATION):
