@@ -2984,6 +2984,12 @@ class Host(object):
                         if addressing['actuator_uri'] not in used_actuators:
                             used_actuators.append(addressing['actuator_uri'])
 
+                            group_actuators = self.addressings.get_group_actuators(addressing['actuator_uri'])
+                            if group_actuators is not None:
+                                for actuator_uri in group_actuators:
+                                    if actuator_uri not in used_actuators:
+                                        used_actuators.append(actuator_uri)
+
             for symbol, value in data['ports'].items():
                 if symbol in pluginData['designations']:
                     continue
@@ -3004,6 +3010,12 @@ class Host(object):
                     addressing['value'] = value
                     if addressing['actuator_uri'] not in used_actuators:
                         used_actuators.append(addressing['actuator_uri'])
+
+                        group_actuators = self.addressings.get_group_actuators(addressing['actuator_uri'])
+                        if group_actuators is not None:
+                            for actuator_uri in group_actuators:
+                                if actuator_uri not in used_actuators:
+                                    used_actuators.append(actuator_uri)
 
             for uri, param in data.get('parameters', {}).items():
                 if pluginData['parameters'].get(uri, None) in (param, None):
