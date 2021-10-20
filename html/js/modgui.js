@@ -1767,18 +1767,25 @@ var baseWidget = {
 
         var port = options.port
 
-        var portSteps
+        var portSteps, dragPrecision
         if (port.properties.indexOf("toggled") >= 0) {
-            portSteps = 2
+            portSteps = dragPrecision = 1
         } else if (port.properties.indexOf("enumeration") >= 0 && port.scalePoints.length >= 2) {
-            portSteps = port.scalePoints.length
-            //port.scalePoints.sort(function (a, b) { return a.value - b.value })
+            portSteps = port.scalePoints.length - 1
+            dragPrecision = portSteps * 8
+        } else if (port.properties.indexOf("integer") >= 0 && port.properties.indexOf("logarithmic") < 0) {
+            portSteps = port.ranges.maximum - port.ranges.minimum
+            while (portSteps > 300) {
+                portSteps /= 2
+            }
+            dragPrecision = portSteps + 50 * Math.log10(1 + Math.pow(2, 1 / portSteps))
         } else {
             portSteps = self.data('filmSteps')
+            dragPrecision = portSteps / 2
         }
 
-        if (port.rangeSteps) {
-            portSteps = Math.min(port.rangeSteps, portSteps)
+        if (port.rangeSteps && port.rangeSteps >= 2) {
+            portSteps = dragPrecision = Math.min(port.rangeSteps - 1, portSteps)
         }
 
         // This is a bit verbose and could be optmized, but it's better that
@@ -1810,8 +1817,8 @@ var baseWidget = {
         self.data('wheelStep', wheelStep)
         self.data('stepDivider', stepDivider)
 
-        self.data('dragPrecisionVertical', Math.ceil(100 / portSteps))
-        self.data('dragPrecisionHorizontal', Math.ceil(portSteps / 10))
+        self.data('dragPrecisionVertical', Math.ceil(100 / dragPrecision))
+        self.data('dragPrecisionHorizontal', Math.ceil(200 / dragPrecision))
 
         var preferredMomentaryMode
         if (port.properties.indexOf("preferMomentaryOffByDefault") >= 0) {
@@ -1861,11 +1868,11 @@ var baseWidget = {
         var max = self.data('scaleMaximum')
         var portSteps = self.data('portSteps')
 
-        steps = Math.min(portSteps-1, Math.max(0, steps))
+        steps = Math.min(portSteps, Math.max(0, steps))
 
         var portSteps = self.data('portSteps')
 
-        var value = min + steps * (max - min) / (portSteps - 1)
+        var value = min + steps * (max - min) / portSteps
         if (self.data('logarithmic')) {
             value = Math.pow(2, value)
         }
@@ -1918,7 +1925,7 @@ var baseWidget = {
             value = Math.round(value)
         }
 
-        return Math.round((value - min) * (portSteps - 1) / (max - min))
+        return Math.round((value - min) * portSteps / (max - min))
     },
 
     prevent: function (e) {
@@ -1939,7 +1946,7 @@ var baseWidget = {
             img.remove()
             self.data('prevent', false)
         }, 500)
-        new Notification("warn", "Cannot change a parameter addressed to hardware", 3000)
+        new Notification("warn", "Parameter value change blocked by the active adressing", 3000)
     }
 }
 
@@ -2088,7 +2095,7 @@ JqueryClass('film', baseWidget, {
                     new Notification('error', 'Apparently your browser does not support all features you need. Install latest Chromium, Google Chrome or Safari')
                 }
                 height = height || h;
-                self.data('filmSteps', Math.round(height * w / (sw * h)));
+                self.data('filmSteps', Math.max(1, Math.round(height * w / (sw * h)) - 1));
                 self.data('size', sw)
                 callback()
                 if (! isSDK && desktop != null) {
@@ -2146,22 +2153,22 @@ JqueryClass('film', baseWidget, {
         var self = $(this)
         self.data('dragged', true)
 
+        var hdiff = (self.data('lastX') - e.pageX) / self.data('dragPrecisionHorizontal')
         var vdiff = (self.data('lastY') - e.pageY) / self.data('dragPrecisionVertical')
-        var hdiff = (e.pageX - self.data('lastX')) / self.data('dragPrecisionHorizontal')
         var portSteps = self.data("portSteps")
 
-        if (Math.abs(vdiff) > 0) {
-            self.data('lastY', e.pageY)
-        }
         if (Math.abs(hdiff) > 0) {
             self.data('lastX', e.pageX)
         }
+        if (Math.abs(vdiff) > 0) {
+            self.data('lastY', e.pageY)
+        }
 
         var position = self.data('position')
-        var diff = (vdiff + hdiff) * self.data('stepDivider')
+        var diff = (vdiff - hdiff) * self.data('stepDivider')
 
         position += diff
-        position = Math.min(portSteps-1, Math.max(0, position));
+        position = Math.min(portSteps, Math.max(0, position));
 
         self.data('position', position)
         self.film('setRotation', position)
@@ -2181,7 +2188,7 @@ JqueryClass('film', baseWidget, {
             position -= 1
             if (position < 0) {
                 if (self.data('enumeration') || self.data('toggled')) {
-                    position = portSteps-1
+                    position = portSteps
                 } else {
                     position = 0
                 }
@@ -2189,11 +2196,11 @@ JqueryClass('film', baseWidget, {
         } else {
             // going up
             position += 1
-            if (position >= portSteps) {
+            if (position > portSteps) {
                 if (self.data('enumeration') || self.data('toggled')) {
                     position = 0
                 } else {
-                    position = portSteps-1
+                    position = portSteps
                 }
             }
         }
@@ -2222,7 +2229,7 @@ JqueryClass('film', baseWidget, {
         }
         var position = self.data('position')
         position += diff
-        position = Math.min(portSteps-1, Math.max(0, position))
+        position = Math.min(portSteps, Math.max(0, position))
         self.data('position', position)
         if (Math.abs(diff) > 0) {
             self.data('lastY', e.pageY)
@@ -2253,17 +2260,7 @@ JqueryClass('film', baseWidget, {
 
         var filmSteps = self.data('filmSteps')
         var portSteps = self.data('portSteps')
-        var rotation
-
-        if (portSteps == 1) {
-        // this is very dummy, a control with only one possible. let's just avoid zero division
-        // in this theoric case.
-            rotation = Math.round(filmSteps / 2)
-        } else if (portSteps != null) {
-            rotation = Math.round(steps) * Math.round((filmSteps - 1) / (portSteps - 1))
-        }
-
-        rotation = Math.min(filmSteps-1, Math.max(0, rotation))
+        var rotation = Math.min(filmSteps, Math.max(0, Math.round(steps / portSteps * filmSteps)))
 
         var bgShift = rotation * -self.data('size')
         bgShift += 'px 0px'

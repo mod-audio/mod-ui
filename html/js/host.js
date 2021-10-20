@@ -183,6 +183,7 @@ $('document').ready(function() {
             var name  = data.substr(cmd.length+1);
 
             desktop.pedalboardPresetId = index
+            desktop.pedalboardPresetName = name
             desktop.titleBox.text((desktop.title || 'Untitled') + " - " + name)
             return
         }
@@ -490,6 +491,7 @@ $('document').ready(function() {
                     desktop.pedalboardEmpty    = empty && !modified
                     desktop.pedalboardModified = modified
                     desktop.pedalboardPresetId = snapshotId
+                    desktop.pedalboardPresetName = resp.name
 
                     if (resp.ok) {
                         desktop.titleBox.text((desktop.title || 'Untitled') + " - " + resp.name)
