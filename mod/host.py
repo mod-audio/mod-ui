@@ -4664,6 +4664,12 @@ _:b%i
             callback(False)
             return
 
+        if send_hmi_available_pages and self.hmi.initialized and not is_hmi_actuator:
+            try:
+                yield gen.Task(self.hmi.set_available_pages, self.addressings.get_available_pages())
+            except Exception as e:
+                logging.exception(e)
+
         # MIDI learn is not an actual addressing
         if actuator_uri == kMidiLearnURI:
             self.send_notmodified("midi_learn %d %s %f %f" % (instance_id,
