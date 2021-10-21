@@ -544,9 +544,4 @@ class HMI(object):
         self.send('{} {}'.format(CMD_PEDALBOARD_NAME_SET, name[:31].upper()), callback)
 
     def set_snapshot_name(self, index, name, callback):
-        # TODO support on duo and duox
-        if self.hw_desc.get('platform', None) != "dwarf":
-            self.send('{} {}'.format(CMD_SNAPSHOT_NAME_SET, name[:31].upper()), callback)
-            return
-
         self.send('{} {} {}'.format(CMD_SNAPSHOT_NAME_SET, index, name[:31].upper()), callback)
