@@ -109,28 +109,53 @@ def check_environment():
 
 
 def get_nearest_valid_scalepoint_value(value, options):
+    if not options:
+        return value
+
     # find a value that matches
-    for i, (ovalue, olabel) in enumerate(options):
+    for i, (ovalue, _) in enumerate(options):
         if ovalue == value:
             ivalue = i
             return (i, ovalue)
 
     # find a value within a small range
-    for i, (ovalue, olabel) in enumerate(options):
+    for i, (ovalue, _) in enumerate(options):
         if abs(ovalue - value) <= 0.0001:
             ivalue = i
             return (i, ovalue)
 
-    # find a value by comparing previous and next, nasty but used as last resort
-    for i in range(len(options)-1):
-        ovalue, olabel = options[i]
-        nvalue, nlabel = options[i+1]
+    # find closest match
+    smallestdiff = None
+    smallestpos = 0
+    for i, (ovalue, _) in enumerate(options):
+        diff = abs(ovalue - value)
+        if smallestdiff is None or diff < smallestdiff:
+            smallestdiff = diff
+            smallestpos = i
 
-        if abs(ovalue-value) < abs(nvalue-value):
-            return (i, ovalue)
+    return (smallestpos, options[smallestpos][0])
 
-    else:
-        return (i+1, nvalue)
+
+def get_unique_name(name, names):
+    if name not in names:
+        return None
+
+    regex = r'^.* \(([0-9]*)\)$'
+    match = re.match(regex, name)
+
+    if match is None:
+        name += ' (2)'
+        if name in names:
+            match = re.match(regex, name)
+
+    while match is not None:
+        num = int(match.groups()[0])
+        name = name[:name.rfind('(')] + '({})'.format(num + 1)
+        if name not in names:
+            return name
+        match = re.match(regex, name)
+
+    return name
 
 
 def safe_json_load(path, objtype):

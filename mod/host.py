@@ -34,12 +34,14 @@ from datetime import timedelta
 from random import randint
 from tornado import gen, iostream
 from tornado.ioloop import IOLoop, PeriodicCallback
+from PIL import Image
 import os, json, socket, time, logging
 import shutil
 
 from mod import (
     TextFileFlusher,
-    get_hardware_descriptor, get_nearest_valid_scalepoint_value, read_file_contents, safe_json_load, symbolify
+    get_hardware_descriptor, get_nearest_valid_scalepoint_value, get_unique_name,
+    read_file_contents, safe_json_load, symbolify
 )
 from mod.addressings import Addressings
 from mod.bank import (
@@ -78,6 +80,7 @@ from mod.mod_protocol import (
     CMD_PROFILE_LOAD,
     CMD_PROFILE_STORE,
     CMD_NEXT_PAGE,
+    CMD_SCREENSHOT,
     CMD_DUO_FOOT_NAVIG,
     CMD_DUO_CONTROL_NEXT,
     CMD_DUOX_SNAPSHOT_LOAD,
@@ -129,7 +132,7 @@ from mod.protocol import (
     Protocol, ProtocolError, process_resp,
 )
 from mod.settings import (
-    APP, LOG, DEFAULT_PEDALBOARD, LV2_PEDALBOARDS_DIR, USER_FILES_DIR,
+    APP, LOG, DEFAULT_PEDALBOARD, DATA_DIR, LV2_PEDALBOARDS_DIR, USER_FILES_DIR,
     PEDALBOARD_INSTANCE, PEDALBOARD_INSTANCE_ID, PEDALBOARD_URI, PEDALBOARD_TMP_DIR,
     TUNER_URI, TUNER_INSTANCE_ID, TUNER_INPUT_PORT, TUNER_MONITOR_PORT, HMI_TIMEOUT, MODEL_TYPE,
     UNTITLED_PEDALBOARD_NAME, DEFAULT_SNAPSHOT_NAME,
@@ -143,7 +146,7 @@ from modtools.utils import (
     is_bundle_loaded, add_bundle_to_lilv_world, remove_bundle_from_lilv_world,
     is_plugin_preset_valid, rescan_plugin_presets,
     get_plugin_info, get_plugin_info_essentials, get_pedalboard_info, get_state_port_values,
-    list_plugins_in_bundle, get_all_pedalboards, get_pedalboard_plugin_values,
+    list_plugins_in_bundle, get_all_pedalboards, get_all_pedalboard_names, get_pedalboard_plugin_values,
     init_jack, close_jack, get_jack_data,
     init_bypass, get_jack_port_alias, get_jack_hardware_ports,
     has_serial_midi_input_port, has_serial_midi_output_port,
@@ -155,8 +158,9 @@ from modtools.utils import (
     kPedalboardTimeAvailableBPM, kPedalboardTimeAvailableRolling
 )
 from modtools.tempo import (
+    convert_port_value_to_seconds_equivalent,
     convert_seconds_to_port_value_equivalent,
-    get_divider_options,
+    get_divider_value,
     get_port_value,
 )
 
@@ -363,6 +367,7 @@ class Host(object):
         self.next_hmi_bpm = [0, False, False]
         self.next_hmi_play = [False, False, False]
         self.hmi_snapshots = [None, None, None]
+        self.hmi_screenshot_data = [None]*8
         self.transport_rolling = False
         self.transport_bpb     = 4.0
         self.transport_bpm     = 120.0
@@ -447,17 +452,19 @@ class Host(object):
         self.addressings._task_addressing = self.addr_task_addressing
         self.addressings._task_unaddressing = self.addr_task_unaddressing
         self.addressings._task_set_value = self.addr_task_set_value
-        self.addressings._task_get_plugin_data = self.addr_task_get_plugin_data
         self.addressings._task_get_plugin_cv_port_op_mode = self.addr_task_get_plugin_cv_port_op_mode
+        self.addressings._task_get_plugin_data = self.addr_task_get_plugin_data
         self.addressings._task_get_plugin_presets = self.addr_task_get_plugin_presets
         self.addressings._task_get_port_value = self.addr_task_get_port_value
+        self.addressings._task_get_tempo_divider = self.addr_task_get_tempo_divider
         self.addressings._task_store_address_data = self.addr_task_store_address_data
         self.addressings._task_hw_added = self.addr_task_hw_added
         self.addressings._task_hw_removed = self.addr_task_hw_removed
         self.addressings._task_act_added = self.addr_task_act_added
         self.addressings._task_act_removed = self.addr_task_act_removed
         self.addressings._task_set_available_pages = self.addr_task_set_available_pages
-        self.hmi.set_host_map_callback(self.addr_hmi_map)
+        self.addressings._task_host_hmi_map = self.addr_host_hmi_map
+        self.addressings._task_host_hmi_unmap = self.addr_host_hmi_unmap
 
         # Register HMI protocol callbacks (they are without arguments here)
         Protocol.register_cmd_callback('ALL', CMD_BANKS, self.hmi_list_banks)
@@ -483,6 +490,8 @@ class Host(object):
 
         Protocol.register_cmd_callback('ALL', CMD_CONTROL_GET, self.hmi_parameter_get)
         Protocol.register_cmd_callback('ALL', CMD_CONTROL_SET, self.hmi_parameter_set)
+
+        Protocol.register_cmd_callback('ALL', CMD_SCREENSHOT, self.hmi_screenshot)
 
         # TODO support on duo and duox
         if self.descriptor.get('platform', None) != "dwarf":
@@ -661,12 +670,13 @@ class Host(object):
     # -----------------------------------------------------------------------------------------------------------------
     # Addressing callbacks
 
-    def addr_hmi_map(self, instance_id, portsymbol, hw_id, caps, flags, label, min, max, steps):
-        page = self.addressings.current_page
-        subpage = self.addressings.hmi_hwsubpages.get(hw_id, 0) or 0
+    def addr_host_hmi_map(self, instance_id, portsymbol, hw_id, page, subpage, caps, flags, label, min, max, steps):
         self.send_notmodified("hmi_map %i %s %i %i %i %i %i %s %f %f %i" % (instance_id, portsymbol,
                                                                             hw_id, page, subpage,
                                                                             caps, flags, label, min, max, steps))
+
+    def addr_host_hmi_unmap(self, instance_id, portsymbol):
+        self.send_notmodified("hmi_unmap %i %s" % (instance_id, portsymbol))
 
     def addr_task_addressing(self, atype, actuator, data, callback, send_hmi=True):
         if atype == Addressings.ADDRESSING_TYPE_HMI:
@@ -769,13 +779,10 @@ class Host(object):
         if atype == Addressings.ADDRESSING_TYPE_HMI:
             self.pedalboard_modified = True
             if send_hmi:
-                self.send_notmodified("hmi_unmap %i %s" % (instance_id, portsymbol))
                 self.hmi.control_rm(hw_ids, callback)
-                return
-            else:
-                if callback is not None:
-                    callback(True)
-                return
+            elif callback is not None:
+                callback(True)
+            return
 
         if atype == Addressings.ADDRESSING_TYPE_CC:
             self.send_modified("cc_unmap %d %s" % (instance_id, portsymbol), callback, datatype='boolean')
@@ -803,6 +810,7 @@ class Host(object):
             if not self.hmi.initialized:
                 callback(False)
                 return
+
             if data['hmitype'] & FLAG_CONTROL_ENUMERATION:
                 options = tuple(o[0] for o in data['options'])
                 try:
@@ -811,21 +819,22 @@ class Host(object):
                     logging.error("[host] address set value not in list %f", data['value'])
                     callback(False)
                     return
-                # FIXME the following code does a control_add instead of control_set in case of enums
+                # NOTE the following code does a control_add instead of control_set in case of big enums
                 # Making it work on HMI with pagination could be tricky, so work around this for now
-                actuator_uri = data['actuator_uri']
-                logging.error("[host] addr_task_set_value called with an enumeration %s", actuator_uri)
-                self.addressings.hmi_load_current(actuator_uri, callback)
-                return
+                if not data.get('tempo', False):
+                    actuator_uri = data['actuator_uri']
+                    logging.error("[host] addr_task_set_value called with an enumeration %s", actuator_uri)
+                    self.addressings.hmi_load_current(actuator_uri, callback)
+                    return
             else:
                 value = data['value']
+
             if send_hmi:
                 self.hmi.control_set(actuator, value, callback)
-                return
-            else:
-                if callback is not None:
-                    callback(True)
-                return
+            elif callback is not None:
+                callback(True)
+
+            return
 
         if atype == Addressings.ADDRESSING_TYPE_CC:
             if data['cctype'] & CC_MODE_OPTIONS:
@@ -880,6 +889,10 @@ class Host(object):
             return float(pluginData['mapPresets'].index(pluginData['preset']))
 
         return pluginData['ports'][portsymbol]
+
+    def addr_task_get_tempo_divider(self, instance_id, portsymbol):
+        pluginData = self.plugins[instance_id]
+        return pluginData['addressings'][portsymbol]['dividers']
 
     def addr_task_store_address_data(self, instance_id, portsymbol, data):
         pluginData = self.plugins[instance_id]
@@ -1059,7 +1072,7 @@ class Host(object):
 
         # load everything
         self.allpedalboards, badbundles = get_all_good_and_bad_pedalboards()
-        self.banks = list_banks(badbundles, False)
+        self.banks = list_banks(badbundles, True)
 
         bank_id, pedalboard = get_last_bank_and_pedalboard()
 
@@ -1671,33 +1684,19 @@ class Host(object):
 
             if self.hmi.initialized:
                 if rolling_changed:
-                    try:
-                        yield gen.Task(self.hmi.set_profile_value, MENU_ID_PLAY_STATUS, int(rolling))
-                    except Exception as e:
-                        logging.exception(e)
+                    self.next_hmi_play[0] = rolling
+                    self.next_hmi_play[1] = self.next_hmi_play[2] = True
 
                 if bpb_changed:
-                    try:
-                        yield gen.Task(self.hmi.set_profile_value, MENU_ID_BEATS_PER_BAR, bpb)
-                    except Exception as e:
-                        logging.exception(e)
+                    self.next_hmi_bpb[0] = bpb
+                    self.next_hmi_bpb[1] = self.next_hmi_bpb[2] = True
 
                 if bpm_changed:
-                    try:
-                        yield gen.Task(self.hmi.set_profile_value, MENU_ID_TEMPO, bpm)
-                    except Exception as e:
-                        logging.exception(e)
+                    self.next_hmi_bpm[0] = bpm
+                    self.next_hmi_bpm[1] = self.next_hmi_bpm[2] = True
 
                     for actuator_uri in self.addressings.virtual_addressings:
                         addrs = self.addressings.virtual_addressings[actuator_uri]
-                        for addr in addrs:
-                            try:
-                                yield gen.Task(self.set_param_from_bpm, addr, bpm)
-                            except Exception as e:
-                                logging.exception(e)
-
-                    for actuator_uri in self.addressings.hmi_addressings:
-                        addrs = self.addressings.hmi_addressings[actuator_uri]['addrs']
                         for addr in addrs:
                             try:
                                 yield gen.Task(self.set_param_from_bpm, addr, bpm)
@@ -2085,9 +2084,9 @@ class Host(object):
                                                                             addressing['minimum'],
                                                                             addressing['maximum'],
                                                                             addressing['operational_mode']))
-                    elif actuator_type == Addressings.ADDRESSING_TYPE_HMI:
+                    elif actuator_type == Addressings.ADDRESSING_TYPE_HMI and not addressing.get('tempo', False):
                         hw_id = self.addressings.hmi_uri2hw_map[addressing['actuator_uri']]
-                        self.hmi.control_remap(hw_id, addressing)
+                        self.addressings.remap_host_hmi(hw_id, addressing)
 
         for port_from, port_to in self.connections:
             websocket.write_message("connect %s %s" % (port_from, port_to))
@@ -2203,12 +2202,6 @@ class Host(object):
                 callback(True)
             return
 
-        # Don't bother HMI while it has tempo mapping, since those do not change values here
-        if current_addressing.get('tempo', False):
-            if callback is not None:
-                callback(True)
-            return
-
         actuator_uri  = current_addressing['actuator_uri']
         actuator_type = self.addressings.get_actuator_type(actuator_uri)
 
@@ -2264,6 +2257,41 @@ class Host(object):
                 if callback is not None:
                     callback(True)
                 return
+
+        if current_addressing.get('tempo', False):
+            valueseconds = convert_port_value_to_seconds_equivalent(current_addressing['value'],
+                                                                    current_addressing['unit'])
+            if valueseconds is None:
+                if callback is not None:
+                    callback(True)
+                return
+
+            dividers = get_divider_value(self.transport_bpm, valueseconds)
+            dividers = get_nearest_valid_scalepoint_value(dividers, current_addressing['options'])[1]
+
+            if current_addressing['dividers'] == dividers:
+                if callback is not None:
+                    callback(True)
+                return
+
+            current_addressing['dividers'] = dividers
+
+            if group_actuators is not None:
+                def set_2nd_hmi_value(ok):
+                    if not ok:
+                        if callback is not None:
+                            callback(False)
+                        return
+                    hw_id2 = self.addressings.hmi_uri2hw_map[group_actuators[1]]
+                    self.hmi.control_set(hw_id2, dividers, callback)
+
+                hw_id1 = self.addressings.hmi_uri2hw_map[group_actuators[0]]
+                self.hmi.control_set(hw_id1, dividers, set_2nd_hmi_value)
+
+            else:
+                hw_id = self.addressings.hmi_uri2hw_map[actuator_uri]
+                self.hmi.control_set(hw_id, dividers, callback)
+            return
 
         # FIXME the following code does a control_add instead of control_set in case of enums
         # Making it work on HMI with pagination could be tricky, so work around this for now
@@ -2785,6 +2813,10 @@ class Host(object):
     # -----------------------------------------------------------------------------------------------------------------
     # Host stuff - pedalboard snapshots
 
+    def _snapshot_unique_name(self, name):
+        names = tuple(pbss['name'] for pbss in self.pedalboard_snapshots)
+        return get_unique_name(name, names) or name
+
     def snapshot_make(self, name):
         self.pedalboard_modified = True
 
@@ -2829,7 +2861,7 @@ class Host(object):
         return True
 
     def snapshot_saveas(self, name):
-        snapshot = self.snapshot_make(name)
+        snapshot = self.snapshot_make(self._snapshot_unique_name(name))
         self.pedalboard_snapshots.append(snapshot)
         self.current_pedalboard_snapshot_id = len(self.pedalboard_snapshots)-1
         return self.current_pedalboard_snapshot_id
@@ -2838,9 +2870,11 @@ class Host(object):
         if idx < 0 or idx >= len(self.pedalboard_snapshots) or self.pedalboard_snapshots[idx] is None:
             return False
 
-        self.pedalboard_modified = True
-        self.pedalboard_snapshots[idx]['name'] = name
+        if self.pedalboard_snapshots[idx]['name'] == name:
+            return True
 
+        self.pedalboard_modified = True
+        self.pedalboard_snapshots[idx]['name'] = self._snapshot_unique_name(name)
         return True
 
     def snapshot_remove(self, idx):
@@ -2944,6 +2978,12 @@ class Host(object):
                         if addressing['actuator_uri'] not in used_actuators:
                             used_actuators.append(addressing['actuator_uri'])
 
+                            group_actuators = self.addressings.get_group_actuators(addressing['actuator_uri'])
+                            if group_actuators is not None:
+                                for actuator_uri in group_actuators:
+                                    if actuator_uri not in used_actuators:
+                                        used_actuators.append(actuator_uri)
+
             for symbol, value in data['ports'].items():
                 if symbol in pluginData['designations']:
                     continue
@@ -2964,6 +3004,12 @@ class Host(object):
                     addressing['value'] = value
                     if addressing['actuator_uri'] not in used_actuators:
                         used_actuators.append(addressing['actuator_uri'])
+
+                        group_actuators = self.addressings.get_group_actuators(addressing['actuator_uri'])
+                        if group_actuators is not None:
+                            for actuator_uri in group_actuators:
+                                if actuator_uri not in used_actuators:
+                                    used_actuators.append(actuator_uri)
 
             for uri, param in data.get('parameters', {}).items():
                 if pluginData['parameters'].get(uri, None) in (param, None):
@@ -3465,7 +3511,15 @@ class Host(object):
             self.pedalboard_snapshots = safe_json_load(os.path.join(bundlepath, "presets.json"), list)
             self.current_pedalboard_snapshot_id = 0
 
-        if not self.pedalboard_snapshots:
+        if self.pedalboard_snapshots:
+            # make sure names are unique
+            names = []
+            for pbss in self.pedalboard_snapshots:
+                nname = get_unique_name(pbss['name'], names)
+                if nname is not None:
+                    pbss['name'] = nname
+                names.append(pbss['name'])
+        else:
             self.snapshot_clear()
 
     def load_pb_plugins(self, plugins, instances, rinstances):
@@ -3684,16 +3738,19 @@ class Host(object):
                         port_conns.append((port_from, port_to))
 
     def save(self, title, asNew, callback):
-        titlesym = symbolify(title)[:16]
-
         # Save over existing bundlepath
-        if self.pedalboard_path and os.path.exists(self.pedalboard_path) and os.path.isdir(self.pedalboard_path) and \
-            self.pedalboard_path.startswith(LV2_PEDALBOARDS_DIR) and not asNew:
+        if self.pedalboard_path and not asNew and \
+            os.path.isdir(self.pedalboard_path) and self.pedalboard_path.startswith(LV2_PEDALBOARDS_DIR):
             bundlepath = self.pedalboard_path
-            newPedalboard = False
+            titlesym = symbolify(title)[:16]
+            newTitle = None
 
         # Save new
         else:
+            # ensure unique title
+            newTitle = title = get_unique_name(title, get_all_pedalboard_names()) or title
+            titlesym = symbolify(title)[:16]
+
             lv2path = os.path.expanduser("~/.pedalboards/")
             trypath = os.path.join(lv2path, "%s.pedalboard" % titlesym)
 
@@ -3714,10 +3771,9 @@ class Host(object):
                 if not os.path.exists(lv2path):
                     os.mkdir(lv2path)
 
+            # create bundle path
             os.mkdir(bundlepath)
-
             self.pedalboard_path = bundlepath
-            newPedalboard = True
 
         # save ttl
         self.pedalboard_name     = title
@@ -3733,7 +3789,7 @@ class Host(object):
         # ask host to save any needed extra state
         self.send_notmodified("state_save {}".format(bundlepath), state_saved_cb, datatype='boolean')
 
-        return bundlepath, newPedalboard
+        return bundlepath, newTitle
 
     def save_state_to_ttl(self, bundlepath, title, titlesym):
         self.save_state_manifest(bundlepath, titlesym)
@@ -4630,6 +4686,12 @@ _:b%i
             callback(False)
             return
 
+        if send_hmi_available_pages and self.hmi.initialized and not is_hmi_actuator:
+            try:
+                yield gen.Task(self.hmi.set_available_pages, self.addressings.get_available_pages())
+            except Exception as e:
+                logging.exception(e)
+
         # MIDI learn is not an actual addressing
         if actuator_uri == kMidiLearnURI:
             self.send_notmodified("midi_learn %d %s %f %f" % (instance_id,
@@ -4680,7 +4742,7 @@ _:b%i
                 if needsValueChange:
                     hw_id = self.addressings.hmi_uri2hw_map[group_actuator_uri]
                     try:
-                        yield gen.Task(self.hmi_or_cc_parameter_set, instance_id, portsymbol, hw_id)
+                        yield gen.Task(self.hmi_or_cc_parameter_set, instance_id, portsymbol, value, hw_id)
                     except Exception as e:
                         logging.exception(e)
                 try:
@@ -4944,9 +5006,16 @@ _:b%i
     # -----------------------------------------------------------------------------------------------------------------
 
     def hmi_bank_new(self, title, callback):
-        if title == "All Pedalboards" or any(bank['title'].upper() == title for bank in self.banks):
+        utitle = title.upper()
+        if utitle == "ALL PEDALBOARDS":
             callback(False)
             return
+
+        for bank in self.banks:
+            if bank['title'].upper() == utitle:
+                callback(-2)
+                return
+
         self.banks.append({
             'title': title,
             'pedalboards': [],
@@ -4960,18 +5029,14 @@ _:b%i
             callback(False)
             return
 
-        # bank 0 is "All Pedalboards"
-        bank_id -= 1
-
-        # FIXME undefined behaviour
+        # if bank-to-remove is the current one, reset to "All Pedalboards"
         if self.bank_id == bank_id:
-            callback(False)
-            return
-
-        if self.bank_id > bank_id:
+            self.bank_id = 0
+        # if current bank is after or same as bank-to-remove, shift back by 1
+        elif self.bank_id >= bank_id:
             self.bank_id -= 1
 
-        self.banks.pop(bank_id)
+        self.banks.pop(bank_id - 1)
         save_banks(self.banks)
         callback(True)
 
@@ -5059,8 +5124,9 @@ _:b%i
     # -----------------------------------------------------------------------------------------------------------------
 
     def hmi_pedalboard_save_as(self, title, callback):
-        if any(pedalboard['title'].upper() == title for pedalboard in self.allpedalboards):
-            callback(False)
+        utitle = title.upper()
+        if any(pedalboard['title'].upper() == utitle for pedalboard in self.allpedalboards):
+            callback(-2)
             return
 
         bundlepath, _ = self.save(title, True, callback)
@@ -5122,8 +5188,9 @@ _:b%i
         callback(ok)
 
     def hmi_pedalboard_snapshot_save_as(self, name, callback):
-        if any(snapshot['name'].upper() == name for snapshot in self.pedalboard_snapshots):
-            callback(False)
+        uname = name.upper()
+        if any(snapshot['name'].upper() == uname for snapshot in self.pedalboard_snapshots):
+            callback(-2)
             return
         self.snapshot_saveas(name)
         callback(True)
@@ -5447,47 +5514,27 @@ _:b%i
                     if not ports:
                         callback(False)
                         return
+
                     port = ports[0]
                     port_value = get_port_value(self.transport_bpm, value, port['units']['symbol'])
                     if port['units']['symbol'] != 'BPM': # convert back into port unit if needed
                         port_value = convert_seconds_to_port_value_equivalent(port_value, port['units']['symbol'])
 
-                    def param_set_callback(ok):
-                        if not ok:
-                            callback(False)
-                            return
-                        if save_port_value:
-                            pluginData['ports'][portsymbol] = port_value
-                        self.send_modified("param_set %d %s %f" % (instance_id, portsymbol, port_value), callback, datatype='boolean')
-                        self.msg_callback("param_set %s %s %f" % (instance, portsymbol, port_value))
+                    port_addressing['dividers'] = value
+                    port_addressing['value'] = port_value
 
-                    def address_callback(ok):
-                        if not ok:
-                            callback(False)
-                            return
-                        # NOTE: we cannot wait for HMI callback while giving a response to HMI
-                        self.control_set_other_group_actuator(group_actuators, hw_id, port_addressing, value, None)
-                        param_set_callback(True)
+                    # NOTE: we cannot wait for HMI callback while giving a response to HMI
+                    if group_actuators is not None:
+                        for group_actuator_uri in group_actuators:
+                            group_hw_id = self.addressings.hmi_uri2hw_map[group_actuator_uri]
+                            if group_hw_id != hw_id:
+                                self.hmi.control_set(group_hw_id, value, None)
+                                break
 
-                    actuator_uri = port_addressing['actuator_uri']
-                    label = port_addressing['label']
-                    minimum = port_addressing['minimum']
-                    maximum = port_addressing['maximum']
-                    steps = port_addressing['steps']
-
-                    extras = {
-                        'tempo': port_addressing['tempo'],
-                        'dividers': value,
-                        'page': port_addressing['page'],
-                        'subpage': port_addressing['subpage'],
-                        'coloured': port_addressing['coloured'],
-                        'momentary': port_addressing['momentary'],
-                        'operational_mode': port_addressing['operational_mode'],
-                    }
-
-                    cb = address_callback if group_actuators else param_set_callback
-                    self.address(instance, portsymbol, actuator_uri, label, minimum, maximum, port_value, steps,
-                                 extras, cb, not_param_set=True, send_hmi=False)
+                    if save_port_value:
+                        pluginData['ports'][portsymbol] = port_value
+                    self.send_modified("param_set %d %s %f" % (instance_id, portsymbol, port_value), callback, datatype='boolean')
+                    self.msg_callback("param_set %s %s %f" % (instance, portsymbol, port_value))
                     return
 
                 if group_actuators is not None:
@@ -5500,28 +5547,102 @@ _:b%i
             self.msg_callback("param_set %s %s %f" % (instance, portsymbol, value))
 
     def control_set_other_group_actuator(self, group_actuators, hw_id, port_addressing, value, callback):
-        addressing_data = port_addressing.copy()
-
-        # Update value in addressing data sent to hmi
-        if addressing_data.get('tempo', False):
-            addressing_data['dividers'] = value
-        else:
-            addressing_data['value'] = value
-
         for group_actuator_uri in group_actuators:
             group_hw_id = self.addressings.hmi_uri2hw_map[group_actuator_uri]
-            if group_hw_id != hw_id:
-                # Set reverse enum type if re-addressing first actuator in group
-                group_actuator = next((act for act in self.addressings.hw_actuators if act['uri'] == addressing_data['group']), None)
-                if group_actuator is not None:
-                    if group_actuator['actuator_group'].index(group_actuator_uri) == 0:
-                        addressing_data['hmitype'] |= FLAG_CONTROL_REVERSE
-                    else:
-                        addressing_data['hmitype'] &= ~FLAG_CONTROL_REVERSE
-                self.addressings.load_addr(group_actuator_uri, addressing_data, callback)
-                return
+            if group_hw_id == hw_id:
+                continue
+
+            # Update value in addressing data sent to hmi
+            addressing_data = port_addressing.copy()
+            addressing_data['value'] = value
+
+            # Set reverse enum type if re-addressing first actuator in group
+            group_actuator = next((act for act in self.addressings.hw_actuators if act['uri'] == addressing_data['group']), None)
+            if group_actuator is not None:
+                if group_actuator['actuator_group'].index(group_actuator_uri) == 0:
+                    addressing_data['hmitype'] |= FLAG_CONTROL_REVERSE
+                else:
+                    addressing_data['hmitype'] &= ~FLAG_CONTROL_REVERSE
+
+            self.addressings.load_addr(group_actuator_uri, addressing_data, callback)
+            return
+
         if callback is not None:
             callback(True)
+
+    def hmi_screenshot(self, page, content, callback):
+        self.hmi_screenshot_data[page] = content
+        callback(True)
+
+        if page != 7:
+            return
+
+        # size in pixels, increase as needed
+        pixel_size = 8
+        margin_size = 1
+        border_spacing = 16
+
+        # screen contrast, adjust as needed
+        luminance_background = 220
+        luminance_black = 0
+        luminance_white = 200
+
+        # screen size
+        screen_width_in_pixels = 128
+        screen_height_in_pixels = 64
+
+        # actual image size
+        target_width = border_spacing * 2 + margin_size + (margin_size + pixel_size) * screen_width_in_pixels
+        target_height = border_spacing * 2 + margin_size  + (margin_size + pixel_size) * screen_height_in_pixels
+
+        rawdata = ["0"]*screen_width_in_pixels*screen_height_in_pixels
+
+        for i in range(len(self.hmi_screenshot_data)):
+            o = self.hmi_screenshot_data[i]
+            for j in range(screen_width_in_pixels):
+                v = o[j*2:j*2+2]
+                v = ("%08s" % bin(int(v,16)).replace("0b","")).replace(" ","0")
+                v = "".join(reversed(v))
+
+                x = j % screen_width_in_pixels
+                y = i + int(j / screen_width_in_pixels)
+                for z in range(8):
+                    rawdata[x*screen_height_in_pixels + y*8 + z] = v[z]
+
+        png = Image.new("L", (target_width, target_height), luminance_background)
+        pixels = png.load()
+
+        # draw pixels
+        for w in range(screen_width_in_pixels):
+            for h in range(screen_height_in_pixels):
+                x = border_spacing + margin_size + w * (margin_size + pixel_size)
+                y = border_spacing + margin_size + h * (margin_size + pixel_size)
+
+                v = luminance_black if rawdata[w * screen_height_in_pixels + h] == '1' else luminance_white
+
+                for ix in range(pixel_size):
+                    for iy in range(pixel_size):
+                        pixels[x+ix,y+iy] = v
+
+        # draw grid, optional
+        if luminance_background != luminance_white:
+            for w in range(screen_width_in_pixels):
+                for h in range(screen_height_in_pixels):
+                    x = border_spacing + margin_size + w * (margin_size + pixel_size)
+                    y = border_spacing + margin_size + h * (margin_size + pixel_size)
+
+                    for ix in range(pixel_size + margin_size):
+                        pixels[x+ix, y-margin_size] = luminance_background
+                        pixels[x-margin_size, y+ix] = luminance_background
+
+        counter = 0
+        while True:
+            counter += 1
+            filename = os.path.join(DATA_DIR, "hmi-screenshot-%03d.png" % counter)
+            if not os.path.exists(filename):
+                break
+
+        png.save(filename)
 
     def hmi_parameter_addressing_next(self, hw_id, callback):
         logging.debug("hmi parameter addressing next")
@@ -5530,8 +5651,8 @@ _:b%i
 
     def hmi_parameter_load_subpage(self, hw_id, subpage, callback):
         logging.debug("hmi parameter load subpage")
-        callback(True)
         self.addressings.hmi_load_subpage(hw_id, subpage)
+        callback(True)
 
     def hmi_next_control_page_compat(self, hw_id, props, callback):
         logging.debug("hmi next control page (compat) %d %d", hw_id, props)

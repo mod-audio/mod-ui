@@ -58,25 +58,13 @@ from mod.mod_protocol import (
     MENU_ID_MIDI_CLK_SEND,
     MENU_ID_SNAPSHOT_PRGCHGE,
     MENU_ID_PB_PRGCHNGE,
+    cmd_to_str,
 )
 from mod.settings import LOG
 
 import logging
 import serial
 import time
-
-# definitions from lv2-hmi.h
-# LV2_HMI_AddressingCapabilities
-LV2_HMI_AddressingCapability_LED       = 1 << 0
-LV2_HMI_AddressingCapability_Label     = 1 << 1
-LV2_HMI_AddressingCapability_Value     = 1 << 2
-LV2_HMI_AddressingCapability_Unit      = 1 << 3
-LV2_HMI_AddressingCapability_Indicator = 1 << 4
-# LV2_HMI_AddressingFlags
-LV2_HMI_AddressingFlag_Coloured    = 1 << 0
-LV2_HMI_AddressingFlag_Momentary   = 1 << 1
-LV2_HMI_AddressingFlag_Reverse     = 1 << 2
-LV2_HMI_AddressingFlag_TapTempo    = 1 << 3
 
 class SerialIOStream(BaseIOStream):
     def __init__(self, sp):
@@ -120,7 +108,6 @@ class HMI(object):
         self.last_write_time = 0
         self.timeout = timeout # in seconds
         self.reinit_cb = reinit_cb
-        self.host_map = None
         self.hw_desc = get_hardware_descriptor()
         hw_actuators = self.hw_desc.get('actuators', [])
         self.hw_ids = [actuator['id'] for actuator in hw_actuators]
@@ -197,8 +184,9 @@ class HMI(object):
                         original_msg, callback, datatype = self.queue.pop(0)
                         withlog = LOG >= 2 or (LOG and original_msg not in ("pi",))
                         if withlog:
-                            logging.debug('[hmi] received <- %s', data)
-                            logging.debug("[hmi] popped from queue: %s", original_msg)
+                            logging.debug('[hmi] received response <- %s', data)
+                            logging.debug("[hmi] popped from queue: %s | %s",
+                                          original_msg, cmd_to_str(original_msg.split(" ",1)[0]))
                     except IndexError:
                         # something is wrong / not synced!!
                         logging.error("[hmi] NOT SYNCED after receiving %s", data)
@@ -210,20 +198,24 @@ class HMI(object):
                         self.process_queue()
                 else:
                     def _callback(resp, resp_args=None):
-                        resp = 0 if resp else -1
+                        if not isinstance(resp, int):
+                            resp = 0 if resp else -1
                         if resp_args is None:
                             self.send_reply("%s %d" % (CMD_RESPONSE, resp))
-                            logging.debug('[hmi]     sent "%s %s"', CMD_RESPONSE, resp)
+                            logging.debug('[hmi]     sent "%s %d"', CMD_RESPONSE, resp)
 
                         else:
                             self.send_reply("%s %d %s" % (CMD_RESPONSE, resp, resp_args))
-                            logging.debug('[hmi]     sent "%s %s %s"', CMD_RESPONSE, resp, resp_args)
+                            logging.debug('[hmi]     sent "%s %d %s"', CMD_RESPONSE, resp, resp_args)
 
                         self.handling_response = False
                         if self.queue_idle:
                             self.process_queue()
 
-                    logging.debug('[hmi] received <- %s', data)
+                    if LOG >= 1:
+                        logging.debug('[hmi] received <- %s | %s',
+                                      data, cmd_to_str(data.split(b" ",1)[0].decode("utf-8", errors="ignore")))
+
                     self.handling_response = True
                     msg.run_cmd(_callback)
 
@@ -280,7 +272,7 @@ class HMI(object):
             self.last_write_time = 0
         else:
             if LOG >= 2 or (LOG and msg not in ("pi",)):
-                logging.debug("[hmi] sending -> %s", msg)
+                logging.debug("[hmi] sending -> %s | %s", msg, cmd_to_str(msg.split(" ",1)[0]))
             try:
                 self.sp.write(msg.encode('utf-8') + b'\0')
             except StreamClosedError as e:
@@ -289,9 +281,6 @@ class HMI(object):
 
             self.queue_idle = False
             self.last_write_time = time.time()
-
-    def set_host_map_callback(self, host_map):
-        self.host_map = host_map
 
     def reply_protocol_error(self, error):
         #self.send(error) # TODO: proper error handling, needs to be implemented by HMI
@@ -321,7 +310,7 @@ class HMI(object):
             #else:
             self.queue.append((msg, callback, datatype))
             if LOG >= 2 or (LOG and msg not in ("pi",)):
-                logging.debug("[hmi] scheduling -> %s", msg)
+                logging.debug("[hmi] scheduling -> %s | %s", msg, cmd_to_str(msg.split(" ",1)[0]))
             if self.queue_idle and not self.handling_response:
                 self.process_queue()
             return
@@ -446,36 +435,6 @@ class HMI(object):
         else:
             cb = callback
 
-        if self.host_map is not None:
-            hostcaps = 0x0
-            for actuator in self.hw_desc['actuators']:
-                if actuator['id'] != hw_id:
-                    continue
-                widgets = actuator.get('widgets', None)
-                if widgets is None:
-                    break
-                if "led" in widgets:
-                    hostcaps |= LV2_HMI_AddressingCapability_LED
-                if "label" in widgets:
-                    hostcaps |= LV2_HMI_AddressingCapability_Label
-                if "value" in widgets:
-                    hostcaps |= LV2_HMI_AddressingCapability_Value
-                if "unit" in widgets:
-                    hostcaps |= LV2_HMI_AddressingCapability_Unit
-                if "indicator" in widgets:
-                    hostcaps |= LV2_HMI_AddressingCapability_Indicator
-                break
-            hostflags = 0x0
-            if flags & FLAG_PAGINATION_ALT_LED_COLOR:
-                hostflags |= LV2_HMI_AddressingFlag_Coloured
-            if var_type & FLAG_CONTROL_MOMENTARY:
-                hostflags |= LV2_HMI_AddressingFlag_Momentary
-            if var_type & FLAG_CONTROL_REVERSE:
-                hostflags |= LV2_HMI_AddressingFlag_Reverse
-            if var_type & FLAG_CONTROL_TAP_TEMPO:
-                hostflags |= LV2_HMI_AddressingFlag_TapTempo
-            self.host_map(data['instance_id'], data['port'], hw_id, hostcaps, hostflags, label, xmin, xmax, steps)
-
         self.send('%s %d %s %d %s %f %f %f %d %s' %
                   ( CMD_CONTROL_ADD,
                     hw_id,
@@ -489,55 +448,6 @@ class HMI(object):
                     options,
                   ),
                   cb, 'boolean')
-
-    def control_remap(self, hw_id, data):
-        if self.host_map is None:
-            return
-
-        label = data['label']
-        hmitype = data['hmitype']
-
-        if data.get('group', None) is not None and self.hw_desc.get('hmi_actuator_group_prefix', True):
-            if hmitype & FLAG_CONTROL_REVERSE:
-                prefix = "- "
-            else:
-                prefix = "+ "
-            label = prefix + label
-
-        label = '"%s"' % label.replace('"', "")[:31].upper()
-
-        hostcaps = 0x0
-        for actuator in self.hw_desc['actuators']:
-            if actuator['id'] != hw_id:
-                continue
-            widgets = actuator.get('widgets', None)
-            if widgets is None:
-                break
-            if "led" in widgets:
-                hostcaps |= LV2_HMI_AddressingCapability_LED
-            if "label" in widgets:
-                hostcaps |= LV2_HMI_AddressingCapability_Label
-            if "value" in widgets:
-                hostcaps |= LV2_HMI_AddressingCapability_Value
-            if "unit" in widgets:
-                hostcaps |= LV2_HMI_AddressingCapability_Unit
-            if "indicator" in widgets:
-                hostcaps |= LV2_HMI_AddressingCapability_Indicator
-            break
-
-        hostflags = 0x0
-        if data.get('coloured', False):
-            hostflags |= LV2_HMI_AddressingFlag_Coloured
-        if hmitype & FLAG_CONTROL_MOMENTARY:
-            hostflags |= LV2_HMI_AddressingFlag_Momentary
-        if hmitype & FLAG_CONTROL_REVERSE:
-            hostflags |= LV2_HMI_AddressingFlag_Reverse
-        if hmitype & FLAG_CONTROL_TAP_TEMPO:
-            hostflags |= LV2_HMI_AddressingFlag_TapTempo
-
-        self.host_map(data['instance_id'], data['port'],
-                      hw_id, hostcaps, hostflags, label,
-                      data['minimum'], data['maximum'], data['steps'])
 
     def control_set_index(self, hw_id, index, n_controllers, callback):
         self.send('%s %d %d %d' % (CMD_DUO_CONTROL_INDEX_SET, hw_id, index, n_controllers), callback, 'boolean')
@@ -634,9 +544,4 @@ class HMI(object):
         self.send('{} {}'.format(CMD_PEDALBOARD_NAME_SET, name[:31].upper()), callback)
 
     def set_snapshot_name(self, index, name, callback):
-        # TODO support on duo and duox
-        if self.hw_desc.get('platform', None) != "dwarf":
-            self.send('{} {}'.format(CMD_SNAPSHOT_NAME_SET, name[:31].upper()), callback)
-            return
-
         self.send('{} {} {}'.format(CMD_SNAPSHOT_NAME_SET, index, name[:31].upper()), callback)

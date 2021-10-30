@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from ctypes import *
 import os
+from ctypes import *
+from mod import get_unique_name
 
 # ------------------------------------------------------------------------------------------------------------
 # Convert a ctypes c_char_p into a python string
@@ -757,7 +758,16 @@ _allpedalboards = None
 def get_all_pedalboards():
     global _allpedalboards
     if _allpedalboards is None:
-        _allpedalboards = structPtrPtrToList(utils.get_all_pedalboards())
+        pbs = structPtrPtrToList(utils.get_all_pedalboards())
+        titles = []
+        for pb in pbs:
+            if not pb['valid']:
+                continue
+            ntitle = get_unique_name(pb['title'], titles)
+            if ntitle is not None:
+                pb['title'] = ntitle
+            titles.append(pb['title'])
+        _allpedalboards = pbs
     return _allpedalboards
 
 # handy function to reset our last call value
@@ -775,6 +785,10 @@ def update_cached_pedalboard_version(bundle):
             pedalboard['version'] += 1
             return
     print("ERROR: update_cached_pedalboard_version() failed", bundle)
+
+# handy function to get only the names from all pedalboards
+def get_all_pedalboard_names():
+    return tuple(pb['title'] for pb in get_all_pedalboards())
 
 # get all currently "broken" pedalboards (ie, pedalboards which contain unavailable plugins)
 def get_broken_pedalboards():

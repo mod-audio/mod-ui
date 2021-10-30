@@ -15,8 +15,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import os, json
-from mod import safe_json_load, TextFileFlusher
+import os
+import json
+from mod import get_unique_name, safe_json_load, TextFileFlusher
 from mod.settings import BANKS_JSON_FILE, LAST_STATE_JSON_FILE
 
 # return list of banks
@@ -28,9 +29,17 @@ def list_banks(brokenpedalbundles = [], shouldSave = True):
 
     changed     = False
     checkbroken = len(brokenpedalbundles) > 0
-    validbanks  = []
+    banknames   = []
 
     for bank in banks:
+        # check for unique names
+        ntitle = get_unique_name(bank['title'], banknames)
+        if ntitle is not None:
+            bank['title'] = ntitle
+            changed = True
+        banknames.append(bank['title'])
+
+        # check for valid pedalboards
         validpedals = []
 
         for pb in bank['pedalboards']:
@@ -57,12 +66,11 @@ def list_banks(brokenpedalbundles = [], shouldSave = True):
             print("NOTE: bank with name '%s' does not contain any pedalboards" % title)
 
         bank['pedalboards'] = validpedals
-        validbanks.append(bank)
 
     if changed and shouldSave:
-        save_banks(validbanks)
+        save_banks(banks)
 
-    return validbanks
+    return banks
 
 # save banks to disk
 def save_banks(banks):

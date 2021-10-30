@@ -291,9 +291,12 @@ function SnapshotsManager(options) {
                 id   : prId,
                 title: text,
             },
-            success: function () {
-                elem.html(prId + "." + text)
-                options.renamedCallback(text)
+            success: function (resp) {
+                if (!resp.ok) {
+                    return
+                }
+                elem.html(prId + "." + resp.title)
+                options.renamedCallback(resp.title)
             },
             error: function () {},
             cache: false,
