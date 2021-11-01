@@ -141,6 +141,8 @@ static const std::vector<std::string> BLACKLIST = {
     "urn:mod:gxtuner",
     "urn:mod:tuna",
     "http://calf.sourceforge.net/plugins/Analyzer",
+    // not wanted on sandbox/try service
+    "http://rakarrack.sourceforge.net/effects.html#eqp"
 };
 
 // --------------------------------------------------------------------------------------------------------
