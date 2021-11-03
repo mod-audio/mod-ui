@@ -409,6 +409,11 @@ class HMI(object):
             if data.get('coloured', False):
                 flags |= FLAG_PAGINATION_ALT_LED_COLOR
 
+            if startIndex + endIndex == numOpts:
+                data['steps'] = steps = numOpts - 1
+            else:
+                data['steps'] = steps = 5
+
             for i in range(startIndex, endIndex):
                 option = options[i]
                 xdata  = '"%s" %f' % (option[1].replace('"', '')[:31].upper(), float(option[0]))
