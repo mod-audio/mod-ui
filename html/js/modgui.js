@@ -529,7 +529,7 @@ function GUI(effect, options) {
 
                 // When running SDK there's no host, so simulate trigger here.
                 if (isSDK) options.change(mod_port, port.ranges.default);
-            }, 200)
+            }, 100)
         }
     }
 
@@ -2018,6 +2018,11 @@ JqueryClass('film', baseWidget, {
             self.click()
         })
 
+        if (options.port.properties.indexOf("trigger") >= 0) {
+            // stop here, ignoring clicks for triggers
+            return self
+        }
+
         self.click(function (e) {
             if (!self.data('enabled')) {
                 return self.film('prevent', e)
@@ -2113,6 +2118,11 @@ JqueryClass('film', baseWidget, {
         self.data('dragged', false)
         self.data('lastY', e.pageY)
         self.data('lastX', e.pageX)
+
+        if (self.data('trigger')) {
+            self.film('setValue', self.data('maximum'), false)
+            return
+        }
 
         var value
         switch (self.data('momentary'))
@@ -2324,6 +2334,11 @@ JqueryClass('switchWidget', baseWidget, {
             self.click()
         })
 
+        if (options.port.properties.indexOf("trigger") >= 0) {
+            // stop here, ignoring clicks for triggers
+            return self
+        }
+
         self.click(function (e) {
             if (!self.data('enabled')) {
                 return self.switchWidget('prevent', e)
@@ -2355,6 +2370,11 @@ JqueryClass('switchWidget', baseWidget, {
     },
     mouseDown: function (e) {
         var self = $(this)
+
+        if (self.data('trigger')) {
+            self.switchWidget('setValue', self.data('maximum'), false)
+            return
+        }
 
         var value
         switch (self.data('momentary'))
