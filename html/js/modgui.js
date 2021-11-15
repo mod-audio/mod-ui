@@ -1992,14 +1992,6 @@ JqueryClass('film', baseWidget, {
             }
          })
 
-        self.data('wheelBuffer', 0)
-        self.bind('mousewheel', function (e) {
-            if (!self.data('enabled')) {
-                return self.film('prevent', e)
-            }
-            self.film('mouseWheel', e)
-        })
-
         self.bind('touchstart', function (e) {
             e.preventDefault();
             if (!self.data('enabled')) {
@@ -2019,9 +2011,17 @@ JqueryClass('film', baseWidget, {
         })
 
         if (options.port.properties.indexOf("trigger") >= 0) {
-            // stop here, ignoring clicks for triggers
+            // stop here, ignoring mousewheel and clicks for triggers
             return self
         }
+
+        self.data('wheelBuffer', 0)
+        self.bind('mousewheel', function (e) {
+            if (!self.data('enabled')) {
+                return self.film('prevent', e)
+            }
+            self.film('mouseWheel', e)
+        })
 
         self.click(function (e) {
             if (!self.data('enabled')) {
