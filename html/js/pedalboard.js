@@ -983,10 +983,10 @@ JqueryClass('pedalboard', {
     // Enlarge the pedalboard to a minimum size capable of accommodating all plugins.
     adapt: function (forcedUpdate) {
         var self = $(this)
-            // First, get the minmum bounding rectangle,
-            // given by minX, maxX, minY and maxY
+        // First, get the minmum bounding rectangle,
+        // given by minX, maxX, minY and maxY
         var minX, maxX, minY, maxY, rightMargin, w, h, x, y, plugin, pos
-            //var pedals = self.find('.js-effect')
+        //var pedals = self.find('.js-effect')
         var plugins = self.data('plugins')
         var scale = self.data('scale')
         minX = 0
@@ -1087,6 +1087,17 @@ JqueryClass('pedalboard', {
         var newScale = viewWidth / w
 
         self.data('minScale', newScale)
+
+        // if we are at scale 1, it is very much likely that we do not want to zoom out now
+        // keep current scale if that is the case
+        if (scale == 1 && ! forcedUpdate) {
+            var width = viewWidth / newScale
+            var height = viewHeight / newScale
+            self.width(width)
+            self.height(height)
+            self.pedalboard('positionHardwarePorts')
+            return
+        }
 
         // workaround some browsers that send a zero value at step start, which is an invalid scale
         var usingInitialZero = false
