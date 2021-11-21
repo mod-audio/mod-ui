@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+
+<!-- HEAD -->
+<head>
+<meta charset="UTF-8">
+<title>MOD Testing</title>
+
+<link rel="apple-touch-icon" sizes="57x57" href="img/favicon/apple-icon-57x57.png">
+<link rel="apple-touch-icon" sizes="60x60" href="img/favicon/apple-icon-60x60.png">
+<link rel="apple-touch-icon" sizes="72x72" href="img/favicon/apple-icon-72x72.png">
+<link rel="apple-touch-icon" sizes="76x76" href="img/favicon/apple-icon-76x76.png">
+<link rel="apple-touch-icon" sizes="114x114" href="img/favicon/apple-icon-114x114.png">
+<link rel="apple-touch-icon" sizes="120x120" href="img/favicon/apple-icon-120x120.png">
+<link rel="apple-touch-icon" sizes="144x144" href="img/favicon/apple-icon-144x144.png">
+<link rel="apple-touch-icon" sizes="152x152" href="img/favicon/apple-icon-152x152.png">
+<link rel="apple-touch-icon" sizes="180x180" href="img/favicon/apple-icon-180x180.png">
+<link rel="icon" type="image/png" sizes="192x192" href="img/favicon/android-icon-192x192.png">
+<link rel="icon" type="image/png" sizes="32x32" href="img/favicon/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="96x96" href="img/favicon/favicon-96x96.png">
+<link rel="icon" type="image/png" sizes="16x16" href="img/favicon/favicon-16x16.png">
+<link rel="manifest" href="img/favicon/manifest.json">
+<meta name="msapplication-TileColor" content="#111111">
+<meta name="msapplication-TileImage" content="img/favicon/ms-icon-144x144.png">
+<meta name="theme-color" content="#111111">
+
+<link rel="stylesheet" type="text/css" href="css/fontello/css/fontello.css"/>
+<link rel="stylesheet" type="text/css" href="css/main.css"/>
+<link rel="stylesheet" type="text/css" href="css/dashboard.css"/>
+<link rel="stylesheet" type="text/css" href="css/fonts.css"/>
+<link rel="stylesheet" type="text/css" href="img/icons/icons.css"/>
+
+<script type="text/javascript" src="js/lib/jquery-1.9.1.min.js"></script>
+<script type="text/javascript" src="js/lib/jquery-ui-1.10.1.custom.min.js"></script>
+<script type="text/javascript" src="js/lib/jquery.ui.touch-punch.min.js"></script>
+<script type="text/javascript" src="js/lib/jquery.ba-resize.min.js"></script>
+<script type="text/javascript" src="js/lib/mustache.js"></script>
+<script type="text/javascript" src="js/lib/jquery.svg.js"></script>
+<script type="text/javascript" src="js/lib/sprintf-0.6.js"></script>
+<script type="text/javascript" src="js/lib/jquery.mousewheel.min.js"></script>
+
+<style type="text/css" media="screen">
+    #cloud-plugins-library {
+        bottom: 0px;
+    }
+    .cloud-plugins {
+        left: 0px;
+        bottom: 0px;
+    }
+    .cloud-plugins .cloud-plugin {
+        height: 240px;
+    }
+    .cloud-plugins .cloud-plugin .description {
+        left: 160px;
+    }
+    .cloud-plugins .cloud-plugin .description hr {
+        top: 25%;
+    }
+    .cloud-plugins .cloud-plugin .description p {
+        top: calc(50% + 10px);
+        height: 50%;
+    }
+    .cloud-plugins .cloud-plugin figure {
+        background-repeat: no-repeat;
+        background-size: contain;
+        height: 200px;
+        width: calc(100% - 21px);
+    }
+</style>
+
+<script type="text/javascript">
+    var INFO = {
+        "hwname": "",
+        "sysdate": "",
+        "python": {},
+        "uname": {}
+    }
+
+    $('document').ready(function() {
+        var self = this
+
+        $.ajax({
+            url: '/system/info',
+            method: 'GET',
+            success: function (info) {
+                INFO = info
+            },
+            cache: false,
+            global: false,
+            dataType: 'json'
+        })
+    })
+</script>
+
+</head>
+<!-- END HEAD -->
+
+<!-- BODY -->
+<body class="mod-dark">
+
+<!-- PRELOAD -->
+<div class="mod-hidden">
+    <img src="img/icons/blocked.svg" alt=""/>
+    <img src="img/icons/25/reload.png" width="25px" height="25px" alt=""/>
+</div>
+<!-- END PRELOAD -->
+
+<!-- NOTIFICATIONS -->
+<div id="notifications" class="mod-hidden"></div>
+<!-- END NOTIFICATIONS -->
+
+<!-- WRAPPER -->
+<div id="wrapper">
+
+    <!-- CLOUD PLUGINS LIBRARY -->
+    <div id="cloud-plugins-library">
+        <div>
+            <header>
+                <h1 class="bottom top">MOD PLUGIN TEST AREA &nbsp; | &nbsp; Click to install</h1>
+            </header>
+        </div>
+
+        <div class="cloud-plugins clearfix js-cloud-plugins">
+            <div id="cloudplugin-results-wrapper">
+                <div id="cloud-plugin-content-All" class="plugins-wrapper">
+
+                    <div class="cloud-plugin plugin-container available-plugin js-available-effect" mod-role="cloud-plugin" mod-uri="http%3A//moddevices.com/plugins/mod-devel/2Voices">
+                        <div class="cloud-plugin-border">
+                            <figure class="thumb" style="background-image: url('https://api.moddevices.com/v2/lv2/plugins/56c4bd86770cb318f9cd4f95/screenshot/');">
+                            </figure>
+                            <div class="description">
+                                <span class="title">Plugin name here</span>
+                                <span class="author">And the brand</span>
+                                <hr class="dotted">
+                                <p class="">
+                                    Not yet in the store, cloud infratructure needs some updates first.<br>
+                                    No modgui, barely tested.
+                                </p>
+                            </div>
+                            <div class="status-container"></div>
+                        </div>
+                    </div>
+
+                    <div class="cloud-plugin plugin-container available-plugin js-available-effect" mod-role="cloud-plugin" mod-uri="http%3A//moddevices.com/plugins/mod-devel/2Voices">
+                        <div class="cloud-plugin-border">
+                            <figure class="thumb" style="background-image: url('https://api.moddevices.com/v2/lv2/plugins/56c4bd86770cb318f9cd4f95/screenshot/');">
+                            </figure>
+                            <div class="description">
+                                <span class="title">Plugin name here</span>
+                                <span class="author">And the brand</span>
+                                <hr class="dotted">
+                                <p class="">
+                                    Not yet in the store, cloud infratructure needs some updates first.<br>
+                                    No modgui, barely tested.
+                                </p>
+                            </div>
+                            <div class="status-container"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- END CLOUD PLUGINS LIBRARY -->
+
+<!-- END WRAPPER -->
+</div>
+
+</body>
+<!-- END BODY -->
+
+</html>
