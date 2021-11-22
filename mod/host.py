@@ -1172,7 +1172,8 @@ class Host(object):
                 "ranges"      : {},
                 "designations": (None,None,None,None,None),
                 "preset"      : "",
-                "mapPresets"  : []
+                "mapPresets"  : [],
+                "nextPreset"  : "",
             }
         }
 
@@ -2429,6 +2430,7 @@ class Host(object):
                 "outputs"     : dict((symbol, None) for symbol in extinfo['monitoredOutputs']),
                 "preset"      : "",
                 "mapPresets"  : [],
+                "nextPreset"  : "",
                 "buildEnv"    : extinfo['buildEnvironment'],
                 "sversion"    : sversion,
             }
@@ -2989,10 +2991,11 @@ class Host(object):
                     continue
 
                 equal = pluginData['ports'].get(symbol, None) in (value, None)
-                if not was_aborted and equal:
+
+                if equal and not was_aborted and not diffPreset:
                     continue
 
-                if not equal:
+                if not equal or diffPreset:
                     self.msg_callback("param_set %s %s %f" % (instance, symbol, value))
                     try:
                         yield gen.Task(self.param_set, "%s/%s" % (instance, symbol), value)

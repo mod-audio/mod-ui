@@ -529,7 +529,7 @@ function GUI(effect, options) {
 
                 // When running SDK there's no host, so simulate trigger here.
                 if (isSDK) options.change(mod_port, port.ranges.default);
-            }, 200)
+            }, 100)
         }
     }
 
@@ -1992,14 +1992,6 @@ JqueryClass('film', baseWidget, {
             }
          })
 
-        self.data('wheelBuffer', 0)
-        self.bind('mousewheel', function (e) {
-            if (!self.data('enabled')) {
-                return self.film('prevent', e)
-            }
-            self.film('mouseWheel', e)
-        })
-
         self.bind('touchstart', function (e) {
             e.preventDefault();
             if (!self.data('enabled')) {
@@ -2016,6 +2008,19 @@ JqueryClass('film', baseWidget, {
         self.bind('touchend', function (e) {
             self.film('mouseUp', e.originalEvent.changedTouches[0])
             self.click()
+        })
+
+        if (options.port.properties.indexOf("trigger") >= 0) {
+            // stop here, ignoring mousewheel and clicks for triggers
+            return self
+        }
+
+        self.data('wheelBuffer', 0)
+        self.bind('mousewheel', function (e) {
+            if (!self.data('enabled')) {
+                return self.film('prevent', e)
+            }
+            self.film('mouseWheel', e)
         })
 
         self.click(function (e) {
@@ -2113,6 +2118,11 @@ JqueryClass('film', baseWidget, {
         self.data('dragged', false)
         self.data('lastY', e.pageY)
         self.data('lastX', e.pageX)
+
+        if (self.data('trigger')) {
+            self.film('setValue', self.data('maximum'), false)
+            return
+        }
 
         var value
         switch (self.data('momentary'))
@@ -2324,6 +2334,11 @@ JqueryClass('switchWidget', baseWidget, {
             self.click()
         })
 
+        if (options.port.properties.indexOf("trigger") >= 0) {
+            // stop here, ignoring clicks for triggers
+            return self
+        }
+
         self.click(function (e) {
             if (!self.data('enabled')) {
                 return self.switchWidget('prevent', e)
@@ -2355,6 +2370,11 @@ JqueryClass('switchWidget', baseWidget, {
     },
     mouseDown: function (e) {
         var self = $(this)
+
+        if (self.data('trigger')) {
+            self.switchWidget('setValue', self.data('maximum'), false)
+            return
+        }
 
         var value
         switch (self.data('momentary'))
