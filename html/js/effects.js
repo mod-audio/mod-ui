@@ -449,6 +449,9 @@ JqueryClass('effectBox', {
                 favorite_class: FAVORITES.indexOf(plugin.uri) >= 0 ? "favorite" : "",
                 plugin_href: PLUGINS_URL + '/' + btoa(plugin.uri),
                 pedalboard_href: desktop.getPedalboardHref(plugin.uri),
+                documentation_href: (plugin.gui && plugin.gui.documentation)
+                                  ? '/effect/file/documentation?uri=' + uri + '&v=' + ver
+                                  : '',
                 build_env_uppercase: (plugin.buildEnvironment || "LOCAL").toUpperCase(),
                 show_build_env: plugin.buildEnvironment !== "prod",
             };
