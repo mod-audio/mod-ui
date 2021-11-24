@@ -5142,11 +5142,17 @@ _:b%i
         callback(True)
 
     def hmi_pedalboard_reorder_snapshots(self, src, dst, callback):
+        # some safety checks first
         if src < 0 or src >= len(self.pedalboard_snapshots) or self.pedalboard_snapshots[src] is None:
             callback(False)
             return
         if dst < 0 or dst >= len(self.pedalboard_snapshots) or self.pedalboard_snapshots[dst] is None:
             callback(False)
+            return
+
+        # if dst and src match, there is nothing to do
+        if dst == src:
+            callback(True)
             return
 
         if self.current_pedalboard_snapshot_id == src:
