@@ -120,7 +120,7 @@ static const bool kAllowRegularCV = getenv("MOD_UI_ALLOW_REGULAR_CV") != nullptr
     nullptr,                                         \
     {                                                \
         nullptr, nullptr, nullptr, nullptr, nullptr, \
-        nullptr, nullptr,                            \
+        nullptr, nullptr, nullptr,                   \
         nullptr, nullptr,                            \
         nullptr, nullptr, nullptr, nullptr,          \
         nullptr, nullptr                             \
@@ -270,6 +270,7 @@ struct NamespaceDefinitions {
     LilvNode* const modgui_stylesheet;
     LilvNode* const modgui_screenshot;
     LilvNode* const modgui_thumbnail;
+    LilvNode* const modgui_documentation;
     LilvNode* const modgui_brand;
     LilvNode* const modgui_label;
     LilvNode* const modgui_model;
@@ -331,6 +332,7 @@ struct NamespaceDefinitions {
           modgui_stylesheet        (lilv_new_uri(W, LILV_NS_MODGUI "stylesheet"        )),
           modgui_screenshot        (lilv_new_uri(W, LILV_NS_MODGUI "screenshot"        )),
           modgui_thumbnail         (lilv_new_uri(W, LILV_NS_MODGUI "thumbnail"         )),
+          modgui_documentation     (lilv_new_uri(W, LILV_NS_MODGUI "documentation"     )),
           modgui_brand             (lilv_new_uri(W, LILV_NS_MODGUI "brand"             )),
           modgui_label             (lilv_new_uri(W, LILV_NS_MODGUI "label"             )),
           modgui_model             (lilv_new_uri(W, LILV_NS_MODGUI "model"             )),
@@ -393,6 +395,7 @@ struct NamespaceDefinitions {
         lilv_node_free(modgui_stylesheet);
         lilv_node_free(modgui_screenshot);
         lilv_node_free(modgui_thumbnail);
+        lilv_node_free(modgui_documentation);
         lilv_node_free(modgui_brand);
         lilv_node_free(modgui_label);
         lilv_node_free(modgui_model);
@@ -2126,6 +2129,15 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
         if (info.gui.thumbnail == nullptr)
             info.gui.thumbnail = nc;
 
+        // documentation, optional
+        if (LilvNode* const modgui_documentation = lilv_world_get(W, modguigui, ns.modgui_documentation, nullptr))
+        {
+            info.gui.documentation = lilv_file_abspath(lilv_node_as_string(modgui_documentation));
+            lilv_node_free(modgui_documentation);
+        }
+        if (info.gui.documentation == nullptr)
+            info.gui.documentation = nc;
+
         // extra stuff, all optional
         if (LilvNode* const modgui_brand = lilv_world_get(W, modguigui, ns.modgui_brand, nullptr))
         {
@@ -2267,6 +2279,7 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
         info.gui.stylesheet = nc;
         info.gui.screenshot = nc;
         info.gui.thumbnail = nc;
+        info.gui.documentation = nc;
         info.gui.brand = nc;
         info.gui.label = nc;
         info.gui.model = nc;
@@ -3074,6 +3087,8 @@ static void _clear_plugin_info(PluginInfo& info)
         free((void*)info.gui.screenshot);
     if (info.gui.thumbnail != nc)
         free((void*)info.gui.thumbnail);
+    if (info.gui.documentation != nc)
+        free((void*)info.gui.documentation);
     if (info.gui.brand != nc)
         free((void*)info.gui.brand);
     if (info.gui.label != nc)
