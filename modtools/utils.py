@@ -175,6 +175,7 @@ class PluginGUI(Structure):
         ("stylesheet", c_char_p),
         ("screenshot", c_char_p),
         ("thumbnail", c_char_p),
+        ("documentation", c_char_p),
         ("brand", c_char_p),
         ("label", c_char_p),
         ("model", c_char_p),
