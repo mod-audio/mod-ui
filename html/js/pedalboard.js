@@ -185,6 +185,10 @@ JqueryClass('pedalboard', {
             removeCVAddressingPluginPort: function (uri, callback) {
               callback(true)
             },
+
+            // Show notification that we are using a demo plugin
+            notifyDemoPluginLoaded: function () {
+            },
         }, options)
 
         self.pedalboard('wrapApplicationFunctions', options, [
