@@ -187,6 +187,10 @@ JqueryClass('pedalboard', {
             removeCVAddressingPluginPort: function (uri, callback) {
               callback(true)
             },
+
+            // Show notification that we are using a demo plugin
+            notifyDemoPluginLoaded: function () {
+            },
         }, options)
 
         self.pedalboard('wrapApplicationFunctions', options, [
@@ -1422,6 +1426,7 @@ JqueryClass('pedalboard', {
             if (pluginData.licensed < 0) {
                 // This is a TRIAL plugin
                 icon.find('[mod-role="drag-handle"]').addClass('demo-plugin').addClass('demo-plugin-light');
+                self.data('notifyDemoPluginLoaded')()
             }
 
             self.data('plugins')[instance] = icon
