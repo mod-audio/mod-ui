@@ -48,6 +48,7 @@ typedef struct {
     const char* stylesheet;
     const char* screenshot;
     const char* thumbnail;
+    const char* documentation;
     const char* brand;
     const char* label;
     const char* model;
