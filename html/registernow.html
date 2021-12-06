@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html>
+
+<!-- HEAD -->
+<head>
+<meta charset="UTF-8">
+<title>MOD Testing</title>
+
+<link rel="apple-touch-icon" sizes="57x57" href="img/favicon/apple-icon-57x57.png">
+<link rel="apple-touch-icon" sizes="60x60" href="img/favicon/apple-icon-60x60.png">
+<link rel="apple-touch-icon" sizes="72x72" href="img/favicon/apple-icon-72x72.png">
+<link rel="apple-touch-icon" sizes="76x76" href="img/favicon/apple-icon-76x76.png">
+<link rel="apple-touch-icon" sizes="114x114" href="img/favicon/apple-icon-114x114.png">
+<link rel="apple-touch-icon" sizes="120x120" href="img/favicon/apple-icon-120x120.png">
+<link rel="apple-touch-icon" sizes="144x144" href="img/favicon/apple-icon-144x144.png">
+<link rel="apple-touch-icon" sizes="152x152" href="img/favicon/apple-icon-152x152.png">
+<link rel="apple-touch-icon" sizes="180x180" href="img/favicon/apple-icon-180x180.png">
+<link rel="icon" type="image/png" sizes="192x192" href="img/favicon/android-icon-192x192.png">
+<link rel="icon" type="image/png" sizes="32x32" href="img/favicon/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="96x96" href="img/favicon/favicon-96x96.png">
+<link rel="icon" type="image/png" sizes="16x16" href="img/favicon/favicon-16x16.png">
+<link rel="manifest" href="img/favicon/manifest.json">
+<meta name="msapplication-TileColor" content="#111111">
+<meta name="msapplication-TileImage" content="img/favicon/ms-icon-144x144.png">
+<meta name="theme-color" content="#111111">
+
+<link rel="stylesheet" type="text/css" href="css/fontello/css/fontello.css"/>
+<link rel="stylesheet" type="text/css" href="css/main.css"/>
+<link rel="stylesheet" type="text/css" href="css/dashboard.css"/>
+<link rel="stylesheet" type="text/css" href="css/fonts.css"/>
+<link rel="stylesheet" type="text/css" href="img/icons/icons.css"/>
+
+<script type="text/javascript" src="js/lib/jquery-1.9.1.min.js"></script>
+<script type="text/javascript" src="js/lib/jquery-ui-1.10.1.custom.min.js"></script>
+<script type="text/javascript" src="js/lib/jquery.ui.touch-punch.min.js"></script>
+<script type="text/javascript" src="js/lib/jquery.ba-resize.min.js"></script>
+<script type="text/javascript" src="js/lib/mustache.js"></script>
+<script type="text/javascript" src="js/lib/jquery.svg.js"></script>
+<script type="text/javascript" src="js/lib/sprintf-0.6.js"></script>
+<script type="text/javascript" src="js/lib/jquery.mousewheel.min.js"></script>
+
+<style type="text/css" media="screen">
+    #cloud-plugins-library {
+        bottom: 0px;
+    }
+    #cloudplugin-results-wrapper {
+        height: 100%;
+        display: flex;
+        justify-content: center;
+    }
+    .cloud-plugins {
+        left: 0px;
+        bottom: 0px;
+    }
+    .plugins-wrapper {
+        height: 100%;
+        display: flex;
+        justify-content: center;
+        flex-direction: column;
+        align-items: center;
+        max-width: 500px;
+    }
+    .plugins-wrapper h1 {
+        margin: 23px;
+        text-decoration: underline #883996;
+        font-size: 4rem !important;
+    }
+    .plugins-wrapper .control-group,
+    .plugins-wrapper .form-group {
+        min-width: 50vw;
+    }
+    .plugins-wrapper label {
+        color: white;
+    }
+</style>
+
+<script type="text/javascript">
+    var INFO = {
+        "hwname": "",
+        "sysdate": "",
+        "python": {},
+        "uname": {}
+    }
+
+    $('document').ready(function() {
+        var self = this
+
+        $.ajax({
+            url: '/system/info',
+            method: 'GET',
+            success: function (info) {
+                INFO = info
+            },
+            cache: false,
+            global: false,
+            dataType: 'json'
+        })
+    })
+</script>
+
+</head>
+<!-- END HEAD -->
+
+<!-- BODY -->
+<body class="mod-dark">
+
+<!-- PRELOAD -->
+<div class="mod-hidden">
+    <img src="img/icons/blocked.svg" alt=""/>
+    <img src="img/icons/25/reload.png" width="25px" height="25px" alt=""/>
+</div>
+<!-- END PRELOAD -->
+
+<!-- NOTIFICATIONS -->
+<div id="notifications" class="mod-hidden"></div>
+<!-- END NOTIFICATIONS -->
+
+<!-- WRAPPER -->
+<div id="wrapper">
+
+    <!-- CLOUD PLUGINS LIBRARY -->
+    <div id="cloud-plugins-library">
+        <div>
+            <header>
+                <h1 class="bottom top">REGISTRATION</h1>
+            </header>
+        </div>
+
+        <div class="cloud-plugins clearfix">
+            <div id="cloudplugin-results-wrapper">
+                <div class="plugins-wrapper">
+                    <h1>Register Now</h1>
+                    <div class="form-group">
+                        <input id="searchPedalboard" class="form-control" maxlength="20" placeholder="Enter your email" type="email">
+                        <span class="input-clean" style="display: none;"></span>
+                    </div>
+                    <div class="control-group">
+                        <input type="checkbox" name="installed" id="cloud-plugins-installed" />
+                        <label for="cloud-plugins-installed">Neque porro quisquam est qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- END CLOUD PLUGINS LIBRARY -->
+
+<!-- END WRAPPER -->
+</div>
+
+</body>
+<!-- END BODY -->
+
+</html>

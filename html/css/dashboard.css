@@ -27,13 +27,13 @@
     font-size: 50px;
 }
 
-#zoom-controllers {
+#user-profile {
     position:absolute;
     right:0px;
     top:0px;
     z-index:10;
 }
-#zoom-controllers > span {
+#user-profile > span {
     display: inline-block;
     background: transparent;
     cursor:pointer;
@@ -48,17 +48,12 @@
     opacity: 0.66;
     margin: 0;
     padding: 0;
+    background-image:url(../img/icons/25/profile.png);
 }
-#zoom-controllers > span:hover,
-#zoom-controllers > span:active {
+#user-profile > span:hover,
+#user-profile > span:active {
     background-color:#000;
     opacity: 1;
-}
-#zoom-controllers > span:first-child {
-    background-image:url(../img/icn-zoom-out.png);
-}
-#zoom-controllers > span:last-child {
-    background-image:url(../img/icn-zoom-in.png);
 }
 
 
@@ -67,7 +62,7 @@
     height:100%;
     position: absolute;
     left:45px;
-    right: 90px;
+    right: 45px;
     margin:0;
     padding:0;
     display: inline-block;
