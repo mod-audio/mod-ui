@@ -1573,7 +1573,7 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
                 return
             }
             self.pedalboardDemoPluginsNotified = true
-            new Notification('warn', 'This pedalboard contains a trial plugin.<br>Using trial plugins will intentionally mute the audio in regular intervals.')
+            new Notification('warn', 'This pedalboard contains a trial plugin.<br>Using trial plugins will intentionally mute the audio at regular intervals.')
         },
     });
 
