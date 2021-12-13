@@ -5178,16 +5178,12 @@ _:b%i
             callback(True)
             return
 
-        if self.current_pedalboard_snapshot_id == src:
-            self.current_pedalboard_snapshot_id = dst
-        else:
-            current = self.pedalboard_snapshots[self.current_pedalboard_snapshot_id]
+        current = self.pedalboard_snapshots[self.current_pedalboard_snapshot_id]
 
         snapshot = self.pedalboard_snapshots.pop(src)
         self.pedalboard_snapshots.insert(dst, snapshot)
 
-        if self.current_pedalboard_snapshot_id != src:
-            self.current_pedalboard_snapshot_id = self.pedalboard_snapshots.index(current)
+        self.current_pedalboard_snapshot_id = self.pedalboard_snapshots.index(current)
 
         callback(True)
 
