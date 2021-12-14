@@ -252,6 +252,7 @@ struct NamespaceDefinitions {
     LilvNode* const mod_brand;
     LilvNode* const mod_label;
     LilvNode* const mod_default;
+    LilvNode* const mod_default_custom;
     LilvNode* const mod_minimum;
     LilvNode* const mod_maximum;
     LilvNode* const mod_rangeSteps;
@@ -314,6 +315,17 @@ struct NamespaceDefinitions {
           mod_brand                (lilv_new_uri(W, LILV_NS_MOD    "brand"             )),
           mod_label                (lilv_new_uri(W, LILV_NS_MOD    "label"             )),
           mod_default              (lilv_new_uri(W, LILV_NS_MOD    "default"           )),
+#if defined(_MOD_DEVICE_DUO)
+          mod_default_custom       (lilv_new_uri(W, LILV_NS_MOD    "default_duo"       )),
+#elif defined(_MOD_DEVICE_DUOX)
+          mod_default_custom       (lilv_new_uri(W, LILV_NS_MOD    "default_duox"      )),
+#elif defined(_MOD_DEVICE_DWARF)
+          mod_default_custom       (lilv_new_uri(W, LILV_NS_MOD    "default_dwarf"     )),
+#elif defined(_MOD_DEVICE_X86_64)
+          mod_default_custom       (lilv_new_uri(W, LILV_NS_MOD    "default_x64"       )),
+#else
+          mod_default_custom       (nullptr),
+#endif
           mod_minimum              (lilv_new_uri(W, LILV_NS_MOD    "minimum"           )),
           mod_maximum              (lilv_new_uri(W, LILV_NS_MOD    "maximum"           )),
           mod_rangeSteps           (lilv_new_uri(W, LILV_NS_MOD    "rangeSteps"        )),
@@ -377,6 +389,7 @@ struct NamespaceDefinitions {
         lilv_node_free(mod_brand);
         lilv_node_free(mod_label);
         lilv_node_free(mod_default);
+        lilv_node_free(mod_default_custom);
         lilv_node_free(mod_minimum);
         lilv_node_free(mod_maximum);
         lilv_node_free(mod_rangeSteps);
@@ -797,7 +810,11 @@ static void _fill_parameters_for_plugin(const LilvPlugin* const p,
                     if (xmaximum == nullptr)
                         xmaximum = lilv_world_get(W, patch, ns.lv2core_maximum, nullptr);
 
-                    LilvNode* xdefault = lilv_world_get(W, patch, ns.mod_default, nullptr);
+                    LilvNode* xdefault = ns.mod_default_custom != nullptr
+                                       ? lilv_world_get(W, patch, ns.mod_default_custom, nullptr)
+                                       : nullptr;
+                    if (xdefault == nullptr)
+                        xdefault = lilv_world_get(W, patch, ns.mod_default, nullptr);
                     if (xdefault == nullptr)
                         xdefault = lilv_world_get(W, patch, ns.lv2core_default, nullptr);
 
@@ -2586,10 +2603,16 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
                 LilvNodes* xminimum = lilv_port_get_value(p, port, ns.mod_minimum);
                 if (xminimum == nullptr)
                     xminimum = lilv_port_get_value(p, port, ns.lv2core_minimum);
+
                 LilvNodes* xmaximum = lilv_port_get_value(p, port, ns.mod_maximum);
                 if (xmaximum == nullptr)
                     xmaximum = lilv_port_get_value(p, port, ns.lv2core_maximum);
-                LilvNodes* xdefault = lilv_port_get_value(p, port, ns.mod_default);
+
+                LilvNodes* xdefault = ns.mod_default_custom != nullptr
+                                    ? lilv_port_get_value(p, port, ns.mod_default_custom)
+                                    : nullptr;
+                if (xdefault == nullptr)
+                    xdefault = lilv_port_get_value(p, port, ns.mod_default);
                 if (xdefault == nullptr)
                     xdefault = lilv_port_get_value(p, port, ns.lv2core_default);
 

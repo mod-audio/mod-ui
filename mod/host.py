@@ -5029,19 +5029,32 @@ _:b%i
     def hmi_bank_delete(self, bank_id, callback):
         if bank_id <= 0 or bank_id > len(self.banks):
             print("ERROR: Trying to remove invalid bank id %i" % (bank_id))
-            callback(False)
+            callback(False, -1)
             return
+
+        # if we delete the current bank, current pedalboard no longer belongs to it
+        # so this response says where it is located from within the "All Pedalboards" bank
+        pb_resp = -1
 
         # if bank-to-remove is the current one, reset to "All Pedalboards"
         if self.bank_id == bank_id:
             self.bank_id = 0
+            # find current pedalboard within "All Pedalboards"
+            pb_path = self.pedalboard_path or DEFAULT_PEDALBOARD
+            for pbi in range(len(self.allpedalboards)):
+                if self.allpedalboards[pbi]['bundle'] == pb_path:
+                    pb_resp = pbi
+                    break
+            else:
+                print("ERROR: Failed to find new pedalboard id to give from All")
+
         # if current bank is after or same as bank-to-remove, shift back by 1
         elif self.bank_id >= bank_id:
             self.bank_id -= 1
 
         self.banks.pop(bank_id - 1)
         save_banks(self.banks)
-        callback(True)
+        callback(True, pb_resp)
 
     def hmi_bank_add_pedalboards_or_banks(self, dst_bank_id, src_bank_id, pedalboards_or_banks, callback):
         if dst_bank_id <= 0 or dst_bank_id > len(self.banks):
@@ -5148,20 +5161,30 @@ _:b%i
     def hmi_pedalboard_remove_from_bank(self, bank_id, pedalboard_id, callback):
         if bank_id <= 0 or bank_id > len(self.banks):
             print("ERROR: Trying to remove pedalboard using out of bounds bank id %i" % (bank_id))
-            callback(False)
+            callback(False, -1)
             return
 
         pedalboards = self.banks[bank_id-1]['pedalboards']
 
         if pedalboard_id < 0 or pedalboard_id >= len(pedalboards):
             print("ERROR: Trying to remove pedalboard using out of bounds pedalboard id %i" % (pedalboard_id))
-            callback(False)
+            callback(False, -1)
             return
 
-        pedalboards.pop(pedalboard_id)
+        removed_pb = pedalboards.pop(pedalboard_id)
         save_banks(self.banks)
 
-        callback(True)
+        # find current pedalboard within "All Pedalboards"
+        pb_path = removed_pb['bundle']
+        for pbi in range(len(self.allpedalboards)):
+            if self.allpedalboards[pbi]['bundle'] == pb_path:
+                pb_resp = pbi
+                break
+        else:
+            print("ERROR: Failed to find removed pedalboard id to give from All")
+            pb_resp = -1
+
+        callback(True, pb_resp)
 
     def hmi_pedalboard_reorder_snapshots(self, src, dst, callback):
         # some safety checks first
@@ -5177,16 +5200,12 @@ _:b%i
             callback(True)
             return
 
-        if self.current_pedalboard_snapshot_id == src:
-            self.current_pedalboard_snapshot_id = dst
-        else:
-            current = self.pedalboard_snapshots[self.current_pedalboard_snapshot_id]
+        current = self.pedalboard_snapshots[self.current_pedalboard_snapshot_id]
 
         snapshot = self.pedalboard_snapshots.pop(src)
         self.pedalboard_snapshots.insert(dst, snapshot)
 
-        if self.current_pedalboard_snapshot_id != src:
-            self.current_pedalboard_snapshot_id = self.pedalboard_snapshots.index(current)
+        self.current_pedalboard_snapshot_id = self.pedalboard_snapshots.index(current)
 
         callback(True)
 

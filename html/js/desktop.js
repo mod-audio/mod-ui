@@ -224,6 +224,7 @@ function Desktop(elements) {
     this.pedalboardModified = false
     this.pedalboardPresetId = 0
     this.pedalboardPresetName = ''
+    this.pedalboardDemoPluginsNotified = false
     this.loadingPeldaboardForFirstTime = true
     this.licenseManager = null
 
@@ -1472,6 +1473,7 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
                     self.pedalboardModified = false
                     self.pedalboardPresetId = 0
                     self.pedalboardPresetName = ''
+                    self.pedalboardDemoPluginsNotified = false
                     self.titleBox.text('Untitled')
                     self.titleBox.addClass("blend")
                     self.transportControls.resetControlsEnabled()
@@ -1576,6 +1578,14 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
                 cache: false,
                 dataType: 'json'
             })
+        },
+
+        notifyDemoPluginLoaded: function () {
+            if (self.pedalboardDemoPluginsNotified) {
+                return
+            }
+            self.pedalboardDemoPluginsNotified = true
+            new Notification('warn', 'This pedalboard contains a trial plugin.<br>Using trial plugins will intentionally mute the audio at regular intervals.')
         },
     });
 
@@ -1816,6 +1826,7 @@ Desktop.prototype.loadPedalboard = function (bundlepath, callback) {
                 self.pedalboardBundle = bundlepath
                 self.pedalboardEmpty = false
                 self.pedalboardModified = false
+                self.pedalboardDemoPluginsNotified = false
                 self.titleBox.text(resp.name);
                 self.titleBox.removeClass("blend");
 
