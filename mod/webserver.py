@@ -1106,6 +1106,27 @@ class EffectPresetDelete(JsonRequestHandler):
         ok     = yield gen.Task(SESSION.host.preset_delete, instance, uri, bundle)
         self.write(ok)
 
+class RemoteWebSocket(websocket.WebSocketHandler):
+    def check_origin(self, origin):
+        match = re.match(r'^(\w+)://([^/]*)/?', origin)
+        if match is None:
+            return False
+        protocol, domain = match.groups()
+        if protocol not in ("http", "https"):
+            return False
+        if domain != "moddevices.com" and not domain.endswith(".moddevices.com"):
+            return False
+        return True
+
+    def on_message(self, pedalboard_id):
+        if len(SESSION.websockets) == 0:
+            self.write_message("false")
+            return
+
+        SESSION.websockets[0].write_message("load-pb-remote " + pedalboard_id)
+        self.write_message("true")
+        self.close()
+
 class ServerWebSocket(websocket.WebSocketHandler):
     @gen.coroutine
     def open(self):
@@ -2259,6 +2280,7 @@ application = web.Application(
             (r"/js/templates.js$", BulkTemplateLoader),
 
             (r"/websocket/?$", ServerWebSocket),
+            (r"/rpbsocket/?$", RemoteWebSocket),
 
             (r"/(.*)", TimelessStaticFileHandler, {"path": HTML_DIR}),
         ],
