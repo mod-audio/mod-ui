@@ -272,6 +272,7 @@ class Addressings(object):
         has_cc_addrs   = False
         retry_cc_addrs = False
         used_actuators = []
+        hmi_widgets    = []
 
         # NOTE: We need to wait for Control Chain to finish initializing.
         #       Can take some time due to waiting for several device descriptors.
@@ -342,7 +343,7 @@ class Addressings(object):
                 addrdata = self.add(instance_id, plugin_uri, portsymbol, actuator_uri,
                                     addr['label'], addr['minimum'], addr['maximum'], addr['steps'], curvalue,
                                     addr.get('tempo'), addr.get('dividers'), page, subpage, group,
-                                    coloured, momentary, operational_mode)
+                                    coloured, momentary, operational_mode, True)
 
                 if addrdata is not None:
                     stored_addrdata = addrdata.copy()
@@ -352,6 +353,9 @@ class Addressings(object):
 
                     if actuator_uri not in used_actuators:
                         used_actuators.append(actuator_uri)
+
+                    if not addr.get('tempo'):
+                        hmi_widgets.append(addrdata)
 
                 elif is_cc:
                     # Control Chain is initialized but addressing failed to load (likely due to missing hardware)
@@ -374,6 +378,12 @@ class Addressings(object):
                 self.cc_load_all(actuator_uri)
             elif actuator_type == self.ADDRESSING_TYPE_CV:
                 self.cv_load_all(actuator_uri)
+
+        # Load HMI Widgets (needs to be done *after* HMI loads its addressings)
+        if self._task_host_hmi_map:
+            for addrdata in hmi_widgets:
+                hw_id = self.hmi_uri2hw_map[addrdata['actuator_uri']]
+                self.remap_host_hmi(hw_id, addrdata)
 
         # Load MIDI addressings
         # NOTE: MIDI addressings are not stored in addressings.json.
@@ -496,7 +506,6 @@ class Addressings(object):
 
         for actuator_uri in used_actuators:
             self.cc_load_all(actuator_uri)
-
 
     def save(self, bundlepath, instances):
         addressings = {}
@@ -687,7 +696,8 @@ class Addressings(object):
     # -----------------------------------------------------------------------------------------------------------------
 
     def add(self, instance_id, plugin_uri, portsymbol, actuator_uri, label, minimum, maximum, steps, value,
-            tempo=False, dividers=None, page=None, subpage=None, group=None, coloured=None, momentary=None, operational_mode=None):
+            tempo=False, dividers=None, page=None, subpage=None, group=None, coloured=None, momentary=None,
+            operational_mode=None, loading_pb=False):
         actuator_type = self.get_actuator_type(actuator_uri)
         if actuator_type not in (self.ADDRESSING_TYPE_HMI, self.ADDRESSING_TYPE_CC, self.ADDRESSING_TYPE_BPM, self.ADDRESSING_TYPE_CV):
             print("ERROR: Trying to address the wrong way, stop!")
@@ -837,7 +847,7 @@ class Addressings(object):
             # else:
             #     addressings['addrs'].insert(old_hmi_index, addressing_data)
 
-            if self._task_host_hmi_map is not None and not tempo:
+            if self._task_host_hmi_map is not None and not tempo and not loading_pb:
                 hw_id = self.hmi_uri2hw_map[actuator_uri]
                 self.remap_host_hmi(hw_id, addressing_data)
 
