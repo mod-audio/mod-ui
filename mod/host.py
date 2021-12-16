@@ -359,7 +359,7 @@ class Host(object):
         self.pedalboard_path     = ""
         self.pedalboard_size     = [0,0]
         self.pedalboard_version  = 0
-        self.current_pedalboard_snapshot_id = 0
+        self.current_pedalboard_snapshot_id = -1
         self.pedalboard_snapshots = []
         self.next_hmi_pedalboard_to_load = None
         self.next_hmi_pedalboard_loading = False
@@ -2894,7 +2894,7 @@ class Host(object):
         self.pedalboard_snapshots.remove(snapshot_to_remove)
 
         if self.current_pedalboard_snapshot_id == idx:
-            self.current_pedalboard_snapshot_id = 0
+            self.current_pedalboard_snapshot_id = -1
 
         return True
 
@@ -3502,7 +3502,7 @@ class Host(object):
             self.pedalboard_snapshots = data.get('snapshots', [])
             try:
                 current = int(data.get('current', 0))
-                if current < 0:
+                if current < -1:
                     raise ValueError
                 if current >= len(self.pedalboard_snapshots):
                     raise ValueError
@@ -5233,9 +5233,8 @@ _:b%i
 
         self.pedalboard_snapshots.pop(snapshot_id)
 
-        # FIXME undefined behaviour
         if self.current_pedalboard_snapshot_id == snapshot_id:
-            self.current_pedalboard_snapshot_id = len(self.pedalboard_snapshots)-1
+            self.current_pedalboard_snapshot_id = -1
 
         callback(True)
 
