@@ -108,12 +108,12 @@ function SnapshotsManager(options) {
             },
             success: function () {
                 selected.remove()
-                options.pedalPresetsList.find('option:first').prop('selected','selected').click()
+                options.renamedCallback()
+                options.pedalPresetsWindow.find('.js-delete').addClass('disabled')
 
                 options.presetCount -= 1
                 if (options.presetCount <= 1) {
                     options.pedalPresetsWindow.find('.js-assign-all').addClass('disabled')
-                    options.pedalPresetsWindow.find('.js-delete').addClass('disabled')
                 }
 
                 // Replace options value and text so we can a sequential list 0, 1, 2, etc.
@@ -121,7 +121,7 @@ function SnapshotsManager(options) {
                 options.pedalPresetsList.children().each(function(option) {
                   var optionHtml = $(this).html()
                   var prtitle = optionHtml.substring(optionHtml.indexOf(".") + 1)
-                  $(this).html(i + "." + prtitle)
+                  $(this).html((i+1) + "." + prtitle)
                   $(this).val(i)
                   i++
                 })
@@ -244,9 +244,13 @@ function SnapshotsManager(options) {
         var selectedHtml = $(this).html()
         var prtitle = selectedHtml.substring(selectedHtml.indexOf(".") + 1)
 
-        if (options.currentlyAddressed && !options.canFeedback) {
-            options.pedalPresetsList.find('option:selected').removeProp('selected')
-            return self.prevent(e)
+        if (options.currentlyAddressed) {
+            if (!options.canFeedback) {
+                options.pedalPresetsList.find('option:selected').removeProp('selected')
+                return self.prevent(e)
+            }
+        } else if (options.presetCount > 1) {
+            options.pedalPresetsWindow.find('.js-delete').removeClass('disabled')
         }
 
         $.ajax({
@@ -295,7 +299,7 @@ function SnapshotsManager(options) {
                 if (!resp.ok) {
                     return
                 }
-                elem.html(prId + "." + resp.title)
+                elem.html((prId+1) + "." + resp.title)
                 options.renamedCallback(resp.title)
             },
             error: function () {},
