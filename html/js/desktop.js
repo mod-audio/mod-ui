@@ -211,7 +211,7 @@ function Desktop(elements) {
         pedalPresetsOverlay: elements.pedalPresetsOverlay,
         hardwareManager: self.hardwareManager,
         renamedCallback: function (name) {
-            self.titleBox.text((self.title || 'Untitled') + " - " + name)
+            self.titleBox.text((self.title || 'Untitled') + " - " + (name || 'Default'))
         }
     })
 
@@ -1039,10 +1039,6 @@ function Desktop(elements) {
         })
     })
     elements.snapshotManageButton.click(function () {
-        if (self.pedalboardPresetId < 0) {
-            return new Notification('warn', 'Pedalboard snapshots are not enabled', 1500)
-        }
-
         var addressed = !!self.hardwareManager.addressingsByPortSymbol['/pedalboard/:presets']
         var feedback = true
 

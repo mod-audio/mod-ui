@@ -42,7 +42,7 @@ from mod.settings import (APP, LOG, DEV_API,
                           LV2_PLUGIN_DIR, LV2_PEDALBOARDS_DIR, IMAGE_VERSION,
                           UPDATE_CC_FIRMWARE_FILE, UPDATE_MOD_OS_FILE, USING_256_FRAMES_FILE,
                           DEFAULT_ICON_TEMPLATE, DEFAULT_SETTINGS_TEMPLATE, DEFAULT_ICON_IMAGE,
-                          DEFAULT_PEDALBOARD, DATA_DIR, USER_FILES_DIR,
+                          DEFAULT_PEDALBOARD, DEFAULT_SNAPSHOT_NAME, DATA_DIR, USER_FILES_DIR,
                           FAVORITES_JSON_FILE, PREFERENCES_JSON_FILE, USER_ID_JSON_FILE,
                           DEV_HOST, UNTITLED_PEDALBOARD_NAME, MODEL_CPU, MODEL_TYPE, PEDALBOARDS_LABS_HTTP_ADDRESS)
 
@@ -1595,7 +1595,7 @@ class SnapshotList(JsonRequestHandler):
 class SnapshotName(JsonRequestHandler):
     def get(self):
         idx  = int(self.get_argument('id'))
-        name = SESSION.host.snapshot_name(idx) or ""
+        name = SESSION.host.snapshot_name(idx) or DEFAULT_SNAPSHOT_NAME
         self.write({
             'ok'  : bool(name),
             'name': name
