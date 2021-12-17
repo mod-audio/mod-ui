@@ -5216,6 +5216,9 @@ _:b%i
 
         callback(True)
 
+        if self.current_pedalboard_snapshot_id == -1:
+            self.hmi.set_snapshot_name(-1, DEFAULT_SNAPSHOT_NAME, None)
+
     # -----------------------------------------------------------------------------------------------------------------
 
     def bank_config_enabled_callback(self, _):
