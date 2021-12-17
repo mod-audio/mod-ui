@@ -354,7 +354,7 @@ class Addressings(object):
                     if actuator_uri not in used_actuators:
                         used_actuators.append(actuator_uri)
 
-                    if not addr.get('tempo'):
+                    if actuator_type == self.ADDRESSING_TYPE_HMI and not addr.get('tempo'):
                         hmi_widgets.append(addrdata)
 
                 elif is_cc:
