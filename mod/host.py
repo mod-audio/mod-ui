@@ -5220,8 +5220,10 @@ _:b%i
         if any(snapshot['name'].upper() == uname for snapshot in self.pedalboard_snapshots):
             callback(-2)
             return
-        self.snapshot_saveas(name)
+        idx = self.snapshot_saveas(name)
         callback(True)
+
+        self.hmi.set_snapshot_name(idx, self.pedalboard_snapshots[idx]['name'], None)
 
     def hmi_pedalboard_snapshot_delete(self, snapshot_id, callback):
         if snapshot_id < 0 or snapshot_id >= len(self.pedalboard_snapshots):
