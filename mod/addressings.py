@@ -343,7 +343,7 @@ class Addressings(object):
                 addrdata = self.add(instance_id, plugin_uri, portsymbol, actuator_uri,
                                     addr['label'], addr['minimum'], addr['maximum'], addr['steps'], curvalue,
                                     addr.get('tempo'), addr.get('dividers'), page, subpage, group,
-                                    coloured, momentary, operational_mode, True)
+                                    coloured, momentary, operational_mode)
 
                 if addrdata is not None:
                     stored_addrdata = addrdata.copy()
@@ -697,7 +697,7 @@ class Addressings(object):
 
     def add(self, instance_id, plugin_uri, portsymbol, actuator_uri, label, minimum, maximum, steps, value,
             tempo=False, dividers=None, page=None, subpage=None, group=None, coloured=None, momentary=None,
-            operational_mode=None, loading_pb=False):
+            operational_mode=None):
         actuator_type = self.get_actuator_type(actuator_uri)
         if actuator_type not in (self.ADDRESSING_TYPE_HMI, self.ADDRESSING_TYPE_CC, self.ADDRESSING_TYPE_BPM, self.ADDRESSING_TYPE_CV):
             print("ERROR: Trying to address the wrong way, stop!")
@@ -847,10 +847,6 @@ class Addressings(object):
             # else:
             #     addressings['addrs'].insert(old_hmi_index, addressing_data)
 
-            if self._task_host_hmi_map is not None and not tempo and not loading_pb:
-                hw_id = self.hmi_uri2hw_map[actuator_uri]
-                self.remap_host_hmi(hw_id, addressing_data)
-
         elif actuator_type == self.ADDRESSING_TYPE_BPM:
             addressings = self.virtual_addressings[actuator_uri]
             addressings.append(addressing_data)
@@ -972,7 +968,13 @@ class Addressings(object):
         elif actuator_type == self.ADDRESSING_TYPE_CC:
             actuator_hw = self.cc_metadata[actuator_uri]['hw_id']
 
-        self._task_addressing(actuator_type, actuator_hw, addressing_data, callback, send_hmi=send_hmi)
+        def hmi_map_callback(resp):
+            self.remap_host_hmi(actuator_hw, addressing_data)
+            callback(resp)
+
+        shouldRemap = actuator_type == self.ADDRESSING_TYPE_HMI and not addressing_data.get('tempo', False)
+        rcallback = hmi_map_callback if shouldRemap else callback
+        self._task_addressing(actuator_type, actuator_hw, addressing_data, rcallback, send_hmi=send_hmi)
 
     def was_last_load_current_aborted(self):
         ret = self.last_load_current_aborted or self.pending_load_current
