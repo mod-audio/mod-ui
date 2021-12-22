@@ -41,7 +41,7 @@ import shutil
 from mod import (
     TextFileFlusher,
     get_hardware_descriptor, get_nearest_valid_scalepoint_value, get_unique_name,
-    read_file_contents, safe_json_load, symbolify
+    read_file_contents, safe_json_load, normalize_for_hw, symbolify
 )
 from mod.addressings import Addressings
 from mod.bank import (
@@ -683,8 +683,8 @@ class Host(object):
                 return
 
         if atype == Addressings.ADDRESSING_TYPE_CC:
-            label = '"%s"' % data['label'].replace('"', '')[:15]
-            unit  = '"%s"' % data['unit'].replace('"', '')[:15]
+            label = normalize_for_hw(data['label'], 15)
+            unit  = normalize_for_hw(data['unit'], 15)
 
             rmaximum    = data['maximum']
             rvalue      = data['value']
@@ -702,7 +702,7 @@ class Host(object):
                         rmaximum = currentNum
                         break
 
-                    optdata    = '"%s" %f' % (o[1].replace('"', '')[:15], float(o[0]))
+                    optdata    = '%s %f' % (normalize_for_hw(o[1], 15), float(o[0]))
                     optdataLen = len(optdata)
 
                     if numBytesFree-optdataLen-2 < 0:
@@ -4886,7 +4886,7 @@ _:b%i
             #banksData = '%d %d "All Pedalboards" 0' % (startIndex, endIndex)
 
         for i in range(startIndex, endIndex):
-            banksData += ' "%s" %d' % (banks[i]['title'].replace('"', '')[:31].upper(), i) # note use +1 for !all
+            banksData += ' %s %d' % (normalize_for_hw(banks[i]['title']), i) # note use +1 for !all
 
         callback(True, banksData)
 
@@ -4940,7 +4940,7 @@ _:b%i
         pedalboardsData = '%d %d %d' % (numPedals, startIndex, endIndex)
 
         for i in range(startIndex, endIndex):
-            pedalboardsData += ' "%s" %d' % (pedalboards[i]['title'].replace('"', '')[:31].upper(), i+1)
+            pedalboardsData += ' %s %d' % (normalize_for_hw(pedalboards[i]['title']), i+1)
 
         callback(True, pedalboardsData)
 
@@ -4979,7 +4979,7 @@ _:b%i
         snapshotData = '%d %d %d' % (numSnapshots, startIndex, endIndex)
 
         for i in range(startIndex, endIndex):
-            snapshotData += ' "%s" %d' % (self.pedalboard_snapshots[i]['name'].replace('"', '')[:31].upper(), i+1)
+            snapshotData += ' %s %d' % (normalize_for_hw(self.pedalboard_snapshots[i]['name']), i+1)
 
         logging.debug("hmi list pedalboards snapshots %d %d -> data is '%s'", props, snapshot_id, snapshotData)
         callback(True, snapshotData)
@@ -5752,7 +5752,7 @@ _:b%i
 
         for i in range(startIndex, endIndex):
             option = options[i]
-            xdata  = '"%s" %f' % (option[1].replace('"', '')[:31].upper(), float(option[0]))
+            xdata  = '%s %f' % (normalize_for_hw(option[1]), float(option[0]))
             optionsData.append(xdata)
 
         options = "%d %d %d %s" % (len(optionsData), flags, ivalue, " ".join(optionsData))
@@ -5769,9 +5769,9 @@ _:b%i
 
         callback(True, '%d %s %d %s %f %f %f %d %s' %
                   ( hw_id,
-                    '"%s"' % label.replace('"', "")[:31].upper(),
+                    '%s' % normalize_for_hw(label),
                     data['hmitype'],
-                    '"%s"' % data['unit'].replace('"', '')[:7],
+                    '%s' % normalize_for_hw(data['unit'], 7),
                     value,
                     data['maximum'],
                     data['minimum'],

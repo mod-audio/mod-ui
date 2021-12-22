@@ -6,7 +6,13 @@ import logging
 import os
 
 from tornado import gen
-from mod import get_hardware_descriptor, get_nearest_valid_scalepoint_value, safe_json_load, TextFileFlusher
+from mod import (
+  get_hardware_descriptor,
+  get_nearest_valid_scalepoint_value,
+  normalize_for_hw,
+  safe_json_load,
+  TextFileFlusher
+)
 from mod.control_chain import (
   CC_MODE_TOGGLE,
   CC_MODE_TRIGGER,
@@ -1293,7 +1299,7 @@ class Addressings(object):
                 prefix = "+ "
             label = prefix + label
 
-        label = '"%s"' % label.replace('"', "")[:31].upper()
+        label = normalize_for_hw(label)
 
         hostcaps = 0x0
         for actuator in self.hw_actuators:

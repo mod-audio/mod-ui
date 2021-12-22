@@ -21,6 +21,7 @@ import shutil
 
 from datetime import datetime
 from functools import wraps
+from unicodedata import normalize
 
 from mod.settings import HARDWARE_DESC_FILE
 
@@ -158,6 +159,12 @@ def get_unique_name(name, names):
     return name
 
 
+def normalize_for_hw(string, limit = 31):
+    return '"%s"' % (
+        normalize('NFKD',string).encode('ascii','ignore').decode('ascii','ignore').replace('"','')[:limit].upper()
+    )
+
+
 def safe_json_load(path, objtype):
     if not os.path.exists(path):
         return objtype()
@@ -177,6 +184,7 @@ def safe_json_load(path, objtype):
 def symbolify(name):
     if len(name) == 0:
         return "_"
+    name = normalize('NFKD', name).encode('ascii', 'ignore').decode('ascii', 'ignore')
     name = re.sub("[^_a-zA-Z0-9]+", "_", name)
     if name[0].isdigit():
         name = "_" + name
