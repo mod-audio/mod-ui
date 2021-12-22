@@ -203,7 +203,7 @@ function SnapshotsManager(options) {
 
             // add new ones
             for (var i in presets) {
-                var elem = $('<option value="'+i+'">'+i + "."+ presets[i]+'</option>')
+                var elem = $('<option value="'+i+'">'+(parseInt(i)+1)+"."+presets[i]+'</option>')
 
                 if (currentId == i && ! options.currentlyAddressed) {
                     elem.prop('selected', 'selected')
@@ -299,7 +299,7 @@ function SnapshotsManager(options) {
                 if (!resp.ok) {
                     return
                 }
-                elem.html((prId+1) + "." + resp.title)
+                elem.html((parseInt(prId)+1) + "." + resp.title)
                 options.renamedCallback(resp.title)
             },
             error: function () {},
