@@ -976,7 +976,8 @@ class Addressings(object):
 
         def hmi_map_callback(resp):
             self.remap_host_hmi(actuator_hw, addressing_data)
-            callback(resp)
+            if callback is not None:
+                callback(resp)
 
         shouldRemap = actuator_type == self.ADDRESSING_TYPE_HMI and not addressing_data.get('tempo', False)
         rcallback = hmi_map_callback if shouldRemap else callback
