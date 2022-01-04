@@ -2943,10 +2943,10 @@ class Host(object):
 
             try:
                 instance_id = self.mapper.get_id_without_creating(instance)
+                pluginData = self.plugins[instance_id]
             except KeyError:
                 continue
 
-            pluginData = self.plugins[instance_id]
             diffBypass = pluginData['bypassed'] != data['bypassed']
             diffPreset = data['preset'] and data['preset'] != pluginData['preset']
 
