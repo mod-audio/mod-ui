@@ -2583,7 +2583,7 @@ class Host(object):
         if parameter is not None:
             parameter[0] = value
 
-        self.send_modified("patch_set %d %s \"%s\"" % (instance_id, uri, value.replace('"','\\"')),
+        self.send_modified("patch_set %d %s \"%s\"" % (instance_id, uri, str(value).replace('"','\\"')),
                            callback, datatype='boolean')
         return parameter is not None
 
