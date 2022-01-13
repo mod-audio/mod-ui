@@ -544,7 +544,7 @@ class HMI(object):
         self.send("boot {}".format(bootdata), callback, datatype)
 
     def set_pedalboard_name(self, name, callback):
-        self.send('{} {}'.format(CMD_PEDALBOARD_NAME_SET, name[:31].upper()), callback)
+        self.send('{} {}'.format(CMD_PEDALBOARD_NAME_SET, normalize_for_hw(name)), callback)
 
     def set_snapshot_name(self, index, name, callback):
-        self.send('{} {} {}'.format(CMD_SNAPSHOT_NAME_SET, index, name[:31].upper()), callback)
+        self.send('{} {} {}'.format(CMD_SNAPSHOT_NAME_SET, index, normalize_for_hw(name)), callback)
