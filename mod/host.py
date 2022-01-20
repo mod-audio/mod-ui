@@ -5427,12 +5427,14 @@ _:b%i
         if port_addressing is not None:
             cctype = port_addressing.get('cctype', 0x0)
             hmitype = port_addressing.get('hmitype', 0x0)
-            if hmitype & FLAG_CONTROL_TRIGGER or cctype & CC_MODE_TRIGGER:
+            # do not save triggers, their value is reset on the next audio cycle
+            if (hmitype & FLAG_CONTROL_TRIGGER) or (cctype & CC_MODE_TRIGGER):
                 save_port_value = False
-            elif hmitype & FLAG_CONTROL_MOMENTARY or cctype & CC_MODE_MOMENTARY:
-                if port_addressing['momentary'] == 1 and port_addressing['minimum'] == value:
+            # do not save momentary toggles with their current value being the temporary one
+            elif (hmitype & FLAG_CONTROL_MOMENTARY) or (cctype & CC_MODE_MOMENTARY):
+                if port_addressing['momentary'] == 1 and port_addressing['maximum'] == value:
                     save_port_value = False
-                elif port_addressing['momentary'] == 2 and port_addressing['maximum'] == value:
+                elif port_addressing['momentary'] == 2 and port_addressing['minimum'] == value:
                     save_port_value = False
 
         if portsymbol == ":bypass":
