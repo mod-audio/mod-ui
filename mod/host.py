@@ -3430,7 +3430,12 @@ class Host(object):
                                                      self.transport_bpm,
                                                      self.transport_sync))
 
-        self.load_pb_plugins(pb['plugins'], instances, rinstances)
+        if bundlepath:
+            motos = self.addressings.peek_for_momentary_toggles(bundlepath)
+        else:
+            motos = {}
+
+        self.load_pb_plugins(pb['plugins'], instances, rinstances, motos)
         self.load_pb_connections(pb['connections'], mappedOldMidiIns, mappedOldMidiOuts,
                                                     mappedNewMidiIns, mappedNewMidiOuts)
 
@@ -3503,7 +3508,7 @@ class Host(object):
         else:
             self.snapshot_clear()
 
-    def load_pb_plugins(self, plugins, instances, rinstances):
+    def load_pb_plugins(self, plugins, instances, rinstances, motos):
         for p in plugins:
             extinfo = get_plugin_info_essentials(p['uri'])
 
@@ -3648,6 +3653,12 @@ class Host(object):
 
                 if oldValue is None:
                     continue
+
+                if instance in motos:
+                    for motoSymbol, motoValue in motos[instance].items():
+                        if motoSymbol == symbol:
+                            value = motoValue
+                            break
 
                 if oldValue != value:
                     pluginData['ports'][symbol] = value

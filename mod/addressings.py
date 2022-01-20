@@ -254,6 +254,37 @@ class Addressings(object):
             cb()
         self.waiting_for_cc_cbs = []
 
+    def peek_for_momentary_toggles(self, bundlepath):
+        datafile = os.path.join(bundlepath, "addressings.json")
+        if not os.path.exists(datafile):
+            return {}
+
+        ret = {}
+        data = safe_json_load(datafile, dict)
+        for actuator_uri, addrs in data.items():
+            for addr in addrs:
+                momentary = addr.get('momentary', None)
+                if momentary is None or not isinstance(momentary, int):
+                    continue
+
+                instance   = addr['instance']
+                portsymbol = addr['port']
+
+                # momentary on
+                if momentary == 1:
+                    target = addr['maximum'] if portsymbol == ":bypass" else addr['minimum']
+                # momentary off
+                elif momentary == 2:
+                    target = addr['minimum'] if portsymbol == ":bypass" else addr['maximum']
+                else:
+                    continue
+
+                if not instance in ret:
+                    ret[instance] = {}
+                ret[instance][portsymbol] = target
+
+        return ret
+
     @gen.coroutine
     def load(self, bundlepath, instances, skippedPorts, abort_catcher):
         # Check if this is the first time we load addressings (ie, first time mod-ui starts)
@@ -317,10 +348,12 @@ class Addressings(object):
                     instance_id, plugin_uri = instances[instance]
                 except KeyError:
                     print("ERROR: An instance specified in addressings file is invalid")
+                    i += 1
                     continue
 
                 if len(skippedPorts) > 0 and instance+"/"+portsymbol in skippedPorts:
                     print("NOTE: An incompatible addressing has been skipped, port:", instance, portsymbol)
+                    i += 1
                     continue
 
                 page = addr.get('page', None)
@@ -367,6 +400,7 @@ class Addressings(object):
                     # Control Chain is initialized but addressing failed to load (likely due to missing hardware)
                     # Set this flag so we wait for devices later
                     retry_cc_addrs = True
+
                 i += 1
 
         # Load HMI, Control Chain and CV addressings
