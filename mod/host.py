@@ -41,7 +41,7 @@ import shutil
 from mod import (
     TextFileFlusher,
     get_hardware_descriptor, get_nearest_valid_scalepoint_value, get_unique_name,
-    read_file_contents, safe_json_load, symbolify
+    read_file_contents, safe_json_load, normalize_for_hw, symbolify
 )
 from mod.addressings import Addressings
 from mod.bank import (
@@ -683,8 +683,8 @@ class Host(object):
                 return
 
         if atype == Addressings.ADDRESSING_TYPE_CC:
-            label = '"%s"' % data['label'].replace('"', '')[:15]
-            unit  = '"%s"' % data['unit'].replace('"', '')[:15]
+            label = normalize_for_hw(data['label'], 15)
+            unit  = normalize_for_hw(data['unit'], 15)
 
             rmaximum    = data['maximum']
             rvalue      = data['value']
@@ -702,7 +702,7 @@ class Host(object):
                         rmaximum = currentNum
                         break
 
-                    optdata    = '"%s" %f' % (o[1].replace('"', '')[:15], float(o[0]))
+                    optdata    = '%s %f' % (normalize_for_hw(o[1], 15), float(o[0]))
                     optdataLen = len(optdata)
 
                     if numBytesFree-optdataLen-2 < 0:
@@ -2583,7 +2583,7 @@ class Host(object):
         if parameter is not None:
             parameter[0] = value
 
-        self.send_modified("patch_set %d %s \"%s\"" % (instance_id, uri, value.replace('"','\\"')),
+        self.send_modified("patch_set %d %s \"%s\"" % (instance_id, uri, str(value).replace('"','\\"')),
                            callback, datatype='boolean')
         return parameter is not None
 
@@ -2943,10 +2943,10 @@ class Host(object):
 
             try:
                 instance_id = self.mapper.get_id_without_creating(instance)
+                pluginData = self.plugins[instance_id]
             except KeyError:
                 continue
 
-            pluginData = self.plugins[instance_id]
             diffBypass = pluginData['bypassed'] != data['bypassed']
             diffPreset = data['preset'] and data['preset'] != pluginData['preset']
 
@@ -3452,7 +3452,12 @@ class Host(object):
                                                      self.transport_bpm,
                                                      self.transport_sync))
 
-        self.load_pb_plugins(pb['plugins'], instances, rinstances)
+        if bundlepath:
+            motos = self.addressings.peek_for_momentary_toggles(bundlepath)
+        else:
+            motos = {}
+
+        self.load_pb_plugins(pb['plugins'], instances, rinstances, motos)
         self.load_pb_connections(pb['connections'], mappedOldMidiIns, mappedOldMidiOuts,
                                                     mappedNewMidiIns, mappedNewMidiOuts)
 
@@ -3525,7 +3530,7 @@ class Host(object):
         else:
             self.snapshot_clear()
 
-    def load_pb_plugins(self, plugins, instances, rinstances):
+    def load_pb_plugins(self, plugins, instances, rinstances, motos):
         for p in plugins:
             extinfo = get_plugin_info_essentials(p['uri'])
 
@@ -3670,6 +3675,12 @@ class Host(object):
 
                 if oldValue is None:
                     continue
+
+                if instance in motos:
+                    for motoSymbol, motoValue in motos[instance].items():
+                        if motoSymbol == symbol:
+                            value = motoValue
+                            break
 
                 if oldValue != value:
                     pluginData['ports'][symbol] = value
@@ -4908,7 +4919,7 @@ _:b%i
             #banksData = '%d %d "All Pedalboards" 0' % (startIndex, endIndex)
 
         for i in range(startIndex, endIndex):
-            banksData += ' "%s" %d' % (banks[i]['title'].replace('"', '')[:31].upper(), i) # note use +1 for !all
+            banksData += ' %s %d' % (normalize_for_hw(banks[i]['title']), i) # note use +1 for !all
 
         callback(True, banksData)
 
@@ -4962,7 +4973,7 @@ _:b%i
         pedalboardsData = '%d %d %d' % (numPedals, startIndex, endIndex)
 
         for i in range(startIndex, endIndex):
-            pedalboardsData += ' "%s" %d' % (pedalboards[i]['title'].replace('"', '')[:31].upper(), i+1)
+            pedalboardsData += ' %s %d' % (normalize_for_hw(pedalboards[i]['title']), i+1)
 
         callback(True, pedalboardsData)
 
@@ -5001,7 +5012,7 @@ _:b%i
         snapshotData = '%d %d %d' % (numSnapshots, startIndex, endIndex)
 
         for i in range(startIndex, endIndex):
-            snapshotData += ' "%s" %d' % (self.pedalboard_snapshots[i]['name'].replace('"', '')[:31].upper(), i+1)
+            snapshotData += ' %s %d' % (normalize_for_hw(self.pedalboard_snapshots[i]['name']), i+1)
 
         logging.debug("hmi list pedalboards snapshots %d %d -> data is '%s'", props, snapshot_id, snapshotData)
         callback(True, snapshotData)
@@ -5220,8 +5231,10 @@ _:b%i
         if any(snapshot['name'].upper() == uname for snapshot in self.pedalboard_snapshots):
             callback(-2)
             return
-        self.snapshot_saveas(name)
+        idx = self.snapshot_saveas(name)
         callback(True)
+
+        self.hmi.set_snapshot_name(idx, self.pedalboard_snapshots[idx]['name'], None)
 
     def hmi_pedalboard_snapshot_delete(self, snapshot_id, callback):
         if snapshot_id < 0 or snapshot_id >= len(self.pedalboard_snapshots):
@@ -5237,6 +5250,9 @@ _:b%i
             self.current_pedalboard_snapshot_id = -1
 
         callback(True)
+
+        if self.current_pedalboard_snapshot_id == -1:
+            self.hmi.set_snapshot_name(-1, DEFAULT_SNAPSHOT_NAME, None)
 
     # -----------------------------------------------------------------------------------------------------------------
 
@@ -5433,12 +5449,14 @@ _:b%i
         if port_addressing is not None:
             cctype = port_addressing.get('cctype', 0x0)
             hmitype = port_addressing.get('hmitype', 0x0)
-            if hmitype & FLAG_CONTROL_TRIGGER or cctype & CC_MODE_TRIGGER:
+            # do not save triggers, their value is reset on the next audio cycle
+            if (hmitype & FLAG_CONTROL_TRIGGER) or (cctype & CC_MODE_TRIGGER):
                 save_port_value = False
-            elif hmitype & FLAG_CONTROL_MOMENTARY or cctype & CC_MODE_MOMENTARY:
-                if port_addressing['momentary'] == 1 and port_addressing['minimum'] == value:
+            # do not save momentary toggles with their current value being the temporary one
+            elif (hmitype & FLAG_CONTROL_MOMENTARY) or (cctype & CC_MODE_MOMENTARY):
+                if port_addressing['momentary'] == 1 and port_addressing['maximum'] == value:
                     save_port_value = False
-                elif port_addressing['momentary'] == 2 and port_addressing['maximum'] == value:
+                elif port_addressing['momentary'] == 2 and port_addressing['minimum'] == value:
                     save_port_value = False
 
         if portsymbol == ":bypass":
@@ -5769,7 +5787,7 @@ _:b%i
 
         for i in range(startIndex, endIndex):
             option = options[i]
-            xdata  = '"%s" %f' % (option[1].replace('"', '')[:31].upper(), float(option[0]))
+            xdata  = '%s %f' % (normalize_for_hw(option[1]), float(option[0]))
             optionsData.append(xdata)
 
         options = "%d %d %d %s" % (len(optionsData), flags, ivalue, " ".join(optionsData))
@@ -5786,9 +5804,9 @@ _:b%i
 
         callback(True, '%d %s %d %s %f %f %f %d %s' %
                   ( hw_id,
-                    '"%s"' % label.replace('"', "")[:31].upper(),
+                    '%s' % normalize_for_hw(label),
                     data['hmitype'],
-                    '"%s"' % data['unit'].replace('"', '')[:7],
+                    '%s' % normalize_for_hw(data['unit'], 7),
                     value,
                     data['maximum'],
                     data['minimum'],

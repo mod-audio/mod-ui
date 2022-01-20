@@ -19,8 +19,9 @@
 from datetime import timedelta
 from tornado.iostream import BaseIOStream, StreamClosedError
 from tornado.ioloop import IOLoop
+from unicodedata import normalize
 
-from mod import get_hardware_actuators, get_hardware_descriptor, get_nearest_valid_scalepoint_value
+from mod import get_hardware_actuators, get_hardware_descriptor, get_nearest_valid_scalepoint_value, normalize_for_hw
 from mod.protocol import Protocol, ProtocolError, process_resp
 from mod.mod_protocol import (
     CMD_PING,
@@ -339,7 +340,7 @@ class HMI(object):
         data = '%s %d %d %d %d %d' % (CMD_INITIAL_STATE, numPedals, startIndex, endIndex, bank_id, pedalboard_id)
 
         for i in range(startIndex, endIndex):
-            data += ' "%s" %d' % (pedalboards[i]['title'].replace('"', '')[:31].upper(), i+1)
+            data += ' %s %d' % (normalize_for_hw(pedalboards[i]['title']), i+1)
 
         self.send(data, callback)
 
@@ -370,8 +371,8 @@ class HMI(object):
                 prefix = "+ "
             label = prefix + label
 
-        label = '"%s"' % label.replace('"', "")[:31].upper()
-        unit = '"%s"' % unit.replace('"', '')[:7]
+        label = normalize_for_hw(label)
+        unit = normalize_for_hw(unit, 7)
 
         if value < xmin:
             logging.error('[hmi] control_add received value < min for %s', label)
@@ -413,7 +414,7 @@ class HMI(object):
 
             for i in range(startIndex, endIndex):
                 option = options[i]
-                xdata  = '"%s" %f' % (option[1].replace('"', '')[:31].upper(), float(option[0]))
+                xdata  = '%s %f' % (normalize_for_hw(option[1]), float(option[0]))
                 optionsData.append(xdata)
 
             options = "%d %d %d %s" % (len(optionsData), flags, ivalue, " ".join(optionsData))
@@ -543,7 +544,7 @@ class HMI(object):
         self.send("boot {}".format(bootdata), callback, datatype)
 
     def set_pedalboard_name(self, name, callback):
-        self.send('{} {}'.format(CMD_PEDALBOARD_NAME_SET, name[:31].upper()), callback)
+        self.send('{} {}'.format(CMD_PEDALBOARD_NAME_SET, normalize_for_hw(name)), callback)
 
     def set_snapshot_name(self, index, name, callback):
-        self.send('{} {} {}'.format(CMD_SNAPSHOT_NAME_SET, index, name[:31].upper()), callback)
+        self.send('{} {} {}'.format(CMD_SNAPSHOT_NAME_SET, index, normalize_for_hw(name)), callback)
