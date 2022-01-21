@@ -262,6 +262,10 @@ class Addressings(object):
         ret = {}
         data = safe_json_load(datafile, dict)
         for actuator_uri, addrs in data.items():
+            # Special case for CV addressings
+            if actuator_uri.startswith(CV_OPTION) and not actuator_uri.startswith(HW_CV_PREFIX):
+                addrs = addrs['addrs']
+
             for addr in addrs:
                 momentary = addr.get('momentary', None)
                 if momentary is None or not isinstance(momentary, int):
