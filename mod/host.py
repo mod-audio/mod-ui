@@ -4700,6 +4700,7 @@ _:b%i
             callback(False)
             return
 
+        # Send pages now if new addressing is not for HMI (the HMI-specific case is handled later)
         if send_hmi_available_pages and self.hmi.initialized and not is_hmi_actuator:
             try:
                 yield gen.Task(self.hmi.set_available_pages, self.addressings.get_available_pages())
@@ -4789,9 +4790,8 @@ _:b%i
         pluginData['addressings'][portsymbol] = addressing
 
         # Find out if new addressing page should become available
-        if self.addressings.addressing_pages and self.addressings.is_hmi_actuator(actuator_uri):
-            if self.check_available_pages(page) and self.hmi.initialized:
-                # while unaddressing, one page has become unavailable (without any addressings)
+        if self.addressings.addressing_pages and is_hmi_actuator and self.hmi.initialized:
+            if send_hmi_available_pages or self.check_available_pages(page):
                 try:
                     yield gen.Task(self.hmi.set_available_pages, self.addressings.get_available_pages())
                 except Exception as e:
