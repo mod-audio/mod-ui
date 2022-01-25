@@ -4639,15 +4639,18 @@ _:b%i
                 else:
                     old_hw_ids = [self.addressings.hmi_uri2hw_map[old_actuator_uri]]
 
-                try:
-                    yield gen.Task(self.addr_task_unaddressing, old_actuator_type,
-                                                                old_addressing['instance_id'],
-                                                                old_addressing['port'],
-                                                                send_hmi=send_hmi,
-                                                                hw_ids=old_hw_ids)
-                    yield gen.Task(self.addressings.hmi_load_current, old_actuator_uri, send_hmi=send_hmi)
-                except Exception as e:
-                    logging.exception(e)
+                subpage = self.addressings.hmi_hwsubpages[old_hw_ids[0]]
+
+                if self.addressings.current_page == old_addressing['page'] and subpage == old_addressing['subpage']:
+                    try:
+                        yield gen.Task(self.addr_task_unaddressing, old_actuator_type,
+                                                                    old_addressing['instance_id'],
+                                                                    old_addressing['port'],
+                                                                    send_hmi=send_hmi,
+                                                                    hw_ids=old_hw_ids)
+                        yield gen.Task(self.addressings.hmi_load_current, old_actuator_uri, send_hmi=send_hmi)
+                    except Exception as e:
+                        logging.exception(e)
 
             else:
                 try:
