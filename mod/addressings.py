@@ -986,13 +986,21 @@ class Addressings(object):
         actuator_hw   = actuator_uri
         actuator_type = self.get_actuator_type(actuator_uri)
 
+        def hmi_map_callback(resp):
+            self.remap_host_hmi(actuator_hw, addressing_data)
+            if callback is not None:
+                callback(resp)
+
+        shouldRemap = actuator_type == self.ADDRESSING_TYPE_HMI and not addressing_data.get('tempo', False)
+        rcallback = hmi_map_callback if shouldRemap else callback
+
         if actuator_type == self.ADDRESSING_TYPE_HMI:
             try:
                 actuator_hw      = self.hmi_uri2hw_map[actuator_uri]
                 actuator_subpage = self.hmi_hwsubpages[actuator_hw]
             except KeyError:
-                if callback is not None:
-                    callback(False)
+                if rcallback is not None:
+                    rcallback(False)
                 print("ERROR: Why fail the hardware/URI mapping? Hardcoded number of actuators?")
                 return
 
@@ -1000,8 +1008,8 @@ class Addressings(object):
                 # if new addressing page is not the same as the currently displayed page
                 if self.current_page != addressing_data['page'] or actuator_subpage != addressing_data['subpage']:
                     # then no need to send control_add to hmi
-                    if callback is not None:
-                        callback(True)
+                    if rcallback is not None:
+                        rcallback(True)
                     return
             else:
                 # HMI specific
@@ -1012,13 +1020,6 @@ class Addressings(object):
         elif actuator_type == self.ADDRESSING_TYPE_CC:
             actuator_hw = self.cc_metadata[actuator_uri]['hw_id']
 
-        def hmi_map_callback(resp):
-            self.remap_host_hmi(actuator_hw, addressing_data)
-            if callback is not None:
-                callback(resp)
-
-        shouldRemap = actuator_type == self.ADDRESSING_TYPE_HMI and not addressing_data.get('tempo', False)
-        rcallback = hmi_map_callback if shouldRemap else callback
         self._task_addressing(actuator_type, actuator_hw, addressing_data, rcallback, send_hmi=send_hmi)
 
     def was_last_load_current_aborted(self):
