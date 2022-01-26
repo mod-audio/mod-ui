@@ -1127,10 +1127,10 @@ class Addressings(object):
             return was_assigned
 
         old_idx = addressings['idx']
-        # if addressings['idx'] == index:
         if old_idx != 0 or (old_idx == 0 and not len(addressings_addrs)):
             addressings['idx'] -= 1
-        return old_idx == index
+
+        return True
 
     # NOTE: make sure to call hmi_load_current() afterwards if removing HMI addressings
     def remove(self, addressing_data):
