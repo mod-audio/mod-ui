@@ -4674,7 +4674,8 @@ _:b%i
                 old_page = old_addressing['page']
                 old_subpage = self.addressings.hmi_hwsubpages[old_hw_ids[0]]
 
-                if self.addressings.current_page == old_page and old_addressing['subpage'] == old_subpage:
+                if not self.addressings.addressing_pages or (self.addressings.current_page == old_page and
+                                                             old_addressing['subpage'] == old_subpage):
                     try:
                         yield gen.Task(self.addr_task_unaddressing, old_actuator_type,
                                                                     old_addressing['instance_id'],
