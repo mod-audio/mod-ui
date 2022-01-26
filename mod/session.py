@@ -359,6 +359,37 @@ class Session(object):
             ssname = self.host.snapshot_name() or DEFAULT_SNAPSHOT_NAME
             yield gen.Task(self.hmi.set_snapshot_name, self.host.current_pedalboard_snapshot_id, ssname)
 
+    def readdress_presets(self, instance, callback):
+        instance_id = self.host.mapper.get_id_without_creating(instance)
+        addressings = self.host.plugins[instance_id]['addressings']
+
+        if ':presets' not in addressings:
+            callback(True)
+            return
+
+        presets = addressings[':presets']
+        data = self.host.addressings.get_presets_as_options(instance_id)
+        if not data:
+            callback(True)
+            return
+
+        value, maximum, options, spreset = data
+        port = instance + '/' + presets['port']
+        minimum = presets['minimum']
+        label = presets['label']
+        steps = presets['steps']
+        actuator_uri = presets['actuator_uri']
+        tempo = presets.get('tempo', False)
+        dividers = presets.get('dividers', None)
+        page = presets.get('page', None)
+        subpage = presets.get('subpage', None)
+        coloured = presets.get('coloured', None)
+        momentary = presets.get('momentary', None)
+        operational_mode = presets.get('operationalMode', None)
+
+        self.web_parameter_address(port, actuator_uri, label, minimum, maximum, value, steps, tempo, dividers,
+                                   page, subpage, coloured, momentary, operational_mode, callback)
+
     # -----------------------------------------------------------------------------------------------------------------
     # TODO
     # Everything after this line is yet to be documented
