@@ -4671,9 +4671,10 @@ _:b%i
                 else:
                     old_hw_ids = [self.addressings.hmi_uri2hw_map[old_actuator_uri]]
 
-                subpage = self.addressings.hmi_hwsubpages[old_hw_ids[0]]
+                old_page = old_addressing['page']
+                old_subpage = self.addressings.hmi_hwsubpages[old_hw_ids[0]]
 
-                if self.addressings.current_page == old_addressing['page'] and subpage == old_addressing['subpage']:
+                if self.addressings.current_page == old_page and old_addressing['subpage'] == old_subpage:
                     try:
                         yield gen.Task(self.addr_task_unaddressing, old_actuator_type,
                                                                     old_addressing['instance_id'],
@@ -4684,6 +4685,10 @@ _:b%i
                     except Exception as e:
                         logging.exception(e)
 
+                # Find out if old addressing page should not be available anymore:
+                if self.addressings.addressing_pages:
+                    send_hmi_available_pages = self.check_available_pages(old_page)
+
             else:
                 try:
                     yield gen.Task(self.addr_task_unaddressing, old_actuator_type,
@@ -4693,18 +4698,13 @@ _:b%i
                 except Exception as e:
                     logging.exception(e)
 
-            # Find out if old addressing page should not be available anymore:
-            if self.addressings.addressing_pages and old_actuator_type == Addressings.ADDRESSING_TYPE_HMI:
-                send_hmi_available_pages = self.check_available_pages(old_addressing['page'])
-
         if not actuator_uri or actuator_uri == kNullAddressURI:
             # while unaddressing, one page has become unavailable (without any addressings)
             if send_hmi_available_pages and self.hmi.initialized:
                 self.hmi.set_available_pages(self.addressings.get_available_pages(), callback)
-                return
             else:
                 callback(True)
-                return
+            return
 
         is_hmi_actuator = self.addressings.is_hmi_actuator(actuator_uri)
 
@@ -4773,20 +4773,23 @@ _:b%i
                         yield gen.Task(self.hmi_or_cc_parameter_set, instance_id, portsymbol, value, hw_id)
                     except Exception as e:
                         logging.exception(e)
+
                 try:
                     yield gen.Task(self.addressings.load_addr, group_actuator_uri, group_addressing, send_hmi=send_hmi)
                 except Exception as e:
                     logging.exception(e)
+
             addressing = group_addressing.copy()
             addressing['actuator_uri'] = actuator_uri
+
         else:
             addressing = self.addressings.add(instance_id, pluginData['uri'], portsymbol, actuator_uri,
                                               label, minimum, maximum, steps, value, tempo, dividers, page, subpage, None,
                                               coloured, momentary, operational_mode)
-
             if addressing is None:
                 callback(False)
                 return
+
             if needsValueChange:
                 if actuator_uri != kBpmURI:
                     hw_id = self.addressings.hmi_uri2hw_map[actuator_uri] if is_hmi_actuator else None
@@ -4800,23 +4803,24 @@ _:b%i
                     except Exception as e:
                         logging.exception(e)
 
+            try:
+                yield gen.Task(self.addressings.load_addr, actuator_uri, addressing, send_hmi=send_hmi)
+            except Exception as e:
+                logging.exception(e)
+
+        self.pedalboard_modified = True
         pluginData['addressings'][portsymbol] = addressing
 
         # Find out if new addressing page should become available
         if self.addressings.addressing_pages and is_hmi_actuator and self.hmi.initialized:
-            if send_hmi_available_pages or self.check_available_pages(page):
+            if self.check_available_pages(page) or send_hmi_available_pages:
                 try:
                     yield gen.Task(self.hmi.set_available_pages, self.addressings.get_available_pages())
                 except Exception as e:
                     logging.exception(e)
 
-        self.pedalboard_modified = True
-
-        if group_actuators is None:
-            self.addressings.load_addr(actuator_uri, addressing, callback, send_hmi=send_hmi)
-        else:
-            # group actuator addressing has already been loaded previously
-            callback(True)
+        # The end
+        callback(True)
 
     def unaddress(self, instance, portsymbol, send_hmi, callback):
         self.address(instance, portsymbol, kNullAddressURI, "---", 0.0, 0.0, 0.0, 0, {}, callback, True, send_hmi)
@@ -4824,14 +4828,16 @@ _:b%i
     def check_available_pages(self, page):
         send_hmi_available_pages = False
         available_pages = self.addressings.available_pages.copy()
-        available_pages[page] = True if page == 0 else False
-        for uri, addrs in self.addressings.hmi_addressings.items():
-            def loop_addr():
+
+        if page == 0:
+            available_pages[0] = True
+        else:
+            available_pages[page] = False
+            for uri, addrs in self.addressings.hmi_addressings.items():
                 for addr in addrs['addrs']:
                     if addr['page'] == page:
                         available_pages[page] = True
-                        return
-            loop_addr()
+                        break
 
         if self.addressings.available_pages != available_pages:
             send_hmi_available_pages = True
