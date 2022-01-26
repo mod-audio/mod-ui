@@ -2708,10 +2708,8 @@ class Host(object):
                 break
 
         def add_bundle_callback(ok):
-            # done
             preseturi = "file://%s.ttl" % os.path.join(presetbundle, symbolname)
             pluginData['preset'] = preseturi
-
             os.sync()
             callback({
                 'ok'    : True,
@@ -2734,25 +2732,37 @@ class Host(object):
                                                                    presetbundle,
                                                                    symbolname), host_callback, datatype='boolean')
 
-    def preset_save_replace(self, instance, uri, bundlepath, name, callback):
+    def preset_save_replace(self, instance, olduri, oldbundlepath, name, callback):
         instance_id = self.mapper.get_id_without_creating(instance)
         pluginData  = self.plugins[instance_id]
-        plugin_uri  = pluginData['uri']
-        symbolname  = symbolify(name)[:32]
 
-        if pluginData['preset'] != uri or not os.path.exists(bundlepath):
+        if pluginData['preset'] != olduri or not os.path.exists(oldbundlepath):
             callback({
                 'ok': False,
             })
             return
 
+        plugin_uri   = pluginData['uri']
+        symbolname   = symbolify(name)[:32]
+        presetbundle = os.path.expanduser("~/.lv2/%s-%s.lv2") % (instance.replace("/graph/","",1), symbolname)
+
+        if os.path.exists(presetbundle):
+            # if presetbundle already exists, generate a new random bundle path
+            while True:
+                presetbundle = os.path.expanduser("~/.lv2/%s-%s-%i.lv2" % (instance.replace("/graph/","",1),
+                                                                           symbolname,
+                                                                           randint(1,99999)))
+                if os.path.exists(presetbundle):
+                    continue
+                break
+
         def add_bundle_callback(ok):
-            preseturi = "file://%s.ttl" % os.path.join(bundlepath, symbolname)
+            preseturi = "file://%s.ttl" % os.path.join(presetbundle, symbolname)
             pluginData['preset'] = preseturi
             os.sync()
             callback({
                 'ok'    : True,
-                'bundle': bundlepath,
+                'bundle': presetbundle,
                 'uri'   : preseturi
             })
 
@@ -2763,18 +2773,18 @@ class Host(object):
                     'ok': False,
                 })
                 return
-            self.add_bundle(bundlepath, add_bundle_callback)
+            self.add_bundle(presetbundle, add_bundle_callback)
 
         def start(_):
-            shutil.rmtree(bundlepath)
+            shutil.rmtree(oldbundlepath)
             rescan_plugin_presets(plugin_uri)
             pluginData['preset'] = ""
             self.send_notmodified("preset_save %d \"%s\" %s %s.ttl" % (instance_id,
                                                                        name.replace('"','\\"'),
-                                                                       bundlepath,
+                                                                       presetbundle,
                                                                        symbolname), host_callback, datatype='boolean')
 
-        self.remove_bundle(bundlepath, False, start)
+        self.remove_bundle(oldbundlepath, False, start)
 
     def preset_delete(self, instance, uri, bundlepath, callback):
         instance_id = self.mapper.get_id_without_creating(instance)
