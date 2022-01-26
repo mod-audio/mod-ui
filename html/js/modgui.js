@@ -965,6 +965,8 @@ function GUI(effect, options) {
                     }
                     desktop.openPresetSaveWindow("Renaming Preset", name, function (newName) {
                         options.presetSaveReplace(uri, path, newName, function (resp) {
+                            item.attr('mod-path', resp.bundle)
+                            item.attr('mod-uri', resp.uri)
                             item.text(newName)
                         })
                     })
