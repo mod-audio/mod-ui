@@ -401,6 +401,7 @@ class SystemPreferences(JsonRequestHandler):
         self.make_pref("jack_mono_copy", self.OPTION_FILE_EXISTS, "/data/jack-mono-copy")
         self.make_pref("jack_sync_mode", self.OPTION_FILE_EXISTS, "/data/jack-sync-mode")
         self.make_pref("jack_256_frames", self.OPTION_FILE_EXISTS, "/data/using-256-frames")
+        self.make_pref("separate_spdif_outs", self.OPTION_FILE_EXISTS, "/data/separate-spdif-outs")
 
         # Optional services
         self.make_pref("service_mod_peakmeter", self.OPTION_FILE_NOT_EXISTS, "/data/disable-mod-peakmeter")
@@ -513,6 +514,7 @@ class SystemExeChange(JsonRequestHandler):
             if path not in ("autorestart-hmi",
                             "jack-mono-copy",
                             "jack-sync-mode",
+                            "separate-spdif-outs",
                             "using-256-frames"):
                 self.write(False)
                 return

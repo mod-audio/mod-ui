@@ -160,8 +160,7 @@ function refresh_sysinfo() {
             $("#info-kernel-release").text(INFO.uname.release)
             $("#info-kernel-version").text(INFO.uname.version)
             if (info.platform != "duox") {
-                $("#prefs-service-mod-peakmeter-label").hide()
-                $("#prefs-service-mod-peakmeter-br").hide()
+                $("#prefs-audio-separate-spdif-outs_div").hide()
             }
         },
         cache: false,
@@ -189,7 +188,7 @@ function refresh_sysprefs() {
             $("#prefs-audio-256-frames").prop("checked", resp.jack_256_frames)
             $("#prefs-audio-mono-copy").prop("checked", resp.jack_mono_copy)
             $("#prefs-audio-sync-mode").prop("checked", resp.jack_sync_mode)
-            $("#prefs-service-mod-peakmeter").prop("checked", resp.service_mod_peakmeter)
+            $("#prefs-audio-separate-spdif-outs").prop("checked", resp.separate_spdif_outs)
             $("#prefs-service-mod-sdk").prop("checked", resp.service_mod_sdk)
             $("#prefs-service-netmanager").prop("checked", resp.service_netmanager)
             $("#prefs-workarounds-autorestart-hmi").prop("checked", resp.autorestart_hmi)
@@ -687,6 +686,9 @@ $('document').ready(function() {
     $("#prefs-audio-sync-mode").click(function () {
         create_or_delete_file("jack-sync-mode", $(this).prop("checked"))
     })
+    $("#prefs-audio-separate-spdif-outs").click(function () {
+        create_or_delete_file("separate-spdif-outs", $(this).prop("checked"))
+    })
 
     // ----------------------------------------------------------------------------------------------------------------
     // --- User Interface
@@ -701,10 +703,6 @@ $('document').ready(function() {
 
     // ----------------------------------------------------------------------------------------------------------------
     // --- Services
-
-    $("#prefs-service-mod-peakmeter").click(function () {
-        enable_service("mod-peakmeter", !$(this).prop("checked"), true, true)
-    })
 
     $("#prefs-service-mod-sdk").click(function () {
         enable_service("mod-sdk", $(this).prop("checked"), false, true)
@@ -1040,6 +1038,20 @@ $('document').ready(function() {
                         Note that changing this option requires a reboot for changes to take effect.
                     </p>
 
+                    <div id="prefs-audio-separate-spdif-outs_div">
+                        <label>
+                            <input type="checkbox" autocomplete="off" id="prefs-audio-separate-spdif-outs">
+                                Separate S/PDIF outputs
+                            </input>
+                        </label>
+                        <p>
+                            The Duo X S/PDIF outputs can be set to mirror the analog output or be treated independently.<br/>
+                            Mirror mode is default, where S/PDIF will contain the same audio signal as the analog outputs.<br/>
+                            Enable this option to have 2 extra outputs on your pedalboard.<br/>
+                            Note that changing this option requires a reboot for changes to take effect.
+                        </p>
+                    </div>
+
                     <label>
                         <input type="checkbox" autocomplete="off" id="prefs-audio-256-frames">
                             Use 256 frames as Buffer Size
@@ -1058,10 +1070,6 @@ $('document').ready(function() {
                         Note: Each additional service you enable consumes a small amount of CPU.<br/>
                         Only enable services that you absolutely need.
                     </p>
-                    <label id="prefs-service-mod-peakmeter-label">
-                        <input type="checkbox" autocomplete="off" id="prefs-service-mod-peakmeter"> Audio peak meters</input>
-                    </label>
-                    <br id="prefs-service-mod-peakmeter-br"/>
                     <!--
                     <label>
                         <input type="checkbox" autocomplete="off" id="prefs-service-mod-sdk"> MOD SDK</input>

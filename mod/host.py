@@ -383,7 +383,6 @@ class Host(object):
 
         # clients at the end of the chain, all managed by mod-host
         self.jack_hw_capture_prefix = "mod-host:out" if self.descriptor.get('has_noisegate', False) else "system:capture_"
-        self.jack_hw_playback_prefix = "system:playback_" if APP else "mod-monitor:in_"
 
         # used for network-manager
         self.jack_slave_prefix = "mod-slave"
@@ -3134,8 +3133,8 @@ class Host(object):
                 return self.midi_loopback_port
             if data[2].startswith("playback_"):
                 num = data[2].replace("playback_","",1)
-                if num in ("1", "2"):
-                    return self.jack_hw_playback_prefix + num
+                if num in ("1", "2", "3", "4"):
+                    return "mod-monitor:in_" + num
 
             if data[2].startswith(("audio_from_slave_",
                                    "audio_to_slave_",
