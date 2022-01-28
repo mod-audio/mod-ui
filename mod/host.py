@@ -383,7 +383,6 @@ class Host(object):
 
         # clients at the end of the chain, all managed by mod-host
         self.jack_hw_capture_prefix = "mod-host:out" if self.descriptor.get('has_noisegate', False) else "system:capture_"
-        self.jack_hw_playback_prefix = "system:playback_" if APP else "mod-monitor:in_"
 
         # used for network-manager
         self.jack_slave_prefix = "mod-slave"
@@ -2730,10 +2729,8 @@ class Host(object):
                 break
 
         def add_bundle_callback(ok):
-            # done
             preseturi = "file://%s.ttl" % os.path.join(presetbundle, symbolname)
             pluginData['preset'] = preseturi
-
             os.sync()
             callback({
                 'ok'    : True,
@@ -2756,25 +2753,37 @@ class Host(object):
                                                                    presetbundle,
                                                                    symbolname), host_callback, datatype='boolean')
 
-    def preset_save_replace(self, instance, uri, bundlepath, name, callback):
+    def preset_save_replace(self, instance, olduri, oldbundlepath, name, callback):
         instance_id = self.mapper.get_id_without_creating(instance)
         pluginData  = self.plugins[instance_id]
-        plugin_uri  = pluginData['uri']
-        symbolname  = symbolify(name)[:32]
 
-        if pluginData['preset'] != uri or not os.path.exists(bundlepath):
+        if pluginData['preset'] != olduri or not os.path.exists(oldbundlepath):
             callback({
                 'ok': False,
             })
             return
 
+        plugin_uri   = pluginData['uri']
+        symbolname   = symbolify(name)[:32]
+        presetbundle = os.path.expanduser("~/.lv2/%s-%s.lv2") % (instance.replace("/graph/","",1), symbolname)
+
+        if os.path.exists(presetbundle):
+            # if presetbundle already exists, generate a new random bundle path
+            while True:
+                presetbundle = os.path.expanduser("~/.lv2/%s-%s-%i.lv2" % (instance.replace("/graph/","",1),
+                                                                           symbolname,
+                                                                           randint(1,99999)))
+                if os.path.exists(presetbundle):
+                    continue
+                break
+
         def add_bundle_callback(ok):
-            preseturi = "file://%s.ttl" % os.path.join(bundlepath, symbolname)
+            preseturi = "file://%s.ttl" % os.path.join(presetbundle, symbolname)
             pluginData['preset'] = preseturi
             os.sync()
             callback({
                 'ok'    : True,
-                'bundle': bundlepath,
+                'bundle': presetbundle,
                 'uri'   : preseturi
             })
 
@@ -2785,18 +2794,18 @@ class Host(object):
                     'ok': False,
                 })
                 return
-            self.add_bundle(bundlepath, add_bundle_callback)
+            self.add_bundle(presetbundle, add_bundle_callback)
 
         def start(_):
-            shutil.rmtree(bundlepath)
+            shutil.rmtree(oldbundlepath)
             rescan_plugin_presets(plugin_uri)
             pluginData['preset'] = ""
             self.send_notmodified("preset_save %d \"%s\" %s %s.ttl" % (instance_id,
                                                                        name.replace('"','\\"'),
-                                                                       bundlepath,
+                                                                       presetbundle,
                                                                        symbolname), host_callback, datatype='boolean')
 
-        self.remove_bundle(bundlepath, False, start)
+        self.remove_bundle(oldbundlepath, False, start)
 
     def preset_delete(self, instance, uri, bundlepath, callback):
         instance_id = self.mapper.get_id_without_creating(instance)
@@ -3146,8 +3155,8 @@ class Host(object):
                 return self.midi_loopback_port
             if data[2].startswith("playback_"):
                 num = data[2].replace("playback_","",1)
-                if num in ("1", "2"):
-                    return self.jack_hw_playback_prefix + num
+                if num in ("1", "2", "3", "4"):
+                    return "mod-monitor:in_" + num
 
             if data[2].startswith(("audio_from_slave_",
                                    "audio_to_slave_",
@@ -4661,15 +4670,24 @@ _:b%i
                 else:
                     old_hw_ids = [self.addressings.hmi_uri2hw_map[old_actuator_uri]]
 
-                try:
-                    yield gen.Task(self.addr_task_unaddressing, old_actuator_type,
-                                                                old_addressing['instance_id'],
-                                                                old_addressing['port'],
-                                                                send_hmi=send_hmi,
-                                                                hw_ids=old_hw_ids)
-                    yield gen.Task(self.addressings.hmi_load_current, old_actuator_uri, send_hmi=send_hmi)
-                except Exception as e:
-                    logging.exception(e)
+                old_page = old_addressing['page']
+                old_subpage = self.addressings.hmi_hwsubpages[old_hw_ids[0]]
+
+                if not self.addressings.addressing_pages or (self.addressings.current_page == old_page and
+                                                             old_addressing['subpage'] == old_subpage):
+                    try:
+                        yield gen.Task(self.addr_task_unaddressing, old_actuator_type,
+                                                                    old_addressing['instance_id'],
+                                                                    old_addressing['port'],
+                                                                    send_hmi=send_hmi,
+                                                                    hw_ids=old_hw_ids)
+                        yield gen.Task(self.addressings.hmi_load_current, old_actuator_uri, send_hmi=send_hmi)
+                    except Exception as e:
+                        logging.exception(e)
+
+                # Find out if old addressing page should not be available anymore:
+                if self.addressings.addressing_pages:
+                    send_hmi_available_pages = self.check_available_pages(old_page)
 
             else:
                 try:
@@ -4680,18 +4698,13 @@ _:b%i
                 except Exception as e:
                     logging.exception(e)
 
-            # Find out if old addressing page should not be available anymore:
-            if self.addressings.addressing_pages and old_actuator_type == Addressings.ADDRESSING_TYPE_HMI:
-                send_hmi_available_pages = self.check_available_pages(old_addressing['page'])
-
         if not actuator_uri or actuator_uri == kNullAddressURI:
             # while unaddressing, one page has become unavailable (without any addressings)
             if send_hmi_available_pages and self.hmi.initialized:
                 self.hmi.set_available_pages(self.addressings.get_available_pages(), callback)
-                return
             else:
                 callback(True)
-                return
+            return
 
         is_hmi_actuator = self.addressings.is_hmi_actuator(actuator_uri)
 
@@ -4700,6 +4713,7 @@ _:b%i
             callback(False)
             return
 
+        # Send pages now if new addressing is not for HMI (the HMI-specific case is handled later)
         if send_hmi_available_pages and self.hmi.initialized and not is_hmi_actuator:
             try:
                 yield gen.Task(self.hmi.set_available_pages, self.addressings.get_available_pages())
@@ -4759,20 +4773,23 @@ _:b%i
                         yield gen.Task(self.hmi_or_cc_parameter_set, instance_id, portsymbol, value, hw_id)
                     except Exception as e:
                         logging.exception(e)
+
                 try:
                     yield gen.Task(self.addressings.load_addr, group_actuator_uri, group_addressing, send_hmi=send_hmi)
                 except Exception as e:
                     logging.exception(e)
+
             addressing = group_addressing.copy()
             addressing['actuator_uri'] = actuator_uri
+
         else:
             addressing = self.addressings.add(instance_id, pluginData['uri'], portsymbol, actuator_uri,
                                               label, minimum, maximum, steps, value, tempo, dividers, page, subpage, None,
                                               coloured, momentary, operational_mode)
-
             if addressing is None:
                 callback(False)
                 return
+
             if needsValueChange:
                 if actuator_uri != kBpmURI:
                     hw_id = self.addressings.hmi_uri2hw_map[actuator_uri] if is_hmi_actuator else None
@@ -4786,24 +4803,24 @@ _:b%i
                     except Exception as e:
                         logging.exception(e)
 
+            try:
+                yield gen.Task(self.addressings.load_addr, actuator_uri, addressing, send_hmi=send_hmi)
+            except Exception as e:
+                logging.exception(e)
+
+        self.pedalboard_modified = True
         pluginData['addressings'][portsymbol] = addressing
 
         # Find out if new addressing page should become available
-        if self.addressings.addressing_pages and self.addressings.is_hmi_actuator(actuator_uri):
-            if self.check_available_pages(page) and self.hmi.initialized:
-                # while unaddressing, one page has become unavailable (without any addressings)
+        if self.addressings.addressing_pages and is_hmi_actuator and self.hmi.initialized:
+            if self.check_available_pages(page) or send_hmi_available_pages:
                 try:
                     yield gen.Task(self.hmi.set_available_pages, self.addressings.get_available_pages())
                 except Exception as e:
                     logging.exception(e)
 
-        self.pedalboard_modified = True
-
-        if group_actuators is None:
-            self.addressings.load_addr(actuator_uri, addressing, callback, send_hmi=send_hmi)
-        else:
-            # group actuator addressing has already been loaded previously
-            callback(True)
+        # The end
+        callback(True)
 
     def unaddress(self, instance, portsymbol, send_hmi, callback):
         self.address(instance, portsymbol, kNullAddressURI, "---", 0.0, 0.0, 0.0, 0, {}, callback, True, send_hmi)
@@ -4811,14 +4828,16 @@ _:b%i
     def check_available_pages(self, page):
         send_hmi_available_pages = False
         available_pages = self.addressings.available_pages.copy()
-        available_pages[page] = True if page == 0 else False
-        for uri, addrs in self.addressings.hmi_addressings.items():
-            def loop_addr():
+
+        if page == 0:
+            available_pages[0] = True
+        else:
+            available_pages[page] = False
+            for uri, addrs in self.addressings.hmi_addressings.items():
                 for addr in addrs['addrs']:
                     if addr['page'] == page:
                         available_pages[page] = True
-                        return
-            loop_addr()
+                        break
 
         if self.addressings.available_pages != available_pages:
             send_hmi_available_pages = True

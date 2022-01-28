@@ -16,6 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import json
+import logging
 import os
 import re
 import shutil
@@ -401,6 +402,7 @@ class SystemPreferences(JsonRequestHandler):
         self.make_pref("jack_mono_copy", self.OPTION_FILE_EXISTS, "/data/jack-mono-copy")
         self.make_pref("jack_sync_mode", self.OPTION_FILE_EXISTS, "/data/jack-sync-mode")
         self.make_pref("jack_256_frames", self.OPTION_FILE_EXISTS, "/data/using-256-frames")
+        self.make_pref("separate_spdif_outs", self.OPTION_FILE_EXISTS, "/data/separate-spdif-outs")
 
         # Optional services
         self.make_pref("service_mod_peakmeter", self.OPTION_FILE_NOT_EXISTS, "/data/disable-mod-peakmeter")
@@ -513,6 +515,7 @@ class SystemExeChange(JsonRequestHandler):
             if path not in ("autorestart-hmi",
                             "jack-mono-copy",
                             "jack-sync-mode",
+                            "separate-spdif-outs",
                             "using-256-frames"):
                 self.write(False)
                 return
@@ -1069,30 +1072,11 @@ class EffectPresetSaveNew(JsonRequestHandler):
     def get(self, instance):
         name = self.get_argument('name')
         resp = yield gen.Task(SESSION.host.preset_save_new, instance, name)
+        try:
+            yield gen.Task(SESSION.readdress_presets, instance)
+        except Exception as e:
+            logging.exception(e)
         self.write(resp)
-        instance_id = SESSION.host.mapper.get_id_without_creating(instance)
-        addressings = SESSION.host.plugins[instance_id]['addressings']
-        if ':presets' in addressings:
-            presets = addressings[':presets']
-            data = SESSION.host.addressings.get_presets_as_options(instance_id)
-            if data:
-                value, maximum, options, spreset = data
-                port = instance + '/' + presets['port']
-                minimum = presets['minimum']
-                label = presets['label']
-                steps = presets['steps']
-                actuator_uri = presets['actuator_uri']
-                tempo = presets.get('tempo', False)
-                dividers = presets.get('dividers', None)
-                page = presets.get('page', None)
-                subpage = presets.get('subpage', None)
-                coloured = presets.get('coloured', None)
-                momentary = presets.get('momentary', None)
-                operational_mode = presets.get('operationalMode', None)
-
-                ok = yield gen.Task(SESSION.web_parameter_address, port, actuator_uri, label, minimum, maximum, value,
-                                    steps, tempo, dividers, page, subpage, coloured, momentary, operational_mode)
-
 
 class EffectPresetSaveReplace(JsonRequestHandler):
     @web.asynchronous
@@ -1102,29 +1086,11 @@ class EffectPresetSaveReplace(JsonRequestHandler):
         bundle = self.get_argument('bundle')
         name   = self.get_argument('name')
         resp   = yield gen.Task(SESSION.host.preset_save_replace, instance, uri, bundle, name)
+        try:
+            yield gen.Task(SESSION.readdress_presets, instance)
+        except Exception as e:
+            logging.exception(e)
         self.write(resp)
-        instance_id = SESSION.host.mapper.get_id_without_creating(instance)
-        addressings = SESSION.host.plugins[instance_id]['addressings']
-        if ':presets' in addressings:
-            presets = addressings[':presets']
-            data = SESSION.host.addressings.get_presets_as_options(instance_id)
-            if data:
-                value, maximum, options, spreset = data
-                port = instance + '/' + presets['port']
-                minimum = presets['minimum']
-                label = presets['label']
-                steps = presets['steps']
-                actuator_uri = presets['actuator_uri']
-                tempo = presets.get('tempo', False)
-                dividers = presets.get('dividers', None)
-                page = presets.get('page', None)
-                subpage = presets.get('subpage', None)
-                coloured = presets.get('coloured', None)
-                momentary = presets.get('momentary', None)
-                operational_mode = presets.get('operationalMode', None)
-                ok = yield gen.Task(SESSION.web_parameter_address, port, actuator_uri, label, minimum, maximum, value,
-                                    steps, tempo, dividers, page, subpage, coloured, momentary, operational_mode)
-
 
 class EffectPresetDelete(JsonRequestHandler):
     @web.asynchronous
@@ -1133,6 +1099,10 @@ class EffectPresetDelete(JsonRequestHandler):
         uri    = self.get_argument('uri')
         bundle = self.get_argument('bundle')
         ok     = yield gen.Task(SESSION.host.preset_delete, instance, uri, bundle)
+        try:
+            yield gen.Task(SESSION.readdress_presets, instance)
+        except Exception as e:
+            logging.exception(e)
         self.write(ok)
 
 class RemoteWebSocket(websocket.WebSocketHandler):
