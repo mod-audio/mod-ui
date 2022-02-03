@@ -423,6 +423,7 @@ MOD_API bool has_serial_midi_input_port(void);
 MOD_API bool has_serial_midi_output_port(void);
 MOD_API bool has_midi_merger_output_port(void);
 MOD_API bool has_midi_broadcaster_input_port(void);
+MOD_API bool has_duox_split_spdif(void);
 MOD_API bool connect_jack_ports(const char* port1, const char* port2);
 MOD_API bool connect_jack_midi_output_ports(const char* port);
 MOD_API bool disconnect_jack_ports(const char* port1, const char* port2);

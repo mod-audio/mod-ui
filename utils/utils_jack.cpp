@@ -495,6 +495,28 @@ const char* const* get_jack_hardware_ports(const bool isAudio, bool isOutput)
         }
     }
 
+#ifdef _MOD_DEVICE_DUOX
+    // Duo X special case for SPDIF mirrored mode
+    if (isAudio && isOutput && ! has_duox_split_spdif())
+    {
+        for (int i=0; ports[i] != nullptr; ++i)
+        {
+            if (ports[i+1] == nullptr)
+                break;
+            if (std::strcmp(ports[i], "system:playback_3") != 0)
+                continue;
+            if (std::strcmp(ports[i+1], "system:playback_4") != 0)
+                continue;
+
+            for (int j=i+2; ports[j] != nullptr; ++i, ++j)
+                ports[i] = ports[j];
+
+            ports[i] = nullptr;
+            break;
+        }
+    }
+#endif
+
     gPortListRet = ports;
 
     return ports;
@@ -549,6 +571,17 @@ bool has_midi_broadcaster_input_port(void)
     return (jack_port_by_name(gClient, "mod-midi-broadcaster:in") != nullptr);
 }
 
+bool has_duox_split_spdif(void)
+{
+#ifdef _MOD_DEVICE_DUOX
+    if (gClient == nullptr)
+        return false;
+
+    return (jack_port_by_name(gClient, "mod-monitor:in_3") != nullptr);
+#else
+    return false;
+#endif
+}
 
 // --------------------------------------------------------------------------------------------------------
 

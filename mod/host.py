@@ -151,7 +151,7 @@ from modtools.utils import (
     init_bypass, get_jack_port_alias, get_jack_hardware_ports,
     has_serial_midi_input_port, has_serial_midi_output_port,
     has_midi_merger_output_port, has_midi_broadcaster_input_port,
-    has_midi_beat_clock_sender_port,
+    has_midi_beat_clock_sender_port, has_duox_split_spdif,
     connect_jack_ports, connect_jack_midi_output_ports, disconnect_jack_ports, disconnect_all_jack_ports,
     set_truebypass_value, get_master_volume,
     set_util_callbacks, set_extra_util_callbacks, kPedalboardTimeAvailableBPB,
@@ -3133,7 +3133,8 @@ class Host(object):
                 return self.midi_loopback_port
             if data[2].startswith("playback_"):
                 num = data[2].replace("playback_","",1)
-                if num in ("1", "2", "3", "4"):
+                monitorportnums = ("1","2","3","4") if has_duox_split_spdif() else ("1","2")
+                if num in monitorportnums:
                     return "mod-monitor:in_" + num
 
             if data[2].startswith(("audio_from_slave_",
