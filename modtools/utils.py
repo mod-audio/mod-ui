@@ -617,6 +617,9 @@ utils.has_midi_merger_output_port.restype  = c_bool
 utils.has_midi_broadcaster_input_port.argtypes = None
 utils.has_midi_broadcaster_input_port.restype  = c_bool
 
+utils.has_duox_split_spdif.argtypes = None
+utils.has_duox_split_spdif.restype  = c_bool
+
 utils.get_jack_hardware_ports.argtypes = [c_bool, c_bool]
 utils.get_jack_hardware_ports.restype  = POINTER(c_char_p)
 
@@ -889,6 +892,9 @@ def has_midi_merger_output_port():
 
 def has_midi_broadcaster_input_port():
     return bool(utils.has_midi_broadcaster_input_port())
+
+def has_duox_split_spdif():
+    return bool(utils.has_duox_split_spdif())
 
 def get_jack_hardware_ports(isAudio, isOutput):
     return charPtrPtrToStringList(utils.get_jack_hardware_ports(isAudio, isOutput))
