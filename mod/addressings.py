@@ -1173,6 +1173,26 @@ class Addressings(object):
             else:
                 addressings['addrs'].remove(addressing_data)
 
+    def update_for_snapshots(self, actuator_uri, instance_id, portsymbol, newdata):
+        actuator_type = self.get_actuator_type(actuator_uri)
+
+        if actuator_type == self.ADDRESSING_TYPE_HMI:
+            addressings = self.hmi_addressings[actuator_uri]['addrs']
+        elif actuator_type == self.ADDRESSING_TYPE_CC:
+            addressings = self.cc_addressings[actuator_uri]
+        else:
+            return
+
+        for addr in addressings:
+            if actuator_uri != addr['actuator_uri']:
+                continue
+            if instance_id != addr['instance_id']:
+                continue
+            if portsymbol != addr['port']:
+                continue
+            addr.update(newdata)
+            return
+
     def is_page_assigned(self, addrs, page, subpage):
         return any('page' in a and a['page'] == page and a['subpage'] == subpage for a in addrs)
 
