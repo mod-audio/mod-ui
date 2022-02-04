@@ -1,6 +1,6 @@
 /*
  * MOD-UI utilities
- * Copyright (C) 2015-2021 Filipe Coelho <falktx@falktx.com>
+ * Copyright (C) 2015-2022 Filipe Coelho <falktx@falktx.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -189,7 +189,7 @@ bool init_jack(void)
                 snd_mixer_selem_id_set_name(sid, ALSA_CONTROL_BYPASS_RIGHT);
                 gAlsaControlRight = snd_mixer_find_selem(gAlsaMixer, sid);
 
-#if defined(__MOD_DEVICES__) && defined(__aarch64__)
+#ifdef _MOD_DEVICE_DUOX
                 // special case until HMI<->system comm is not in place yet
                 snd_mixer_selem_id_set_index(sid, 0);
                 snd_mixer_selem_id_set_name(sid, "CV/Exp.Pedal Mode");
@@ -381,13 +381,35 @@ JackData* get_jack_data(bool withTransport)
         if (changedBypass && true_bypass_changed_cb != nullptr)
             true_bypass_changed_cb(gLastAlsaValueLeft, gLastAlsaValueRight);
 
-#if defined(__MOD_DEVICES__) && defined(__aarch64__)
+#ifdef _MOD_DEVICE_DUOX
         // special case until HMI<->system comm is not in place yet
         bool changedCvExpMode = false;
 
         if (gAlsaControlCvExp != nullptr)
         {
-            const bool newValue = _get_alsa_switch_value(gAlsaControlCvExp);
+            bool newValue = gLastAlsaValueCvExp;
+
+            // open new mixer to force read of cv/exp value
+            snd_mixer_t* mixer;
+            if (snd_mixer_open(&mixer, SND_MIXER_ELEM_SIMPLE) == 0)
+            {
+                snd_mixer_selem_id_t* sid;
+                if (snd_mixer_attach(mixer, "hw:DUOX") == 0 &&
+                    snd_mixer_selem_register(mixer, nullptr, nullptr) == 0 &&
+                    snd_mixer_load(mixer) == 0 &&
+                    snd_mixer_selem_id_malloc(&sid) == 0)
+                {
+                    snd_mixer_selem_id_set_index(sid, 0);
+                    snd_mixer_selem_id_set_name(sid, "CV/Exp.Pedal Mode");
+
+                    if (snd_mixer_elem_t* const elem = snd_mixer_find_selem(mixer, sid))
+                        newValue = _get_alsa_switch_value(elem);
+
+                    snd_mixer_selem_id_free(sid);
+                }
+
+                snd_mixer_close(mixer);
+            }
 
             if (gLastAlsaValueCvExp != newValue)
             {
@@ -690,7 +712,7 @@ void init_bypass(void)
     if (gAlsaControlRight != nullptr)
         snd_mixer_selem_set_playback_switch_all(gAlsaControlRight, 0);
 
-#if defined(__MOD_DEVICES__) && defined(__aarch64__)
+#ifdef _MOD_DEVICE_DUOX
     // special case until HMI<->system comm is not in place yet
     if (gAlsaControlCvExp != nullptr)
         gLastAlsaValueCvExp = _get_alsa_switch_value(gAlsaControlCvExp);
@@ -815,7 +837,7 @@ void set_util_callbacks(JackBufSizeChanged bufSizeChanged,
 
 void set_extra_util_callbacks(CvExpInputModeChanged cvExpInputModeChanged)
 {
-#if defined(__MOD_DEVICES__) && defined(__aarch64__)
+#ifdef _MOD_DEVICE_DUOX
     cv_exp_mode_changed_cb = cvExpInputModeChanged;
 #else
     // unused
