@@ -5240,6 +5240,9 @@ _:b%i
 
         callback(True)
 
+        # update addressing as needed
+        self.readdress_snapshots(self.current_pedalboard_snapshot_id)
+
     # -----------------------------------------------------------------------------------------------------------------
 
     def hmi_pedalboard_snapshot_save(self, callback):
@@ -5254,7 +5257,14 @@ _:b%i
         idx = self.snapshot_saveas(name)
         callback(True)
 
+        # update snapshot title
         self.hmi.set_snapshot_name(idx, self.pedalboard_snapshots[idx]['name'], None)
+
+        # update addressing as needed
+        mapPresets = self.plugins[PEDALBOARD_INSTANCE_ID]['mapPresets']
+        if mapPresets:
+            mapPresets.append("file:///%i" % idx)
+        self.readdress_snapshots(idx)
 
     def hmi_pedalboard_snapshot_delete(self, snapshot_id, callback):
         if snapshot_id < 0 or snapshot_id >= len(self.pedalboard_snapshots):
@@ -5271,8 +5281,50 @@ _:b%i
 
         callback(True)
 
+        # force snapshot title if current snapshot was deleted
         if self.current_pedalboard_snapshot_id == -1:
             self.hmi.set_snapshot_name(-1, DEFAULT_SNAPSHOT_NAME, None)
+
+        # update addressing as needed
+        mapPresets = self.plugins[PEDALBOARD_INSTANCE_ID]['mapPresets']
+        if snapshot_id < len(mapPresets):
+            mapPresets.pop(-1)
+        self.readdress_snapshots(0)
+
+    # -----------------------------------------------------------------------------------------------------------------
+
+    def readdress_snapshots(self, idx):
+        pluginData = self.plugins[PEDALBOARD_INSTANCE_ID]
+        pluginData['preset'] = "file:///%i" % idx
+
+        addressing = pluginData['addressings'].get(":presets", None)
+        if addressing is None:
+            return
+
+        numsnapshots = len(self.pedalboard_snapshots)
+        newdata = {
+          'maximum': numsnapshots,
+          'options': [(i,self.snapshot_name(i)) for i in range(numsnapshots)],
+          'steps': numsnapshots - 1,
+          'value': idx,
+        }
+        addressing.update(newdata)
+
+        actuator_uri = addressing['actuator_uri']
+        instance_id = addressing['instance_id']
+        portsymbol = addressing['port']
+        group_actuators = self.addressings.get_group_actuators(actuator_uri)
+
+        abort_catcher = {}
+
+        if group_actuators is not None:
+            for group_actuator_uri in group_actuators:
+                self.addressings.update_for_snapshots(group_actuator_uri, instance_id, portsymbol, newdata)
+            self.addressings.load_current(group_actuators, (None, None), False, True, abort_catcher)
+
+        else:
+            self.addressings.update_for_snapshots(actuator_uri, instance_id, portsymbol, newdata)
+            self.addressings.load_current([actuator_uri], (None, None), False, True, abort_catcher)
 
     # -----------------------------------------------------------------------------------------------------------------
 
