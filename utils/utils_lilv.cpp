@@ -44,6 +44,10 @@
 #include <string>
 #include <vector>
 
+#ifdef __linux__
+# include <sched.h>
+#endif
+
 #define OS_SEP '/'
 
 #define MOD_LICENSE__interface "http://moddevices.com/ns/ext/license#interface"
@@ -5466,6 +5470,17 @@ const char* file_uri_parse(const char* const fileuri)
     _file_uri_parse_ret = lilv_file_abspath(fileuri);
 
     return _file_uri_parse_ret != nullptr ? _file_uri_parse_ret : nc;
+}
+
+void set_cpu_affinity(const int cpu)
+{
+#ifdef __linux__
+     printf("NOTE: Running pinned to core #%d\n", cpu+1);
+     cpu_set_t cpuset;
+     CPU_ZERO(&cpuset);
+     CPU_SET(cpu, &cpuset);
+     sched_setaffinity(0, sizeof(cpuset), &cpuset);
+#endif
 }
 
 // --------------------------------------------------------------------------------------------------------
