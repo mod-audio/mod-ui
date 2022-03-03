@@ -581,6 +581,9 @@ utils.list_plugins_in_bundle.restype  = POINTER(c_char_p)
 utils.file_uri_parse.argtypes = [c_char_p]
 utils.file_uri_parse.restype  = c_char_p
 
+utils.set_cpu_affinity.argtypes = [c_int]
+utils.set_cpu_affinity.restype  = None
+
 utils.init_jack.argtypes = None
 utils.init_jack.restype  = c_bool
 
@@ -841,6 +844,12 @@ def get_bundle_dirname(bundleuri):
         bundle = os.path.dirname(bundle)
 
     return bundle
+
+# ------------------------------------------------------------------------------------------------------------
+# helper utilities
+
+def set_cpu_affinity(cpu):
+    utils.set_cpu_affinity(cpu)
 
 # ------------------------------------------------------------------------------------------------------------
 # jack stuff
