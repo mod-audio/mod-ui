@@ -2607,9 +2607,16 @@ class Host(object):
 
         # do not save momentary toggles with their current value being the temporary one
         if (hmitype & FLAG_CONTROL_MOMENTARY) or (cctype & CC_MODE_MOMENTARY):
-            if addressing['momentary'] == 1 and addressing['maximum'] == value:
+            if addressing['port'] == ":bypass":
+                m1v = addressing['minimum']
+                m2v = addressing['maximum']
+            else:
+                m1v = addressing['maximum']
+                m2v = addressing['minimum']
+
+            if addressing['momentary'] == 1 and m1v == value:
                 return False
-            if addressing['momentary'] == 2 and addressing['minimum'] == value:
+            if addressing['momentary'] == 2 and m2v == value:
                 return False
 
         # fallback is true
