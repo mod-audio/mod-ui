@@ -1203,7 +1203,8 @@ class Addressings(object):
     # -----------------------------------------------------------------------------------------------------------------
     # HMI specific functions
 
-    def hmi_load_current(self, actuator_uri, callback, skippedPort = (None, None), updateValue = False, send_hmi = True):
+    def hmi_load_current(self, actuator_uri, callback,
+                         skippedPort = (None, None), updateValue = False, send_hmi = True, newValue = None):
         actuator_hmi      = self.hmi_uri2hw_map[actuator_uri]
         actuator_subpage  = self.hmi_hwsubpages[actuator_hmi]
         addressings       = self.hmi_addressings[actuator_uri]
@@ -1230,8 +1231,11 @@ class Addressings(object):
                         callback(True)
                     return
 
-                addressing_data['value'] = self._task_get_port_value(addressing_data['instance_id'],
-                                                                     addressing_data['port'])
+                if newValue is not None:
+                    addressing_data['value'] = newValue
+                else:
+                    addressing_data['value'] = self._task_get_port_value(addressing_data['instance_id'],
+                                                                         addressing_data['port'])
 
                 if addressing_data.get('tempo', False):
                     dividers = self._task_get_tempo_divider(addressing_data['instance_id'],
@@ -1261,8 +1265,11 @@ class Addressings(object):
 
             # reload value
             addressing = addressings_addrs[addressings_idx]
-            addressing['value'] = addressing_data['value'] = self._task_get_port_value(addressing['instance_id'],
-                                                                                       addressing['port'])
+            if newValue is not None:
+                addressing['value'] = addressing_data['value'] = newValue
+            else:
+                addressing['value'] = addressing_data['value'] = self._task_get_port_value(addressing['instance_id'],
+                                                                                           addressing['port'])
 
             if addressing_data.get('tempo', False):
                 dividers = self._task_get_tempo_divider(addressing['instance_id'], addressing['port'])
@@ -1419,13 +1426,10 @@ class Addressings(object):
     def cc_actuator_added(self, dev_id, actuator_id, metadata):
         print("cc_actuator_added", metadata['uri'])
         actuator_uri = metadata['uri']
-        if actuator_uri in self.cc_metadata:
-            self.cc_load_all(actuator_uri)
-        else:
-            self.cc_metadata[actuator_uri] = metadata.copy()
-            self.cc_metadata[actuator_uri]['hw_id'] = (dev_id, actuator_id)
-            self.cc_addressings[actuator_uri] = []
-            self._task_act_added(metadata)
+        self.cc_metadata[actuator_uri] = metadata.copy()
+        self.cc_metadata[actuator_uri]['hw_id'] = (dev_id, actuator_id)
+        self.cc_addressings[actuator_uri] = []
+        self._task_act_added(metadata)
 
     @gen.coroutine
     def cc_load_all(self, actuator_uri):

@@ -20,7 +20,14 @@ import os
 from enum import Enum
 from PIL import Image
 
-from modtools.utils import init as lv2_init, get_pedalboard_info, get_plugin_info, get_plugin_gui
+from modtools.utils import (
+    init as lv2_init,
+    cleanup as lv2_cleanup,
+    get_pedalboard_info,
+    get_plugin_info,
+    get_plugin_gui,
+    set_cpu_affinity,
+)
 
 MAX_THUMB_HEIGHT = 640
 MAX_THUMB_WIDTH = 640
@@ -35,7 +42,6 @@ def resize_image(img):
     if height > MAX_THUMB_HEIGHT:
         width = width * MAX_THUMB_HEIGHT / height
         height = MAX_THUMB_HEIGHT
-    img.convert('RGB')
     img.thumbnail((width, height), Image.ANTIALIAS)
 
 
@@ -96,6 +102,10 @@ def chunks(l, n):
 
 
 def take_screenshot(bundle_path, html_dir, cache_dir, size):
+    # ugly workaround until we find something better
+    if os.getenv('MOD_MODEL_TYPE') == 'dwarf:aarch64-a35':
+        set_cpu_affinity(1)
+
     os.makedirs(cache_dir, exist_ok=True)
     lv2_init()
     pb = get_pedalboard_info(bundle_path)
@@ -311,6 +321,8 @@ def take_screenshot(bundle_path, html_dir, cache_dir, size):
 
         plugin_map[p['instance']] = p
 
+    lv2_cleanup()
+
     # calculate image size
     height = 0
     for p in plugins:
@@ -341,6 +353,9 @@ def take_screenshot(bundle_path, html_dir, cache_dir, size):
     for d in device_playback:
         d.update({'x': width, 'y': h})
         h = h + step
+
+    del used_symbols
+    del used_types
 
     # draw plugin cables and calculate connectors
     connectors = []
@@ -409,6 +424,9 @@ def take_screenshot(bundle_path, html_dir, cache_dir, size):
         connectors.append((source_connected_img, (rint(source_pos[0]), rint(source_pos[1])), source_connected_img))
         connectors.append((target_connected_img, (rint(target_pos[0]), rint(target_pos[1])), target_connected_img))
 
+    del pb
+    del plugin_map
+
     # create image
     img = Image.new('RGBA', (width, height), (0, 0, 0, 0))
 
@@ -418,32 +436,72 @@ def take_screenshot(bundle_path, html_dir, cache_dir, size):
     for d in device_playback:
         img.paste(d['img'], anchor(d['img'].size, d['x'], d['y'], Anchor.RIGHT_CENTER))
 
+    audio_input_img.close()
+    audio_output_img.close()
+    midi_input_img.close()
+    midi_output_img.close()
+    cv_input_img.close()
+    cv_output_img.close()
+    del audio_input_img
+    del audio_output_img
+    del midi_input_img
+    del midi_output_img
+    del cv_input_img
+    del cv_output_img
+
     # draw all paths
     try:
-        import aggdraw
-        draw = aggdraw.Draw(img)
-        audio_pen = aggdraw.Pen('#81009A', 7)
-        midi_pen = aggdraw.Pen('#00546C', 7)
-        cv_pen = aggdraw.Pen('#BB6736', 7)
+        from aggdraw import Draw, Pen, Symbol
+        draw = Draw(img)
+        audio_pen = Pen('#81009A', 7)
+        midi_pen = Pen('#00546C', 7)
+        cv_pen = Pen('#BB6736', 7)
         for path, source_type, target_type in paths:
-            symbol = aggdraw.Symbol(path)
-            pen = audio_pen
+            symbol = Symbol(path)
             if source_type == 'midi' or target_type == 'midi':
                 pen = midi_pen
             elif source_type == 'cv' or target_type == 'cv':
                 pen = cv_pen
+            else:
+                pen = audio_pen
             draw.symbol((0, 0), symbol, pen)
         draw.flush()
+        del draw
+        del audio_pen
+        del midi_pen
+        del cv_pen
     except:
         print('Aggdraw failed')
+
+    del paths
 
     # draw all connectors
     for c in connectors:
         img.paste(*c)
 
+    audio_input_connected.close()
+    audio_output_connected.close()
+    midi_input_connected.close()
+    midi_output_connected.close()
+    cv_input_connected.close()
+    cv_output_connected.close()
+    del device_capture
+    del device_playback
+    del audio_input_connected
+    del audio_output_connected
+    del midi_input_connected
+    del midi_output_connected
+    del cv_input_connected
+    del cv_output_connected
+    del connectors
+
     # draw plugins
     for p in plugins:
         img.paste(p['img'], (rint(p['x']), rint(p['y'])), p['img'])
+
+    default_screenshot.close()
+    del default_screenshot
+    del plugins
 
     img.save(os.path.join(bundle_path, 'screenshot.png'), compress_level=3)
     resize_image(img)

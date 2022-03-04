@@ -2188,7 +2188,8 @@ class Host(object):
         actuator_type = self.addressings.get_actuator_type(actuator_uri)
 
         # update value
-        current_addressing['value'] = float(value)
+        value = float(value)
+        current_addressing['value'] = value
 
         if actuator_type == Addressings.ADDRESSING_TYPE_CC:
             if current_addressing['cctype'] & CC_MODE_OPTIONS:
@@ -2292,17 +2293,17 @@ class Host(object):
                 hw_id2 = self.addressings.hmi_uri2hw_map[group_actuators[1]]
                 #self.hmi.control_set(hw_id2, float(value), callback)
                 #self.hmi.control_add(current_addressing, hw_id2, group_actuators[1], callback)
-                self.addressings.hmi_load_current(group_actuators[1], callback)
+                self.addressings.hmi_load_current(group_actuators[1], callback, newValue=value)
 
             hw_id1 = self.addressings.hmi_uri2hw_map[group_actuators[0]]
             #self.hmi.control_set(hw_id1, float(value), set_2nd_hmi_value)
             #self.hmi.control_add(current_addressing, hw_id1, group_actuators[0], set_2nd_hmi_value)
-            self.addressings.hmi_load_current(group_actuators[0], set_2nd_hmi_value)
+            self.addressings.hmi_load_current(group_actuators[0], set_2nd_hmi_value, newValue=value)
 
         else:
             hw_id = self.addressings.hmi_uri2hw_map[actuator_uri]
             if current_addressing['hmitype'] & FLAG_CONTROL_ENUMERATION:
-                self.addressings.hmi_load_current(actuator_uri, callback)
+                self.addressings.hmi_load_current(actuator_uri, callback, newValue=value)
             else:
                 self.hmi.control_set(hw_id, current_addressing['value'], callback)
 
@@ -2592,6 +2593,35 @@ class Host(object):
 
         pluginData['x'] = x
         pluginData['y'] = y
+
+    # check if addressing is momentary or trigger, in which case we do not want to save current/changed value
+    def should_save_addressing_value(self, addressing, value):
+        if addressing is None:
+            return True
+
+        cctype = addressing.get('cctype', 0x0)
+        hmitype = addressing.get('hmitype', 0x0)
+
+        # do not save triggers, their value is reset on the next audio cycle
+        if (hmitype & FLAG_CONTROL_TRIGGER) or (cctype & CC_MODE_TRIGGER):
+            return False
+
+        # do not save momentary toggles with their current value being the temporary one
+        if (hmitype & FLAG_CONTROL_MOMENTARY) or (cctype & CC_MODE_MOMENTARY):
+            if addressing['port'] == ":bypass":
+                m1v = addressing['minimum']
+                m2v = addressing['maximum']
+            else:
+                m1v = addressing['maximum']
+                m2v = addressing['minimum']
+
+            if addressing['momentary'] == 1 and m1v == value:
+                return False
+            if addressing['momentary'] == 2 and m2v == value:
+                return False
+
+        # fallback is true
+        return True
 
     def reload_pedalboard(self, affected_uris):
         # Reload pedalboard if any effect in affected_uris is in use
@@ -2956,11 +2986,12 @@ class Host(object):
             except KeyError:
                 continue
 
-            diffBypass = pluginData['bypassed'] != data['bypassed']
+            addressing = pluginData['addressings'].get(":bypass", None)
+            diffBypass = (self.should_save_addressing_value(addressing, pluginData['bypassed']) and
+                          pluginData['bypassed'] != data['bypassed'])
             diffPreset = data['preset'] and data['preset'] != pluginData['preset']
 
             if was_aborted or diffBypass:
-                addressing = pluginData['addressings'].get(":bypass", None)
                 if addressing is not None:
                     addressing['value'] = 1.0 if data['bypassed'] else 0.0
                     if addressing['actuator_uri'] not in used_actuators:
@@ -3003,6 +3034,11 @@ class Host(object):
                 if symbol in pluginData['designations']:
                     continue
 
+                addressing = pluginData['addressings'].get(symbol, None)
+
+                if not self.should_save_addressing_value(addressing, value):
+                    continue
+
                 equal = pluginData['ports'].get(symbol, None) in (value, None)
 
                 if equal and not was_aborted and not diffPreset:
@@ -3015,7 +3051,6 @@ class Host(object):
                     except Exception as e:
                         logging.exception(e)
 
-                addressing = pluginData['addressings'].get(symbol, None)
                 if addressing is not None:
                     addressing['value'] = value
                     if addressing['actuator_uri'] not in used_actuators:
@@ -5516,20 +5551,7 @@ _:b%i
 
         pluginData = self.plugins[instance_id]
         port_addressing = pluginData['addressings'].get(portsymbol, None)
-        save_port_value = True
-
-        if port_addressing is not None:
-            cctype = port_addressing.get('cctype', 0x0)
-            hmitype = port_addressing.get('hmitype', 0x0)
-            # do not save triggers, their value is reset on the next audio cycle
-            if (hmitype & FLAG_CONTROL_TRIGGER) or (cctype & CC_MODE_TRIGGER):
-                save_port_value = False
-            # do not save momentary toggles with their current value being the temporary one
-            elif (hmitype & FLAG_CONTROL_MOMENTARY) or (cctype & CC_MODE_MOMENTARY):
-                if port_addressing['momentary'] == 1 and port_addressing['maximum'] == value:
-                    save_port_value = False
-                elif port_addressing['momentary'] == 2 and port_addressing['minimum'] == value:
-                    save_port_value = False
+        save_port_value = self.should_save_addressing_value(port_addressing, value)
 
         if portsymbol == ":bypass":
             bypassed = bool(value)
@@ -5613,6 +5635,9 @@ _:b%i
                 return
 
             if port_addressing is not None:
+                cctype = port_addressing.get('cctype', 0x0)
+                hmitype = port_addressing.get('hmitype', 0x0)
+
                 if hmitype & FLAG_CONTROL_ENUMERATION or cctype & CC_MODE_OPTIONS:
                     value = get_nearest_valid_scalepoint_value(value, port_addressing['options'])[1]
 
