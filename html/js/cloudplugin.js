@@ -98,6 +98,9 @@ JqueryClass('cloudPluginBox', {
             self.find('input:checkbox[name=installed]').prop('checked', false)
             self.cloudPluginBox('search')
         })
+        self.find('input:checkbox[name=unstable]').click(function (e) {
+            self.cloudPluginBox('search')
+        })
 
         self.find('input:radio[name=plugins-source]').click(function (e) {
             self.data('usingLabs', self.find('input:radio[name=plugins-source]:checked').val() === 'labs')
@@ -132,7 +135,12 @@ JqueryClass('cloudPluginBox', {
             $('#cloud_install_all').addClass("disabled").css({color:'#444'})
             $('#cloud_update_all').addClass("disabled").css({color:'#444'})
 
-            self.cloudPluginBox('search')
+            var unstablecb = self.find('input:checkbox[name=unstable]')
+            if (!unstablecb.is(':checked')) {
+                self.cloudPluginBox('search')
+            } else {
+                unstablecb.click()
+            }
 
             return false
         }
@@ -213,7 +221,7 @@ JqueryClass('cloudPluginBox', {
             bin_compat: BIN_COMPAT,
         }
 
-        if (self.data('fake')) {
+        if (self.find('input:checkbox[name=unstable]:checked').length == 0 || self.data('fake')) {
             query.stable = true
         }
 
@@ -510,6 +518,7 @@ JqueryClass('cloudPluginBox', {
                 }
 
                 if (cplugin) {
+                    lplugin.stable        = cplugin.stable
                     lplugin.latestVersion = [cplugin.builder_version || 0, cplugin.minorVersion, cplugin.microVersion, cplugin.release_number]
 
                     if (compareVersions(lplugin.installedVersion, lplugin.latestVersion) >= 0) {
@@ -792,6 +801,7 @@ JqueryClass('cloudPluginBox', {
             licensed: plugin.licensed,
             featured: plugin.featured,
             coming: plugin.coming,
+            unstable: plugin.stable === false,
             build_env: plugin.buildEnvironment,
         }
 
@@ -1016,7 +1026,8 @@ JqueryClass('cloudPluginBox', {
                 demo  : !!plugin.demo,
                 licensed: plugin.licensed,
                 coming: plugin.coming,
-                build_env_uppercase: (plugin.buildEnvironment || "LOCAL").toUpperCase(),
+                build_env_uppercase: plugin.buildEnvironment ? plugin.buildEnvironment.toUpperCase()
+                                                             : (plugin.stable === false ? "BETA" : "LOCAL"),
                 show_build_env: plugin.buildEnvironment !== "prod",
             };
 

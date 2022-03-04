@@ -769,6 +769,7 @@ function Desktop(elements) {
         var versions = {}
         var uris = []
         var error = false
+        var usingLabs = PREFERENCES['show-labs-plugins'] === "true" ? 'auto' : false
 
         // make list of uris
         for (var i in plugins) {
@@ -791,7 +792,7 @@ function Desktop(elements) {
         var installPlugin = function (uri, data) {
             missingCount++
 
-            self.installationQueue.installUsingURI(uri, 'auto', function (resp, bundlename) {
+            self.installationQueue.installUsingURI(uri, usingLabs, function (resp, bundlename) {
                 if (! resp.ok) {
                     error = true
                 }
@@ -849,7 +850,11 @@ function Desktop(elements) {
             url: SITEURL + '/pedalboards/' + pedalboard_id,
             contentType: 'application/json',
             success: function (resp) {
-                if (!resp.data.stable && PREFERENCES['show-labs-plugins'] !== "true") {
+                if (resp.data.stable === false && PREFERENCES['show-unstable-plugins'] !== "true") {
+                    new Notification('error', 'This pedalboard contains beta plugins. To load it, you need to enable beta plugins in <a href="settings">Settings</a> -> Advanced');
+                    return;
+                }
+                if (resp.data.labs && PREFERENCES['show-labs-plugins'] !== "true") {
                     new Notification('error', 'This pedalboard contains one or more community maintained MOD Labs plugins. To load it, you need to enable MOD Labs plugins in <a href="settings">Settings</a> -> Advanced');
                     return;
                 }
