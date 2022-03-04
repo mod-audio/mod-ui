@@ -32,7 +32,6 @@ class ControlChainDeviceListener(object):
         self.hw_added_cb    = hw_added_cb
         self.hw_removed_cb  = hw_removed_cb
         self.act_added_cb   = act_added_cb
-        self.hw_counter     = {}
         self.hw_versions    = {}
         self.write_queue    = []
 
@@ -102,10 +101,7 @@ class ControlChainDeviceListener(object):
         hw_versions = self.hw_versions.copy()
         self.hw_versions = {}
         for dev_id, (dev_uri, label, labelsuffix, version) in hw_versions.items():
-            if dev_uri in self.hw_counter:
-                self.hw_versions[dev_id] = (dev_uri, label, labelsuffix, version)
-            else:
-                self.hw_removed_cb(dev_id, dev_uri, label+labelsuffix, version)
+            self.hw_removed_cb(dev_id, dev_uri, label+labelsuffix, version)
 
         IOLoop.instance().call_later(2, self.restart_if_crashed)
 
@@ -142,15 +138,12 @@ class ControlChainDeviceListener(object):
 
                 else:
                     try:
-                        (dev_uri, label, labelsuffix, version) = self.hw_versions[dev_id]
+                        hw_data = self.hw_versions.pop(dev_id)
                     except KeyError:
                         print("ERROR: Control Chain device removed, but not on current list!?", dev_id)
                     else:
-                        if dev_uri in self.hw_counter:
-                            self.hw_counter[dev_uri] -= 1
-                        else:
-                            self.hw_versions.pop(dev_id)
-                            self.hw_removed_cb(dev_id, dev_uri, label+labelsuffix, version)
+                        dev_uri, label, labelsuffix, version = hw_data
+                        self.hw_removed_cb(dev_id, dev_uri, label+labelsuffix, version)
 
         finally:
             self.process_read_queue()
@@ -231,36 +224,16 @@ class ControlChainDeviceListener(object):
                 callback()
                 return
 
-            supports_chain_id = False
-            supports_feedback = False
-
             if 'protocol' in dev:
                 protocol_version = tuple(int(v) for v in dev['protocol'].split("."))
-                supports_feedback = protocol_version >= (0,6)
             else:
                 protocol_version = (0,0)
 
-            # assign device id
-            if supports_chain_id:
-                # TODO use chain id as unique id
-                dev_unique_id = 0
-
-            elif supports_feedback:
-                # use connected hw counter as id
-                if dev_uri not in self.hw_counter:
-                    dev_unique_id = 0
-                else:
-                    dev_unique_id = self.hw_counter[dev_uri]
-
-                # increment counter for next device with the same URI
-                self.hw_counter[dev_uri] = dev_unique_id + 1
-
-            else:
-                # assign an unique id starting from 0
-                dev_unique_id = 0
-                for _dev_uri, _1, _2, _3 in self.hw_versions.values():
-                    if _dev_uri == dev_uri:
-                        dev_unique_id += 1
+            # assign an unique id starting from 0
+            dev_unique_id = 0
+            for _dev_uri, _1, _2, _3 in self.hw_versions.values():
+                if _dev_uri == dev_uri:
+                    dev_unique_id += 1
 
             if dev_unique_id != 0:
                 dev_label_suffix = " " + str(dev_unique_id+1)
@@ -335,7 +308,7 @@ class ControlChainDeviceListener(object):
                     'feedback': True,
                     'max_assigns': max_assigns,
                     'actuator_group': ("%s:%i:%i" % (dev_uri, dev_unique_id, actuatorgroup['actuator1']),
-                                       "%s:%i:%i" % (dev_uri, dev_unique_id, actuatorgroup['actuator2'])),
+                                        "%s:%i:%i" % (dev_uri, dev_unique_id, actuatorgroup['actuator2'])),
                 }
                 self.act_added_cb(dev_id, (actuatorgroup['id'],
                                            actuatorgroup['actuator1'],

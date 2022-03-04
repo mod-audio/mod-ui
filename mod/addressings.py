@@ -1419,13 +1419,10 @@ class Addressings(object):
     def cc_actuator_added(self, dev_id, actuator_id, metadata):
         print("cc_actuator_added", metadata['uri'])
         actuator_uri = metadata['uri']
-        if actuator_uri in self.cc_metadata:
-            self.cc_load_all(actuator_uri)
-        else:
-            self.cc_metadata[actuator_uri] = metadata.copy()
-            self.cc_metadata[actuator_uri]['hw_id'] = (dev_id, actuator_id)
-            self.cc_addressings[actuator_uri] = []
-            self._task_act_added(metadata)
+        self.cc_metadata[actuator_uri] = metadata.copy()
+        self.cc_metadata[actuator_uri]['hw_id'] = (dev_id, actuator_id)
+        self.cc_addressings[actuator_uri] = []
+        self._task_act_added(metadata)
 
     @gen.coroutine
     def cc_load_all(self, actuator_uri):
