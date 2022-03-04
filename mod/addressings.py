@@ -1203,7 +1203,8 @@ class Addressings(object):
     # -----------------------------------------------------------------------------------------------------------------
     # HMI specific functions
 
-    def hmi_load_current(self, actuator_uri, callback, skippedPort = (None, None), updateValue = False, send_hmi = True):
+    def hmi_load_current(self, actuator_uri, callback,
+                         skippedPort = (None, None), updateValue = False, send_hmi = True, newValue = None):
         actuator_hmi      = self.hmi_uri2hw_map[actuator_uri]
         actuator_subpage  = self.hmi_hwsubpages[actuator_hmi]
         addressings       = self.hmi_addressings[actuator_uri]
@@ -1230,8 +1231,11 @@ class Addressings(object):
                         callback(True)
                     return
 
-                addressing_data['value'] = self._task_get_port_value(addressing_data['instance_id'],
-                                                                     addressing_data['port'])
+                if newValue is not None:
+                    addressing_data['value'] = newValue
+                else:
+                    addressing_data['value'] = self._task_get_port_value(addressing_data['instance_id'],
+                                                                         addressing_data['port'])
 
                 if addressing_data.get('tempo', False):
                     dividers = self._task_get_tempo_divider(addressing_data['instance_id'],
@@ -1261,8 +1265,11 @@ class Addressings(object):
 
             # reload value
             addressing = addressings_addrs[addressings_idx]
-            addressing['value'] = addressing_data['value'] = self._task_get_port_value(addressing['instance_id'],
-                                                                                       addressing['port'])
+            if newValue is not None:
+                addressing['value'] = addressing_data['value'] = newValue
+            else:
+                addressing['value'] = addressing_data['value'] = self._task_get_port_value(addressing['instance_id'],
+                                                                                           addressing['port'])
 
             if addressing_data.get('tempo', False):
                 dividers = self._task_get_tempo_divider(addressing['instance_id'], addressing['port'])

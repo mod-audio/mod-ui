@@ -2189,7 +2189,8 @@ class Host(object):
         actuator_type = self.addressings.get_actuator_type(actuator_uri)
 
         # update value
-        current_addressing['value'] = float(value)
+        value = float(value)
+        current_addressing['value'] = value
 
         if actuator_type == Addressings.ADDRESSING_TYPE_CC:
             if current_addressing['cctype'] & CC_MODE_OPTIONS:
@@ -2293,17 +2294,17 @@ class Host(object):
                 hw_id2 = self.addressings.hmi_uri2hw_map[group_actuators[1]]
                 #self.hmi.control_set(hw_id2, float(value), callback)
                 #self.hmi.control_add(current_addressing, hw_id2, group_actuators[1], callback)
-                self.addressings.hmi_load_current(group_actuators[1], callback)
+                self.addressings.hmi_load_current(group_actuators[1], callback, newValue=value)
 
             hw_id1 = self.addressings.hmi_uri2hw_map[group_actuators[0]]
             #self.hmi.control_set(hw_id1, float(value), set_2nd_hmi_value)
             #self.hmi.control_add(current_addressing, hw_id1, group_actuators[0], set_2nd_hmi_value)
-            self.addressings.hmi_load_current(group_actuators[0], set_2nd_hmi_value)
+            self.addressings.hmi_load_current(group_actuators[0], set_2nd_hmi_value, newValue=value)
 
         else:
             hw_id = self.addressings.hmi_uri2hw_map[actuator_uri]
             if current_addressing['hmitype'] & FLAG_CONTROL_ENUMERATION:
-                self.addressings.hmi_load_current(actuator_uri, callback)
+                self.addressings.hmi_load_current(actuator_uri, callback, newValue=value)
             else:
                 self.hmi.control_set(hw_id, current_addressing['value'], callback)
 
