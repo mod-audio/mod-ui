@@ -1623,7 +1623,7 @@ class TemplateHandler(TimelessRequestHandler):
             self.redirect(self.request.full_url().replace("/sdk", ":9000"), True)
             return
         elif path == 'allguis':
-            uri = '/icon-all.html?v=%s' % curVersion
+            uri = '/allguis.html?v=%s' % curVersion
             self.redirect(uri, True)
             return
         elif path == 'settings':
