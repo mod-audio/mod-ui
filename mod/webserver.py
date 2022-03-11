@@ -1651,6 +1651,10 @@ class TemplateHandler(TimelessRequestHandler):
         elif path == 'sdk':
             self.redirect(self.request.full_url().replace("/sdk", ":9000"), True)
             return
+        elif path == 'allguis':
+            uri = '/allguis.html?v=%s' % curVersion
+            self.redirect(uri, True)
+            return
         elif path == 'settings':
             uri = '/settings.html?v=%s' % curVersion
             self.redirect(uri, True)
@@ -1759,6 +1763,12 @@ class TemplateHandler(TimelessRequestHandler):
             'pedalboard': b64encode(json.dumps(pedalboard).encode("utf-8"))
         }
 
+        return context
+
+    def allguis(self):
+        context = {
+            'version': self.get_argument('v'),
+        }
         return context
 
     def settings(self):
@@ -2279,7 +2289,7 @@ application = web.Application(
 
             (r"/(index.html)?$", TemplateHandler),
             (r"/([a-z]+\.html)$", TemplateHandler),
-            (r"/(sdk|settings)$", TemplateHandler),
+            (r"/(allguis|sdk|settings)$", TemplateHandler),
             (r"/load_template/([a-z_]+\.html)$", TemplateLoader),
             (r"/js/templates.js$", BulkTemplateLoader),
 
