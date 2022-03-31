@@ -2047,7 +2047,9 @@ class Host(object):
                                                                      parameter[0]))
 
                 if crashed:
-                    self.send_notmodified("patch_set %d %s \"%s\"" % (instance_id, paramuri, parameter[0]))
+                    self.send_notmodified("patch_set %d %s \"%s\"" % (instance_id,
+                                                                      paramuri,
+                                                                      str(parameter[0]).replace('"','\\"')))
 
             if crashed:
                 for symbol, data in pluginData['midiCCs'].items():
@@ -2570,20 +2572,20 @@ class Host(object):
         pluginData['ports'][symbol] = value
         self.send_modified("param_set %d %s %f" % (instance_id, symbol, value), callback, datatype='boolean')
 
-    def patch_get(self, instance, uri, callback):
+    def patch_get(self, instance, paramuri, callback):
         instance_id = self.mapper.get_id_without_creating(instance)
 
-        self.send_modified("patch_get %d %s" % (instance_id, uri), callback, datatype='boolean')
+        self.send_modified("patch_get %d %s" % (instance_id, paramuri), callback, datatype='boolean')
 
-    def patch_set(self, instance, uri, value, callback):
+    def patch_set(self, instance, paramuri, value, callback):
         instance_id = self.mapper.get_id_without_creating(instance)
         pluginData  = self.plugins[instance_id]
-        parameter   = pluginData['parameters'].get(uri, None)
+        parameter   = pluginData['parameters'].get(paramuri, None)
 
         if parameter is not None:
             parameter[0] = value
 
-        self.send_modified("patch_set %d %s \"%s\"" % (instance_id, uri, str(value).replace('"','\\"')),
+        self.send_modified("patch_set %d %s \"%s\"" % (instance_id, paramuri, str(value).replace('"','\\"')),
                            callback, datatype='boolean')
         return parameter is not None
 
