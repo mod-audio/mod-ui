@@ -426,7 +426,7 @@ class Session(object):
             callback(resp)
 
         def reset_host(_):
-            self.host.reset(host_callback)
+            self.host.reset(None, host_callback)
 
         if self.hmi.initialized:
             def set_pb_name(_):
