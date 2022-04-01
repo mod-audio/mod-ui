@@ -1623,8 +1623,8 @@ class Host(object):
 
             if channel == self.profile.get_midi_prgch_channel("pedalboard"):
                 bank_id = self.bank_id
-                if self.bank_id > 0 and self.bank_id <= len(self.banks):
-                    pedalboards = self.banks[self.bank_id-1]['pedalboards']
+                if bank_id > 0 and bank_id <= len(self.banks):
+                    pedalboards = self.banks[bank_id-1]['pedalboards']
                 else:
                     pedalboards = self.allpedalboards
 
@@ -1635,6 +1635,12 @@ class Host(object):
                         yield gen.Task(self.hmi_load_bank_pedalboard, bank_id, program)
                     except Exception as e:
                         logging.exception(e)
+                    #else:
+                        #if self.descriptor.get('hmi_set_pb_name', False):
+                            #try:
+                                #yield gen.Task(self.hmi.set_pedalboard_name, program)
+                            #except Exception as e:
+                                #logging.exception(e)
 
             elif channel == self.profile.get_midi_prgch_channel("snapshot"):
                 abort_catcher = self.abort_previous_loading_progress("midi_program_change")
@@ -1642,6 +1648,13 @@ class Host(object):
                     yield gen.Task(self.snapshot_load_gen_helper, program, False, abort_catcher)
                 except Exception as e:
                     logging.exception(e)
+                else:
+                    if self.descriptor.get('hmi_set_ss_name', False) and self.current_pedalboard_snapshot_id == program:
+                        name = self.snapshot_name() or DEFAULT_SNAPSHOT_NAME
+                        try:
+                            yield gen.Task(self.hmi.set_snapshot_name, program, name)
+                        except Exception as e:
+                            logging.exception(e)
 
         elif cmd == "transport":
             msg_data = data.split(" ",3)
