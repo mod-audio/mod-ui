@@ -2137,7 +2137,7 @@ class Host(object):
     # -----------------------------------------------------------------------------------------------------------------
     # Host stuff - reset, add, remove
 
-    def reset(self, callback):
+    def reset(self, bank_id, callback):
         def host_callback(ok):
             self.msg_callback("remove :all")
             if os.path.exists(PEDALBOARD_TMP_DIR):
@@ -2145,7 +2145,7 @@ class Host(object):
             os.makedirs(PEDALBOARD_TMP_DIR)
             callback(ok)
 
-        self.bank_id = 0
+        self.bank_id = bank_id if bank_id is not None else 0
         self.connections = []
         self.addressings.clear()
         self.mapper.clear()
@@ -2160,7 +2160,9 @@ class Host(object):
         self.pedalboard_size     = [0,0]
         self.pedalboard_version  = 0
 
-        save_last_bank_and_pedalboard(0, "")
+        if bank_id is None:
+            save_last_bank_and_pedalboard(0, "")
+
         self.send_notmodified("remove -1", host_callback, datatype='boolean')
 
     def paramhmi_set(self, instance, portsymbol, value, callback):
@@ -2646,7 +2648,7 @@ class Host(object):
             if ok:
                 self.load(bundlepath)
             shutil.rmtree(bundlepath)
-        self.reset(load)
+        self.reset(None, load)
 
     # -----------------------------------------------------------------------------------------------------------------
     # Host stuff - plugin presets
@@ -5457,7 +5459,6 @@ _:b%i
             self.hmi.ping(hmi_ready_callback)
 
         def load_callback(_):
-            self.bank_id = bank_id
             self.load(bundlepath, False, abort_catcher)
             # Dummy host call, just to receive callback when all other host messages finish
             self.send_notmodified("cpu_load", pb_host_loaded_callback, datatype='float_structure')
@@ -5469,7 +5470,7 @@ _:b%i
             self.processing_pending_flag = True
             self.send_notmodified("feature_enable processing 0")
 
-        self.reset(hmi_clear_callback)
+        self.reset(bank_id, hmi_clear_callback)
 
     # -----------------------------------------------------------------------------------------------------------------
 
