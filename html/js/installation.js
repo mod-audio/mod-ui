@@ -231,8 +231,11 @@ function InstallationQueue() {
             // reverse order so we can pop from queue
             duplicated.reverse()
             for (var i in duplicated) {
-                queue.pop(i)
-                localcallbacks.push(callbacks.pop(i))
+                var j = duplicated[i]
+
+                localcallbacks.push(callbacks[j])
+                queue.splice(j, 1)
+                callbacks.splice(j, 1)
             }
 
             if (queue.length > 0) {
