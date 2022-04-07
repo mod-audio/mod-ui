@@ -49,22 +49,21 @@ JqueryClass('effectBox', {
         self.data('searchbox', searchbox)
         searchbox.cleanableInput()
 
-        var lastKeyUp = null
+        var lastKeyTimeout = null
         searchbox.keydown(function (e) {
-            if (e.keyCode == 13) { //detect enter
-                if (lastKeyUp != null) {
-                    clearTimeout(lastKeyUp)
-                    lastKeyUp = null
+            if (e.keyCode == 13) { // detect enter
+                if (lastKeyTimeout != null) {
+                    clearTimeout(lastKeyTimeout)
+                    lastKeyTimeout = null
                 }
                 self.effectBox('search')
                 return false
             }
-            else if (e.keyCode == 8 || e.keyCode == 46) { //detect delete and backspace
-                if (lastKeyUp != null) {
-                    clearTimeout(lastKeyUp)
-                    lastKeyUp = null
+            else if (e.keyCode == 8 || e.keyCode == 46) { // detect delete and backspace
+                if (lastKeyTimeout != null) {
+                    clearTimeout(lastKeyTimeout)
                 }
-                lastKeyUp = setTimeout(function () {
+                lastKeyTimeout = setTimeout(function () {
                     self.effectBox('search')
                 }, 400);
             }
@@ -73,11 +72,18 @@ JqueryClass('effectBox', {
             if (e.which == 13) {
                 return
             }
-            if (lastKeyUp != null) {
-                clearTimeout(lastKeyUp)
-                lastKeyUp = null
+            if (lastKeyTimeout != null) {
+                clearTimeout(lastKeyTimeout)
             }
-            lastKeyUp = setTimeout(function () {
+            lastKeyTimeout = setTimeout(function () {
+                self.effectBox('search')
+            }, 400);
+        })
+        searchbox.on('paste', function(e) {
+            if (lastKeyTimeout != null) {
+                clearTimeout(lastKeyTimeout)
+            }
+            lastKeyTimeout = setTimeout(function () {
                 self.effectBox('search')
             }, 400);
         })
