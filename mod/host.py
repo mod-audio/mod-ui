@@ -1632,15 +1632,9 @@ class Host(object):
                     while self.next_hmi_pedalboard_loading:
                         yield gen.sleep(0.25)
                     try:
-                        yield gen.Task(self.hmi_load_bank_pedalboard, bank_id, program)
+                        yield gen.Task(self.hmi_load_bank_pedalboard, bank_id, program, from_hmi=False)
                     except Exception as e:
                         logging.exception(e)
-                    #else:
-                        #if self.descriptor.get('hmi_set_pb_name', False):
-                            #try:
-                                #yield gen.Task(self.hmi.set_pedalboard_name, program)
-                            #except Exception as e:
-                                #logging.exception(e)
 
             elif channel == self.profile.get_midi_prgch_channel("snapshot"):
                 abort_catcher = self.abort_previous_loading_progress("midi_program_change")
@@ -5391,7 +5385,7 @@ _:b%i
         else:
             print("ERROR: Delayed loading of %i:%i failed!" % self.next_hmi_pedalboard_to_load)
 
-    def hmi_load_bank_pedalboard(self, bank_id, pedalboard_id, callback):
+    def hmi_load_bank_pedalboard(self, bank_id, pedalboard_id, callback, from_hmi=True):
         logging.debug("hmi load bank pedalboard")
 
         if bank_id < 0 or bank_id > len(self.banks):
@@ -5448,7 +5442,7 @@ _:b%i
 
             # Check if there's a pending pedalboard to be loaded
             if next_pedalboard != next_pb_to_load:
-                self.hmi_load_bank_pedalboard(next_pedalboard[0], next_pedalboard[1], self.load_different_callback)
+                self.hmi_load_bank_pedalboard(next_pedalboard[0], next_pedalboard[1], self.load_different_callback, from_hmi)
             elif self.descriptor.get("hmi_bank_navigation", False):
                 self.setNavigateWithFootswitches(self.isBankFootswitchNavigationOn(), self.bank_config_enabled_callback)
 
@@ -5468,8 +5462,11 @@ _:b%i
 
         def pb_host_loaded_callback(_):
             print("NOTE: Loading of %i:%i finished (1/2)" % next_pb_to_load)
-            # Dummy HMI call, just to receive callback when all other HMI messages finish
-            self.hmi.ping(hmi_ready_callback)
+            # HMI call, works to notify of index change and also to know when all other HMI messages finish
+            if from_hmi:
+                self.hmi.ping(hmi_ready_callback)
+            else:
+                self.hmi.set_pedalboard_index(pedalboard_id, hmi_ready_callback)
 
         def load_callback(_):
             self.load(bundlepath, False, abort_catcher)
