@@ -31,6 +31,7 @@ from mod.mod_protocol import (
     CMD_CONTROL_ADD,
     CMD_CONTROL_REMOVE,
     CMD_CONTROL_SET,
+    CMD_PEDALBOARD_CHANGE,
     CMD_PEDALBOARD_CLEAR,
     CMD_PEDALBOARD_NAME_SET,
     CMD_SNAPSHOT_NAME_SET,
@@ -542,6 +543,9 @@ class HMI(object):
     # FIXME this message should be generic, most likely
     def boot(self, bootdata, callback, datatype='int'):
         self.send("boot {}".format(bootdata), callback, datatype)
+
+    def set_pedalboard_index(self, index, callback):
+        self.send('{} {}'.format(CMD_PEDALBOARD_CHANGE, index), callback)
 
     def set_pedalboard_name(self, name, callback):
         self.send('{} {}'.format(CMD_PEDALBOARD_NAME_SET, normalize_for_hw(name)), callback)

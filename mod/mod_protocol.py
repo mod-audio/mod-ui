@@ -26,6 +26,7 @@ CMD_ARGS = {
         'br': [int,int,int],
         'p': [int,int,int],
         'pn': [str,],
+        'pchng': [int],
         'pb': [int,str],
         'pr': [],
         'ps': [],
@@ -44,13 +45,13 @@ CMD_ARGS = {
         'tf': [],
         'ti': [int],
         'restore': [],
+        'screenshot': [int,str],
         'r': [int,],
         'c': [int,int,],
         'upr': [int],
         'ups': [int],
         'lp': [int],
         'reset_eeprom': [],
-        'screenshot': [int,str],
         'enc_clicked': [int],
         'enc_left': [int],
         'enc_right': [int],
@@ -62,6 +63,9 @@ CMD_ARGS = {
         'save_pot_cal': [int,int],
         'sys_gio': [int,int,float],
         'sys_ghp': [float],
+        'sys_cvi': [int],
+        'sys_exp': [int],
+        'sys_cvo': [int],
         'sys_ngc': [int],
         'sys_ngt': [int],
         'sys_ngd': [int],
@@ -77,7 +81,8 @@ CMD_ARGS = {
         'sys_usb': [int],
         'sys_mnr': [int],
         'sys_rbt': [],
-        'sys_led': [int,int,],
+        'sys_lbl': [int,int,int,int],
+        'sys_lbh': [int,int,int],
         'sys_nam': [int,str],
         'sys_uni': [int,str],
         'sys_val': [int,str],
@@ -91,7 +96,7 @@ CMD_ARGS = {
         'bc': [int,int],
         'n': [int],
         'si': [int,int,int],
-        'ncp': [int,int], # TODO
+        'ncp': [int,int], # Backwards compat for Duo and Duo X
     },
     'DUOX': {
         'boot': [int,int,str,],
@@ -130,6 +135,7 @@ CMD_ADD_PBS_TO_BANK               = 'ba'
 CMD_REORDER_PBS_IN_BANK           = 'br'
 CMD_PEDALBOARDS                   = 'p'
 CMD_PEDALBOARD_NAME_SET           = 'pn'
+CMD_PEDALBOARD_CHANGE             = 'pchng'
 CMD_PEDALBOARD_LOAD               = 'pb'
 CMD_PEDALBOARD_RESET              = 'pr'
 CMD_PEDALBOARD_SAVE               = 'ps'
@@ -148,13 +154,13 @@ CMD_TUNER_ON                      = 'tn'
 CMD_TUNER_OFF                     = 'tf'
 CMD_TUNER_INPUT                   = 'ti'
 CMD_RESTORE                       = 'restore'
+CMD_SCREENSHOT                    = 'screenshot'
 CMD_RESPONSE                      = 'r'
 CMD_MENU_ITEM_CHANGE              = 'c'
 CMD_PROFILE_LOAD                  = 'upr'
 CMD_PROFILE_STORE                 = 'ups'
 CMD_NEXT_PAGE                     = 'lp'
 CMD_RESET_EEPROM                  = 'reset_eeprom'
-CMD_SCREENSHOT                    = 'screenshot'
 CMD_SELFTEST_ENCODER_CLICKED      = 'enc_clicked'
 CMD_SELFTEST_ENCODER_LEFT         = 'enc_left'
 CMD_SELFTEST_ENCODER_RIGHT        = 'enc_right'
@@ -166,6 +172,9 @@ CMD_SELFTEST_SKIP_CONTROL         = 'control_bad_skip'
 CMD_SELFTEST_SAVE_POT_CALIBRATION = 'save_pot_cal'
 CMD_SYS_GAIN                      = 'sys_gio'
 CMD_SYS_HP_GAIN                   = 'sys_ghp'
+CMD_SYS_CVI_MODE                  = 'sys_cvi'
+CMD_SYS_EXP_MODE                  = 'sys_exp'
+CMD_SYS_CVO_MODE                  = 'sys_cvo'
 CMD_SYS_NG_CHANNEL                = 'sys_ngc'
 CMD_SYS_NG_THRESHOLD              = 'sys_ngt'
 CMD_SYS_NG_DECAY                  = 'sys_ngd'
@@ -181,7 +190,8 @@ CMD_SYS_SERIAL                    = 'sys_ser'
 CMD_SYS_USB_MODE                  = 'sys_usb'
 CMD_SYS_NOISE_REMOVAL             = 'sys_mnr'
 CMD_SYS_REBOOT                    = 'sys_rbt'
-CMD_SYS_CHANGE_LED                = 'sys_led'
+CMD_SYS_CHANGE_LED_BLINK          = 'sys_lbl'
+CMD_SYS_CHANGE_LED_BRIGHTNESS     = 'sys_lbh'
 CMD_SYS_CHANGE_NAME               = 'sys_nam'
 CMD_SYS_CHANGE_UNIT               = 'sys_uni'
 CMD_SYS_CHANGE_VALUE              = 'sys_val'
@@ -299,6 +309,8 @@ def cmd_to_str(cmd):
         return "CMD_PEDALBOARDS"
     if cmd == "pn":
         return "CMD_PEDALBOARD_NAME_SET"
+    if cmd == "pchng":
+        return "CMD_PEDALBOARD_CHANGE"
     if cmd == "pb":
         return "CMD_PEDALBOARD_LOAD"
     if cmd == "pr":
@@ -335,6 +347,8 @@ def cmd_to_str(cmd):
         return "CMD_TUNER_INPUT"
     if cmd == "restore":
         return "CMD_RESTORE"
+    if cmd == "screenshot":
+        return "CMD_SCREENSHOT"
     if cmd == "r":
         return "CMD_RESPONSE"
     if cmd == "c":
@@ -369,6 +383,12 @@ def cmd_to_str(cmd):
         return "CMD_SYS_GAIN"
     if cmd == "sys_ghp":
         return "CMD_SYS_HP_GAIN"
+    if cmd == "sys_cvi":
+        return "CMD_SYS_CVI_MODE"
+    if cmd == "sys_exp":
+        return "CMD_SYS_EXP_MODE"
+    if cmd == "sys_cvo":
+        return "CMD_SYS_CVO_MODE"
     if cmd == "sys_ngc":
         return "CMD_SYS_NG_CHANNEL"
     if cmd == "sys_ngt":
@@ -399,8 +419,10 @@ def cmd_to_str(cmd):
         return "CMD_SYS_NOISE_REMOVAL"
     if cmd == "sys_rbt":
         return "CMD_SYS_REBOOT"
-    if cmd == "sys_led":
-        return "CMD_SYS_CHANGE_LED"
+    if cmd == "sys_lbl":
+        return "CMD_SYS_CHANGE_LED_BLINK"
+    if cmd == "sys_lbh":
+        return "CMD_SYS_CHANGE_LED_BRIGHTNESS"
     if cmd == "sys_nam":
         return "CMD_SYS_CHANGE_NAME"
     if cmd == "sys_uni":
