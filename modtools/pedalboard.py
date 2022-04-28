@@ -237,6 +237,8 @@ def take_screenshot(bundle_path, html_dir, cache_dir, size):
                 pimg = Image.open(screenshot_path).convert('RGBA')
             except:
                 screenshot_path = None
+        else:
+            screenshot_path = None
         if screenshot_path is None:
             pimg = default_screenshot
         p['img'] = pimg
