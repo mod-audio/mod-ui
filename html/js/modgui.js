@@ -1651,6 +1651,7 @@ function GUI(effect, options) {
                 port['logarithmic'] = port.properties.indexOf("logarithmic") >= 0
                 port['toggled'    ] = port.properties.indexOf("toggled") >= 0
                 port['trigger'    ] = port.properties.indexOf("trigger") >= 0
+                port['steps'      ] = port.ranges.maximum - port.ranges.minimum + 1
 
                 inputs.push(port)
             }
@@ -1778,7 +1779,7 @@ var baseWidget = {
         } else if (port.properties.indexOf("integer") >= 0 && port.properties.indexOf("logarithmic") < 0) {
             portSteps = port.ranges.maximum - port.ranges.minimum
             while (portSteps > 300) {
-                portSteps /= 2
+                portSteps = Math.round(portSteps / 2)
             }
             dragPrecision = portSteps + 50 * Math.log10(1 + Math.pow(2, 1 / portSteps))
         } else {
