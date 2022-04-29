@@ -39,6 +39,7 @@ scp html/js/lib/slick/*.{css,gif} ${TARGET}:/usr/share/mod/html/js/lib/slick/
 scp html/js/lib/slick/*min.js     ${TARGET}:/usr/share/mod/html/js/lib/slick/
 scp html/js/lib/slick/fonts/*.*   ${TARGET}:/usr/share/mod/html/js/lib/slick/fonts/
 scp html/js/utils/*.js            ${TARGET}:/usr/share/mod/html/js/utils/
+scp html/img/*.png                ${TARGET}:/usr/share/mod/html/img/
 scp mod/*.py                      ${TARGET}:/usr/lib/python3.4/site-packages/mod/
 scp mod/communication/*.py        ${TARGET}:/usr/lib/python3.4/site-packages/mod/communication/
 scp modtools/*.py                 ${TARGET}:/usr/lib/python3.4/site-packages/modtools/
