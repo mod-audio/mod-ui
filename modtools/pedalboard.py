@@ -389,7 +389,11 @@ def take_screenshot(bundle_path, html_dir, cache_dir, size):
             source_i, source_s = c['source'].split('/')
             source = plugin_map[source_i]
             all_ports = source['data']['ports']['audio']['output'] + source['data']['ports']['midi']['output'] + source['data']['ports']['cv']['output']
-            port = next(p for p in all_ports if p['symbol'] == source_s)
+            try:
+                port = next(p for p in all_ports if p['symbol'] == source_s)
+            except StopIteration:
+                print("WARNING: broken plugin port source", c['source'])
+                continue
             conn = port['connector']
             source_connected_img = port['connected_img']
             source_pos = (source['x'] + conn[0][0] - port['offset'][0], source['y'] + conn[0][1] - port['offset'][1])
@@ -410,7 +414,11 @@ def take_screenshot(bundle_path, html_dir, cache_dir, size):
             target_i, target_s = c['target'].split('/')
             target = plugin_map[target_i]
             all_ports = target['data']['ports']['audio']['input'] + target['data']['ports']['midi']['input'] + target['data']['ports']['cv']['input']
-            port = next(p for p in all_ports if p['symbol'] == target_s)
+            try:
+                port = next(p for p in all_ports if p['symbol'] == target_s)
+            except StopIteration:
+                print("WARNING: broken plugin port target", c['target'])
+                continue
             conn = port['connector']
             target_connected_img = port['connected_img']
             target_pos = (target['x'] + conn[0][0] - port['offset'][0], target['y'] + conn[0][1] - port['offset'][1])
