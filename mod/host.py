@@ -6018,9 +6018,6 @@ _:b%i
                 value  = port['value']
                 equal  = pluginData['ports'][symbol] == value
 
-                if not was_aborted or equal:
-                    continue
-
                 if not equal:
                     pluginData['ports'][symbol] = value
                     self.msg_callback("param_set %s %s %f" % (instance, symbol, value))
