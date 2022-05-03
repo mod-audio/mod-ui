@@ -2289,7 +2289,7 @@ JqueryClass('film', baseWidget, {
 
         if (self.data('widgetRotation')) {
             rotation -= filmSteps/2
-            self.css('rotate', ''+rotation+'deg')
+            self.css('transform', 'rotate('+rotation+'deg)')
             return;
         }
 
