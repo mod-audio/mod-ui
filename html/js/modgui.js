@@ -2063,6 +2063,19 @@ JqueryClass('film', baseWidget, {
 
     getAndSetSize: function (dummy, callback) {
         var self = $(this)
+
+        // if widget provides mod-widget-rotation attribute, use it instead of film strip steps
+        var widgetRotation = parseInt(self.attr('mod-widget-rotation') || 0)
+        if (widgetRotation) {
+            self.data('filmSteps', widgetRotation)
+            self.data('widgetRotation', true)
+            callback()
+            if (! isSDK && desktop != null) {
+                desktop.pedalboard.pedalboard('scheduleAdapt', false)
+            }
+            return
+        }
+
         var binded = false
         var handled = false
 
@@ -2275,11 +2288,16 @@ JqueryClass('film', baseWidget, {
         var portSteps = self.data('portSteps')
         var rotation = Math.min(filmSteps, Math.max(0, Math.round(steps / portSteps * filmSteps)))
 
+        if (self.data('widgetRotation')) {
+            rotation -= filmSteps/2
+            self.css('rotate', ''+rotation+'deg')
+            return;
+        }
+
         var bgShift = rotation * -self.data('size')
         bgShift += 'px 0px'
         self.css('background-position', bgShift)
     }
-
 })
 
 JqueryClass('selectWidget', baseWidget, {
