@@ -923,7 +923,7 @@ class Host(object):
         callback(False)
 
     def addr_task_get_plugin_cv_port_op_mode(self, actuator_uri):
-        instance, port = actuator_uri.split(CV_OPTION)[1].rsplit("/", 1)
+        instance, port = actuator_uri.split(CV_OPTION,1)[1].rsplit("/", 1)
         instance_id = self.mapper.get_id_without_creating(instance)
         plugin_data = self.plugins[instance_id]
         plugin_info = get_plugin_info(plugin_data['uri'])
