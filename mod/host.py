@@ -1636,12 +1636,6 @@ class Host(object):
                         yield gen.Task(self.hmi_load_bank_pedalboard, bank_id, program)
                     except Exception as e:
                         logging.exception(e)
-                    #else:
-                        #if self.descriptor.get('hmi_set_pb_name', False):
-                            #try:
-                                #yield gen.Task(self.hmi.set_pedalboard_name, program)
-                            #except Exception as e:
-                                #logging.exception(e)
 
             elif channel == self.profile.get_midi_prgch_channel("snapshot"):
                 abort_catcher = self.abort_previous_loading_progress("midi_program_change")
