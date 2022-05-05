@@ -67,9 +67,18 @@ def rgbtoi(r, g, b):
     return (r << 16) + (g << 8) + b
 
 
-def detect_first_column(img, scan, num_ports, rtol=False):
+def detect_first_column(uri, img, scan, num_ports, rtol=False):
     if num_ports == 0:
         return []
+
+    # these are non-typical modguis, our detection fails spetacularly for them :/
+    # force hardcoded positions for now, nasty but works
+    if uri == 'http://moddevices.com/plugins/mod-devel/cabsim-bass':
+        return [(400, 107) if rtol else (2, 107)]
+    if uri == 'http://moddevices.com/plugins/mod-devel/cabsim-modern':
+        return [(416, 102) if rtol else (12, 102)]
+    if uri == 'http://moddevices.com/plugins/forward-audio/marsh-1960-cabsim':
+        return [(455, 89) if rtol else (20, 89)]
 
     was_transparent = True
     found = False
@@ -87,11 +96,14 @@ def detect_first_column(img, scan, num_ports, rtol=False):
         if found:
             break
     else:
+        # if we failed and this is a single port, use the default position
+        if num_ports == 1:
+            return [(img.size[0]-4, 100) if rtol else (0, 100)]
         return []
 
     # in case pixel detection failed and we need more ports, add them at the top
     for i in range(len(ret), num_ports*2):
-        ret.insert(0, (ret[0][0], 0))
+        ret.insert(0, (ret[0][0], 100))
 
     return ret
 
@@ -250,7 +262,7 @@ def take_screenshot(bundle_path, html_dir, cache_dir, size):
             # detect ports and save/read
             version = '{0}.{1}'.format(data['version'], data.get('release', 0)).replace('.', '_')
             encoded_uri = base64.b64encode(p['uri'].encode()).decode()
-            filename = os.path.join(cache_dir, '{0}_{1}_{2}'.format(__version__.replace('.', '_'), encoded_uri, version))
+            filename = os.path.join(cache_dir, '{0}_{1}_{2}_v2'.format(__version__.replace('.', '_'), encoded_uri, version))
             validcache = False
             if os.path.isfile(filename):
                 with open(filename, 'r') as fh:
@@ -262,8 +274,8 @@ def take_screenshot(bundle_path, html_dir, cache_dir, size):
                         validcache = 'in_ports' in columns and 'out_ports' in columns
             if not validcache:
                 columns = {
-                    'in_ports': tuple(tuple(c) for c in detect_first_column(pimg, pimg.size[0], len(in_ports))),
-                    'out_ports': tuple(tuple(c) for c in detect_first_column(pimg, pimg.size[0], len(out_ports), rtol=True)),
+                    'in_ports': tuple(tuple(c) for c in detect_first_column(p['uri'], pimg, pimg.size[0], len(in_ports))),
+                    'out_ports': tuple(tuple(c) for c in detect_first_column(p['uri'], pimg, pimg.size[0], len(out_ports), rtol=True)),
                 }
                 with open(filename, 'w') as fh:
                     fh.write(json.dumps(columns))
