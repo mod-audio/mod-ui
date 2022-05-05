@@ -79,6 +79,8 @@ def detect_first_column(uri, img, scan, num_ports, rtol=False):
         return [(416, 102) if rtol else (12, 102)]
     if uri == 'http://moddevices.com/plugins/forward-audio/marsh-1960-cabsim':
         return [(455, 89) if rtol else (20, 89)]
+    if uri == 'http://moddevices.com/plugins/forward-audio/mega-california-rectifier':
+        return [(455, 89) if rtol else (20, 89)]
 
     was_transparent = True
     found = False
