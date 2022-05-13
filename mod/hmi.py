@@ -214,8 +214,8 @@ class HMI(object):
                             self.process_queue()
 
                     if LOG >= 1:
-                        logging.debug('[hmi] received <- %s | %s',
-                                      data, cmd_to_str(data.split(b" ",1)[0].decode("utf-8", errors="ignore")))
+                        logging.debug('[hmi] received <- %s | %s', data,
+                                      cmd_to_str((data.split(b' ',1)[0] if b' ' in data else data[:-1]).decode("utf-8", errors="ignore")))
 
                     self.handling_response = True
                     msg.run_cmd(_callback)
