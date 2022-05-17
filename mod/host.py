@@ -5948,8 +5948,8 @@ _:b%i
         if not os.path.exists(self.pedalboard_path):
             self.save_state_manifest(self.pedalboard_path, titlesym)
             self.save_state_addressings(self.pedalboard_path)
-            self.save_state_snapshots(self.pedalboard_path)
 
+        self.save_state_snapshots(self.pedalboard_path)
         self.save_state_mainfile(self.pedalboard_path, self.pedalboard_name, titlesym)
         self.send_notmodified("state_save {}".format(self.pedalboard_path), host_callback)
 
