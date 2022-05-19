@@ -353,7 +353,8 @@ class Session(object):
 
     @gen.coroutine
     def hmi_set_pb_and_ss_name(self, pbname):
-        yield gen.Task(self.hmi.set_pedalboard_name, pbname)
+        if self.host.descriptor.get('hmi_set_pb_name', False):
+            yield gen.Task(self.hmi.set_pedalboard_name, pbname)
 
         if self.host.descriptor.get('hmi_set_ss_name', False):
             ssname = self.host.snapshot_name() or DEFAULT_SNAPSHOT_NAME
@@ -407,11 +408,13 @@ class Session(object):
         self.host.send_notmodified("feature_enable processing 0")
         title = self.host.load(bundlepath, isDefault)
         self.host.send_notmodified("feature_enable processing 1")
+
         if isDefault:
             bundlepath = ""
             title = ""
 
-        if self.hmi.initialized and self.host.descriptor.get('hmi_set_pb_name', False):
+        if self.hmi.initialized and (self.host.descriptor.get('hmi_set_pb_name', False) or
+                                     self.host.descriptor.get('hmi_set_ss_name', False)):
             self.hmi_set_pb_and_ss_name(title or UNTITLED_PEDALBOARD_NAME)
 
         self.pedalboard_changed_callback(True, bundlepath, title)
@@ -426,7 +429,7 @@ class Session(object):
             callback(resp)
 
         def reset_host(_):
-            self.host.reset(host_callback)
+            self.host.reset(None, host_callback)
 
         if self.hmi.initialized:
             def set_pb_name(_):

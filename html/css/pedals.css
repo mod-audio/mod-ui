@@ -399,6 +399,52 @@ body > .mod-settings.mod-window-visible {
     opacity:.3;
 }
 
+.mod-pedal-settings .mod-knob .mod-knob-image.mod-knob-image-steps-3 {
+    background-image:url(../img/knob_steps_3.png);
+}
+.mod-pedal-settings .mod-knob .mod-knob-image.mod-knob-image-steps-4 {
+    background-image:url(../img/knob_steps_4.png);
+}
+.mod-pedal-settings .mod-knob .mod-knob-image.mod-knob-image-steps-5 {
+    background-image:url(../img/knob_steps_5.png);
+}
+.mod-pedal-settings .mod-knob .mod-knob-image.mod-knob-image-steps-6 {
+    background-image:url(../img/knob_steps_6.png);
+}
+.mod-pedal-settings .mod-knob .mod-knob-image.mod-knob-image-steps-7 {
+    background-image:url(../img/knob_steps_7.png);
+}
+.mod-pedal-settings .mod-knob .mod-knob-image.mod-knob-image-steps-8 {
+    background-image:url(../img/knob_steps_8.png);
+}
+.mod-pedal-settings .mod-knob .mod-knob-image.mod-knob-image-steps-9 {
+    background-image:url(../img/knob_steps_9.png);
+}
+.mod-pedal-settings .mod-knob .mod-knob-image.mod-knob-image-steps-10 {
+    background-image:url(../img/knob_steps_10.png);
+}
+.mod-pedal-settings .mod-knob .mod-knob-image.mod-knob-image-steps-11 {
+    background-image:url(../img/knob_steps_11.png);
+}
+.mod-pedal-settings .mod-knob .mod-knob-image.mod-knob-image-steps-12 {
+    background-image:url(../img/knob_steps_12.png);
+}
+.mod-pedal-settings .mod-knob .mod-knob-image.mod-knob-image-steps-13 {
+    background-image:url(../img/knob_steps_13.png);
+}
+.mod-pedal-settings .mod-knob .mod-knob-image.mod-knob-image-steps-14 {
+    background-image:url(../img/knob_steps_14.png);
+}
+.mod-pedal-settings .mod-knob .mod-knob-image.mod-knob-image-steps-15 {
+    background-image:url(../img/knob_steps_15.png);
+}
+.mod-pedal-settings .mod-knob .mod-knob-image.mod-knob-image-steps-16 {
+    background-image:url(../img/knob_steps_16.png);
+}
+.mod-pedal-settings .mod-knob .mod-knob-image.mod-knob-image-steps-17 {
+    background-image:url(../img/knob_steps_17.png);
+}
+
 /* = ENUMERATED
 ================================================ */
 .mod-pedal-settings .mod-enumerated {
@@ -412,7 +458,7 @@ body > .mod-settings.mod-window-visible {
 
 .mod-presets,
 .mod-file-list {
-    width: 320px !important;
+    width: 322px !important;
 }
 .radio-preset {
     height: 9px !important;
@@ -500,7 +546,7 @@ body > .mod-settings.mod-window-visible {
     margin:0 2px 2px 0;
     position:relative;
     text-align:center;
-    width:320px !important;
+    width:322px !important;
 }
 .mod-pedal-settings .mod-string > span.mod-string-title {
     color:white;

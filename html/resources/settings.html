@@ -74,7 +74,7 @@
             {{/string}}
             {{#control}}
             {{^toggled}}
-            <div class="mod-knob">
+            <div class="mod-knob" title="{{comment}}">
                 <span class="mod-knob-title">{{shortName}}</span>
                 <span class="mod-knob-min-value" mod-role="input-control-minimum" mod-parameter-uri="{{uri}}"></span>
                 <span class="mod-knob-max-value" mod-role="input-control-maximum" mod-parameter-uri="{{uri}}"></span>
@@ -83,7 +83,7 @@
             </div>
             {{/toggled}}
             {{#toggled}}
-            <div class="mod-switch">
+            <div class="mod-switch" title="{{comment}}">
                 <span class="mod-switch-title">{{shortName}}</span>
                 <div class="mod-switch-image" mod-role="input-parameter" mod-parameter-uri="{{uri}}" mod-widget="film"></div>
             </div>
@@ -107,17 +107,22 @@
             {{^enumeration}}
                 {{^trigger}}
                     {{^toggled}}
-                    <div class="mod-knob">
+                    <div class="mod-knob" title="{{comment}}">
                         <span class="mod-knob-title">{{shortName}}</span>
                         <span class="mod-knob-min-value" mod-role="input-control-minimum" mod-port-symbol="{{symbol}}"></span>
                         <span class="mod-knob-max-value" mod-role="input-control-maximum" mod-port-symbol="{{symbol}}"></span>
                         <span class="mod-knob-current-value" mod-role="input-control-value" mod-port-symbol="{{symbol}}"></span>
+                        {{#integer}}
+                        <div class="mod-knob-image mod-knob-image-steps-{{steps}}" mod-role="input-control-port" mod-port-symbol="{{symbol}}" mod-widget="film"></div>
+                        {{/integer}}
+                        {{^integer}}
                         <div class="mod-knob-image" mod-role="input-control-port" mod-port-symbol="{{symbol}}" mod-widget="film"></div>
+                        {{/integer}}
                         <div class="mod-address" mod-role="input-control-address" mod-port-symbol="{{symbol}}"></div>
                     </div>
                     {{/toggled}}
                     {{#toggled}}
-                    <div class="mod-switch">
+                    <div class="mod-switch" title="{{comment}}">
                         <span class="mod-switch-title">{{shortName}}</span>
                         <div class="mod-switch-image" mod-role="input-control-port" mod-port-symbol="{{symbol}}" mod-widget="film"></div>
                         <div class="mod-address" mod-role="input-control-address" mod-port-symbol="{{symbol}}"></div>
@@ -125,7 +130,7 @@
                     {{/toggled}}
                 {{/trigger}}
                 {{#trigger}}
-                <div class="mod-switch">
+                <div class="mod-switch" title="{{comment}}">
                     <span class="mod-switch-title">{{shortName}}</span>
                     <div class="mod-footswitch-image" mod-role="input-control-port" mod-port-symbol="{{symbol}}" mod-widget="film"></div>
                     <div class="mod-address" mod-role="input-control-address" mod-port-symbol="{{symbol}}"></div>

@@ -38,11 +38,11 @@ function PedalboardSearcher(opt) {
         })
 
     }
-    this.lastKeyUp = null
+    this.lastKeyTimeout = null
     this.search = function () {
-        if (self.lastKeyUp != null) {
-            clearTimeout(self.lastKeyUp)
-            self.lastKeyUp = null
+        if (self.lastKeyTimeout != null) {
+            clearTimeout(self.lastKeyTimeout)
+            self.lastKeyTimeout = null
         }
         var query = self.searchbox.val()
         var local = self.mode == 'installed'
@@ -65,14 +65,14 @@ function PedalboardSearcher(opt) {
     }
 
     this.searchbox.keydown(function (e) {
-        if (e.keyCode == 13) { //detect enter
+        if (e.keyCode == 13) { // detect enter
             self.search()
             return false
-        } else if (e.keyCode == 8 || e.keyCode == 46) { //detect delete and backspace
-            if (self.lastKeyUp != null) {
-                clearTimeout(self.lastKeyUp)
+        } else if (e.keyCode == 8 || e.keyCode == 46) { // detect delete and backspace
+            if (self.lastKeyTimeout != null) {
+                clearTimeout(self.lastKeyTimeout)
             }
-            self.lastKeyUp = setTimeout(function () {
+            self.lastKeyTimeout = setTimeout(function () {
                 self.search()
             }, 400)
         }
@@ -81,19 +81,28 @@ function PedalboardSearcher(opt) {
         if (e.which == 13) {
             return
         }
-        if (self.lastKeyUp != null) {
-            clearTimeout(self.lastKeyUp)
+        if (self.lastKeyTimeout != null) {
+            clearTimeout(self.lastKeyTimeout)
         }
-        self.lastKeyUp = setTimeout(function () {
+        self.lastKeyTimeout = setTimeout(function () {
             self.search()
         }, 400)
     })
+    this.searchbox.on('paste', function(e) {
+        if (self.lastKeyTimeout != null) {
+            clearTimeout(self.lastKeyTimeout)
+        }
+        self.lastKeyTimeout = setTimeout(function () {
+            self.search()
+        }, 400);
+    })
 
-    if (this.searchbutton)
+    if (this.searchbutton) {
         this.searchbutton.click(function () {
             self.search()
             return false
         })
+    }
 }
 
 

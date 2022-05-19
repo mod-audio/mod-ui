@@ -64,28 +64,40 @@ JqueryClass('cloudPluginBox', {
 
         self.data('usingLabs', self.find('input:radio[name=plugins-source]:checked').val() === 'labs')
 
+        var lastKeyTimeout = null
         searchbox.keydown(function (e) {
-            if (e.keyCode == 13) { //detect enter
+            if (e.keyCode == 13) { // detect enter
+                if (lastKeyTimeout != null) {
+                    clearTimeout(lastKeyTimeout)
+                    lastKeyTimeout = null
+                }
                 self.cloudPluginBox('search')
                 return false
             }
-            else if (e.keyCode == 8 || e.keyCode == 46) { //detect delete and backspace
-                setTimeout(function () {
+            else if (e.keyCode == 8 || e.keyCode == 46) { // detect delete and backspace
+                if (lastKeyTimeout != null) {
+                    clearTimeout(lastKeyTimeout)
+                }
+                lastKeyTimeout = setTimeout(function () {
                     self.cloudPluginBox('search')
                 }, 400);
             }
         })
-        var lastKeyUp = null
         searchbox.keypress(function (e) { // keypress won't detect delete and backspace but will only allow inputable keys
             if (e.which == 13)
                 return
-            if (lastKeyUp != null) {
-                clearTimeout(lastKeyUp)
-                lastKeyUp = null
+            if (lastKeyTimeout != null) {
+                clearTimeout(lastKeyTimeout)
             }
-            if (e.which == 13)
-                return
-            lastKeyUp = setTimeout(function () {
+            lastKeyTimeout = setTimeout(function () {
+                self.cloudPluginBox('search')
+            }, 400);
+        })
+        searchbox.on('paste', function(e) {
+            if (lastKeyTimeout != null) {
+                clearTimeout(lastKeyTimeout)
+            }
+            lastKeyTimeout = setTimeout(function () {
                 self.cloudPluginBox('search')
             }, 400);
         })

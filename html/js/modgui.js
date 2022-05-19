@@ -1651,6 +1651,7 @@ function GUI(effect, options) {
                 port['logarithmic'] = port.properties.indexOf("logarithmic") >= 0
                 port['toggled'    ] = port.properties.indexOf("toggled") >= 0
                 port['trigger'    ] = port.properties.indexOf("trigger") >= 0
+                port['steps'      ] = port.ranges.maximum - port.ranges.minimum + 1
 
                 inputs.push(port)
             }
@@ -1778,7 +1779,7 @@ var baseWidget = {
         } else if (port.properties.indexOf("integer") >= 0 && port.properties.indexOf("logarithmic") < 0) {
             portSteps = port.ranges.maximum - port.ranges.minimum
             while (portSteps > 300) {
-                portSteps /= 2
+                portSteps = Math.round(portSteps / 2)
             }
             dragPrecision = portSteps + 50 * Math.log10(1 + Math.pow(2, 1 / portSteps))
         } else {
@@ -2062,6 +2063,19 @@ JqueryClass('film', baseWidget, {
 
     getAndSetSize: function (dummy, callback) {
         var self = $(this)
+
+        // if widget provides mod-widget-rotation attribute, use it instead of film strip steps
+        var widgetRotation = parseInt(self.attr('mod-widget-rotation') || 0)
+        if (widgetRotation) {
+            self.data('filmSteps', widgetRotation)
+            self.data('widgetRotation', true)
+            callback()
+            if (! isSDK && desktop != null) {
+                desktop.pedalboard.pedalboard('scheduleAdapt', false)
+            }
+            return
+        }
+
         var binded = false
         var handled = false
 
@@ -2274,11 +2288,16 @@ JqueryClass('film', baseWidget, {
         var portSteps = self.data('portSteps')
         var rotation = Math.min(filmSteps, Math.max(0, Math.round(steps / portSteps * filmSteps)))
 
+        if (self.data('widgetRotation')) {
+            rotation -= filmSteps/2
+            self.css('transform', 'rotate('+rotation+'deg)')
+            return;
+        }
+
         var bgShift = rotation * -self.data('size')
         bgShift += 'px 0px'
         self.css('background-position', bgShift)
     }
-
 })
 
 JqueryClass('selectWidget', baseWidget, {

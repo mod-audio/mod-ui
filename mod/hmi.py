@@ -31,6 +31,7 @@ from mod.mod_protocol import (
     CMD_CONTROL_ADD,
     CMD_CONTROL_REMOVE,
     CMD_CONTROL_SET,
+    CMD_PEDALBOARD_CHANGE,
     CMD_PEDALBOARD_CLEAR,
     CMD_PEDALBOARD_NAME_SET,
     CMD_SNAPSHOT_NAME_SET,
@@ -214,8 +215,8 @@ class HMI(object):
                             self.process_queue()
 
                     if LOG >= 1:
-                        logging.debug('[hmi] received <- %s | %s',
-                                      data, cmd_to_str(data.split(b" ",1)[0].decode("utf-8", errors="ignore")))
+                        logging.debug('[hmi] received <- %s | %s', data,
+                                      cmd_to_str((data.split(b' ',1)[0] if b' ' in data else data[:-1]).decode("utf-8", errors="ignore")))
 
                     self.handling_response = True
                     msg.run_cmd(_callback)
@@ -542,6 +543,9 @@ class HMI(object):
     # FIXME this message should be generic, most likely
     def boot(self, bootdata, callback, datatype='int'):
         self.send("boot {}".format(bootdata), callback, datatype)
+
+    def set_pedalboard_index(self, index, callback):
+        self.send('{} {}'.format(CMD_PEDALBOARD_CHANGE, index), callback)
 
     def set_pedalboard_name(self, name, callback):
         self.send('{} {}'.format(CMD_PEDALBOARD_NAME_SET, normalize_for_hw(name)), callback)

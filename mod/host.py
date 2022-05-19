@@ -923,7 +923,7 @@ class Host(object):
         callback(False)
 
     def addr_task_get_plugin_cv_port_op_mode(self, actuator_uri):
-        instance, port = actuator_uri.split(CV_OPTION)[1].rsplit("/", 1)
+        instance, port = actuator_uri.split(CV_OPTION,1)[1].rsplit("/", 1)
         instance_id = self.mapper.get_id_without_creating(instance)
         plugin_data = self.plugins[instance_id]
         plugin_info = get_plugin_info(plugin_data['uri'])
@@ -1623,8 +1623,8 @@ class Host(object):
 
             if channel == self.profile.get_midi_prgch_channel("pedalboard"):
                 bank_id = self.bank_id
-                if self.bank_id > 0 and self.bank_id <= len(self.banks):
-                    pedalboards = self.banks[self.bank_id-1]['pedalboards']
+                if bank_id > 0 and bank_id <= len(self.banks):
+                    pedalboards = self.banks[bank_id-1]['pedalboards']
                 else:
                     pedalboards = self.allpedalboards
 
@@ -1632,7 +1632,7 @@ class Host(object):
                     while self.next_hmi_pedalboard_loading:
                         yield gen.sleep(0.25)
                     try:
-                        yield gen.Task(self.hmi_load_bank_pedalboard, bank_id, program)
+                        yield gen.Task(self.hmi_load_bank_pedalboard, bank_id, program, from_hmi=False)
                     except Exception as e:
                         logging.exception(e)
 
@@ -1642,6 +1642,13 @@ class Host(object):
                     yield gen.Task(self.snapshot_load_gen_helper, program, False, abort_catcher)
                 except Exception as e:
                     logging.exception(e)
+                else:
+                    if self.descriptor.get('hmi_set_ss_name', False) and self.current_pedalboard_snapshot_id == program:
+                        name = self.snapshot_name() or DEFAULT_SNAPSHOT_NAME
+                        try:
+                            yield gen.Task(self.hmi.set_snapshot_name, program, name)
+                        except Exception as e:
+                            logging.exception(e)
 
         elif cmd == "transport":
             msg_data = data.split(" ",3)
@@ -2047,7 +2054,9 @@ class Host(object):
                                                                      parameter[0]))
 
                 if crashed:
-                    self.send_notmodified("patch_set %d %s \"%s\"" % (instance_id, paramuri, parameter[0]))
+                    self.send_notmodified("patch_set %d %s \"%s\"" % (instance_id,
+                                                                      paramuri,
+                                                                      str(parameter[0]).replace('"','\\"')))
 
             if crashed:
                 for symbol, data in pluginData['midiCCs'].items():
@@ -2134,7 +2143,7 @@ class Host(object):
     # -----------------------------------------------------------------------------------------------------------------
     # Host stuff - reset, add, remove
 
-    def reset(self, callback):
+    def reset(self, bank_id, callback):
         def host_callback(ok):
             self.msg_callback("remove :all")
             if os.path.exists(PEDALBOARD_TMP_DIR):
@@ -2142,7 +2151,7 @@ class Host(object):
             os.makedirs(PEDALBOARD_TMP_DIR)
             callback(ok)
 
-        self.bank_id = 0
+        self.bank_id = bank_id if bank_id is not None else 0
         self.connections = []
         self.addressings.clear()
         self.mapper.clear()
@@ -2157,7 +2166,9 @@ class Host(object):
         self.pedalboard_size     = [0,0]
         self.pedalboard_version  = 0
 
-        save_last_bank_and_pedalboard(0, "")
+        if bank_id is None:
+            save_last_bank_and_pedalboard(0, "")
+
         self.send_notmodified("remove -1", host_callback, datatype='boolean')
 
     def paramhmi_set(self, instance, portsymbol, value, callback):
@@ -2570,20 +2581,20 @@ class Host(object):
         pluginData['ports'][symbol] = value
         self.send_modified("param_set %d %s %f" % (instance_id, symbol, value), callback, datatype='boolean')
 
-    def patch_get(self, instance, uri, callback):
+    def patch_get(self, instance, paramuri, callback):
         instance_id = self.mapper.get_id_without_creating(instance)
 
-        self.send_modified("patch_get %d %s" % (instance_id, uri), callback, datatype='boolean')
+        self.send_modified("patch_get %d %s" % (instance_id, paramuri), callback, datatype='boolean')
 
-    def patch_set(self, instance, uri, value, callback):
+    def patch_set(self, instance, paramuri, value, callback):
         instance_id = self.mapper.get_id_without_creating(instance)
         pluginData  = self.plugins[instance_id]
-        parameter   = pluginData['parameters'].get(uri, None)
+        parameter   = pluginData['parameters'].get(paramuri, None)
 
         if parameter is not None:
             parameter[0] = value
 
-        self.send_modified("patch_set %d %s \"%s\"" % (instance_id, uri, str(value).replace('"','\\"')),
+        self.send_modified("patch_set %d %s \"%s\"" % (instance_id, paramuri, str(value).replace('"','\\"')),
                            callback, datatype='boolean')
         return parameter is not None
 
@@ -2643,7 +2654,7 @@ class Host(object):
             if ok:
                 self.load(bundlepath)
             shutil.rmtree(bundlepath)
-        self.reset(load)
+        self.reset(None, load)
 
     # -----------------------------------------------------------------------------------------------------------------
     # Host stuff - plugin presets
@@ -5374,7 +5385,7 @@ _:b%i
         else:
             print("ERROR: Delayed loading of %i:%i failed!" % self.next_hmi_pedalboard_to_load)
 
-    def hmi_load_bank_pedalboard(self, bank_id, pedalboard_id, callback):
+    def hmi_load_bank_pedalboard(self, bank_id, pedalboard_id, callback, from_hmi=True):
         logging.debug("hmi load bank pedalboard")
 
         if bank_id < 0 or bank_id > len(self.banks):
@@ -5431,7 +5442,7 @@ _:b%i
 
             # Check if there's a pending pedalboard to be loaded
             if next_pedalboard != next_pb_to_load:
-                self.hmi_load_bank_pedalboard(next_pedalboard[0], next_pedalboard[1], self.load_different_callback)
+                self.hmi_load_bank_pedalboard(next_pedalboard[0], next_pedalboard[1], self.load_different_callback, from_hmi)
             elif self.descriptor.get("hmi_bank_navigation", False):
                 self.setNavigateWithFootswitches(self.isBankFootswitchNavigationOn(), self.bank_config_enabled_callback)
 
@@ -5451,11 +5462,13 @@ _:b%i
 
         def pb_host_loaded_callback(_):
             print("NOTE: Loading of %i:%i finished (1/2)" % next_pb_to_load)
-            # Dummy HMI call, just to receive callback when all other HMI messages finish
-            self.hmi.ping(hmi_ready_callback)
+            # HMI call, works to notify of index change and also to know when all other HMI messages finish
+            if from_hmi:
+                self.hmi.ping(hmi_ready_callback)
+            else:
+                self.hmi.set_pedalboard_index(pedalboard_id, hmi_ready_callback)
 
         def load_callback(_):
-            self.bank_id = bank_id
             self.load(bundlepath, False, abort_catcher)
             # Dummy host call, just to receive callback when all other host messages finish
             self.send_notmodified("cpu_load", pb_host_loaded_callback, datatype='float_structure')
@@ -5467,7 +5480,7 @@ _:b%i
             self.processing_pending_flag = True
             self.send_notmodified("feature_enable processing 0")
 
-        self.reset(hmi_clear_callback)
+        self.reset(bank_id, hmi_clear_callback)
 
     # -----------------------------------------------------------------------------------------------------------------
 
@@ -5935,8 +5948,8 @@ _:b%i
         if not os.path.exists(self.pedalboard_path):
             self.save_state_manifest(self.pedalboard_path, titlesym)
             self.save_state_addressings(self.pedalboard_path)
-            self.save_state_snapshots(self.pedalboard_path)
 
+        self.save_state_snapshots(self.pedalboard_path)
         self.save_state_mainfile(self.pedalboard_path, self.pedalboard_name, titlesym)
         self.send_notmodified("state_save {}".format(self.pedalboard_path), host_callback)
 
@@ -6004,9 +6017,6 @@ _:b%i
                 symbol = port['symbol']
                 value  = port['value']
                 equal  = pluginData['ports'][symbol] == value
-
-                if not was_aborted or equal:
-                    continue
 
                 if not equal:
                     pluginData['ports'][symbol] = value
