@@ -79,6 +79,8 @@ def detect_first_column(uri, img, scan, num_ports, rtol=False):
         return [(416, 102) if rtol else (12, 102)]
     if uri == 'http://moddevices.com/plugins/forward-audio/marsh-1960-cabsim':
         return [(455, 89) if rtol else (20, 89)]
+    if uri == 'http://moddevices.com/plugins/forward-audio/mega-california-rectifier':
+        return [(455, 89) if rtol else (20, 89)]
 
     was_transparent = True
     found = False
@@ -389,7 +391,11 @@ def take_screenshot(bundle_path, html_dir, cache_dir, size):
             source_i, source_s = c['source'].split('/')
             source = plugin_map[source_i]
             all_ports = source['data']['ports']['audio']['output'] + source['data']['ports']['midi']['output'] + source['data']['ports']['cv']['output']
-            port = next(p for p in all_ports if p['symbol'] == source_s)
+            try:
+                port = next(p for p in all_ports if p['symbol'] == source_s)
+            except StopIteration:
+                print("WARNING: broken plugin port source", c['source'])
+                continue
             conn = port['connector']
             source_connected_img = port['connected_img']
             source_pos = (source['x'] + conn[0][0] - port['offset'][0], source['y'] + conn[0][1] - port['offset'][1])
@@ -410,7 +416,11 @@ def take_screenshot(bundle_path, html_dir, cache_dir, size):
             target_i, target_s = c['target'].split('/')
             target = plugin_map[target_i]
             all_ports = target['data']['ports']['audio']['input'] + target['data']['ports']['midi']['input'] + target['data']['ports']['cv']['input']
-            port = next(p for p in all_ports if p['symbol'] == target_s)
+            try:
+                port = next(p for p in all_ports if p['symbol'] == target_s)
+            except StopIteration:
+                print("WARNING: broken plugin port target", c['target'])
+                continue
             conn = port['connector']
             target_connected_img = port['connected_img']
             target_pos = (target['x'] + conn[0][0] - port['offset'][0], target['y'] + conn[0][1] - port['offset'][1])
