@@ -167,6 +167,10 @@ JqueryClass('pedalboard', {
             showPluginInfo: function (pluginData) {
             },
 
+            // Show the plugin's native UI, in an external desktop window
+            showExternalUI: function (instance) {
+            },
+
             // Sets the size of the pedalboard
             windowSize: function (width, height) {},
 
@@ -1496,6 +1500,11 @@ JqueryClass('pedalboard', {
             })
 
             var actions = $('<div>').addClass('ignore-arrive').addClass('mod-actions').appendTo(icon)
+            $('<div>').addClass('mod-external-ui').click(function () {
+                self.pedalboard('finishConnection')
+                self.data('showExternalUI')(instance)
+                return false
+            }).appendTo(actions)
             $('<div>').addClass('mod-information').click(function () {
                 self.pedalboard('finishConnection')
                 self.data('showPluginInfo')(pluginData)

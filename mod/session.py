@@ -344,6 +344,10 @@ class Session(object):
     def ws_pedalboard_size(self, width, height):
         self.host.set_pedalboard_size(width, height)
 
+    def ws_show_external_ui(self, instance):
+        instance_id = self.host.mapper.get_id_without_creating(instance)
+        self.host.send_notmodified("show_external_ui %d" % (instance_id,))
+
     # -----------------------------------------------------------------------------------------------------------------
     # web session helpers
 
