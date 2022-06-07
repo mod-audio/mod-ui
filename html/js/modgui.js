@@ -1770,21 +1770,25 @@ var baseWidget = {
 
         var port = options.port
 
-        var portSteps, dragPrecision
+        var portSteps, dragPrecision, isLinear
         if (port.properties.indexOf("toggled") >= 0) {
             portSteps = dragPrecision = 1
+            isLinear = false
         } else if (port.properties.indexOf("enumeration") >= 0 && port.scalePoints.length >= 2) {
             portSteps = port.scalePoints.length - 1
             dragPrecision = portSteps * 8
+            isLinear = false
         } else if (port.properties.indexOf("integer") >= 0 && port.properties.indexOf("logarithmic") < 0) {
             portSteps = port.ranges.maximum - port.ranges.minimum
             while (portSteps > 300) {
                 portSteps = Math.round(portSteps / 2)
             }
             dragPrecision = portSteps + 50 * Math.log10(1 + Math.pow(2, 1 / portSteps))
+            isLinear = false
         } else {
             portSteps = self.data('filmSteps')
             dragPrecision = portSteps / 2
+            isLinear = true
         }
 
         if (port.rangeSteps && port.rangeSteps >= 2) {
@@ -1803,6 +1807,7 @@ var baseWidget = {
         self.data('logarithmic',  port.properties.indexOf("logarithmic") >= 0)
         self.data('toggled',      port.properties.indexOf("toggled") >= 0)
         self.data('trigger',      port.properties.indexOf("trigger") >= 0)
+        self.data('linear',       isLinear)
         self.data('scalePoints',  port.scalePoints)
 
         if (port.properties.indexOf("logarithmic") >= 0) {
@@ -2208,10 +2213,11 @@ JqueryClass('film', baseWidget, {
         var self = $(this)
         var portSteps = self.data('portSteps')
         var position = self.data('position')
+        var step = self.data('widgetRotation') && self.data('linear') ? 4 : 1
 
         if (e.shiftKey) {
             // going down
-            position -= 1
+            position -= step
             if (position < 0) {
                 if (self.data('enumeration') || self.data('toggled')) {
                     position = portSteps
@@ -2221,7 +2227,7 @@ JqueryClass('film', baseWidget, {
             }
         } else {
             // going up
-            position += 1
+            position += step
             if (position > portSteps) {
                 if (self.data('enumeration') || self.data('toggled')) {
                     position = 0
@@ -2242,9 +2248,10 @@ JqueryClass('film', baseWidget, {
         var portSteps = self.data("portSteps")
         var wheelStep = self.data("wheelStep")
         var delta = ('wheelDelta' in e.originalEvent) ? e.originalEvent.wheelDelta : -wheelStep * e.originalEvent.detail;
+        var mult = self.data('widgetRotation') && self.data('linear') ? 4 : 1
         delta += self.data('wheelBuffer')
         self.data('wheelBuffer', delta % wheelStep)
-        var diff = (delta / wheelStep) * self.data("stepDivider")
+        var diff = (delta / wheelStep) * self.data("stepDivider") * mult
         if (diff == 0.0) {
             return
         }
@@ -2283,6 +2290,10 @@ JqueryClass('film', baseWidget, {
 
     setRotation: function (steps) {
         var self = $(this)
+
+        if (self.data('integer')) {
+            steps = Math.round(steps)
+        }
 
         var filmSteps = self.data('filmSteps')
         var portSteps = self.data('portSteps')
