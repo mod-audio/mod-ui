@@ -34,6 +34,12 @@
 #include "lv2/lv2plug.in/ns/ext/state/state.h"
 #include "lv2/lv2plug.in/ns/extensions/units/units.h"
 
+#define WITH_EXTERNAL_UI_SUPPORT
+
+#ifdef WITH_EXTERNAL_UI_SUPPORT
+#include <lv2/lv2plug.in/ns/extensions/ui/ui.h>
+#endif
+
 #include "sha1/sha1.h"
 
 #include <algorithm>
@@ -118,7 +124,7 @@ static const bool kAllowRegularCV = getenv("MOD_UI_ALLOW_REGULAR_CV") != nullptr
     false,                                           \
     nullptr, nullptr,                                \
     nullptr, nullptr, nullptr, nullptr, nullptr,     \
-    nullptr, nullptr, 0, 0, 0, 0, 0,                 \
+    nullptr, nullptr, 0, 0, 0, 0, 0, false,          \
     nullptr, nullptr,                                \
     { nullptr, nullptr, nullptr },                   \
     nullptr,                                         \
@@ -253,6 +259,7 @@ struct NamespaceDefinitions {
     LilvNode* const lv2core_default;
     LilvNode* const lv2core_minimum;
     LilvNode* const lv2core_maximum;
+    LilvNode* const lv2core_extensionData;
     LilvNode* const mod_brand;
     LilvNode* const mod_label;
     LilvNode* const mod_default;
@@ -316,6 +323,7 @@ struct NamespaceDefinitions {
           lv2core_default          (lilv_new_uri(W, LILV_NS_LV2    "default"           )),
           lv2core_minimum          (lilv_new_uri(W, LILV_NS_LV2    "minimum"           )),
           lv2core_maximum          (lilv_new_uri(W, LILV_NS_LV2    "maximum"           )),
+          lv2core_extensionData    (lilv_new_uri(W, LILV_NS_LV2    "extensionData"     )),
           mod_brand                (lilv_new_uri(W, LILV_NS_MOD    "brand"             )),
           mod_label                (lilv_new_uri(W, LILV_NS_MOD    "label"             )),
           mod_default              (lilv_new_uri(W, LILV_NS_MOD    "default"           )),
@@ -390,6 +398,7 @@ struct NamespaceDefinitions {
         lilv_node_free(lv2core_default);
         lilv_node_free(lv2core_minimum);
         lilv_node_free(lv2core_maximum);
+        lilv_node_free(lv2core_extensionData);
         lilv_node_free(mod_brand);
         lilv_node_free(mod_label);
         lilv_node_free(mod_default);
@@ -1900,6 +1909,47 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
         const std::string licensefile(KEYS_PATH + sha1(info.uri));
 
         info.licensed = std::ifstream(licensefile).good() ? 1 : -1;
+    }
+
+    // --------------------------------------------------------------------------------------------------------
+    // hasExternalUI
+
+    if (LilvUIs* const uis = lilv_plugin_get_uis(p))
+    {
+        LILV_FOREACH(nodes, i, uis)
+        {
+            const LilvUI* const ui = lilv_uis_get(uis, i);
+            const LilvNode* const uinode = lilv_ui_get_uri(ui);
+
+            if (lilv_world_load_resource(W, uinode) == -1)
+                continue;
+
+            if (LilvNodes* const uiexts = lilv_world_find_nodes(W, uinode, ns.lv2core_extensionData, nullptr))
+            {
+                bool hasIdle = false;
+                bool hasShow = false;
+
+                LILV_FOREACH(nodes, j, uiexts)
+                {
+                    const LilvNode* const uiext = lilv_nodes_get(uiexts, j);
+                    const char* const uiexturi = lilv_node_as_uri(uiext);
+                    /**/ if (strcmp(uiexturi, LV2_UI__idleInterface))
+                        hasIdle = true;
+                    else if (strcmp(uiexturi, LV2_UI__showInterface))
+                        hasShow = true;
+                }
+
+                lilv_nodes_free(uiexts);
+
+                if (hasIdle && hasShow)
+                    info.hasExternalUI = true;
+            }
+
+            if (info.hasExternalUI)
+                break;
+        }
+
+        lilv_uis_free(uis);
     }
 
     // --------------------------------------------------------------------------------------------------------

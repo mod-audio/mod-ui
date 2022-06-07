@@ -1,6 +1,6 @@
 /*
  * MOD-UI utilities
- * Copyright (C) 2015-2020 Filipe Coelho <falktx@falktx.com>
+ * Copyright (C) 2015-2022 Filipe Coelho <falktx@falktx.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -166,6 +166,7 @@ typedef struct {
     int release;
     int builder;
     int licensed;
+    bool hasExternalUI;
     const char* version;
     const char* stability;
     PluginAuthor author;

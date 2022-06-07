@@ -1500,11 +1500,13 @@ JqueryClass('pedalboard', {
             })
 
             var actions = $('<div>').addClass('ignore-arrive').addClass('mod-actions').appendTo(icon)
-            $('<div>').addClass('mod-external-ui').click(function () {
-                self.pedalboard('finishConnection')
-                self.data('showExternalUI')(instance)
-                return false
-            }).appendTo(actions)
+            if (pluginData.hasExternalUI) {
+                $('<div>').addClass('mod-external-ui').click(function () {
+                    self.pedalboard('finishConnection')
+                    self.data('showExternalUI')(instance)
+                    return false
+                }).appendTo(actions)
+            }
             $('<div>').addClass('mod-information').click(function () {
                 self.pedalboard('finishConnection')
                 self.data('showPluginInfo')(pluginData)

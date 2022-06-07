@@ -19,7 +19,7 @@ import os, time, logging, json
 
 from datetime import timedelta
 from tornado import iostream, gen
-from tornado.ioloop import IOLoop
+from tornado.ioloop import IOLoop, PeriodicCallback
 
 from mod import safe_json_load, TextFileFlusher
 from mod.bank import get_last_bank_and_pedalboard
@@ -71,6 +71,7 @@ class Session(object):
         self.player = Player()
         self.recorder = Recorder()
         self.recordhandle = None
+        self.external_ui_timer = None
 
         self.screenshot_generator = ScreenshotGenerator()
         self.websockets = []
@@ -347,6 +348,12 @@ class Session(object):
     def ws_show_external_ui(self, instance):
         instance_id = self.host.mapper.get_id_without_creating(instance)
         self.host.send_notmodified("show_external_ui %d" % (instance_id,))
+
+        # we need to keep socket active, so UI receives idle time, just setup an idle function here
+        if self.external_ui_timer is not None:
+            return
+        self.external_ui_timer = PeriodicCallback(lambda: self.host.send_notmodified("cpu_load"), 1000/30)
+        self.external_ui_timer.start()
 
     # -----------------------------------------------------------------------------------------------------------------
     # web session helpers

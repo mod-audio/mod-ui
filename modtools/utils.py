@@ -307,6 +307,7 @@ class PluginInfo(Structure):
         ("release", c_int),
         ("builder", c_int),
         ("licensed", c_int),
+        ("hasExternalUI", c_bool),
         ("version", c_char_p),
         ("stability", c_char_p),
         ("author", PluginAuthor),
