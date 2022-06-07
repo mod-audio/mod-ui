@@ -25,7 +25,22 @@ $('document').ready(function() {
     ws = new WebSocket("ws://" + window.location.host + "/websocket")
 
     var empty    = false,
-        modified = false
+        modified = false;
+    var dataReadyCounter = '',
+        dataReadyTimeout = null;
+
+    function triggerDelayedReadyResponse (triggerNew) {
+        if (dataReadyTimeout) {
+            clearTimeout(triggerNew)
+            triggerNew = true
+        }
+        if (triggerNew) {
+            dataReadyTimeout = setTimeout(function() {
+                dataReadyTimeout = null
+                ws.send("data_ready " + dataReadyCounter)
+            }, 30)
+        }
+    }
 
     ws.onclose = function (evt) {
         desktop && desktop.blockUI()
@@ -59,12 +74,12 @@ $('document').ready(function() {
         data = data.substr(cmd.length+1);
 
         if (cmd == "data_ready") {
-            var counter = data
-            setTimeout(function() {
-                ws.send("data_ready " + counter)
-            }, 25)
+            dataReadyCounter = data
+            triggerDelayedReadyResponse(true)
             return
         }
+
+        triggerDelayedReadyResponse(false)
 
         if (cmd == "stats") {
             data        = data.split(" ",2)
