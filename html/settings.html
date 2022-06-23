@@ -318,13 +318,14 @@ function config_set(key, value) {
     })
 }
 
-function system_cleanup(favorites, hmiSettings, banks, pedalboards, plugins, callback) {
+function system_cleanup(favorites, hmiSettings, licenseKeys, banks, pedalboards, plugins, callback) {
     $.ajax({
         url: '/system/cleanup',
         method: 'POST',
         data: {
             favorites: favorites ? 1 : 0,
             hmiSettings: hmiSettings ? 1 : 0,
+            licenseKeys: licenseKeys ? 1 : 0,
             banks: banks ? 1 : 0,
             pedalboards: pedalboards ? 1 : 0,
             plugins: plugins ? 1 : 0,
@@ -736,16 +737,17 @@ $('document').ready(function() {
         var ok = $("#prefs-delete-confirm").val().toUpperCase() == "DELETE";
         var favorites = !!$("#prefs-delete-favorites").prop('checked');
         var hmiSettings = !!$("#prefs-delete-hmi-settings").prop('checked');
+        var licenseKeys = !!$("#prefs-delete-license-keys").prop('checked');
         var banks = !!$("#prefs-delete-banks").prop('checked');
         var pedalboards = !!$("#prefs-delete-pedalboards").prop('checked');
         var plugins = !!$("#prefs-delete-plugins").prop('checked');
         var title = '';
-        if (!favorites && !hmiSettings && !banks && !pedalboards && !plugins) {
+        if (!favorites && !hmiSettings && !licenseKeys && !banks && !pedalboards && !plugins) {
             title = "You need to check at least one checkbox above";
         } else if (!ok) {
             title = 'You need type "DELETE" on the input above to confirm data removal';
         }
-        var disabled = !ok || (!favorites && !hmiSettings && !banks && !pedalboards && !plugins);
+        var disabled = !ok || (!favorites && !hmiSettings && !licenseKeys && !banks && !pedalboards && !plugins);
         $("#button-action-delete").attr('disabled', disabled);
         $("#button-action-delete").attr('title', title);
     }
@@ -754,6 +756,7 @@ $('document').ready(function() {
     $("#prefs-delete-confirm").keyup(deleteEnabled);
     $("#prefs-delete-favorites").click(deleteEnabled);
     $("#prefs-delete-hmi-settings").click(deleteEnabled);
+    $("#prefs-delete-license-keys").click(deleteEnabled);
     $("#prefs-delete-banks").click(deleteEnabled);
     $("#prefs-delete-pedalboards").click(deleteEnabled);
     $("#prefs-delete-plugins").click(deleteEnabled);
@@ -762,13 +765,14 @@ $('document').ready(function() {
     $("#button-action-delete").click(function() {
         var favorites = !!$("#prefs-delete-favorites").prop('checked');
         var hmiSettings = !!$("#prefs-delete-hmi-settings").prop('checked');
+        var licenseKeys = !!$("#prefs-delete-license-keys").prop('checked');
         var banks = !!$("#prefs-delete-banks").prop('checked');
         var pedalboards = !!$("#prefs-delete-pedalboards").prop('checked');
         var plugins = !!$("#prefs-delete-plugins").prop('checked');
 
         var block = show_blocker("delete");
 
-        system_cleanup(favorites, hmiSettings, banks, pedalboards, plugins, function (resp) {
+        system_cleanup(favorites, hmiSettings, licenseKeys, banks, pedalboards, plugins, function (resp) {
             if (resp.ok) {
                 setTimeout(function () {
                     block.html('<p>Delete operation complete!</p>')
@@ -1173,6 +1177,10 @@ $('document').ready(function() {
                         <input type="checkbox" autocomplete="off" id="prefs-delete-hmi-settings"> Clear device settings</input>
                     </label>
                     <br id="prefs-delete-hmi-settings_br"/>
+                    <label>
+                        <input type="checkbox" autocomplete="off" id="prefs-delete-license-keys"> Clear plugin license keys</input>
+                    </label>
+                    <br/>
                     <label>
                         <input type="checkbox" autocomplete="off" id="prefs-delete-banks"> Delete all Banks</input>
                     </label>
