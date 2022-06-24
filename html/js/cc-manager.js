@@ -74,7 +74,10 @@ function ControlChainDeviceManager(options) {
             }
         }
         self._devicesUpdated()
+        self.deviceDisconnected(dev_uri, label, version)
+    }
 
+    this.deviceDisconnected = function (dev_uri, label, version) {
         options.showNotification('Control Chain device disconnected:<br/>' + label + ' v' + version)
     }
 

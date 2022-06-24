@@ -517,6 +517,10 @@ function Desktop(elements) {
         elements.upgradeWindow.upgradeWindow('cancelDeviceSetup', dev_uri)
     }
 
+    this.ccDeviceDisconnected = function (dev_uri, label, version) {
+        self.ccDeviceManager.deviceDisconnected(dev_uri, label, version)
+    }
+
     this.ccDeviceUpdateFinished = function () {
         elements.upgradeWindow.upgradeWindow('setUpdated')
         elements.upgradeWindow.hide()
