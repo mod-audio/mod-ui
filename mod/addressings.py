@@ -95,6 +95,7 @@ class Addressings(object):
         self._task_store_address_data = None
         self._task_hw_added    = None
         self._task_hw_removed  = None
+        self._task_hw_connected = None
         self._task_hw_disconnected = None
         self._task_act_added   = None
         self._task_act_removed = None
@@ -104,6 +105,7 @@ class Addressings(object):
 
         self.cchain = ControlChainDeviceListener(self.cc_hardware_added,
                                                  self.cc_hardware_removed,
+                                                 self.cc_hardware_connected,
                                                  self.cc_hardware_disconnected,
                                                  self.cc_actuator_added)
 
@@ -1441,14 +1443,20 @@ class Addressings(object):
         print("cc_hardware_removed", dev_id, dev_uri, label, version)
         self._task_hw_removed(dev_uri, label, version)
 
-    def cc_hardware_disconnected(self, dev_id, dev_uri, label, version):
-        print("cc_hardware_disconnected", dev_id, dev_uri, label, version)
-        self._task_hw_disconnected(dev_uri, label, version)
+    def cc_hardware_connected(self, label, version):
+        print("cc_hardware_connected", label, version)
+        self._task_hw_connected(label, version)
+
+    def cc_hardware_disconnected(self, label, version):
+        print("cc_hardware_disconnected", label, version)
+        self._task_hw_disconnected(label, version)
 
     def cc_actuator_added(self, dev_id, actuator_id, metadata):
         print("cc_actuator_added", metadata['uri'])
         actuator_uri = metadata['uri']
+
         if actuator_uri in self.cc_metadata:
+            self.cc_metadata[actuator_uri]['hw_id'] = (dev_id, actuator_id)
             self.cc_load_all(actuator_uri)
         else:
             self.cc_metadata[actuator_uri] = metadata.copy()
