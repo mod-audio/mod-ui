@@ -17,35 +17,38 @@ else
   exit 1
 fi
 
-ssh ${TARGET} mount / -o remount,rw
+# needed since ssh rsa deprecation/breakage
+SSH_OPTIONS="-o PubkeyAcceptedAlgorithms=+ssh-rsa"
 
-ssh ${TARGET} rm -rf /usr/share/mod/html/css
-ssh ${TARGET} rm -rf /usr/share/mod/html/js
-ssh ${TARGET} mkdir -p /usr/share/mod/html/css/fontello/{css,font} /usr/share/mod/html/js/{lib/slick/fonts,utils}
+ssh ${SSH_OPTIONS} ${TARGET} mount / -o remount,rw
 
-ssh ${TARGET} rm -f  /usr/lib/python3.4/site-packages/mod/*.py*
-ssh ${TARGET} rm -f  /usr/lib/python3.4/site-packages/mod/communication/*.py*
-ssh ${TARGET} rm -f  /usr/lib/python3.4/site-packages/modtools/*.py*
+ssh ${SSH_OPTIONS} ${TARGET} rm -rf /usr/share/mod/html/css
+ssh ${SSH_OPTIONS} ${TARGET} rm -rf /usr/share/mod/html/js
+ssh ${SSH_OPTIONS} ${TARGET} mkdir -p /usr/share/mod/html/css/fontello/{css,font} /usr/share/mod/html/js/{lib/slick/fonts,utils}
 
-scp html/*.html                   ${TARGET}:/usr/share/mod/html/
-scp html/include/*.html           ${TARGET}:/usr/share/mod/html/include/
-scp html/resources/*.html         ${TARGET}:/usr/share/mod/html/resources/
-scp html/css/*.css                ${TARGET}:/usr/share/mod/html/css/
-scp html/css/fontello/css/*.css   ${TARGET}:/usr/share/mod/html/css/fontello/css/
-scp html/css/fontello/font/*.*    ${TARGET}:/usr/share/mod/html/css/fontello/font/
-scp html/js/*.js                  ${TARGET}:/usr/share/mod/html/js/
-scp html/js/lib/*.js              ${TARGET}:/usr/share/mod/html/js/lib/
-scp html/js/lib/slick/*.{css,gif} ${TARGET}:/usr/share/mod/html/js/lib/slick/
-scp html/js/lib/slick/*min.js     ${TARGET}:/usr/share/mod/html/js/lib/slick/
-scp html/js/lib/slick/fonts/*.*   ${TARGET}:/usr/share/mod/html/js/lib/slick/fonts/
-scp html/js/utils/*.js            ${TARGET}:/usr/share/mod/html/js/utils/
-scp html/img/*.png                ${TARGET}:/usr/share/mod/html/img/
-scp mod/*.py                      ${TARGET}:/usr/lib/python3.4/site-packages/mod/
-scp mod/communication/*.py        ${TARGET}:/usr/lib/python3.4/site-packages/mod/communication/
-scp modtools/*.py                 ${TARGET}:/usr/lib/python3.4/site-packages/modtools/
+ssh ${SSH_OPTIONS} ${TARGET} rm -f  /usr/lib/python3.4/site-packages/mod/*.py*
+ssh ${SSH_OPTIONS} ${TARGET} rm -f  /usr/lib/python3.4/site-packages/mod/communication/*.py*
+ssh ${SSH_OPTIONS} ${TARGET} rm -f  /usr/lib/python3.4/site-packages/modtools/*.py*
 
-ssh ${TARGET} rm -rf /usr/lib/python3.4/site-packages/mod/__pycache__
-ssh ${TARGET} rm -rf /usr/lib/python3.4/site-packages/mod/communication/__pycache__
-ssh ${TARGET} rm -rf /usr/lib/python3.4/site-packages/modtools/__pycache__
+scp ${SSH_OPTIONS} html/*.html                   ${TARGET}:/usr/share/mod/html/
+scp ${SSH_OPTIONS} html/include/*.html           ${TARGET}:/usr/share/mod/html/include/
+scp ${SSH_OPTIONS} html/resources/*.html         ${TARGET}:/usr/share/mod/html/resources/
+scp ${SSH_OPTIONS} html/css/*.css                ${TARGET}:/usr/share/mod/html/css/
+scp ${SSH_OPTIONS} html/css/fontello/css/*.css   ${TARGET}:/usr/share/mod/html/css/fontello/css/
+scp ${SSH_OPTIONS} html/css/fontello/font/*.*    ${TARGET}:/usr/share/mod/html/css/fontello/font/
+scp ${SSH_OPTIONS} html/js/*.js                  ${TARGET}:/usr/share/mod/html/js/
+scp ${SSH_OPTIONS} html/js/lib/*.js              ${TARGET}:/usr/share/mod/html/js/lib/
+scp ${SSH_OPTIONS} html/js/lib/slick/*.{css,gif} ${TARGET}:/usr/share/mod/html/js/lib/slick/
+scp ${SSH_OPTIONS} html/js/lib/slick/*min.js     ${TARGET}:/usr/share/mod/html/js/lib/slick/
+scp ${SSH_OPTIONS} html/js/lib/slick/fonts/*.*   ${TARGET}:/usr/share/mod/html/js/lib/slick/fonts/
+scp ${SSH_OPTIONS} html/js/utils/*.js            ${TARGET}:/usr/share/mod/html/js/utils/
+scp ${SSH_OPTIONS} html/img/*.png                ${TARGET}:/usr/share/mod/html/img/
+scp ${SSH_OPTIONS} mod/*.py                      ${TARGET}:/usr/lib/python3.4/site-packages/mod/
+scp ${SSH_OPTIONS} mod/communication/*.py        ${TARGET}:/usr/lib/python3.4/site-packages/mod/communication/
+scp ${SSH_OPTIONS} modtools/*.py                 ${TARGET}:/usr/lib/python3.4/site-packages/modtools/
+
+ssh ${SSH_OPTIONS} ${TARGET} rm -rf /usr/lib/python3.4/site-packages/mod/__pycache__
+ssh ${SSH_OPTIONS} ${TARGET} rm -rf /usr/lib/python3.4/site-packages/mod/communication/__pycache__
+ssh ${SSH_OPTIONS} ${TARGET} rm -rf /usr/lib/python3.4/site-packages/modtools/__pycache__
 
 echo "all ok"
