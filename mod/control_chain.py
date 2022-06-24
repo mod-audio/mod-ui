@@ -96,6 +96,7 @@ class ControlChainDeviceListener(object):
         print("Control Chain closed")
         self.socket  = None
         self.crashed = True
+        self.write_queue = []
         self.set_initialized()
 
         hw_versions = self.hw_versions.copy()
