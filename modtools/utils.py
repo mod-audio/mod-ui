@@ -524,7 +524,7 @@ utils.is_bundle_loaded.restype  = c_bool
 utils.add_bundle_to_lilv_world.argtypes = [c_char_p]
 utils.add_bundle_to_lilv_world.restype  = POINTER(c_char_p)
 
-utils.remove_bundle_from_lilv_world.argtypes = [c_char_p]
+utils.remove_bundle_from_lilv_world.argtypes = [c_char_p, c_char_p]
 utils.remove_bundle_from_lilv_world.restype  = POINTER(c_char_p)
 
 utils.get_plugin_list.argtypes = None
@@ -679,8 +679,9 @@ def add_bundle_to_lilv_world(bundlepath):
 
 # remove a bundle to our lilv world
 # returns uri list of removed plugins
-def remove_bundle_from_lilv_world(bundlepath):
-    return charPtrPtrToStringList(utils.remove_bundle_from_lilv_world(bundlepath.encode("utf-8")))
+def remove_bundle_from_lilv_world(bundlepath, resource):
+    return charPtrPtrToStringList(utils.remove_bundle_from_lilv_world(bundlepath.encode("utf-8"),
+                                                                      resource.encode("utf-8") if resource else None))
 
 # ------------------------------------------------------------------------------------------------------------
 

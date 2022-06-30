@@ -84,7 +84,7 @@ def install_bundles_in_tmp_dir(callback):
         bundlepath = os.path.join(LV2_PLUGIN_DIR, bundle)
 
         if os.path.exists(bundlepath):
-            resp, data = yield gen.Task(SESSION.host.remove_bundle, bundlepath, True)
+            resp, data = yield gen.Task(SESSION.host.remove_bundle, bundlepath, True, None)
 
             # When removing bundles we can ignore the ones that are not loaded
             # It can happen if a previous install failed abruptly
@@ -1221,7 +1221,7 @@ class PackageUninstall(JsonRequestHandler):
                     error = "bundlepath '{}' is not in LV2_PATH".format(bundlepath)
                     break
 
-                resp, data = yield gen.Task(SESSION.host.remove_bundle, bundlepath, True)
+                resp, data = yield gen.Task(SESSION.host.remove_bundle, bundlepath, True, None)
 
                 if resp:
                     removed += data

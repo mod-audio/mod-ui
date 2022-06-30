@@ -920,6 +920,11 @@ function GUI(effect, options) {
                         return
                     }
                     options.presetSaveReplace(uri, path, name, function (resp) {
+                        if (! resp.ok) {
+                            return
+                        }
+                        item.attr('mod-path', resp.bundle)
+                        item.attr('mod-uri', resp.uri)
                     })
                 })
 

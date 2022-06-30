@@ -344,7 +344,7 @@ MOD_API const char* const* add_bundle_to_lilv_world(const char* bundle);
 
 // remove a bundle from our lilv world
 // returns uri list of removed plugins (null for none)
-MOD_API const char* const* remove_bundle_from_lilv_world(const char* bundle);
+MOD_API const char* const* remove_bundle_from_lilv_world(const char* bundle, const char* resource);
 
 // get list of all available plugins
 MOD_API const char* const* get_plugin_list(void);
