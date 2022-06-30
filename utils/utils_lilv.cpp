@@ -3678,7 +3678,7 @@ const char* const* add_bundle_to_lilv_world(const char* const bundle)
 #endif
 }
 
-const char* const* remove_bundle_from_lilv_world(const char* const bundle)
+const char* const* remove_bundle_from_lilv_world(const char* const bundle, const char* const resource)
 {
 #ifdef HAVE_NEW_LILV
     // lilv wants the last character as the separator
@@ -3705,6 +3705,16 @@ const char* const* remove_bundle_from_lilv_world(const char* const bundle)
     // stop now if bundle is not loaded
     if (std::find(BUNDLES.begin(), BUNDLES.end(), bundlepath) == BUNDLES.end())
         return nullptr;
+
+    // unload resource if requested
+    if (resource != NULL && resource[0] != '\0')
+    {
+        if (LilvNode* const resourcenode = lilv_new_uri(W, resource))
+        {
+            lilv_world_unload_resource(W, resourcenode);
+            lilv_node_free(resourcenode);
+        }
+    }
 
     // remove from loaded list
     BUNDLES.remove(bundlepath);

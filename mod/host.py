@@ -2107,7 +2107,7 @@ class Host(object):
 
         self.send_notmodified("bundle_add \"%s\"" % bundlepath.replace('"','\\"'), host_callback, datatype='boolean')
 
-    def remove_bundle(self, bundlepath, isPluginBundle, callback):
+    def remove_bundle(self, bundlepath, isPluginBundle, resource, callback):
         if not is_bundle_loaded(bundlepath):
             print("NOTE: Skipped remove_bundle, not in world")
             callback((False, "Bundle not loaded"))
@@ -2122,10 +2122,11 @@ class Host(object):
                     return
 
         def host_callback(_):
-            plugins = remove_bundle_from_lilv_world(bundlepath)
+            plugins = remove_bundle_from_lilv_world(bundlepath, resource)
             callback((True, plugins))
 
-        self.send_notmodified("bundle_remove \"%s\"" % bundlepath.replace('"','\\"'), host_callback, datatype='boolean')
+        self.send_notmodified("bundle_remove \"%s\" %s" % (bundlepath.replace('"','\\"'), resource or ""),
+                              host_callback, datatype='boolean')
 
     def refresh_bundle(self, bundlepath, plugin_uri):
         if not is_bundle_loaded(bundlepath):
@@ -2136,7 +2137,7 @@ class Host(object):
         if plugin_uri not in plugins:
             return (False, "Requested plugin URI does not exist inside the bundle")
 
-        remove_bundle_from_lilv_world(bundlepath)
+        remove_bundle_from_lilv_world(bundlepath, None)
         add_bundle_to_lilv_world(bundlepath)
         return (True, "")
 
@@ -2794,11 +2795,11 @@ class Host(object):
                                                                    presetbundle,
                                                                    symbolname), host_callback, datatype='boolean')
 
-    def preset_save_replace(self, instance, olduri, oldbundlepath, name, callback):
+    def preset_save_replace(self, instance, olduri, presetbundle, name, callback):
         instance_id = self.mapper.get_id_without_creating(instance)
         pluginData  = self.plugins[instance_id]
 
-        if pluginData['preset'] != olduri or not os.path.exists(oldbundlepath):
+        if pluginData['preset'] != olduri or not os.path.exists(presetbundle):
             callback({
                 'ok': False,
             })
@@ -2806,17 +2807,6 @@ class Host(object):
 
         plugin_uri   = pluginData['uri']
         symbolname   = symbolify(name)[:32]
-        presetbundle = os.path.expanduser("~/.lv2/%s-%s.lv2") % (instance.replace("/graph/","",1), symbolname)
-
-        if os.path.exists(presetbundle):
-            # if presetbundle already exists, generate a new random bundle path
-            while True:
-                presetbundle = os.path.expanduser("~/.lv2/%s-%s-%i.lv2" % (instance.replace("/graph/","",1),
-                                                                           symbolname,
-                                                                           randint(1,99999)))
-                if os.path.exists(presetbundle):
-                    continue
-                break
 
         def add_bundle_callback(ok):
             preseturi = "file://%s.ttl" % os.path.join(presetbundle, symbolname)
@@ -2838,7 +2828,7 @@ class Host(object):
             self.add_bundle(presetbundle, add_bundle_callback)
 
         def start(_):
-            shutil.rmtree(oldbundlepath)
+            shutil.rmtree(presetbundle)
             rescan_plugin_presets(plugin_uri)
             pluginData['preset'] = ""
             self.send_notmodified("preset_save %d \"%s\" %s %s.ttl" % (instance_id,
@@ -2846,7 +2836,7 @@ class Host(object):
                                                                        presetbundle,
                                                                        symbolname), host_callback, datatype='boolean')
 
-        self.remove_bundle(oldbundlepath, False, start)
+        self.remove_bundle(presetbundle, False, olduri, start)
 
     def preset_delete(self, instance, uri, bundlepath, callback):
         instance_id = self.mapper.get_id_without_creating(instance)
@@ -2864,7 +2854,7 @@ class Host(object):
             self.msg_callback("preset %s null" % instance)
             callback(True)
 
-        self.remove_bundle(bundlepath, False, start)
+        self.remove_bundle(bundlepath, False, uri, start)
 
     # -----------------------------------------------------------------------------------------------------------------
     # Host stuff - pedalboard snapshots
