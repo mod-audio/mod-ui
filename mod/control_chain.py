@@ -24,14 +24,17 @@ CC_MODE_REVERSE     = 0x400
 class ControlChainDeviceListener(object):
     socket_path = "/tmp/control-chain.sock"
 
-    def __init__(self, hw_added_cb, hw_removed_cb, act_added_cb):
+    def __init__(self, hw_added_cb, hw_removed_cb, hw_connected_cb, hw_disconnected_cb, act_added_cb):
         self.crashed        = False
         self.idle           = False
         self.initialized    = False
         self.initialized_cb = None
         self.hw_added_cb    = hw_added_cb
         self.hw_removed_cb  = hw_removed_cb
+        self.hw_connected_cb = hw_connected_cb
+        self.hw_disconnected_cb = hw_disconnected_cb
         self.act_added_cb   = act_added_cb
+        self.hw_counter     = {}
         self.hw_versions    = {}
         self.write_queue    = []
 
@@ -96,12 +99,21 @@ class ControlChainDeviceListener(object):
         print("Control Chain closed")
         self.socket  = None
         self.crashed = True
+        self.hw_counter = {}
+        self.write_queue = []
         self.set_initialized()
 
+        # clear hw list
         hw_versions = self.hw_versions.copy()
         self.hw_versions = {}
-        for dev_id, (dev_uri, label, labelsuffix, version) in hw_versions.items():
-            self.hw_removed_cb(dev_id, dev_uri, label+labelsuffix, version)
+
+        # notify of disconnect
+        for dev_uri, (dev_id, label, labelsuffix, version) in hw_versions.items():
+            if dev_uri in self.hw_counter:
+                self.hw_versions[dev_uri] = (-1, label, labelsuffix, version)
+                self.hw_disconnected_cb(label+labelsuffix, version)
+            else:
+                self.hw_removed_cb(dev_id, dev_uri, label+labelsuffix, version)
 
         IOLoop.instance().call_later(2, self.restart_if_crashed)
 
@@ -130,20 +142,25 @@ class ControlChainDeviceListener(object):
                 print("ERROR: Control Chain read response invalid, missing 'event' field", data)
 
             elif data['event'] == "device_status":
-                data   = data['data']
-                dev_id = data['device_id']
+                data        = data['data']
+                data_dev_id = data['device_id']
 
                 if data['status']:
-                    yield gen.Task(self.send_device_descriptor, dev_id)
+                    yield gen.Task(self.send_device_descriptor, data_dev_id)
 
                 else:
-                    try:
-                        hw_data = self.hw_versions.pop(dev_id)
-                    except KeyError:
-                        print("ERROR: Control Chain device removed, but not on current list!?", dev_id)
+                    for dev_uri, (dev_id, label, labelsuffix, version) in self.hw_versions.items():
+                        if data_dev_id == dev_id:
+                            if dev_uri in self.hw_counter:
+                                self.hw_counter[dev_uri] -= 1
+                                self.hw_disconnected_cb(label+labelsuffix, version)
+                            else:
+                                self.hw_versions.pop(dev_uri)
+                                self.hw_removed_cb(dev_id, dev_uri, label+labelsuffix, version)
+
+                            break
                     else:
-                        dev_uri, label, labelsuffix, version = hw_data
-                        self.hw_removed_cb(dev_id, dev_uri, label+labelsuffix, version)
+                        print("ERROR: Control Chain device removed, but not on current list!? id:", data_dev_id)
 
         finally:
             self.process_read_queue()
@@ -226,22 +243,51 @@ class ControlChainDeviceListener(object):
 
             if 'protocol' in dev:
                 protocol_version = tuple(int(v) for v in dev['protocol'].split("."))
+                supports_feedback = protocol_version >= (0,6)
             else:
                 protocol_version = (0,0)
+                supports_feedback = False
 
-            # assign an unique id starting from 0
-            dev_unique_id = 0
-            for _dev_uri, _1, _2, _3 in self.hw_versions.values():
-                if _dev_uri == dev_uri:
-                    dev_unique_id += 1
+            if supports_feedback:
+                # use connected hw counter as id
+                if dev_uri not in self.hw_counter or self.hw_counter[dev_uri] == 0:
+                    dev_unique_id = 0
+                else:
+                    dev_unique_id = self.hw_counter[dev_uri]
+                    dev_uri += "#%d" % (dev_unique_id+1)
+
+                # increment counter for next device with the same URI
+                self.hw_counter[dev_uri] = dev_unique_id + 1
+
+            else:
+                # assign an unique id starting from 0
+                dev_unique_id = 0
+                for _dev_uri in self.hw_versions.keys():
+                    if _dev_uri == dev_uri:
+                        dev_unique_id += 1
+
+                if dev_unique_id != 0:
+                    dev_uri += "#%d" % (dev_unique_id+1)
 
             if dev_unique_id != 0:
                 dev_label_suffix = " " + str(dev_unique_id+1)
             else:
                 dev_label_suffix = ""
 
-            self.hw_added_cb(dev_id, dev_uri, dev['label'], dev_label_suffix, dev['version'])
-            self.hw_versions[dev_id] = (dev_uri, dev['label'], dev_label_suffix, dev['version'])
+            # if device was connected before but changed its firmware, force reconnect
+            if dev_uri in self.hw_versions and self.hw_versions[dev_uri][3] != dev['version']:
+                _dev_id, label, labelsuffix, version = self.hw_versions[dev_uri]
+                self.hw_versions.pop(dev_uri)
+                self.hw_removed_cb(_dev_id, dev_uri, label+labelsuffix, version)
+
+                if dev_uri in self.hw_counter and not supports_feedback:
+                    self.hw_counter.pop(dev_uri)
+
+            if dev_uri in self.hw_versions:
+                self.hw_connected_cb(dev['label'] + dev_label_suffix, dev['version'])
+            else:
+                self.hw_added_cb(dev_id, dev_uri, dev['label'], dev_label_suffix, dev['version'])
+                self.hw_versions[dev_uri] = (dev_id, dev['label'], dev_label_suffix, dev['version'])
 
             for actuator in dev['actuators']:
                 modes_int = actuator['supported_modes']
@@ -277,7 +323,7 @@ class ControlChainDeviceListener(object):
                     'modes': modes_str,
                     'steps': [],
                     'widgets': [],
-                    'feedback': protocol_version >= (0,6),
+                    'feedback': supports_feedback,
                     'max_assigns': actuator['max_assignments'],
                 }
                 self.act_added_cb(dev_id, actuator['id'], metadata)
@@ -308,7 +354,7 @@ class ControlChainDeviceListener(object):
                     'feedback': True,
                     'max_assigns': max_assigns,
                     'actuator_group': ("%s:%i:%i" % (dev_uri, dev_unique_id, actuatorgroup['actuator1']),
-                                        "%s:%i:%i" % (dev_uri, dev_unique_id, actuatorgroup['actuator2'])),
+                                       "%s:%i:%i" % (dev_uri, dev_unique_id, actuatorgroup['actuator2'])),
                 }
                 self.act_added_cb(dev_id, (actuatorgroup['id'],
                                            actuatorgroup['actuator1'],
@@ -325,14 +371,22 @@ if __name__ == "__main__":
     from tornado.ioloop import IOLoop
 
     def hw_added_cb(dev_id, dev_uri, label, labelsuffix, version):
-        print("hw_added_cb", dev_uri, label, labelsuffix, version)
+        print("hw_added_cb", dev_id, dev_uri, label, labelsuffix, version)
 
     def hw_removed_cb(dev_id, dev_uri, label, version):
-        print("hw_removed_cb", dev_id)
+        print("hw_removed_cb", dev_id, dev_uri, label, version)
+
+    def hw_connected_cb(label, version):
+        print("hw_connected_cb", label, version)
+
+    def hw_disconnected_cb(label, version):
+        print("hw_disconnected_cb", label, version)
 
     def act_added_cb(dev_id, actuator_id, metadata):
         print("act_added_cb", dev_id, actuator_id, metadata)
 
     application = Application()
-    cc = ControlChainDeviceListener(hw_added_cb, hw_removed_cb, act_added_cb)
+    cc = ControlChainDeviceListener(hw_added_cb, hw_removed_cb,
+                                    hw_connected_cb, hw_disconnected_cb,
+                                    act_added_cb)
     IOLoop.instance().start()

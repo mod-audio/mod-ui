@@ -25,7 +25,22 @@ $('document').ready(function() {
     ws = new WebSocket("ws://" + window.location.host + "/websocket")
 
     var empty    = false,
-        modified = false
+        modified = false;
+    var dataReadyCounter = '',
+        dataReadyTimeout = null;
+
+    function triggerDelayedReadyResponse (triggerNew) {
+        if (dataReadyTimeout) {
+            clearTimeout(triggerNew)
+            triggerNew = true
+        }
+        if (triggerNew) {
+            dataReadyTimeout = setTimeout(function() {
+                dataReadyTimeout = null
+                ws.send("data_ready " + dataReadyCounter)
+            }, 30)
+        }
+    }
 
     ws.onclose = function (evt) {
         desktop && desktop.blockUI()
@@ -59,12 +74,12 @@ $('document').ready(function() {
         data = data.substr(cmd.length+1);
 
         if (cmd == "data_ready") {
-            var counter = data
-            setTimeout(function() {
-                ws.send("data_ready " + counter)
-            }, 25)
+            dataReadyCounter = data
+            triggerDelayedReadyResponse(true)
             return
         }
+
+        triggerDelayedReadyResponse(false)
 
         if (cmd == "stats") {
             data        = data.split(" ",2)
@@ -465,6 +480,22 @@ $('document').ready(function() {
             var label   = data[1].replace(/_/g," ")
             var version = data[2]
             desktop.ccDeviceRemoved(dev_uri, label, version)
+            return
+        }
+
+        if (cmd == "hw_con") {
+            data        = data.split(" ",2)
+            var label   = data[0].replace(/_/g," ")
+            var version = data[1]
+            desktop.ccDeviceConnected(label, version)
+            return
+        }
+
+        if (cmd == "hw_dis") {
+            data        = data.split(" ",2)
+            var label   = data[0].replace(/_/g," ")
+            var version = data[1]
+            desktop.ccDeviceDisconnected(label, version)
             return
         }
 

@@ -95,6 +95,8 @@ class Addressings(object):
         self._task_store_address_data = None
         self._task_hw_added    = None
         self._task_hw_removed  = None
+        self._task_hw_connected = None
+        self._task_hw_disconnected = None
         self._task_act_added   = None
         self._task_act_removed = None
         self._task_set_available_pages = None
@@ -103,6 +105,8 @@ class Addressings(object):
 
         self.cchain = ControlChainDeviceListener(self.cc_hardware_added,
                                                  self.cc_hardware_removed,
+                                                 self.cc_hardware_connected,
+                                                 self.cc_hardware_disconnected,
                                                  self.cc_actuator_added)
 
         # First addressings/pedalboard load flag
@@ -1132,6 +1136,23 @@ class Addressings(object):
 
         return True
 
+    def remove_cc(self, addressing_data, actuator_uri):
+        addressings = self.cc_addressings[actuator_uri]
+
+        instance_id = addressing_data['instance_id']
+        portsymbol = addressing_data['port']
+
+        for i in range(len((addressings))):
+            addr = addressings[i]
+            if actuator_uri != addr['actuator_uri']:
+                continue
+            if instance_id != addr['instance_id']:
+                continue
+            if portsymbol != addr['port']:
+                continue
+            addressings.pop(i)
+            break
+
     # NOTE: make sure to call hmi_load_current() afterwards if removing HMI addressings
     def remove(self, addressing_data):
         actuator_uri  = addressing_data['actuator_uri']
@@ -1155,8 +1176,7 @@ class Addressings(object):
                 return self.remove_hmi(addressing_data, actuator_uri)
 
         elif actuator_type == self.ADDRESSING_TYPE_CC:
-            addressings = self.cc_addressings[actuator_uri]
-            addressings.remove(addressing_data)
+            self.remove_cc(addressing_data, actuator_uri)
 
         elif actuator_type == self.ADDRESSING_TYPE_MIDI:
             addressings = self.midi_addressings[actuator_uri]
@@ -1423,13 +1443,26 @@ class Addressings(object):
         print("cc_hardware_removed", dev_id, dev_uri, label, version)
         self._task_hw_removed(dev_uri, label, version)
 
+    def cc_hardware_connected(self, label, version):
+        print("cc_hardware_connected", label, version)
+        self._task_hw_connected(label, version)
+
+    def cc_hardware_disconnected(self, label, version):
+        print("cc_hardware_disconnected", label, version)
+        self._task_hw_disconnected(label, version)
+
     def cc_actuator_added(self, dev_id, actuator_id, metadata):
         print("cc_actuator_added", metadata['uri'])
         actuator_uri = metadata['uri']
-        self.cc_metadata[actuator_uri] = metadata.copy()
-        self.cc_metadata[actuator_uri]['hw_id'] = (dev_id, actuator_id)
-        self.cc_addressings[actuator_uri] = []
-        self._task_act_added(metadata)
+
+        if actuator_uri in self.cc_metadata:
+            self.cc_metadata[actuator_uri]['hw_id'] = (dev_id, actuator_id)
+            self.cc_load_all(actuator_uri)
+        else:
+            self.cc_metadata[actuator_uri] = metadata.copy()
+            self.cc_metadata[actuator_uri]['hw_id'] = (dev_id, actuator_id)
+            self.cc_addressings[actuator_uri] = []
+            self._task_act_added(metadata)
 
     @gen.coroutine
     def cc_load_all(self, actuator_uri):

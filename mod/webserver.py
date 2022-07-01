@@ -43,7 +43,7 @@ from mod.settings import (APP, LOG, DEV_API,
                           LV2_PLUGIN_DIR, LV2_PEDALBOARDS_DIR, IMAGE_VERSION,
                           UPDATE_CC_FIRMWARE_FILE, UPDATE_MOD_OS_FILE, USING_256_FRAMES_FILE,
                           DEFAULT_ICON_TEMPLATE, DEFAULT_SETTINGS_TEMPLATE, DEFAULT_ICON_IMAGE,
-                          DEFAULT_PEDALBOARD, DEFAULT_SNAPSHOT_NAME, DATA_DIR, USER_FILES_DIR,
+                          DEFAULT_PEDALBOARD, DEFAULT_SNAPSHOT_NAME, DATA_DIR, KEYS_PATH, USER_FILES_DIR,
                           FAVORITES_JSON_FILE, PREFERENCES_JSON_FILE, USER_ID_JSON_FILE,
                           DEV_HOST, UNTITLED_PEDALBOARD_NAME, MODEL_CPU, MODEL_TYPE, PEDALBOARDS_LABS_HTTP_ADDRESS)
 
@@ -84,7 +84,7 @@ def install_bundles_in_tmp_dir(callback):
         bundlepath = os.path.join(LV2_PLUGIN_DIR, bundle)
 
         if os.path.exists(bundlepath):
-            resp, data = yield gen.Task(SESSION.host.remove_bundle, bundlepath, True)
+            resp, data = yield gen.Task(SESSION.host.remove_bundle, bundlepath, True, None)
 
             # When removing bundles we can ignore the ones that are not loaded
             # It can happen if a previous install failed abruptly
@@ -605,6 +605,7 @@ class SystemCleanup(JsonRequestHandler):
         banks       = bool(int(self.get_argument('banks')))
         favorites   = bool(int(self.get_argument('favorites')))
         hmiSettings = bool(int(self.get_argument('hmiSettings')))
+        licenseKeys = bool(int(self.get_argument('licenseKeys')))
         pedalboards = bool(int(self.get_argument('pedalboards')))
         plugins     = bool(int(self.get_argument('plugins')))
 
@@ -618,6 +619,9 @@ class SystemCleanup(JsonRequestHandler):
 
         if favorites:
             stuffToDelete.append(FAVORITES_JSON_FILE)
+
+        if licenseKeys:
+            stuffToDelete.append(KEYS_PATH)
 
         if pedalboards:
             stuffToDelete.append(LV2_PEDALBOARDS_DIR)
@@ -1223,7 +1227,7 @@ class PackageUninstall(JsonRequestHandler):
                     error = "bundlepath '{}' is not in LV2_PATH".format(bundlepath)
                     break
 
-                resp, data = yield gen.Task(SESSION.host.remove_bundle, bundlepath, True)
+                resp, data = yield gen.Task(SESSION.host.remove_bundle, bundlepath, True, None)
 
                 if resp:
                     removed += data
