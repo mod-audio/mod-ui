@@ -159,7 +159,7 @@ function refresh_sysinfo() {
             $("#info-kernel-machine").text(INFO.uname.machine)
             $("#info-kernel-release").text(INFO.uname.release)
             $("#info-kernel-version").text(INFO.uname.version)
-            if (info.platform != "duox") {
+            if (info.platform != "duox" || info.model == "duox:aarch64-a53") {
                 $("#prefs-audio-separate-spdif-outs_div").hide()
             }
         },
