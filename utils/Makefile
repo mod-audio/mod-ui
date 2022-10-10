@@ -3,11 +3,16 @@ CC  ?= gcc
 CXX ?= g++
 
 CFLAGS += -Wall -Wextra -std=c99 -fPIC -O3
-CXXFLAGS += -Wall -Wextra -Wshadow -std=gnu++0x -fPIC -O3
+CXXFLAGS += -Wall -Wextra -Wshadow -std=gnu++0x -fPIC
+ifeq ($(DEBUG),1)
+CXXFLAGS += -g -O0 -DDEBUG
+else
+CXXFLAGS += -O3 -DNDEBUG
 ifneq (,$(findstring apple,$(shell $(CC) -dumpmachine)))
 LDFLAGS += -Wl,-dead_strip -Wl,-dead_strip_dylibs -Wl,-x
 else
 LDFLAGS += -Wl,-O1 -Wl,--no-undefined -Wl,--strip-all
+endif
 endif
 
 ifeq ($(shell pkg-config --atleast-version=0.22.0 lilv-0 && echo true), true)
