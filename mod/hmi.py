@@ -124,10 +124,12 @@ class HMI(object):
         ioloop = IOLoop.instance()
         try:
             sp = None
+            # pylint: disable=unexpected-keyword-arg
             try:
                 sp = serial.Serial(self.port, self.baud_rate, timeout=0, write_timeout=0)
             except:
                 sp = serial.Serial(self.port, self.baud_rate, timeout=0, writeTimeout=0)
+            # pylint: enable=unexpected-keyword-arg
             sp.flushInput()
             sp.flushOutput()
         except Exception as e:
