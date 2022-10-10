@@ -1878,7 +1878,7 @@ class Host(object):
                                                            self.transport_bpm,
                                                            self.transport_sync))
         websocket.write_message("truebypass %i %i" % (self.last_true_bypass_left, self.last_true_bypass_right))
-        websocket.write_message("loading_start %d %d" % (self.pedalboard_empty, self.pedalboard_modified))
+        websocket.write_message("loading_start %d %d" % (int(self.pedalboard_empty), int(self.pedalboard_modified)))
         websocket.write_message("size %d %d" % (self.pedalboard_size[0], self.pedalboard_size[1]))
 
         for dev_uri, label, labelsuffix, version in self.addressings.cchain.hw_versions.values():
@@ -2272,7 +2272,7 @@ class Host(object):
             current_addressing['dividers'] = dividers
 
             if group_actuators is not None:
-                def set_2nd_hmi_value(ok):
+                def set_2nd_group_actuators_hmi_value(ok):
                     if not ok:
                         if callback is not None:
                             callback(False)
@@ -2281,7 +2281,7 @@ class Host(object):
                     self.hmi.control_set(hw_id2, dividers, callback)
 
                 hw_id1 = self.addressings.hmi_uri2hw_map[group_actuators[0]]
-                self.hmi.control_set(hw_id1, dividers, set_2nd_hmi_value)
+                self.hmi.control_set(hw_id1, dividers, set_2nd_group_actuators_hmi_value)
 
             else:
                 hw_id = self.addressings.hmi_uri2hw_map[actuator_uri]
