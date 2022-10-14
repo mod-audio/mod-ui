@@ -42,6 +42,8 @@ def resize_image(img):
     if height > MAX_THUMB_HEIGHT:
         width = width * MAX_THUMB_HEIGHT / height
         height = MAX_THUMB_HEIGHT
+    # ANTIALIAS is deprecated and will be removed in Pillow 10 (2023-07-01).
+    # Use Resampling.LANCZOS instead.
     img.thumbnail((width, height), Image.ANTIALIAS)
 
 
@@ -389,7 +391,11 @@ def take_screenshot(bundle_path, html_dir, cache_dir, size):
             if '/' not in c['source']:
                 continue
             source_i, source_s = c['source'].split('/')
-            source = plugin_map[source_i]
+            try:
+                source = plugin_map[source_i]
+            except KeyError:
+                print("WARNING: invalid port source instance", source_i)
+                continue
             all_ports = source['data']['ports']['audio']['output'] + source['data']['ports']['midi']['output'] + source['data']['ports']['cv']['output']
             try:
                 port = next(p for p in all_ports if p['symbol'] == source_s)

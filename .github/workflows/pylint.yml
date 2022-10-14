@@ -1,0 +1,25 @@
+name: pylint
+
+on: [push]
+
+jobs:
+  pylint:
+    runs-on: ubuntu-22.04
+    name: pylint
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install virtualenv
+        run: |
+          sudo apt install python3-virtualenv
+      - name: Setup pylint
+        run: |
+          virtualenv modui-env
+          source modui-env/bin/activate
+          pip3 install -r requirements.txt
+          pip3 install pylint
+      - name: Run pylint
+        run: |
+          virtualenv modui-env
+          source modui-env/bin/activate
+          pylint -E mod/*.py 
+          # modtools/*.py
