@@ -2125,7 +2125,7 @@ class Host(object):
             plugins = remove_bundle_from_lilv_world(bundlepath, resource)
             callback((True, plugins))
 
-        self.send_notmodified("bundle_remove \"%s\" %s" % (bundlepath.replace('"','\\"'), resource or ""),
+        self.send_notmodified("bundle_remove \"%s\" %s" % (bundlepath.replace('"','\\"'), resource or '""'),
                               host_callback, datatype='boolean')
 
     def refresh_bundle(self, bundlepath, plugin_uri):
