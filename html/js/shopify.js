@@ -1,7 +1,7 @@
 var SHOPIFY_CLIENT_OPTIONS = {
-    domain: 'moddevices.myshopify.com',
-    apiKey: 'a367fce84b88e7a14fc70b031a6257df',
-    appId: '6'
+    domain: 'shop.mod.audio',
+    apiKey: 'f98e0beff8656549ce54617c492aa46c',
+    appId: '1'
 };
 
 var SHOPIFY_PRODUCT_OPTIONS = {
