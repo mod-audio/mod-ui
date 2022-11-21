@@ -6680,7 +6680,7 @@ _:b%i
         if actuator.startswith(HW_CV_PREFIX):
             return "mod-spi2jack:" + actuator[len(HW_CV_PREFIX):]
         else:
-            return self._fix_host_connection_port(actuator.split("/cv")[1])
+            return self._fix_host_connection_port(actuator.split(CV_OPTION,1)[1])
 
     # -----------------------------------------------------------------------------------------------------------------
     # Profile stuff
