@@ -128,14 +128,14 @@ class Profile(object):
     DEFAULTS = {
         'expPedalMode': EXPRESSION_PEDAL_MODE_RING,
         'headphoneBypass': False,
-        'headphoneVolume': -6.0, # 60%
+        'headphoneVolume': -24.0,
         'inputMode': INPUT_MODE_CV,
         'inputStereoLink': True,
         'masterVolumeChannelMode': MASTER_VOLUME_CHANNEL_MODE_BOTH,
         'midiChannelForPedalboardsNavigation': MIDI_CHANNEL_NAVIGATION_OFF,
         'midiChannelForSnapshotsNavigation': MIDI_CHANNEL_NAVIGATION_OFF,
         'midiClockSend': False,
-        'output1volume': 0.0, # 100%
+        'output1volume': 0.0, # 0dB
         'output2volume': 0.0,
         'outputMode': OUTPUT_MODE_HEADPHONE,
         'outputStereoLink': True,
@@ -144,29 +144,29 @@ class Profile(object):
         'transportSource': TRANSPORT_SOURCE_INTERNAL,
         # must contain extra stuff from profile 1
         'index': 1,
-        'input1volume': 8.0, # 10%
-        'input2volume': 8.0,
+        'input1volume': 24.0, # 0dB
+        'input2volume': 24.0,
     }
     DEFAULTS_EXTRA = {
         1: {
             'index': 1,
-            'input1volume': 8.0, # 10%
-            'input2volume': 8.0,
+            'input1volume': 24.0, # 0dB
+            'input2volume': 24.0,
         },
         2: {
             'index': 2,
-            'input1volume': 16.0, # 20%
-            'input2volume': 16.0,
+            'input1volume': 24.0, # 0dB
+            'input2volume': 24.0,
         },
         3: {
             'index': 3,
-            'input1volume': 63.0, # 80%
-            'input2volume': 63.0,
+            'input1volume': 60.0, # 18dB
+            'input2volume': 60.0,
         },
         4: {
             'index': 4,
-            'input1volume': 0.0, # 0 %
-            'input2volume': 0.0,
+            'input1volume': 24.0, # 0dB
+            'input2volume': 24.0,
         },
     }
 
