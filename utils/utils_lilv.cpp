@@ -1422,17 +1422,17 @@ const PluginInfo_Mini& _get_plugin_info_mini(const LilvPlugin* const p, const Na
     // --------------------------------------------------------------------------------------------------------
     // brand
 
-    char brand[11+1] = { '\0' };
+    char brand[16+1] = {};
 
     if (LilvNodes* const nodes = lilv_plugin_get_value(p, ns.mod_brand))
     {
-        strncpy(brand, lilv_node_as_string(lilv_nodes_get_first(nodes)), 11);
+        strncpy(brand, lilv_node_as_string(lilv_nodes_get_first(nodes)), 16);
         info.brand = strdup(brand);
         lilv_nodes_free(nodes);
     }
     else if (LilvNode* const node = lilv_plugin_get_author_name(p))
     {
-        strncpy(brand, lilv_node_as_string(node), 11);
+        strncpy(brand, lilv_node_as_string(node), 16);
         info.brand = strdup(brand);
         lilv_node_free(node);
     }
@@ -1444,11 +1444,11 @@ const PluginInfo_Mini& _get_plugin_info_mini(const LilvPlugin* const p, const Na
     // --------------------------------------------------------------------------------------------------------
     // label
 
-    char label[16+1] = { '\0' };
+    char label[24+1] = {};
 
     if (LilvNodes* const nodes = lilv_plugin_get_value(p, ns.mod_label))
     {
-        strncpy(label, lilv_node_as_string(lilv_nodes_get_first(nodes)), 16);
+        strncpy(label, lilv_node_as_string(lilv_nodes_get_first(nodes)), 24);
         info.label = strdup(label);
         lilv_nodes_free(nodes);
     }
@@ -1458,13 +1458,13 @@ const PluginInfo_Mini& _get_plugin_info_mini(const LilvPlugin* const p, const Na
     }
     else
     {
-        if (strlen(info.name) <= 16)
+        if (strlen(info.name) <= 24)
         {
             info.label = strdup(info.name);
         }
         else
         {
-            strncpy(label, info.name, 16);
+            strncpy(label, info.name, 24);
             info.label = strdup(label);
         }
     }
@@ -1847,7 +1847,7 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
     }
 
     {
-        char versiontmpstr[32+1] = { '\0' };
+        char versiontmpstr[32+1] = {};
         snprintf(versiontmpstr, 32, "%d.%d", info.minorVersion, info.microVersion);
         info.version = strdup(versiontmpstr);
     }
@@ -1971,8 +1971,8 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
 
         /* NOTE: this gives a false positive on valgrind.
                  see https://bugzilla.redhat.com/show_bug.cgi?id=678518 */
-        if (strlen(brand) > 10)
-            brand[10] = '\0';
+        if (strlen(brand) > 16)
+            brand[16] = '\0';
 
         info.brand = brand;
         lilv_nodes_free(nodes);
@@ -1983,14 +1983,14 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
     }
     else
     {
-        if (strlen(info.author.name) <= 10)
+        if (strlen(info.author.name) <= 16)
         {
             info.brand = strdup(info.author.name);
         }
         else
         {
-            char brand[10+1] = { '\0' };
-            strncpy(brand, info.author.name, 10);
+            char brand[16+1] = {};
+            strncpy(brand, info.author.name, 16);
             info.brand = strdup(brand);
         }
     }
@@ -2004,8 +2004,8 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
 
         /* NOTE: this gives a false positive on valgrind.
                  see https://bugzilla.redhat.com/show_bug.cgi?id=678518 */
-        if (strlen(label) > 16)
-            label[16] = '\0';
+        if (strlen(label) > 24)
+            label[24] = '\0';
 
         info.label = label;
         lilv_nodes_free(nodes);
@@ -2016,14 +2016,14 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
     }
     else
     {
-        if (strlen(info.name) <= 16)
+        if (strlen(info.name) <= 24)
         {
             info.label = strdup(info.name);
         }
         else
         {
-            char label[16+1] = { '\0' };
-            strncpy(label, info.name, 16);
+            char label[24+1] = {};
+            strncpy(label, info.name, 24);
             info.label = strdup(label);
         }
     }
