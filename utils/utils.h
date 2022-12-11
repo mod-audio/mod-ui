@@ -283,6 +283,7 @@ typedef struct {
 typedef struct {
     const char* title;
     int width, height;
+    bool factory;
     bool midi_separated_mode;
     bool midi_loopback;
     const PedalboardPlugin* plugins;
@@ -295,6 +296,7 @@ typedef struct {
 typedef struct {
     bool valid;
     bool broken;
+    bool factory;
     const char* uri;
     const char* bundle;
     const char* title;

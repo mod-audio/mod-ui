@@ -434,6 +434,7 @@ class PedalboardInfo(Structure):
         ("title", c_char_p),
         ("width", c_int),
         ("height", c_int),
+        ("factory", c_bool),
         ("midi_separated_mode", c_bool),
         ("midi_loopback", c_bool),
         ("plugins", POINTER(PedalboardPlugin)),
@@ -447,6 +448,7 @@ class PedalboardInfo_Mini(Structure):
     _fields_ = [
         ("valid", c_bool),
         ("broken", c_bool),
+        ("factory", c_bool),
         ("uri", c_char_p),
         ("bundle", c_char_p),
         ("title", c_char_p),

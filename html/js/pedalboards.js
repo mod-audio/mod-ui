@@ -124,7 +124,8 @@ JqueryClass('pedalboardBox', {
         var self = $(this)
 
         options = $.extend({
-            resultCanvas: self.find('.js-pedalboards'),
+            resultCanvasUser: self.find('.js-user-pedalboards'),
+            resultCanvasFactory: self.find('.js-factory-pedalboards'),
             viewModes: self.find('.view-modes'),
             viewModeList: self.find('#view-mode-list'),
             viewModeGrid: self.find('#view-mode-grid'),
@@ -161,7 +162,8 @@ JqueryClass('pedalboardBox', {
                 self.pedalboardBox('showPedalboard', pedalboard)
             },
             cleanResults: function () {
-                self.data('resultCanvas').html('')
+                self.data('resultCanvasUser').html('')
+                self.data('resultCanvasFactory').html('')
                 self.data('results', {})
             }
         }, options))
@@ -179,20 +181,23 @@ JqueryClass('pedalboardBox', {
             self.window('close')
         })
 
-        options.viewModes.pedalboardsModeSelector(options.resultCanvas, options.saveConfigValue)
+        options.viewModes.pedalboardsModeSelector(options.resultCanvasUser,
+                                                  options.resultCanvasFactory,
+                                                  options.saveConfigValue)
 
         return self
     },
 
     initViewMode: function (viewMode) {
-      var self = $(this)
-      if (viewMode === 'list') {
-        self.data('resultCanvas').addClass('list-selected')
-        self.data('viewModeList').addClass('selected')
-        self.data('viewModeGrid').removeClass('selected')
-      } else { // grid or no value yet (grid is default)
-        self.data('viewModeGrid').addClass('selected')
-      }
+        var self = $(this)
+        if (viewMode === 'list') {
+            self.data('resultCanvasUser').addClass('list-selected')
+            self.data('resultCanvasFactory').addClass('list-selected')
+            self.data('viewModeList').addClass('selected')
+            self.data('viewModeGrid').removeClass('selected')
+        } else { // grid or no value yet (grid is default)
+            self.data('viewModeGrid').addClass('selected')
+        }
     },
 
     mode: function (mode) {
@@ -207,7 +212,7 @@ JqueryClass('pedalboardBox', {
     showPedalboard: function (pedalboard) {
         var self = $(this)
         var results = self.data('results')
-        var canvas = self.data('resultCanvas')
+        var canvas = pedalboard.factory ? self.data('resultCanvasFactory') : self.data('resultCanvasUser')
         self.pedalboardBox('render', pedalboard, canvas)
         results[pedalboard.bundle] = pedalboard
     },
@@ -270,7 +275,7 @@ JqueryClass('pedalboardBox', {
  * Takes a pedalboard canvas and select between grid and list mode
  */
 JqueryClass('pedalboardsModeSelector', {
-    init: function (canvas, saveConfigValue) {
+    init: function (canvasUser, canvasFactory, saveConfigValue) {
         var self = $(this)
         self.click(function () {
             // self.toggleClass('icon-th-1')
@@ -280,7 +285,8 @@ JqueryClass('pedalboardsModeSelector', {
             var viewModeGrid = self.find('#view-mode-grid')
             var newViewMode = viewModeList.hasClass('selected') ? 'grid' : 'list'
             saveConfigValue('pb-view-mode', newViewMode, function () {
-              canvas.toggleClass('list-selected')
+              canvasUser.toggleClass('list-selected')
+              canvasFactory.toggleClass('list-selected')
               viewModeList.toggleClass('selected')
               viewModeGrid.toggleClass('selected')
             })

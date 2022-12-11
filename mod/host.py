@@ -132,7 +132,8 @@ from mod.protocol import (
     Protocol, ProtocolError, process_resp,
 )
 from mod.settings import (
-    APP, LOG, DEFAULT_PEDALBOARD, DATA_DIR, LV2_PEDALBOARDS_DIR, USER_FILES_DIR,
+    APP, LOG, DEFAULT_PEDALBOARD,
+    DATA_DIR, LV2_PEDALBOARDS_DIR, LV2_FACTORY_PEDALBOARDS_DIR, USER_FILES_DIR,
     PEDALBOARD_INSTANCE, PEDALBOARD_INSTANCE_ID, PEDALBOARD_URI, PEDALBOARD_TMP_DIR,
     TUNER_URI, TUNER_INSTANCE_ID, TUNER_INPUT_PORT, TUNER_MONITOR_PORT, HMI_TIMEOUT, MODEL_TYPE,
     UNTITLED_PEDALBOARD_NAME, DEFAULT_SNAPSHOT_NAME,
@@ -3545,7 +3546,8 @@ class Host(object):
             self.pedalboard_size     = [pb['width'],pb['height']]
             self.pedalboard_version  = pb['version']
 
-            if bundlepath and bundlepath.startswith(LV2_PEDALBOARDS_DIR):
+            if bundlepath and (bundlepath.startswith(LV2_PEDALBOARDS_DIR) or
+                               bundlepath.startswith(LV2_FACTORY_PEDALBOARDS_DIR)):
                 save_last_bank_and_pedalboard(self.bank_id, bundlepath)
             else:
                 save_last_bank_and_pedalboard(0, "")
@@ -3819,13 +3821,16 @@ class Host(object):
             newTitle = title = get_unique_name(title, get_all_pedalboard_names()) or title
             titlesym = symbolify(title)[:16]
 
-            lv2path = os.path.expanduser("~/.pedalboards/")
-            trypath = os.path.join(lv2path, "%s.pedalboard" % titlesym)
+            # Special handling for saving factory pedalboards
+            if self.pedalboard_path and self.pedalboard_path.startswith(LV2_FACTORY_PEDALBOARDS_DIR) and not asNew:
+                trypath = os.path.join(LV2_PEDALBOARDS_DIR, os.path.basename(self.pedalboard_path))
+            else:
+                trypath = os.path.join(LV2_PEDALBOARDS_DIR, "%s.pedalboard" % titlesym)
 
             # if trypath already exists, generate a random bundlepath based on title
             if os.path.exists(trypath):
                 while True:
-                    trypath = os.path.join(lv2path, "%s-%i.pedalboard" % (titlesym, randint(1,99999)))
+                    trypath = os.path.join(LV2_PEDALBOARDS_DIR, "%s-%i.pedalboard" % (titlesym, randint(1,99999)))
                     if os.path.exists(trypath):
                         continue
                     bundlepath = trypath
@@ -3836,8 +3841,8 @@ class Host(object):
                 bundlepath = trypath
 
                 # just in case..
-                if not os.path.exists(lv2path):
-                    os.mkdir(lv2path)
+                if not os.path.exists(LV2_PEDALBOARDS_DIR):
+                    os.mkdir(LV2_PEDALBOARDS_DIR)
 
             # create bundle path
             os.mkdir(bundlepath)

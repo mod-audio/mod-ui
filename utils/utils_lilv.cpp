@@ -97,7 +97,15 @@ std::list<std::string> PLUGINStoReload;
 
 // read KEYS_PATH. NOTE: assumes trailing separator
 static const char* const KEYS_PATH = getenv("MOD_KEYS_PATH");
-static const size_t KEYS_PATHlen = (KEYS_PATH != NULL && *KEYS_PATH != '\0') ? strlen(KEYS_PATH) : 0;
+static const size_t KEYS_PATHlen = (KEYS_PATH != NULL && *KEYS_PATH != '\0') 
+                                 ? strlen(KEYS_PATH)
+                                 : 0;
+
+// read FACTORY_PEDALBOARDS_DIR
+static const char* const FACTORY_PEDALBOARDS_DIR = getenv("MOD_FACTORY_PEDALBOARDS_DIR");
+static const size_t FACTORY_PEDALBOARDS_DIRlen = (FACTORY_PEDALBOARDS_DIR != NULL && *FACTORY_PEDALBOARDS_DIR != '\0')
+                                               ? strlen(FACTORY_PEDALBOARDS_DIR)
+                                               : 0;
 
 // some other cached values
 static const char* const HOME = getenv("HOME");
@@ -154,6 +162,14 @@ inline bool ends_with(const std::string& value, const std::string ending)
     if (ending.size() > value.size())
         return false;
     return std::equal(ending.rbegin(), ending.rend(), value.rbegin());
+}
+
+inline bool is_factory_pedalboard(const char* const bundle)
+{
+    if (FACTORY_PEDALBOARDS_DIRlen == 0)
+        return false;
+
+    return strncmp(bundle, FACTORY_PEDALBOARDS_DIR, FACTORY_PEDALBOARDS_DIRlen) == 0;
 }
 
 inline std::string sha1(const char* const cstring)
@@ -1151,9 +1167,9 @@ static void _place_preset_info(PluginInfo& info,
     lilv_nodes_free(presetnodes);
 }
 
-const char* const* _get_plugin_categories(const LilvPlugin* const p,
-                                        LilvNode* const rdf_type,
-                                        bool* const supported = nullptr)
+static const char* const* _get_plugin_categories(const LilvPlugin* const p,
+                                                 LilvNode* const rdf_type,
+                                                 bool* const supported = nullptr)
 {
     const char* const* category = nullptr;
 
@@ -1308,6 +1324,27 @@ const char* const* _get_plugin_categories(const LilvPlugin* const p,
     }
 
     return category;
+}
+
+static const char* _get_lv2_pedalboards_path()
+{
+    static std::string path;
+
+    if (path.empty())
+    {
+        if (const char* const pbdir = getenv("MOD_USER_PEDALBOARDS_DIR"))
+            path = pbdir;
+        else
+            path = "~/.pedalboards";
+    }
+
+    if (FACTORY_PEDALBOARDS_DIR != nullptr)
+    {
+        path += ":";
+        path += FACTORY_PEDALBOARDS_DIR;
+    }
+
+    return path.c_str();
 }
 
 const PluginInfo_Mini& _get_plugin_info_mini(const LilvPlugin* const p, const NamespaceDefinitions_Mini& ns)
@@ -2913,6 +2950,7 @@ const PedalboardInfo_Mini& _get_pedalboard_info_mini(const LilvPlugin* const p,
         lilv_nodes_free(nodes);
     }
 
+    info.factory = is_factory_pedalboard(info.bundle);
     info.valid = true;
     return info;
 }
@@ -4219,7 +4257,7 @@ const PedalboardInfo_Mini* const* get_all_pedalboards(void)
 
     // Custom path for pedalboards
     const char* const oldlv2path = getenv("LV2_PATH");
-    setenv("LV2_PATH", "~/.pedalboards/", 1);
+    setenv("LV2_PATH", _get_lv2_pedalboards_path(), 1);
 
     LilvWorld* const w = lilv_world_new();
     lilv_world_load_all(w);
@@ -4280,7 +4318,7 @@ const char* const* get_broken_pedalboards(void)
 
     // Custom path for pedalboards
     const char* const oldlv2path = getenv("LV2_PATH");
-    setenv("LV2_PATH", "~/.pedalboards/", 1);
+    setenv("LV2_PATH", _get_lv2_pedalboards_path(), 1);
 
     LilvWorld* const w = lilv_world_new();
     lilv_world_load_all(w);
@@ -4470,6 +4508,18 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
         }
 
         lilv_nodes_free(widthnodes);
+    }
+
+    // --------------------------------------------------------------------------------------------------------
+    // factory
+
+    if (const LilvNode* const bundlenode = lilv_plugin_get_bundle_uri(p))
+    {
+        if (char* const bundleabspath = lilv_file_abspath(lilv_node_as_string(bundlenode)))
+        {
+            info.factory = is_factory_pedalboard(bundleabspath);
+            free(bundleabspath);
+        }
     }
 
     // --------------------------------------------------------------------------------------------------------
