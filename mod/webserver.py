@@ -2270,6 +2270,12 @@ application = web.Application(
         ],
         debug = bool(LOG >= 2), **settings)
 
+def signal_hmi_screenshot():
+    with open("/root/hmi-screenshot-mode", 'r') as fh:
+        screen = int(fh.read().strip())
+    os.remove("/root/hmi-screenshot-mode")
+    SESSION.hmi.screenshot(screen)
+
 def signal_device_firmware_updated():
     os.remove(UPDATE_CC_FIRMWARE_FILE)
     SESSION.signal_device_updated()
@@ -2300,7 +2306,9 @@ def signal_upgrade_check():
 
 def signal_recv(sig, _=0):
     if sig == SIGUSR1:
-        if os.path.exists(UPDATE_CC_FIRMWARE_FILE):
+        if os.path.exists("/root/hmi-screenshot-mode"):
+            func = signal_hmi_screenshot
+        elif os.path.exists(UPDATE_CC_FIRMWARE_FILE):
             func = signal_device_firmware_updated
         else:
             func = SESSION.signal_save

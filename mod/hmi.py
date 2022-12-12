@@ -44,6 +44,7 @@ from mod.mod_protocol import (
     CMD_DUOX_EXP_OVERCURRENT,
     CMD_RESPONSE,
     CMD_RESTORE,
+    CMD_SCREENSHOT,
     FLAG_CONTROL_MOMENTARY,
     FLAG_CONTROL_REVERSE,
     FLAG_CONTROL_TAP_TEMPO,
@@ -541,6 +542,9 @@ class HMI(object):
 
     def reset_eeprom(self, callback=None, datatype='int'):
         self.send(CMD_RESET_EEPROM, callback, datatype)
+
+    def screenshot(self, screen, callback=None, datatype='int'):
+        self.send('{} {} ignored'.format(CMD_SCREENSHOT, screen), callback, datatype)
 
     # FIXME this message should be generic, most likely
     def boot(self, bootdata, callback, datatype='int'):
