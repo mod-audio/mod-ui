@@ -819,8 +819,18 @@ $('document').ready(function() {
                   <i id="view-mode-list" class="view-mode icon-th-list"></i>
                 </span>
             </header>
-            <div class="pedalboards clearfix js-user-pedalboards"></div>
-            <div class="pedalboards clearfix js-factory-pedalboards"></div>
+            <div class="pedalboards clearfix">
+                <div class="clearfix">
+                    <span style="color:white;font-size:1.4em;margin:0 8px 0 1%;">User Pedalboards:</span>
+                    <div style="background:rgb(153, 153, 153);display:inline-block;width:calc(100% - 20rem);height:2px;vertical-align:middle;"></div>
+                    <div class="js-user-pedalboards"></div>
+                </div>
+                <div class="clearfix">
+                    <span style="color:white;font-size:1.4em;margin:0 8px 0 1%;">Factory Pedalboards:</span>
+                    <div style="background:rgb(153, 153, 153);display:inline-block;width:calc(100% - 22.5rem);height:2px;vertical-align:middle;"></div>
+                    <div class="js-factory-pedalboards"></div>
+                </div>
+            </div>
         </div>
     </div>
     <!-- END PEDALBOARDS LIBRARY -->

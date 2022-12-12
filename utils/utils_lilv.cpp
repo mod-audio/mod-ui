@@ -166,10 +166,10 @@ inline bool ends_with(const std::string& value, const std::string ending)
 
 inline bool is_factory_pedalboard(const char* const bundle)
 {
-    if (FACTORY_PEDALBOARDS_DIRlen == 0)
-        return false;
+    if (FACTORY_PEDALBOARDS_DIRlen != 0)
+        return strncmp(bundle, FACTORY_PEDALBOARDS_DIR, FACTORY_PEDALBOARDS_DIRlen) == 0;
 
-    return strncmp(bundle, FACTORY_PEDALBOARDS_DIR, FACTORY_PEDALBOARDS_DIRlen) == 0;
+    return strncmp(bundle, "/usr/share/mod/pedalboards/", 27) == 0;
 }
 
 inline std::string sha1(const char* const cstring)
@@ -1336,12 +1336,16 @@ static const char* _get_lv2_pedalboards_path()
             path = pbdir;
         else
             path = "~/.pedalboards";
-    }
 
-    if (FACTORY_PEDALBOARDS_DIR != nullptr)
-    {
-        path += ":";
-        path += FACTORY_PEDALBOARDS_DIR;
+        if (FACTORY_PEDALBOARDS_DIR != nullptr)
+        {
+            path += ":";
+            path += FACTORY_PEDALBOARDS_DIR;
+        }
+        else
+        {
+            path += ":/usr/share/mod/pedalboards";
+        }
     }
 
     return path.c_str();

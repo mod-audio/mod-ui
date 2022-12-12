@@ -234,7 +234,7 @@ JqueryClass('pedalboardBox', {
             return false
         })
 
-        if (pedalboard.bundle == DEFAULT_PEDALBOARD) {
+        if (pedalboard.factory || pedalboard.bundle == DEFAULT_PEDALBOARD) {
             rendered.find('.js-remove').hide()
         } else {
             rendered.find('.js-remove').click(function (e) {
