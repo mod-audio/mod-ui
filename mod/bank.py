@@ -18,32 +18,33 @@
 import os
 import json
 from mod import get_unique_name, safe_json_load, TextFileFlusher
-from mod.settings import BANKS_JSON_FILE, LAST_STATE_JSON_FILE
+from mod.settings import USER_BANKS_JSON_FILE, FACTORY_BANKS_JSON_FILE, LAST_STATE_JSON_FILE
 
 # return list of banks
-def list_banks(brokenpedalbundles = [], shouldSave = True):
-    banks = safe_json_load(BANKS_JSON_FILE, list)
+def list_banks(brokenpedalbundles = [], userBanks = True, shouldSave = True):
+    banks = safe_json_load(USER_BANKS_JSON_FILE if userBanks else FACTORY_BANKS_JSON_FILE, list)
 
     if len(banks) == 0:
         return []
 
     changed     = False
     checkbroken = len(brokenpedalbundles) > 0
-    banknames   = []
+    ubanknames  = []
 
     for bank in banks:
-        # check for unique names
-        ntitle = get_unique_name(bank['title'], banknames)
-        if ntitle is not None:
-            bank['title'] = ntitle
-            changed = True
-        banknames.append(bank['title'])
+        # check for unique names in user banks
+        if userBanks:
+            ntitle = get_unique_name(bank['title'], ubanknames)
+            if ntitle is not None:
+                bank['title'] = ntitle
+                changed = True
+            ubanknames.append(bank['title'])
 
         # check for valid pedalboards
         validpedals = []
 
         for pb in bank['pedalboards']:
-            if 'bundle' not in pb.keys() or not pb['bundle']:
+            if 'bundle' not in pb or not pb['bundle']:
                 title = pb['title'].encode("ascii", "ignore").decode("ascii")
                 print("Auto-removing pedalboard '%s' from bank (missing bundle)" % title)
                 changed = True
@@ -67,14 +68,14 @@ def list_banks(brokenpedalbundles = [], shouldSave = True):
 
         bank['pedalboards'] = validpedals
 
-    if changed and shouldSave:
+    if userBanks and changed and shouldSave:
         save_banks(banks)
 
     return banks
 
-# save banks to disk
+# save user banks to disk
 def save_banks(banks):
-    with TextFileFlusher(BANKS_JSON_FILE) as fh:
+    with TextFileFlusher(USER_BANKS_JSON_FILE) as fh:
         json.dump(banks, fh, indent=4)
 
 # save last bank id and pedalboard path to disk
@@ -102,10 +103,10 @@ def get_last_bank_and_pedalboard():
 
     return (data['bank']+1, data['pedalboard'])
 
-# Remove a pedalboard from banks, and banks that are or will become empty
+# Remove a pedalboard from user banks
 def remove_pedalboard_from_banks(pedalboard):
     newbanks = []
-    banks = safe_json_load(BANKS_JSON_FILE, list)
+    banks = safe_json_load(USER_BANKS_JSON_FILE, list)
 
     for bank in banks:
         newpedalboards = []
@@ -114,7 +115,6 @@ def remove_pedalboard_from_banks(pedalboard):
             if os.path.abspath(oldpedalboard['bundle']) != os.path.abspath(pedalboard):
                 newpedalboards.append(oldpedalboard)
 
-        # if there's no pedalboards left ignore this bank (ie, delete it)
         if len(newpedalboards) == 0:
             title = bank['title'].encode("ascii", "ignore").decode("ascii")
             print("NOTE: bank with name '%s' does not contain any pedalboards" % title)

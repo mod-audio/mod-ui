@@ -45,11 +45,13 @@ DATA_DIR = os.environ.get('MOD_DATA_DIR', os.path.expanduser('~/data'))
 CACHE_DIR = os.path.join(DATA_DIR, '.cache')
 USER_FILES_DIR = os.environ.get('MOD_USER_FILES_DIR', '/data/user-files')
 KEYS_PATH = os.environ.get('MOD_KEYS_PATH', join(DATA_DIR, 'keys'))
-BANKS_JSON_FILE = os.environ.get('MOD_BANKS_JSON', join(DATA_DIR, 'banks.json'))
 FAVORITES_JSON_FILE = os.environ.get('MOD_FAVORITES_JSON', join(DATA_DIR, 'favorites.json'))
 LAST_STATE_JSON_FILE = os.environ.get('MOD_LAST_STATE_JSON', join(DATA_DIR, 'last.json'))
 PREFERENCES_JSON_FILE = os.environ.get('MOD_PREFERENCES_JSON', join(DATA_DIR, 'prefs.json'))
 USER_ID_JSON_FILE = os.environ.get('MOD_USER_ID_JSON', join(DATA_DIR, 'user-id.json'))
+
+USER_BANKS_JSON_FILE = os.environ.get('MOD_USER_BANKS_JSON', join(DATA_DIR, 'banks.json'))
+FACTORY_BANKS_JSON_FILE = os.environ.get('MOD_FACTORY_BANKS_JSON', '/usr/share/mod/banks.json')
 
 # It's mandatory KEYS_PATH ends with / and is in MOD_KEYS_PATH,
 # so utils_lilv.so can properly access it

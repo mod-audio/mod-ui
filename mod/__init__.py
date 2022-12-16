@@ -55,7 +55,7 @@ def check_environment():
     from mod.settings import (LV2_PEDALBOARDS_DIR,
                               DEFAULT_PEDALBOARD, DEFAULT_PEDALBOARD_COPY,
                               DATA_DIR, DOWNLOAD_TMP_DIR, PEDALBOARD_TMP_DIR,
-                              KEYS_PATH, BANKS_JSON_FILE, FAVORITES_JSON_FILE,
+                              KEYS_PATH, USER_BANKS_JSON_FILE, FAVORITES_JSON_FILE,
                               UPDATE_CC_FIRMWARE_FILE, UPDATE_MOD_OS_FILE,
                               CAPTURE_PATH, PLAYBACK_PATH)
 
@@ -93,8 +93,8 @@ def check_environment():
     if os.path.exists(DEFAULT_PEDALBOARD_COPY) and not os.path.exists(DEFAULT_PEDALBOARD):
         shutil.copytree(DEFAULT_PEDALBOARD_COPY, DEFAULT_PEDALBOARD)
 
-    if not os.path.exists(BANKS_JSON_FILE):
-        with open(BANKS_JSON_FILE, 'w') as fh:
+    if not os.path.exists(USER_BANKS_JSON_FILE):
+        with open(USER_BANKS_JSON_FILE, 'w') as fh:
             fh.write("[]")
 
     if not os.path.exists(FAVORITES_JSON_FILE):

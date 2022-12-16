@@ -39,7 +39,7 @@ from mod.settings import (APP, LOG, DEV_API,
                           HTML_DIR, DOWNLOAD_TMP_DIR, DEVICE_KEY, DEVICE_WEBSERVER_PORT,
                           CLOUD_HTTP_ADDRESS, CLOUD_LABS_HTTP_ADDRESS,
                           PLUGINS_HTTP_ADDRESS, PEDALBOARDS_HTTP_ADDRESS, CONTROLCHAIN_HTTP_ADDRESS,
-                          BANKS_JSON_FILE,
+                          USER_BANKS_JSON_FILE,
                           LV2_PLUGIN_DIR, LV2_PEDALBOARDS_DIR, IMAGE_VERSION,
                           UPDATE_CC_FIRMWARE_FILE, UPDATE_MOD_OS_FILE, USING_256_FRAMES_FILE,
                           DEFAULT_ICON_TEMPLATE, DEFAULT_SETTINGS_TEMPLATE, DEFAULT_ICON_IMAGE,
@@ -614,7 +614,7 @@ class SystemCleanup(JsonRequestHandler):
         stuffToDelete = []
 
         if banks:
-            stuffToDelete.append(BANKS_JSON_FILE)
+            stuffToDelete.append(USER_BANKS_JSON_FILE)
 
         if favorites:
             stuffToDelete.append(FAVORITES_JSON_FILE)
