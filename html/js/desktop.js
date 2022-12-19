@@ -847,7 +847,7 @@ function Desktop(elements) {
         }
 
         $.ajax({
-            url: SITEURL + '/pedalboards/' + pedalboard_id,
+            url: startsWith(pedalboard_id, 'https://') ? pedalboard_id : (SITEURL + '/pedalboards/' + pedalboard_id),
             contentType: 'application/json',
             success: function (resp) {
                 if (resp.data.stable === false && PREFERENCES['show-unstable-plugins'] !== "true") {
