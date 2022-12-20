@@ -877,3 +877,47 @@ body > .mod-settings.mod-window-visible {
 .mod-pedal-settings-address select {
     width:202px;
 }
+
+/* FIXME put it in the right place */
+#bank-pedalboards-result {
+    width: unset;
+}
+
+#bank-library #bank-title {
+    width: unset;
+    height: unset;
+}
+
+#bank-library #bank-pedalboards {
+    top: 110px;
+    width: 100%;
+    max-width: 680px;
+}
+
+#bank-library #bank-pedalboards-search {
+    width: calc(100% - 1080px); /* FIXME still not quite right */
+    min-width: 30%;
+}
+
+#bank-pedalboards-result .pedalboard {
+    margin: 10px;
+}
+
+#bank-pedalboards-result > .js-canvas {
+    display: flex;
+    flex-flow: row wrap;
+    justify-content: center;
+    /* these ones below are not always supported, default to center in worst case */
+    justify-content: space-evenly;
+    justify-content: space-around;
+}
+
+.js-canvas .js-pedalboard-item {
+    width: 33%;
+    min-width: 230px;
+    max-width: 320px;
+}
+
+#bank-library #bank-pedalboards .pedalboard > img {
+    width: 100%;
+}

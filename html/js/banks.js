@@ -222,7 +222,7 @@ JqueryClass('bankBox', {
 
         var i, pedalboardData, rendered
         for (i = 0; i < bankData.pedalboards.length; i++) {
-            rendered = self.bankBox('renderPedalboard', bankData.pedalboards[i], i.toString())
+            rendered = self.bankBox('renderPedalboard', bankData.pedalboards[i], (i+1).toString())
             rendered.find('.js-remove').show()
             rendered.appendTo(bank.data('pedalboards'))
         }
@@ -352,10 +352,8 @@ JqueryClass('bankBox', {
             image: "/img/loading-pedalboard.gif",
         }
 
-        var rendered = $(Mustache.render(TEMPLATES.bank_pedalboard, metadata))
-
-        // TODO is this necessary?
-        rendered.addClass('js-pedalboard-item')
+        var rendered = $(Mustache.render(index ? TEMPLATES.bank_pedalboard
+                                               : TEMPLATES.bank_pedalboard_item, metadata))
 
         // Assign remove functionality. If removal is not desired (it's a search result),
         // then the remove clickable element will be hidden
