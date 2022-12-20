@@ -882,7 +882,17 @@ $('document').ready(function() {
 
             <!-- BANK-PEDALBOARDS-RESULT -->
             <div id="bank-pedalboards-result">
-                <div class="js-canvas grid-selected"></div>
+<!--                 <div class="js-canvas grid-selected"></div> -->
+                <div class="clearfix">
+                    <span style="color:white;font-size:1.4em;margin:0 10px;">User Pedalboards</span>
+                    <div style="background:rgb(153, 153, 153);display:inline-block;width:calc(100% - 20px - 16.5rem);height:2px;vertical-align:middle;"></div>
+                    <div class="js-canvas js-user-pedalboards" style="padding:8px 0;"></div>
+                </div>
+                <div class="clearfix">
+                    <span style="color:white;font-size:1.4em;margin:0 10px;">Factory Pedalboards</span>
+                    <div style="background:rgb(153, 153, 153);display:inline-block;width:calc(100% - 20px - 19rem);height:2px;vertical-align:middle;"></div>
+                    <div class="js-canvas js-factory-pedalboards" style="padding:8px 0;"></div>
+                </div>
             </div>
             <!-- END BANK-PEDALBOARDS-RESULT -->
 

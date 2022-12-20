@@ -9,7 +9,8 @@ JqueryClass('bankBox', {
             initMessage: self.find('#bank-init'),
             searchForm: self.find('#bank-pedalboards-search'),
             searchBox: self.find('input[type=search]'),
-            resultCanvas: self.find('#bank-pedalboards-result .js-canvas'),
+            resultCanvasUser: self.find('#bank-pedalboards-result .js-user-pedalboards'),
+            resultCanvasFactory: self.find('#bank-pedalboards-result .js-factory-pedalboards'),
             bankTitle: self.find('#bank-title'),
             saving: $('#banks-saving'),
             previousBankTitle: null,
@@ -33,7 +34,8 @@ JqueryClass('bankBox', {
 
         options.pedalboardCanvas.hide()
         options.searchForm.hide()
-        options.resultCanvas.hide()
+        options.resultCanvasUser.hide()
+        options.resultCanvasFactory.hide()
         options.initMessage.show()
         options.addButton.click(function () {
             self.bankBox('create')
@@ -57,10 +59,15 @@ JqueryClass('bankBox', {
                         return helper
                     }
                 })
-                self.data('resultCanvas').append(rendered)
+                if (pedalboard.factory) {
+                    self.data('resultCanvasFactory').append(rendered)
+                } else {
+                    self.data('resultCanvasUser').append(rendered)
+                }
             },
             cleanResults: function () {
-                self.data('resultCanvas').html('')
+                self.data('resultCanvasUser').html('')
+                self.data('resultCanvasFactory').html('')
             }
         }, options))
 
@@ -119,7 +126,8 @@ JqueryClass('bankBox', {
             self.data('currentBank', null)
             self.data('pedalboardCanvas').html('').hide()
             self.data('searchForm').hide()
-            self.data('resultCanvas').hide()
+            self.data('resultCanvasUser').hide()
+            self.data('resultCanvasFactory').hide()
             self.data('bankTitle').hide()
         } else {
             self.data('loaded', true)
@@ -194,7 +202,7 @@ JqueryClass('bankBox', {
 
     create: function () {
         var self = $(this)
-        if(self.data('resultCanvas').children().length === 0){
+        if (self.data('resultCanvasUser').children().length + self.data('resultCanvasFactory').children().length === 0) {
             new Notification('error', 'Before creating banks you must save a pedalboard first.')
             return;
         }
@@ -272,7 +280,8 @@ JqueryClass('bankBox', {
         // Show everything else
         canvas.show()
         self.data('searchForm').show()
-        self.data('resultCanvas').show()
+        self.data('resultCanvasUser').show()
+        self.data('resultCanvasFactory').show()
 
         // Mark this bank as selected
         self.data('currentBank', bank)
@@ -330,7 +339,8 @@ JqueryClass('bankBox', {
             self.data('previousBankTitle', null)
             self.data('pedalboardCanvas').html('').hide()
             self.data('searchForm').hide()
-            self.data('resultCanvas').hide()
+            self.data('resultCanvasUser').hide()
+            self.data('resultCanvasFactory').hide()
             self.data('bankTitle').hide()
         }
         bank.animate({

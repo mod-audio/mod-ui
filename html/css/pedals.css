@@ -879,8 +879,8 @@ body > .mod-settings.mod-window-visible {
 }
 
 /* FIXME put it in the right place */
-#bank-pedalboards-result {
-    width: unset;
+#bank-library #bank-pedalboards {
+    width: 680px;
 }
 
 #bank-library #bank-title {
@@ -890,28 +890,22 @@ body > .mod-settings.mod-window-visible {
 
 #bank-library #bank-pedalboards {
     top: 110px;
-    width: calc(100% - 500px);
-    min-width: 340px;
-    max-width: 680px;
 }
 
-/*@media only screen and (max-width: 1280px) {
-    #bank-library #bank-pedalboards {
-        max-width: calc(100% - 1080px);
-    }
-}*/
-
-#bank-library #bank-pedalboards-search {
-    width: calc(100% - 1000px);
-    min-width: 250px;
-    max-width: 40%;
+#bank-library #bank-pedalboards .pedalboard .img > img {
+    max-width: 100%;
 }
 
-#bank-pedalboards-result .pedalboard {
+#bank-library #bank-pedalboards-search,
+#bank-library #bank-pedalboards-search #bank-pedalboards-result {
+    width: calc(80% - 680px);
+}
+
+#bank-library #bank-pedalboards-search .pedalboard {
     margin: 10px;
 }
 
-#bank-pedalboards-result > .js-canvas {
+#bank-library #bank-pedalboards-search .js-canvas {
     display: flex;
     flex-flow: row wrap;
     justify-content: center;
@@ -926,10 +920,20 @@ body > .mod-settings.mod-window-visible {
     max-width: 320px;
 }
 
+#bank-library #bank-pedalboards-search .input-clean {
+    top: 38px !important;
+}
+
+@media only screen and (max-width: 1450px) {
+    #bank-library #bank-pedalboards {
+        width: 500px;
+    }
+    #bank-library #bank-pedalboards-search,
+    #bank-library #bank-pedalboards-search #bank-pedalboards-result {
+        width: calc(80% - 500px);
+    }
+}
+
 /*#bank-library #bank-pedalboards .pedalboard > img {
     width: 100%;
 }*/
-
-#bank-library #bank-pedalboards .pedalboard .img > img {
-    max-width: 100%;
-}
