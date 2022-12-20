@@ -46,14 +46,14 @@ JqueryClass('bankBox', {
             render: function (pedalboard, url) {
                 var rendered = self.bankBox('renderPedalboard', pedalboard)
                 rendered.draggable({
-                    cursor: "moz-grabbing !important",
-                    cursor: "webkit-grabbing !important",
+                    cursor: "grabbing !important",
                     revert: 'invalid',
                     connectToSortable: options.pedalboardCanvas,
                     helper: function () {
                         var helper = rendered.clone().appendTo(self)
                         helper.addClass('mod-banks-drag-item')
-                        helper.width(rendered.width())
+                        helper.removeClass('js-pedalboard-item')
+                        helper.find('.js-remove').hide()
                         return helper
                     }
                 })
@@ -65,8 +65,7 @@ JqueryClass('bankBox', {
         }, options))
 
         options.pedalboardCanvas.sortable({
-            cursor: "moz-grabbing !important",
-            cursor: "webkit-grabbing !important",
+            cursor: "grabbing !important",
             revert: true,
             update: function (e, ui) {
                 if (self.droppedBundle && !ui.item.data('pedalboardBundle')) {
@@ -189,7 +188,7 @@ JqueryClass('bankBox', {
         self.data('pedalboardCanvas').children().each(function (i) {
           var pedalboard = $(this)
           var index = pedalboard.find(".js-index")
-          index.html(i + ".")
+          index.html((i+1) + ".&nbsp;")
         })
     },
 
@@ -222,7 +221,7 @@ JqueryClass('bankBox', {
 
         var i, pedalboardData, rendered
         for (i = 0; i < bankData.pedalboards.length; i++) {
-            rendered = self.bankBox('renderPedalboard', bankData.pedalboards[i], (i+1).toString())
+            rendered = self.bankBox('renderPedalboard', bankData.pedalboards[i], i+1)
             rendered.find('.js-remove').show()
             rendered.appendTo(bank.data('pedalboards'))
         }
@@ -282,7 +281,7 @@ JqueryClass('bankBox', {
         self.data('bankCanvas').children().removeClass('selected')
         bank.addClass('selected')
 
-	// Replace the title string
+        // Replace the title string
         self.data('bankTitle').find('h1').text(bank.data('title') || "Untitled")
         self.data('bankTitle').show()
     },
@@ -343,17 +342,21 @@ JqueryClass('bankBox', {
         })
     },
 
-    renderPedalboard: function (pedalboard, index = "") {
+    renderPedalboard: function (pedalboard, index) {
         var self = $(this)
 
         var metadata = {
-            index: index ? (index + ". ") : "",
+            index: index ? (index + ".") : "",
             title: pedalboard.title,
             image: "/img/loading-pedalboard.gif",
         }
 
-        var rendered = $(Mustache.render(index ? TEMPLATES.bank_pedalboard
-                                               : TEMPLATES.bank_pedalboard_item, metadata))
+        var rendered = $(Mustache.render(TEMPLATES.bank_pedalboard, metadata))
+
+        if (!index) {
+            rendered.addClass('js-pedalboard-item')
+            rendered.removeClass('clearfix')
+        }
 
         // Assign remove functionality. If removal is not desired (it's a search result),
         // then the remove clickable element will be hidden
