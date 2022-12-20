@@ -821,14 +821,14 @@ $('document').ready(function() {
             </header>
             <div class="pedalboards clearfix">
                 <div class="clearfix">
-                    <span style="color:white;font-size:1.4em;margin:0 8px 0 1%;">User Pedalboards:</span>
+                    <span style="color:white;font-size:1.4em;margin:0 8px 0 1%;">User Pedalboards</span>
                     <div style="background:rgb(153, 153, 153);display:inline-block;width:calc(100% - 20rem);height:2px;vertical-align:middle;"></div>
-                    <div class="js-user-pedalboards"></div>
+                    <div class="js-user-pedalboards" style="padding:8px 0;"></div>
                 </div>
                 <div class="clearfix">
-                    <span style="color:white;font-size:1.4em;margin:0 8px 0 1%;">Factory Pedalboards:</span>
+                    <span style="color:white;font-size:1.4em;margin:0 8px 0 1%;">Factory Pedalboards</span>
                     <div style="background:rgb(153, 153, 153);display:inline-block;width:calc(100% - 22.5rem);height:2px;vertical-align:middle;"></div>
-                    <div class="js-factory-pedalboards"></div>
+                    <div class="js-factory-pedalboards" style="padding:8px 0;"></div>
                 </div>
             </div>
         </div>
@@ -838,7 +838,7 @@ $('document').ready(function() {
     <!-- BANK LIBRARY -->
     <div id="bank-library" class="mod-hidden mod-init-hidden"><div class="box">
         <header>
-            <h1 class="bottom top">Banks</h1>
+            <h1 class="bottom top">User Banks</h1>
         </header>
 
         <!-- BANK-LIST -->
@@ -852,8 +852,18 @@ $('document').ready(function() {
         <div id="bank-edit">
             <div id="bank-title" class="mod-hidden">
                 <h1>Untitled</h1>
-	    </div>
+            </div>
             <div id="bank-pedalboards" class="grid-selected"></div>
+            <div id="bank-init" class="grid-selected" style="color:#ccc;margin-left:30px;">
+                <h2>
+                    This page is dedicated to user banks.<br>
+                    Factory banks are not displayed on this area.
+                </h2>
+                <p>
+                    To start using banks click on "Add Bank" on the left side,
+                    give it a name and then drag and drop pedalboards from the right side.
+                </p>
+            </div>
         </div>
         <!-- END BANK-PEDALBOARDS -->
 
@@ -863,7 +873,7 @@ $('document').ready(function() {
             <div class="filter clearfix">
                 <div class="clearfix">
                     <div class="form-group">
-                        <label for="searchBank" >Select pedalboards</label>
+                        <label for="searchBank">Select pedalboards</label>
                         <input id="searchBank" class="form-control" maxlength="20" placeholder="Filter by keyword(s)" type="search" autocomplete="off" />
                     </div>
                 </div>

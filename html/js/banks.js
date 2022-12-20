@@ -6,11 +6,10 @@ JqueryClass('bankBox', {
             bankCanvas: self.find('#bank-list .js-canvas'),
             addButton: self.find('#js-add-bank'),
             pedalboardCanvas: self.find('#bank-pedalboards'),
-            pedalboardCanvasMode: self.find('#bank-pedalboards-mode'),
+            initMessage: self.find('#bank-init'),
             searchForm: self.find('#bank-pedalboards-search'),
             searchBox: self.find('input[type=search]'),
             resultCanvas: self.find('#bank-pedalboards-result .js-canvas'),
-            resultCanvasMode: self.find('#bank-pedalboards-result .js-mode'),
             bankTitle: self.find('#bank-title'),
             saving: $('#banks-saving'),
             previousBankTitle: null,
@@ -32,15 +31,10 @@ JqueryClass('bankBox', {
 
         self.data(options)
 
-        // Not used anymore
-        // options.pedalboardCanvasMode.pedalboardsModeSelector(options.pedalboardCanvas)
-        // options.resultCanvasMode.pedalboardsModeSelector(options.resultCanvas)
-
         options.pedalboardCanvas.hide()
-        options.pedalboardCanvasMode.hide()
         options.searchForm.hide()
         options.resultCanvas.hide()
-        options.resultCanvasMode.hide()
+        options.initMessage.show()
         options.addButton.click(function () {
             self.bankBox('create')
         })
@@ -125,10 +119,8 @@ JqueryClass('bankBox', {
         if (self.data('loaded')) {
             self.data('currentBank', null)
             self.data('pedalboardCanvas').html('').hide()
-            self.data('pedalboardCanvasMode').hide()
             self.data('searchForm').hide()
             self.data('resultCanvas').hide()
-            self.data('resultCanvasMode').hide()
             self.data('bankTitle').hide()
         } else {
             self.data('loaded', true)
@@ -275,12 +267,13 @@ JqueryClass('bankBox', {
 
         canvas.append(bank.data('pedalboards').children())
 
-        // Show everything
+        // Hide initial message
+        self.data('initMessage').hide()
+
+        // Show everything else
         canvas.show()
-        self.data('pedalboardCanvasMode').show()
         self.data('searchForm').show()
         self.data('resultCanvas').show()
-        self.data('resultCanvasMode').show()
 
         // Mark this bank as selected
         self.data('currentBank', bank)
@@ -337,10 +330,8 @@ JqueryClass('bankBox', {
             self.data('currentBank', null)
             self.data('previousBankTitle', null)
             self.data('pedalboardCanvas').html('').hide()
-            self.data('pedalboardCanvasMode').hide()
             self.data('searchForm').hide()
             self.data('resultCanvas').hide()
-            self.data('resultCanvasMode').hide()
             self.data('bankTitle').hide()
         }
         bank.animate({
