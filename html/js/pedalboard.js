@@ -1305,6 +1305,10 @@ JqueryClass('pedalboard', {
             instance = "_" + instance
         var i = 1;
         instance = '/graph/' + instance
+        // the prefix "/graph/cv_" is reserved, make sure we dont use it
+        if (instance === '/graph/cv') {
+            instance = instance + 'x'
+        }
         if (instance in self.data('plugins')) {
             instance = instance + "_1"
             while (instance in self.data('plugins')) {
