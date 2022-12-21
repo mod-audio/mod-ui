@@ -88,6 +88,14 @@ function PedalboardSearcher(opt) {
             self.search()
         }, 400)
     })
+    this.searchbox.on('cut', function(e) {
+        if (self.lastKeyTimeout != null) {
+            clearTimeout(self.lastKeyTimeout)
+        }
+        self.lastKeyTimeout = setTimeout(function () {
+            self.search()
+        }, 400);
+    })
     this.searchbox.on('paste', function(e) {
         if (self.lastKeyTimeout != null) {
             clearTimeout(self.lastKeyTimeout)
