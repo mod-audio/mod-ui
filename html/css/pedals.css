@@ -905,6 +905,10 @@ body > .mod-settings.mod-window-visible {
 }
 
 /* FIXME put it in the right place */
+#pedalboards-library .js-pedalboards.list-selected .img {
+  display: none;
+}
+
 #bank-library #bank-pedalboards {
     width: 680px;
 }

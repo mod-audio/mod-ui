@@ -147,7 +147,7 @@ from modtools.utils import (
     is_bundle_loaded, add_bundle_to_lilv_world, remove_bundle_from_lilv_world,
     is_plugin_preset_valid, rescan_plugin_presets,
     get_plugin_info, get_plugin_info_essentials, get_pedalboard_info, get_state_port_values,
-    list_plugins_in_bundle, get_all_pedalboards, get_all_pedalboard_names, get_pedalboard_plugin_values,
+    list_plugins_in_bundle, get_all_pedalboards, get_all_user_pedalboard_names, get_pedalboard_plugin_values,
     init_jack, close_jack, get_jack_data,
     init_bypass, get_jack_port_alias, get_jack_hardware_ports,
     has_serial_midi_input_port, has_serial_midi_output_port,
@@ -3818,7 +3818,7 @@ class Host(object):
         # Save new
         else:
             # ensure unique title
-            newTitle = title = get_unique_name(title, get_all_pedalboard_names()) or title
+            newTitle = title = get_unique_name(title, get_all_user_pedalboard_names()) or title
             titlesym = symbolify(title)[:16]
 
             # Special handling for saving factory pedalboards

@@ -1737,7 +1737,29 @@ Desktop.prototype.makeBankBox = function (el, trigger) {
                 },
                 cache: false,
             })
-        }
+        },
+        copyFactoryPedalboard: function (bundlepath, title, callback) {
+            $.ajax({
+                url: '/pedalboard/factorycopy/',
+                data: {
+                    bundlepath: bundlepath,
+                    title: title,
+                },
+                success: function (resp) {
+                    if (resp) {
+                        self.previousPedalboardList = null
+                        new Notification('warning', 'Factory pedalboard was copied to user pedalboards')
+                        callback(resp)
+                    } else {
+                        new Bug("Could not copy factory pedalboard")
+                    }
+                },
+                error: function () {
+                    new Bug("Failed to copy factory pedalboard")
+                },
+                cache: false
+            })
+        },
     })
 }
 

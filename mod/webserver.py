@@ -26,6 +26,7 @@ import time
 
 from base64 import b64decode, b64encode
 from datetime import timedelta
+from random import randint
 from signal import signal, SIGUSR1, SIGUSR2
 from tornado import gen, iostream, web, websocket
 from tornado.escape import squeeze, url_escape, xhtml_escape
@@ -47,12 +48,19 @@ from mod.settings import (APP, LOG, DEV_API,
                           FAVORITES_JSON_FILE, PREFERENCES_JSON_FILE, USER_ID_JSON_FILE,
                           DEV_HOST, UNTITLED_PEDALBOARD_NAME, MODEL_CPU, MODEL_TYPE, PEDALBOARDS_LABS_HTTP_ADDRESS)
 
-from mod import check_environment, jsoncall, safe_json_load, TextFileFlusher, get_hardware_descriptor
+from mod import (
+    TextFileFlusher,
+    check_environment, jsoncall, safe_json_load,
+    get_hardware_descriptor, get_unique_name, symbolify,
+)
 from mod.bank import list_banks, save_banks, remove_pedalboard_from_banks
 from mod.session import SESSION
 from modtools.utils import (
-    init as lv2_init, cleanup as lv2_cleanup, get_plugin_list, get_all_plugins, get_plugin_info, get_non_cached_plugin_info, get_plugin_gui,
-    get_plugin_gui_mini, get_all_pedalboards, get_broken_pedalboards, get_pedalboard_info, get_jack_buffer_size,
+    init as lv2_init, cleanup as lv2_cleanup,
+    get_plugin_list, get_all_plugins, get_plugin_info, get_non_cached_plugin_info,
+    get_plugin_gui, get_plugin_gui_mini,
+    get_all_pedalboards, get_all_user_pedalboard_names, get_broken_pedalboards, get_pedalboard_info,
+    get_jack_buffer_size,
     reset_get_all_pedalboards_cache, update_cached_pedalboard_version,
     set_jack_buffer_size, get_jack_sample_rate, set_truebypass_value, set_process_name, reset_xruns
 )
@@ -1393,6 +1401,35 @@ class PedalboardLoadWeb(SimpleFileReceiver):
         os.remove(filename)
         callback()
 
+class PedalboardFactoryCopy(JsonRequestHandler):
+    def get(self):
+        bundlepath = os.path.abspath(self.get_argument('bundlepath'))
+        title = self.get_argument('title')
+
+        if not os.path.exists(bundlepath):
+            self.write(False)
+            return
+
+        newtitle = get_unique_name(title, get_all_user_pedalboard_names()) or title
+        titlesym = symbolify(newtitle)[:16]
+
+        newbundlepath = os.path.join(LV2_PEDALBOARDS_DIR, "%s.pedalboard" % titlesym)
+
+        while os.path.exists(newbundlepath):
+            newbundlepath = os.path.join(LV2_PEDALBOARDS_DIR, "%s-%i.pedalboard" % (titlesym, randint(1,99999)))
+
+        shutil.copytree(bundlepath, newbundlepath)
+
+        # this is surely not the best way to do this, but it is the fastest
+        os.system('sed -i -e \'s/doap:name "%s"/doap:name "%s"/\' %s/*.ttl' % (title, newtitle, newbundlepath))
+
+        reset_get_all_pedalboards_cache()
+
+        pedalboard = get_pedalboard_info(newbundlepath)
+        pedalboard['bundlepath'] = newbundlepath
+        pedalboard['title'] = newtitle
+        self.write(pedalboard)
+
 class PedalboardInfo(JsonRequestHandler):
     def get(self):
         bundlepath = os.path.abspath(self.get_argument('bundlepath'))
@@ -2195,6 +2232,7 @@ application = web.Application(
             (r"/pedalboard/load_bundle/", PedalboardLoadBundle),
             (r"/pedalboard/load_remote/*(/[A-Za-z0-9_/]+[^/])/?", PedalboardLoadRemote),
             (r"/pedalboard/load_web/", PedalboardLoadWeb),
+            (r"/pedalboard/factorycopy/", PedalboardFactoryCopy),
             (r"/pedalboard/info/", PedalboardInfo),
             (r"/pedalboard/remove/", PedalboardRemove),
             (r"/pedalboard/image/(screenshot|thumbnail).png", PedalboardImage),

@@ -769,14 +769,16 @@ def get_all_pedalboards():
     global _allpedalboards
     if _allpedalboards is None:
         pbs = structPtrPtrToList(utils.get_all_pedalboards())
-        titles = []
+        utitles = []
         for pb in pbs:
             if not pb['valid']:
                 continue
-            ntitle = get_unique_name(pb['title'], titles)
+            if pb['factory']:
+                continue
+            ntitle = get_unique_name(pb['title'], utitles)
             if ntitle is not None:
                 pb['title'] = ntitle
-            titles.append(pb['title'])
+            utitles.append(pb['title'])
         _allpedalboards = pbs
     return _allpedalboards
 
@@ -796,9 +798,9 @@ def update_cached_pedalboard_version(bundle):
             return
     print("ERROR: update_cached_pedalboard_version() failed", bundle)
 
-# handy function to get only the names from all pedalboards
-def get_all_pedalboard_names():
-    return tuple(pb['title'] for pb in get_all_pedalboards())
+# handy function to get only the names from all user pedalboards
+def get_all_user_pedalboard_names():
+    return tuple(pb['title'] for pb in get_all_pedalboards() if not pb['factory'])
 
 # get all currently "broken" pedalboards (ie, pedalboards which contain unavailable plugins)
 def get_broken_pedalboards():

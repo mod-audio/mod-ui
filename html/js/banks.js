@@ -26,6 +26,9 @@ JqueryClass('bankBox', {
             save: function (data, callback) {
                 callback(true)
             },
+            copyFactoryPedalboard: function (bundlepath, title, callback) {
+                callback({})
+            },
             isMainWindow: true,
             windowName: "Banks"
         }, options)
@@ -74,11 +77,58 @@ JqueryClass('bankBox', {
         options.pedalboardCanvas.sortable({
             cursor: "grabbing !important",
             revert: true,
-            update: function (e, ui) {
-                if (self.droppedBundle && !ui.item.data('pedalboardBundle')) {
-                    ui.item.data('pedalboardBundle', self.droppedBundle)
+            receive: function (e, ui) {
+                // the next update call will be acting on a cloned item, not this one.
+                // as such, we need to cache these values and set them on the newly cloned object for the update
+                self.droppedBundle = ui.item.data('pedalboardBundle')
+                self.droppedTitle = ui.item.data('pedalboardTitle')
+                self.isFactoryPedalboard = ui.item.data('isFactoryPedalboard')
+                if (self.isFactoryPedalboard) {
+                    self.clonedFactoryItem = ui.item.clone()
                 }
-                self.droppedBundle = null
+            },
+            update: function (e, ui) {
+                if (self.droppedBundle) {
+                    // cloned item that got moved into the central area, re-set data attributes
+                    ui.item.data('pedalboardBundle', self.droppedBundle)
+                    ui.item.data('pedalboardTitle', self.droppedTitle)
+                    ui.item.data('isFactoryPedalboard', self.isFactoryPedalboard)
+
+                    // if factory pedalboard was dropped, handle user-data copying
+                    if (self.isFactoryPedalboard) {
+                        self.data('copyFactoryPedalboard')(self.droppedBundle, self.droppedTitle, function(pb) {
+                            ui.item.data('pedalboardBundle', pb.bundlepath)
+                            ui.item.data('pedalboardTitle', pb.title)
+                            ui.item.data('isFactoryPedalboard', false)
+                            ui.item.find('.js-title').text(pb.title)
+
+                            // add the newly copied pedalboard to the user-data canvas area
+                            var clone = self.clonedFactoryItem
+                            clone.draggable({
+                                cursor: "grabbing !important",
+                                revert: 'invalid',
+                                connectToSortable: options.pedalboardCanvas,
+                                helper: function () {
+                                    var helper = clone.clone().appendTo(self)
+                                    helper.addClass('mod-banks-drag-item')
+                                    helper.removeClass('js-pedalboard-item')
+                                    helper.find('.js-remove').hide()
+                                    return helper
+                                }
+                            })
+                            clone.data('pedalboardBundle', pb.bundlepath)
+                            clone.data('pedalboardTitle', pb.title)
+                            clone.data('isFactoryPedalboard', false)
+                            clone.find('.js-title').text(pb.title)
+                            self.data('resultCanvasUser').append(clone)
+                            self.clonedFactoryItem = null
+
+                            self.bankBox('save')
+                        })
+                    }
+                }
+
+                ui.item.removeClass('js-pedalboard-item')
 
                 // TODO the code below is repeated. The former click event is not triggered because
                 // the element is cloned
@@ -92,13 +142,13 @@ JqueryClass('bankBox', {
                     })
                 })
 
-                self.bankBox('save')
-            },
-            receive: function (e, ui) {
-                // Very weird. This should not be necessary, but for some reason the ID is lost between
-                // receive and update. The behaviour that can be seen at http://jsfiddle.net/wngchng87/h3WJH/11/
-                // does not happens here
-                self.droppedBundle = ui.item.data('pedalboardBundle')
+                // if this is a factory pedalboard drop, do not save just yet
+                if (!self.isFactoryPedalboard) {
+                    self.bankBox('save')
+                }
+
+                self.droppedBundle = self.droppedTitle = null
+                self.isFactoryPedalboard = false
             },
         })
 
@@ -160,12 +210,13 @@ JqueryClass('bankBox', {
             var pedalboardData = []
             pedalboards.children().each(function () {
                 var bundle = $(this).data('pedalboardBundle')
+                var title = $(this).data('pedalboardTitle')
                 if (!bundle) {
                     return
                 }
                 pedalboardData.push({
-                    title : $(this).find('.js-title').text(),
                     bundle: bundle,
+                    title: title,
                 })
             })
 
@@ -269,8 +320,9 @@ JqueryClass('bankBox', {
             // addressing is already saved, every time select is changed
         }
 
-        if(pedalboards.children().length == 0)
+        if (pedalboards.children().length == 0) {
             new Notification('warning', 'This bank is empty - drag pedalboards from the right panel', 5000)
+        }
 
         canvas.append(bank.data('pedalboards').children())
 
@@ -381,6 +433,8 @@ JqueryClass('bankBox', {
         })
 
         rendered.data('pedalboardBundle', pedalboard.bundle)
+        rendered.data('pedalboardTitle', pedalboard.title)
+        rendered.data('isFactoryPedalboard', pedalboard.factory)
 
         wait_for_pedalboard_screenshot(pedalboard.bundle, pedalboard.version, function (resp) {
             var img = rendered.find('.img img');
