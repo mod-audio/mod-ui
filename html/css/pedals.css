@@ -879,6 +879,32 @@ body > .mod-settings.mod-window-visible {
 }
 
 /* FIXME put it in the right place */
+#pedalboards-library .js-pedalboards {
+    padding: 8px 0;
+}
+
+#pedalboards-library .separator-title {
+    color: #fff;
+    font-size: 1.4em;
+    margin: 0 8px 0 1%;
+}
+
+#pedalboards-library .separator {
+    background: rgb(153, 153, 153);
+    display: inline-block;
+    height: 2px;
+    vertical-align: middle;
+}
+
+#pedalboards-library .separator.separator-user {
+    width: calc(99% - 8px - 17rem);
+}
+
+#pedalboards-library .separator.separator-factory {
+    width: calc(99% - 8px - 19.5rem);
+}
+
+/* FIXME put it in the right place */
 #bank-library #bank-pedalboards {
     width: 680px;
 }
@@ -891,6 +917,11 @@ body > .mod-settings.mod-window-visible {
 #bank-library #bank-pedalboards {
     top: 110px;
 }
+
+/*#bank-library #bank-pedalboards .ui-sortable-helper .pedalboard {
+    cursor: -webkit-grabbing !important;
+    cursor: grabbing !important;
+}*/
 
 #bank-library #bank-pedalboards .pedalboard .img > img {
     max-width: 100%;
@@ -905,9 +936,32 @@ body > .mod-settings.mod-window-visible {
     margin: 10px;
 }
 
+#bank-library #bank-pedalboards-search .separator-title {
+    color: #fff;
+    font-size: 1.4em;
+    margin: 0 10px;
+}
+
+#bank-library #bank-pedalboards-search .separator {
+    background: rgb(153, 153, 153);
+    display: inline-block;
+    height: 2px;
+    vertical-align: middle;
+}
+
+#bank-library #bank-pedalboards-search .separator.separator-user {
+    width: calc(100% - 20px - 16.5rem);
+}
+
+#bank-library #bank-pedalboards-search .separator.separator-factory {
+    width: calc(100% - 20px - 19rem);
+}
+
 #bank-library #bank-pedalboards-search .js-canvas {
     display: flex;
-    flex-flow: row wrap;
+    padding: 8px 0;
+    flex-flow: row;
+    flex-wrap: wrap;
     justify-content: center;
     /* these ones below are not always supported, default to center in worst case */
     justify-content: space-evenly;
