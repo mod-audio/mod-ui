@@ -329,7 +329,7 @@ class HMI(object):
 
         self.sp.write(msg.encode('utf-8') + b'\0')
 
-    def initial_state(self, bank_id, pedalboard_id, pedalboards, callback):
+    def initial_state(self, user_bank, bank_id, pedalboard_id, pedalboards, callback):
         numPedals = len(pedalboards)
 
         if numPedals <= 9 or pedalboard_id < 4:
@@ -341,7 +341,9 @@ class HMI(object):
 
         endIndex = min(startIndex+9, numPedals)
 
-        data = '%s %d %d %d %d %d' % (CMD_INITIAL_STATE, numPedals, startIndex, endIndex, bank_id, pedalboard_id)
+        data = '%s %d %d %d %d %d %d' % (
+            CMD_INITIAL_STATE, numPedals, startIndex, endIndex, user_bank, bank_id, pedalboard_id
+        )
 
         for i in range(startIndex, endIndex):
             data += ' %s %d' % (normalize_for_hw(pedalboards[i]['title']), i+1)

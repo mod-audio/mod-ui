@@ -18,16 +18,16 @@ CMD_ARGS = {
         'g': [int],
         's': [int,float],
         'ncp': [int,int,int],
-        'is': [int,int,int,int,int,str,str,],
-        'b': [int,int],
+        'is': [int,int,int,int,int,int,str,str,],
+        'b': [int,int,int],
         'bn': [str,],
         'bd': [int],
         'ba': [int,int,str,],
         'br': [int,int,int],
-        'p': [int,int,int],
+        'p': [int,int,int,int],
         'pn': [str,],
         'pchng': [int],
-        'pb': [int,str],
+        'pb': [int,int,str],
         'pr': [],
         'ps': [],
         'psa': [str,],
@@ -87,6 +87,7 @@ CMD_ARGS = {
         'sys_uni': [int,str],
         'sys_val': [int,str],
         'sys_ind': [int,float],
+        'sys_pop': [int,int,str,str],
         'sys_pch': [int],
         'sys_spc': [int],
     },
@@ -196,6 +197,7 @@ CMD_SYS_CHANGE_NAME               = 'sys_nam'
 CMD_SYS_CHANGE_UNIT               = 'sys_uni'
 CMD_SYS_CHANGE_VALUE              = 'sys_val'
 CMD_SYS_CHANGE_WIDGET_INDICATOR   = 'sys_ind'
+CMD_SYS_LAUNCH_POPUP              = 'sys_pop'
 CMD_SYS_PAGE_CHANGE               = 'sys_pch'
 CMD_SYS_SUBPAGE_CHANGE            = 'sys_spc'
 CMD_DUO_BOOT                      = 'boot'
@@ -431,6 +433,8 @@ def cmd_to_str(cmd):
         return "CMD_SYS_CHANGE_VALUE"
     if cmd == "sys_ind":
         return "CMD_SYS_CHANGE_WIDGET_INDICATOR"
+    if cmd == "sys_pop":
+        return "CMD_SYS_LAUNCH_POPUP"
     if cmd == "sys_pch":
         return "CMD_SYS_PAGE_CHANGE"
     if cmd == "sys_spc":

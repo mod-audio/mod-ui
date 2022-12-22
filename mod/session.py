@@ -22,7 +22,6 @@ from tornado import iostream, gen
 from tornado.ioloop import IOLoop
 
 from mod import safe_json_load, TextFileFlusher
-from mod.bank import get_last_bank_and_pedalboard
 from mod.development import FakeHost, FakeHMI
 from mod.hmi import HMI
 from mod.recorder import Recorder, Player
