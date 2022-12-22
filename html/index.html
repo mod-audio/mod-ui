@@ -821,9 +821,19 @@ $('document').ready(function() {
                   <i id="view-mode-grid" class="view-mode icon-th-1"></i>
                   <i id="view-mode-list" class="view-mode icon-th-list"></i>
                 </span>
-
             </header>
-            <div class="pedalboards clearfix js-pedalboards"></div>
+            <div class="pedalboards clearfix">
+                <div class="clearfix">
+                    <span class="separator-title">User Pedalboards</span>
+                    <div class="separator separator-user"></div>
+                    <div class="js-pedalboards js-user-pedalboards"></div>
+                </div>
+                <div class="clearfix">
+                    <span class="separator-title">Factory Pedalboards</span>
+                    <div class="separator separator-factory"></div>
+                    <div class="js-pedalboards js-factory-pedalboards"></div>
+                </div>
+            </div>
         </div>
     </div>
     <!-- END PEDALBOARDS LIBRARY -->
@@ -831,7 +841,7 @@ $('document').ready(function() {
     <!-- BANK LIBRARY -->
     <div id="bank-library" class="mod-hidden mod-init-hidden"><div class="box">
         <header>
-            <h1 class="bottom top">Banks</h1>
+            <h1 class="bottom top">User Banks</h1>
         </header>
 
         <!-- BANK-LIST -->
@@ -845,8 +855,18 @@ $('document').ready(function() {
         <div id="bank-edit">
             <div id="bank-title" class="mod-hidden">
                 <h1>Untitled</h1>
-	    </div>
+            </div>
             <div id="bank-pedalboards" class="grid-selected"></div>
+            <div id="bank-init" class="grid-selected" style="color:#ccc;margin-left:30px;">
+                <h2>
+                    This page is dedicated to user banks.<br>
+                    Factory banks are not displayed on this area.
+                </h2>
+                <p>
+                    To start using banks click on "Add Bank" on the left side,
+                    give it a name and then drag and drop pedalboards from the right side.
+                </p>
+            </div>
         </div>
         <!-- END BANK-PEDALBOARDS -->
 
@@ -856,7 +876,7 @@ $('document').ready(function() {
             <div class="filter clearfix">
                 <div class="clearfix">
                     <div class="form-group">
-                        <label for="searchBank" >Select pedalboards</label>
+                        <label for="searchBank">Select pedalboards</label>
                         <input id="searchBank" class="form-control" maxlength="20" placeholder="Filter by keyword(s)" type="search" autocomplete="off" />
                     </div>
                 </div>
@@ -865,7 +885,16 @@ $('document').ready(function() {
 
             <!-- BANK-PEDALBOARDS-RESULT -->
             <div id="bank-pedalboards-result">
-                <div class="js-canvas grid-selected"></div>
+                <div class="clearfix">
+                    <span class="separator-title">User Pedalboards</span>
+                    <div class="separator separator-user"></div>
+                    <div class="js-canvas js-user-pedalboards"></div>
+                </div>
+                <div class="clearfix">
+                    <span class="separator-title">Factory Pedalboards</span>
+                    <div class="separator separator-factory"></div>
+                    <div class="js-canvas js-factory-pedalboards"></div>
+                </div>
             </div>
             <!-- END BANK-PEDALBOARDS-RESULT -->
 

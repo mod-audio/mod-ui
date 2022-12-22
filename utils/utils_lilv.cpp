@@ -97,7 +97,15 @@ std::list<std::string> PLUGINStoReload;
 
 // read KEYS_PATH. NOTE: assumes trailing separator
 static const char* const KEYS_PATH = getenv("MOD_KEYS_PATH");
-static const size_t KEYS_PATHlen = (KEYS_PATH != NULL && *KEYS_PATH != '\0') ? strlen(KEYS_PATH) : 0;
+static const size_t KEYS_PATHlen = (KEYS_PATH != NULL && *KEYS_PATH != '\0') 
+                                 ? strlen(KEYS_PATH)
+                                 : 0;
+
+// read FACTORY_PEDALBOARDS_DIR
+static const char* const FACTORY_PEDALBOARDS_DIR = getenv("MOD_FACTORY_PEDALBOARDS_DIR");
+static const size_t FACTORY_PEDALBOARDS_DIRlen = (FACTORY_PEDALBOARDS_DIR != NULL && *FACTORY_PEDALBOARDS_DIR != '\0')
+                                               ? strlen(FACTORY_PEDALBOARDS_DIR)
+                                               : 0;
 
 // some other cached values
 static const char* const HOME = getenv("HOME");
@@ -154,6 +162,14 @@ inline bool ends_with(const std::string& value, const std::string ending)
     if (ending.size() > value.size())
         return false;
     return std::equal(ending.rbegin(), ending.rend(), value.rbegin());
+}
+
+inline bool is_factory_pedalboard(const char* const bundle)
+{
+    if (FACTORY_PEDALBOARDS_DIRlen != 0)
+        return strncmp(bundle, FACTORY_PEDALBOARDS_DIR, FACTORY_PEDALBOARDS_DIRlen) == 0;
+
+    return strncmp(bundle, "/usr/share/mod/pedalboards/", 27) == 0;
 }
 
 inline std::string sha1(const char* const cstring)
@@ -1151,9 +1167,9 @@ static void _place_preset_info(PluginInfo& info,
     lilv_nodes_free(presetnodes);
 }
 
-const char* const* _get_plugin_categories(const LilvPlugin* const p,
-                                        LilvNode* const rdf_type,
-                                        bool* const supported = nullptr)
+static const char* const* _get_plugin_categories(const LilvPlugin* const p,
+                                                 LilvNode* const rdf_type,
+                                                 bool* const supported = nullptr)
 {
     const char* const* category = nullptr;
 
@@ -1310,6 +1326,31 @@ const char* const* _get_plugin_categories(const LilvPlugin* const p,
     return category;
 }
 
+static const char* _get_lv2_pedalboards_path()
+{
+    static std::string path;
+
+    if (path.empty())
+    {
+        if (const char* const pbdir = getenv("MOD_USER_PEDALBOARDS_DIR"))
+            path = pbdir;
+        else
+            path = "~/.pedalboards";
+
+        if (FACTORY_PEDALBOARDS_DIR != nullptr)
+        {
+            path += ":";
+            path += FACTORY_PEDALBOARDS_DIR;
+        }
+        else
+        {
+            path += ":/usr/share/mod/pedalboards";
+        }
+    }
+
+    return path.c_str();
+}
+
 const PluginInfo_Mini& _get_plugin_info_mini(const LilvPlugin* const p, const NamespaceDefinitions_Mini& ns)
 {
     static PluginInfo_Mini info;
@@ -1422,17 +1463,17 @@ const PluginInfo_Mini& _get_plugin_info_mini(const LilvPlugin* const p, const Na
     // --------------------------------------------------------------------------------------------------------
     // brand
 
-    char brand[11+1] = { '\0' };
+    char brand[16+1] = {};
 
     if (LilvNodes* const nodes = lilv_plugin_get_value(p, ns.mod_brand))
     {
-        strncpy(brand, lilv_node_as_string(lilv_nodes_get_first(nodes)), 11);
+        strncpy(brand, lilv_node_as_string(lilv_nodes_get_first(nodes)), 16);
         info.brand = strdup(brand);
         lilv_nodes_free(nodes);
     }
     else if (LilvNode* const node = lilv_plugin_get_author_name(p))
     {
-        strncpy(brand, lilv_node_as_string(node), 11);
+        strncpy(brand, lilv_node_as_string(node), 16);
         info.brand = strdup(brand);
         lilv_node_free(node);
     }
@@ -1444,11 +1485,11 @@ const PluginInfo_Mini& _get_plugin_info_mini(const LilvPlugin* const p, const Na
     // --------------------------------------------------------------------------------------------------------
     // label
 
-    char label[16+1] = { '\0' };
+    char label[24+1] = {};
 
     if (LilvNodes* const nodes = lilv_plugin_get_value(p, ns.mod_label))
     {
-        strncpy(label, lilv_node_as_string(lilv_nodes_get_first(nodes)), 16);
+        strncpy(label, lilv_node_as_string(lilv_nodes_get_first(nodes)), 24);
         info.label = strdup(label);
         lilv_nodes_free(nodes);
     }
@@ -1458,13 +1499,13 @@ const PluginInfo_Mini& _get_plugin_info_mini(const LilvPlugin* const p, const Na
     }
     else
     {
-        if (strlen(info.name) <= 16)
+        if (strlen(info.name) <= 24)
         {
             info.label = strdup(info.name);
         }
         else
         {
-            strncpy(label, info.name, 16);
+            strncpy(label, info.name, 24);
             info.label = strdup(label);
         }
     }
@@ -1847,7 +1888,7 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
     }
 
     {
-        char versiontmpstr[32+1] = { '\0' };
+        char versiontmpstr[32+1] = {};
         snprintf(versiontmpstr, 32, "%d.%d", info.minorVersion, info.microVersion);
         info.version = strdup(versiontmpstr);
     }
@@ -1971,8 +2012,8 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
 
         /* NOTE: this gives a false positive on valgrind.
                  see https://bugzilla.redhat.com/show_bug.cgi?id=678518 */
-        if (strlen(brand) > 10)
-            brand[10] = '\0';
+        if (strlen(brand) > 16)
+            brand[16] = '\0';
 
         info.brand = brand;
         lilv_nodes_free(nodes);
@@ -1983,14 +2024,14 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
     }
     else
     {
-        if (strlen(info.author.name) <= 10)
+        if (strlen(info.author.name) <= 16)
         {
             info.brand = strdup(info.author.name);
         }
         else
         {
-            char brand[10+1] = { '\0' };
-            strncpy(brand, info.author.name, 10);
+            char brand[16+1] = {};
+            strncpy(brand, info.author.name, 16);
             info.brand = strdup(brand);
         }
     }
@@ -2004,8 +2045,8 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
 
         /* NOTE: this gives a false positive on valgrind.
                  see https://bugzilla.redhat.com/show_bug.cgi?id=678518 */
-        if (strlen(label) > 16)
-            label[16] = '\0';
+        if (strlen(label) > 24)
+            label[24] = '\0';
 
         info.label = label;
         lilv_nodes_free(nodes);
@@ -2016,14 +2057,14 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
     }
     else
     {
-        if (strlen(info.name) <= 16)
+        if (strlen(info.name) <= 24)
         {
             info.label = strdup(info.name);
         }
         else
         {
-            char label[16+1] = { '\0' };
-            strncpy(label, info.name, 16);
+            char label[24+1] = {};
+            strncpy(label, info.name, 24);
             info.label = strdup(label);
         }
     }
@@ -2913,6 +2954,7 @@ const PedalboardInfo_Mini& _get_pedalboard_info_mini(const LilvPlugin* const p,
         lilv_nodes_free(nodes);
     }
 
+    info.factory = is_factory_pedalboard(info.bundle);
     info.valid = true;
     return info;
 }
@@ -4219,7 +4261,7 @@ const PedalboardInfo_Mini* const* get_all_pedalboards(void)
 
     // Custom path for pedalboards
     const char* const oldlv2path = getenv("LV2_PATH");
-    setenv("LV2_PATH", "~/.pedalboards/", 1);
+    setenv("LV2_PATH", _get_lv2_pedalboards_path(), 1);
 
     LilvWorld* const w = lilv_world_new();
     lilv_world_load_all(w);
@@ -4280,7 +4322,7 @@ const char* const* get_broken_pedalboards(void)
 
     // Custom path for pedalboards
     const char* const oldlv2path = getenv("LV2_PATH");
-    setenv("LV2_PATH", "~/.pedalboards/", 1);
+    setenv("LV2_PATH", _get_lv2_pedalboards_path(), 1);
 
     LilvWorld* const w = lilv_world_new();
     lilv_world_load_all(w);
@@ -4470,6 +4512,18 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
         }
 
         lilv_nodes_free(widthnodes);
+    }
+
+    // --------------------------------------------------------------------------------------------------------
+    // factory
+
+    if (const LilvNode* const bundlenode = lilv_plugin_get_bundle_uri(p))
+    {
+        if (char* const bundleabspath = lilv_file_abspath(lilv_node_as_string(bundlenode)))
+        {
+            info.factory = is_factory_pedalboard(bundleabspath);
+            free(bundleabspath);
+        }
     }
 
     // --------------------------------------------------------------------------------------------------------

@@ -26,6 +26,7 @@ import time
 
 from base64 import b64decode, b64encode
 from datetime import timedelta
+from random import randint
 from signal import signal, SIGUSR1, SIGUSR2
 from tornado import gen, iostream, web, websocket
 from tornado.escape import squeeze, url_escape, xhtml_escape
@@ -39,7 +40,7 @@ from mod.settings import (APP, LOG, DEV_API,
                           HTML_DIR, DOWNLOAD_TMP_DIR, DEVICE_KEY, DEVICE_WEBSERVER_PORT,
                           CLOUD_HTTP_ADDRESS, CLOUD_LABS_HTTP_ADDRESS,
                           PLUGINS_HTTP_ADDRESS, PEDALBOARDS_HTTP_ADDRESS, CONTROLCHAIN_HTTP_ADDRESS,
-                          BANKS_JSON_FILE,
+                          USER_BANKS_JSON_FILE,
                           LV2_PLUGIN_DIR, LV2_PEDALBOARDS_DIR, IMAGE_VERSION,
                           UPDATE_CC_FIRMWARE_FILE, UPDATE_MOD_OS_FILE, USING_256_FRAMES_FILE,
                           DEFAULT_ICON_TEMPLATE, DEFAULT_SETTINGS_TEMPLATE, DEFAULT_ICON_IMAGE,
@@ -47,13 +48,20 @@ from mod.settings import (APP, LOG, DEV_API,
                           FAVORITES_JSON_FILE, PREFERENCES_JSON_FILE, USER_ID_JSON_FILE,
                           DEV_HOST, UNTITLED_PEDALBOARD_NAME, MODEL_CPU, MODEL_TYPE, PEDALBOARDS_LABS_HTTP_ADDRESS)
 
-from mod import check_environment, jsoncall, safe_json_load, TextFileFlusher, get_hardware_descriptor
+from mod import (
+    TextFileFlusher,
+    check_environment, jsoncall, safe_json_load,
+    get_hardware_descriptor, get_unique_name, symbolify,
+)
 from mod.bank import list_banks, save_banks, remove_pedalboard_from_banks
 from mod.session import SESSION
 from mod.licensing import check_missing_licenses, save_license, get_new_licenses_and_flush
 from modtools.utils import (
-    init as lv2_init, cleanup as lv2_cleanup, get_plugin_list, get_all_plugins, get_plugin_info, get_non_cached_plugin_info, get_plugin_gui,
-    get_plugin_gui_mini, get_all_pedalboards, get_broken_pedalboards, get_pedalboard_info, get_jack_buffer_size,
+    init as lv2_init, cleanup as lv2_cleanup,
+    get_plugin_list, get_all_plugins, get_plugin_info, get_non_cached_plugin_info,
+    get_plugin_gui, get_plugin_gui_mini,
+    get_all_pedalboards, get_all_user_pedalboard_names, get_broken_pedalboards, get_pedalboard_info,
+    get_jack_buffer_size,
     reset_get_all_pedalboards_cache, update_cached_pedalboard_version,
     set_jack_buffer_size, get_jack_sample_rate, set_truebypass_value, set_process_name, reset_xruns
 )
@@ -615,7 +623,7 @@ class SystemCleanup(JsonRequestHandler):
         stuffToDelete = []
 
         if banks:
-            stuffToDelete.append(BANKS_JSON_FILE)
+            stuffToDelete.append(USER_BANKS_JSON_FILE)
 
         if favorites:
             stuffToDelete.append(FAVORITES_JSON_FILE)
@@ -1117,7 +1125,7 @@ class RemoteWebSocket(websocket.WebSocketHandler):
         protocol, domain = match.groups()
         if protocol not in ("http", "https"):
             return False
-        if domain != "moddevices.com" and not domain.endswith(".moddevices.com"):
+        if domain not in ("mod.audio", "moddevices.com") and not domain.endswith(".mod.audio") and not domain.endswith(".moddevices.com"):
             return False
         return True
 
@@ -1421,6 +1429,35 @@ class PedalboardLoadWeb(SimpleFileReceiver):
 
         os.remove(filename)
         callback()
+
+class PedalboardFactoryCopy(JsonRequestHandler):
+    def get(self):
+        bundlepath = os.path.abspath(self.get_argument('bundlepath'))
+        title = self.get_argument('title')
+
+        if not os.path.exists(bundlepath):
+            self.write(False)
+            return
+
+        newtitle = get_unique_name(title, get_all_user_pedalboard_names()) or title
+        titlesym = symbolify(newtitle)[:16]
+
+        newbundlepath = os.path.join(LV2_PEDALBOARDS_DIR, "%s.pedalboard" % titlesym)
+
+        while os.path.exists(newbundlepath):
+            newbundlepath = os.path.join(LV2_PEDALBOARDS_DIR, "%s-%i.pedalboard" % (titlesym, randint(1,99999)))
+
+        shutil.copytree(bundlepath, newbundlepath)
+
+        # this is surely not the best way to do this, but it is the fastest
+        os.system('sed -i -e \'s/doap:name "%s"/doap:name "%s"/\' %s/*.ttl' % (title, newtitle, newbundlepath))
+
+        reset_get_all_pedalboards_cache()
+
+        pedalboard = get_pedalboard_info(newbundlepath)
+        pedalboard['bundlepath'] = newbundlepath
+        pedalboard['title'] = newtitle
+        self.write(pedalboard)
 
 class PedalboardInfo(JsonRequestHandler):
     def get(self):
@@ -2229,6 +2266,7 @@ application = web.Application(
             (r"/pedalboard/load_bundle/", PedalboardLoadBundle),
             (r"/pedalboard/load_remote/*(/[A-Za-z0-9_/]+[^/])/?", PedalboardLoadRemote),
             (r"/pedalboard/load_web/", PedalboardLoadWeb),
+            (r"/pedalboard/factorycopy/", PedalboardFactoryCopy),
             (r"/pedalboard/info/", PedalboardInfo),
             (r"/pedalboard/remove/", PedalboardRemove),
             (r"/pedalboard/image/(screenshot|thumbnail).png", PedalboardImage),
@@ -2304,6 +2342,12 @@ application = web.Application(
         ],
         debug = bool(LOG >= 2), **settings)
 
+def signal_hmi_screenshot():
+    with open("/root/hmi-screenshot-mode", 'r') as fh:
+        screen = int(fh.read().strip())
+    os.remove("/root/hmi-screenshot-mode")
+    SESSION.hmi.screenshot(screen)
+
 def signal_device_firmware_updated():
     os.remove(UPDATE_CC_FIRMWARE_FILE)
     SESSION.signal_device_updated()
@@ -2334,7 +2378,9 @@ def signal_upgrade_check():
 
 def signal_recv(sig, _=0):
     if sig == SIGUSR1:
-        if os.path.exists(UPDATE_CC_FIRMWARE_FILE):
+        if os.path.exists("/root/hmi-screenshot-mode"):
+            func = signal_hmi_screenshot
+        elif os.path.exists(UPDATE_CC_FIRMWARE_FILE):
             func = signal_device_firmware_updated
         else:
             func = SESSION.signal_save

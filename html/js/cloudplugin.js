@@ -93,6 +93,14 @@ JqueryClass('cloudPluginBox', {
                 self.cloudPluginBox('search')
             }, 400);
         })
+        searchbox.on('cut', function(e) {
+            if (lastKeyTimeout != null) {
+                clearTimeout(lastKeyTimeout)
+            }
+            lastKeyTimeout = setTimeout(function () {
+                self.cloudPluginBox('search')
+            }, 400);
+        })
         searchbox.on('paste', function(e) {
             if (lastKeyTimeout != null) {
                 clearTimeout(lastKeyTimeout)
