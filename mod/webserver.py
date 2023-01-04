@@ -2142,6 +2142,9 @@ class FilesList(JsonRequestHandler):
         elif filetype == "sfz":
             return ("SFZ Instruments", (".sfz",))
 
+        elif filetype == "aidadspmodel":
+            return ("Aida DSP Models", (".json",))
+
         else:
             return (None, ())
 
