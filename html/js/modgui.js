@@ -179,7 +179,7 @@ function loadDependencies(gui, effect, dummy, callback) { //source, effect, bund
                         eval('method = ' + code)
                     } catch (err) {
                         method = null
-                        console.log("Failed to evaluate javascript for '"+effect.uri+"' plugin")
+                        console.log("Failed to evaluate javascript for '"+effect.uri+"' plugin, reason:\n",err)
                     }
                     loadedJSs[plughash] = method
                     gui.jsCallback = method
@@ -1720,7 +1720,7 @@ function GUI(effect, options) {
             self.jsCallback(event, self.jsFuncs)
         } catch (err) {
             self.jsCallback = null
-            console.log("A plugin javascript code is broken and has been disabled")
+            console.log("A plugin javascript code is broken and has been disabled, reason:\n", err)
         }
     }
 }
