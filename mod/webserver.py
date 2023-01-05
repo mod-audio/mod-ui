@@ -889,12 +889,18 @@ class EffectFile(TimelessStaticFileHandler):
 
     def parse_url_path(self, prop):
         try:
-            path = self.modgui[prop]
+            if prop == "custom":
+                path = self.get_argument('filename')
+            else:
+                path = self.modgui[prop]
         except:
             raise web.HTTPError(404)
 
         if prop in ("iconTemplate", "settingsTemplate", "stylesheet", "javascript"):
             self.custom_type = "text/plain; charset=UTF-8"
+
+        elif prop == "custom" and path.endswith(".wasm"):
+            self.custom_type = "application/wasm"
 
         return path
 
