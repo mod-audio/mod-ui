@@ -179,7 +179,7 @@ function loadDependencies(gui, effect, dummy, callback) { //source, effect, bund
                         eval('method = ' + code)
                     } catch (err) {
                         method = null
-                        console.log("Failed to evaluate javascript for '"+effect.uri+"' plugin")
+                        console.log("Failed to evaluate javascript for '"+effect.uri+"' plugin, reason:\n",err)
                     }
                     loadedJSs[plughash] = method
                     gui.jsCallback = method
@@ -1701,7 +1701,43 @@ function GUI(effect, options) {
         },
         patch_set: function (uri, valuetype, value) {
             self.lv2PatchSet(uri, valuetype, value, "from-js")
-        }
+        },
+        // added in v3: a few handy utilities
+        get_custom_resource_filename: function (filename) {
+            return '/effect/file/custom?filename='+filename+'&uri='+escape(self.effect.uri)+'&v='+self.effect.renderedVersion+'&r='+VERSION
+        },
+        get_port_index_for_symbol: function (symbol) {
+            var i, port;
+            for (i in self.effect.ports.control.input) {
+                port = self.effect.ports.control.input[i]
+                if (port.symbol == symbol) {
+                    return port.index
+                }
+            }
+            for (i in self.effect.ports.control.output) {
+                port = self.effect.ports.control.output[i]
+                if (port.symbol == symbol) {
+                    return port.index
+                }
+            }
+            return -1;
+        },
+        get_port_symbol_for_index: function (index) {
+            var i, port;
+            for (i in self.effect.ports.control.input) {
+                port = self.effect.ports.control.input[i]
+                if (port.index == index) {
+                    return port.symbol
+                }
+            }
+            for (i in self.effect.ports.control.output) {
+                port = self.effect.ports.control.output[i]
+                if (port.index == index) {
+                    return port.symbol
+                }
+            }
+            return null;
+        },
     }
 
     this.triggerJS = function (event) {
@@ -1709,7 +1745,7 @@ function GUI(effect, options) {
             return
 
         // bump this everytime the data structure or functions change
-        event.api_version = 2
+        event.api_version = 3
 
         // normal data
         event.data     = self.jsData
@@ -1720,7 +1756,7 @@ function GUI(effect, options) {
             self.jsCallback(event, self.jsFuncs)
         } catch (err) {
             self.jsCallback = null
-            console.log("A plugin javascript code is broken and has been disabled")
+            console.log("A plugin javascript code is broken and has been disabled, reason:\n", err)
         }
     }
 }

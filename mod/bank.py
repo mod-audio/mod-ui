@@ -79,14 +79,13 @@ def save_banks(banks):
         json.dump(banks, fh, indent=4)
 
 # save last bank id and pedalboard path to disk
-def save_last_bank_and_pedalboard(factorybank, bank, pedalboard):
+def save_last_bank_and_pedalboard(bank, pedalboard):
     if bank is None:
         return
 
     try:
         with TextFileFlusher(LAST_STATE_JSON_FILE) as fh:
             json.dump({
-                'factorybank': factorybank,
                 'bank': bank-1,
                 'pedalboard': pedalboard
             }, fh)
@@ -100,9 +99,9 @@ def get_last_bank_and_pedalboard():
 
     if len(keys) == 0 or "bank" not in keys or "pedalboard" not in keys or not isinstance(data['bank'], int):
         print("last state file does not exist or is corrupt")
-        return (False, -1, None)
+        return (-1, None)
 
-    return (data.get('factorybank', False), data['bank']+1, data['pedalboard'])
+    return (data['bank']+1, data['pedalboard'])
 
 # Remove a pedalboard from user banks
 def remove_pedalboard_from_banks(pedalboard):

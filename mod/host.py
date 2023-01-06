@@ -343,7 +343,6 @@ class Host(object):
         self.userbanks = None
         self.factorybanks = None
 
-        self.factorybank = False
         self.bank_id = 0
         self.connections = []
         self.audioportsIn = []
@@ -1082,18 +1081,16 @@ class Host(object):
         self.userbanks = list_banks(badbundles, True, True)
         self.factorybanks = list_banks(badbundles, False, False)
 
-        factorybank, bank_id, pedalboard = get_last_bank_and_pedalboard()
+        bank_id, pedalboard = get_last_bank_and_pedalboard()
 
         # ensure HMI is initialized by now
         yield gen.Task(self.wait_hmi_initialized)
 
         if pedalboard and os.path.exists(pedalboard):
-            self.factorybank = factorybank
             self.bank_id = bank_id
             self.load(pedalboard)
 
         else:
-            self.factorybank = False
             self.bank_id = 0
 
             if os.path.exists(DEFAULT_PEDALBOARD):
@@ -1357,14 +1354,24 @@ class Host(object):
         allpedalboards, badbundles = get_all_good_and_bad_pedalboards()
         self.alluserpedalboards = [pb for pb in allpedalboards if not pb['factory']]
         self.userbanks = list_banks(badbundles, True, False)
+        self.factorybanks = list_banks(badbundles, False, False)
 
-        factorybank, bank_id, pedalboard = get_last_bank_and_pedalboard()
+        numUserBanks = len(self.userbanks)
+        numFactoryBanks = len(self.factorybanks)
+        numBanks = numUserBanks + numFactoryBanks + 2
 
-        banks = self.factorybanks if factorybank else self.userbanks
+        bank_id, pedalboard = get_last_bank_and_pedalboard()
+        validpedalboard = pedalboard and os.path.exists(pedalboard)
 
         # report pedalboard and banks
-        if pedalboard and os.path.exists(pedalboard) and bank_id > 0 and bank_id <= len(banks):
-            bank = banks[bank_id-1]
+        if validpedalboard and bank_id > 0 and bank_id <= numUserBanks:
+            bank = self.userbanks[bank_id-1]
+            factorybank = False
+            pedalboards = bank['pedalboards']
+
+        elif validpedalboard and bank_id > numUserBanks and bank_id <= numUserBanks + numFactoryBanks + 2:
+            bank = self.factorybanks[bank_id - numUserBanks - 1]
+            factorybank = True
             pedalboards = bank['pedalboards']
 
         else:
@@ -1372,7 +1379,7 @@ class Host(object):
             bank_id = 0
             pedalboards = self.alluserpedalboards
 
-            if not (pedalboard and os.path.exists(pedalboard)):
+            if not validpedalboard:
                 pedalboard = DEFAULT_PEDALBOARD if os.path.exists(DEFAULT_PEDALBOARD) else ""
 
         if pedalboard:
@@ -1656,7 +1663,7 @@ class Host(object):
                     while self.next_hmi_pedalboard_loading:
                         yield gen.sleep(0.25)
                     try:
-                        yield gen.Task(self.hmi_load_bank_pedalboard, True, bank_id, program, from_hmi=False)
+                        yield gen.Task(self.hmi_load_bank_pedalboard, bank_id, program, from_hmi=False)
                     except Exception as e:
                         logging.exception(e)
 
@@ -2192,7 +2199,7 @@ class Host(object):
         self.pedalboard_version  = 0
 
         if bank_id is None:
-            save_last_bank_and_pedalboard(False, 0, "")
+            save_last_bank_and_pedalboard(0, "")
 
         self.send_notmodified("remove -1", host_callback, datatype='boolean')
 
@@ -3563,9 +3570,9 @@ class Host(object):
 
             if bundlepath and (bundlepath.startswith(LV2_PEDALBOARDS_DIR) or
                                bundlepath.startswith(LV2_FACTORY_PEDALBOARDS_DIR)):
-                save_last_bank_and_pedalboard(self.factorybank, self.bank_id, bundlepath)
+                save_last_bank_and_pedalboard(self.bank_id, bundlepath)
             else:
-                save_last_bank_and_pedalboard(False, 0, "")
+                save_last_bank_and_pedalboard(0, "")
 
             os.sync()
 
@@ -3868,7 +3875,7 @@ class Host(object):
         self.pedalboard_empty    = False
         self.pedalboard_modified = False
         self.save_state_to_ttl(bundlepath, title, titlesym)
-        save_last_bank_and_pedalboard(False, 0, bundlepath)
+        save_last_bank_and_pedalboard(0, bundlepath)
 
         def state_saved_cb(ok):
             os.sync()
@@ -4963,29 +4970,15 @@ _:b%i
     # -----------------------------------------------------------------------------------------------------------------
     # HMI callbacks, called by HMI via serial
 
-    def hmi_list_banks(self, user_bank, dir_up, bank_id, callback):
-        logging.debug("hmi list banks %d %d %d", user_bank, dir_up, bank_id)
+    def hmi_list_banks(self, dir_up, bank_id, callback):
+        logging.debug("hmi list banks %d %d", dir_up, bank_id)
 
-        self.factorybank = not user_bank
-
-        if user_bank:
-            allpedalboards = self.alluserpedalboards
-            banks = self.userbanks
-        else:
-            allpedalboards = self.allfactorypedalboards
-            banks = self.factorybanks
-
-        if allpedalboards is None or len(allpedalboards) == 0:
-            logging.error("no pedalboards available, return default bank (%d %d)", dir_up, bank_id)
-            callback(True, '1 0 1 "All Pedalboards" 0')
-            return
+        numUserBanks = len(self.userbanks)
+        numFactoryBanks = len(self.factorybanks)
+        numBanks = numUserBanks + numFactoryBanks + 2
 
         if dir_up in (0, 1):
             bank_id += 1 if dir_up else -1
-
-        rbanks  = [{'title': ("User" if user_bank else "Factory") + " Pedalboards"}]
-        rbanks += banks
-        numBanks = len(rbanks)
 
         if bank_id < 0 or bank_id >= numBanks:
             logging.error("hmi wants out of bounds bank data (%d %d)", dir_up, bank_id)
@@ -5002,32 +4995,29 @@ _:b%i
         endIndex = min(startIndex+9, numBanks)
         banksData = '%d %d %d' % (numBanks, startIndex, endIndex)
 
-        #if startIndex == 0:
-            #endIndex = min(startIndex+5, numBanks)
-            #banksData = '%d %d "All Pedalboards" 0' % (startIndex, endIndex)
-        #else:
-            #startIndex -= 1
-            #endIndex = min(startIndex+5, numBanks)
-            #banksData = '%d %d "All Pedalboards" 0' % (startIndex, endIndex)
+        for bank_id in range(startIndex, endIndex):
+            if bank_id == 0:
+                title = "All User Pedalboards"
+            elif bank_id <= numUserBanks:
+                title = self.userbanks[bank_id - 1]['title']
+            else:
+                fbank_id = bank_id - numUserBanks - 1
+                if fbank_id == 0:
+                    title = "All Factory Pedalboards"
+                else:
+                    title = self.factorybanks[fbank_id - 1]['title']
 
-        for i in range(startIndex, endIndex):
-            banksData += ' %s %d' % (normalize_for_hw(rbanks[i]['title']), i) # note use +1 for !all
+            banksData += ' %d %d %s' % (bank_id <= numUserBanks, bank_id, normalize_for_hw(title))
 
         callback(True, banksData)
 
-    def hmi_list_bank_pedalboards(self, props, pedalboard_id, user_bank, bank_id, callback):
-        logging.debug("hmi list bank pedalboards %d %d %d %d", props, user_bank, pedalboard_id, bank_id)
+    def hmi_list_bank_pedalboards(self, props, pedalboard_id, bank_id, callback):
+        logging.debug("hmi list bank pedalboards %d %d %d", props, pedalboard_id, bank_id)
 
-        self.factorybank = not user_bank
+        numUserBanks = len(self.userbanks)
+        numFactoryBanks = len(self.factorybanks)
 
-        if user_bank:
-            allpedalboards = self.alluserpedalboards
-            banks = self.userbanks
-        else:
-            allpedalboards = self.allfactorypedalboards
-            banks = self.factorybanks
-
-        if bank_id < 0 or bank_id > len(banks):
+        if bank_id < 0 or bank_id >= numUserBanks + numFactoryBanks + 2:
             logging.error("Trying to list pedalboards with an out of bounds bank id (%d %d %d)",
                           props, pedalboard_id, bank_id)
             callback(False, "0 0 0")
@@ -5041,9 +5031,15 @@ _:b%i
             pedalboard_id += 1 if dir_up else -1
 
         if bank_id == 0:
-            pedalboards = allpedalboards or [{'title':"Default"}]
+            pedalboards = self.alluserpedalboards
+        elif bank_id <= numUserBanks:
+            pedalboards = self.userbanks[bank_id - 1]['pedalboards']
         else:
-            pedalboards = banks[bank_id-1]['pedalboards']
+            fbank_id = bank_id - numUserBanks - 1
+            if fbank_id == 0:
+                pedalboards = self.allfactorypedalboards
+            else:
+                pedalboards = self.factorybanks[fbank_id - 1]['pedalboards']
 
         numPedals = len(pedalboards)
 
@@ -5148,22 +5144,21 @@ _:b%i
         # so this response says where it is located from within the "All Pedalboards" bank
         pb_resp = -1
 
-        if not self.factorybank:
-            # if bank-to-remove is the current one, reset to "All Pedalboards"
-            if self.bank_id == bank_id:
-                self.bank_id = 0
-                # find current pedalboard within "All Pedalboards"
-                pb_path = self.pedalboard_path or DEFAULT_PEDALBOARD
-                for pbi in range(len(self.alluserpedalboards)):
-                    if self.alluserpedalboards[pbi]['bundle'] == pb_path:
-                        pb_resp = pbi
-                        break
-                else:
-                    print("ERROR: Failed to find new pedalboard id to give from All")
+        # if bank-to-remove is the current one, reset to "All Pedalboards"
+        if self.bank_id == bank_id:
+            self.bank_id = 0
+            # find current pedalboard within "All Pedalboards"
+            pb_path = self.pedalboard_path or DEFAULT_PEDALBOARD
+            for pbi in range(len(self.alluserpedalboards)):
+                if self.alluserpedalboards[pbi]['bundle'] == pb_path:
+                    pb_resp = pbi
+                    break
+            else:
+                print("ERROR: Failed to find new pedalboard id to give from All")
 
-            # if current bank is after or same as bank-to-remove, shift back by 1
-            elif self.bank_id >= bank_id:
-                self.bank_id -= 1
+        # if current bank is after or same as bank-to-remove, shift back by 1
+        elif self.bank_id >= bank_id:
+            self.bank_id -= 1
 
         self.userbanks.pop(bank_id - 1)
         save_banks(self.userbanks)
@@ -5421,19 +5416,13 @@ _:b%i
         else:
             print("ERROR: Delayed loading of %i:%i failed!" % self.next_hmi_pedalboard_to_load)
 
-    def hmi_load_bank_pedalboard(self, user_bank, bank_id, pedalboard_id, callback, from_hmi=True):
+    def hmi_load_bank_pedalboard(self, bank_id, pedalboard_id, callback, from_hmi=True):
         logging.debug("hmi load bank pedalboard")
 
-        self.factorybank = not user_bank
+        numUserBanks = len(self.userbanks)
+        numFactoryBanks = len(self.factorybanks)
 
-        if user_bank:
-            allpedalboards = self.alluserpedalboards
-            banks = self.userbanks
-        else:
-            allpedalboards = self.allfactorypedalboards
-            banks = self.factorybanks
-
-        if bank_id < 0 or bank_id > len(banks):
+        if bank_id < 0 or bank_id >= numUserBanks + numFactoryBanks + 2:
             print("ERROR: Trying to load pedalboard using out of bounds bank id %i" % (bank_id))
             callback(False)
             return
@@ -5453,10 +5442,15 @@ _:b%i
             return
 
         if bank_id == 0:
-            pedalboards = allpedalboards
+            pedalboards = self.alluserpedalboards
+        elif bank_id <= numUserBanks:
+            pedalboards = self.userbanks[bank_id - 1]['pedalboards']
         else:
-            bank        = banks[bank_id-1]
-            pedalboards = bank['pedalboards']
+            fbank_id = bank_id - numUserBanks - 1
+            if fbank_id == 0:
+                pedalboards = self.allfactorypedalboards
+            else:
+                pedalboards = self.factorybanks[fbank_id - 1]['pedalboards']
 
         if pedalboard_id < 0 or pedalboard_id >= len(pedalboards):
             print("ERROR: Trying to load pedalboard using out of bounds pedalboard id %i" % (pedalboard_id))
@@ -5487,8 +5481,7 @@ _:b%i
 
             # Check if there's a pending pedalboard to be loaded
             if next_pedalboard != next_pb_to_load:
-                self.hmi_load_bank_pedalboard(user_bank,
-                                              next_pedalboard[0],
+                self.hmi_load_bank_pedalboard(next_pedalboard[0],
                                               next_pedalboard[1],
                                               self.load_different_callback,
                                               from_hmi)
