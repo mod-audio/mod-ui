@@ -27,6 +27,18 @@ extern "C" {
 
 #define MOD_API __attribute__ ((visibility("default")))
 
+typedef enum {
+    kPluginLicenseNonCommercial = 0,
+    kPluginLicenseTrial = -1,
+    kPluginLicensePaid = 1,
+} PluginLicenseType;
+
+typedef enum {
+    kPedalboardInfoUserOnly = 0,
+    kPedalboardInfoFactoryOnly = 1,
+    kPedalboardInfoBoth = 2,
+} PedalboardInfoType;
+
 typedef struct {
     const char* name;
     const char* homepage;
@@ -48,6 +60,7 @@ typedef struct {
     const char* stylesheet;
     const char* screenshot;
     const char* thumbnail;
+    const char* discussionURL;
     const char* documentation;
     const char* brand;
     const char* label;
@@ -165,7 +178,7 @@ typedef struct {
     int minorVersion;
     int release;
     int builder;
-    int licensed;
+    int licensed; // PluginLicenseType
     const char* version;
     const char* stability;
     PluginAuthor author;
@@ -177,7 +190,7 @@ typedef struct {
 } PluginInfo;
 
 typedef struct {
-    int licensed;
+    int licensed; // PluginLicenseType
     const PluginPreset* presets;
 } NonCachedPluginInfo;
 
@@ -194,7 +207,7 @@ typedef struct {
     int minorVersion;
     int release;
     int builder;
-    int licensed;
+    int licensed; // PluginLicenseType
     PluginGUI_Mini gui;
     bool needsDealloc;
 } PluginInfo_Mini;
@@ -294,9 +307,9 @@ typedef struct {
 } PedalboardInfo;
 
 typedef struct {
-    bool valid;
     bool broken;
     bool factory;
+    bool hasTrialPlugins;
     const char* uri;
     const char* bundle;
     const char* title;
@@ -384,7 +397,7 @@ MOD_API bool is_plugin_preset_valid(const char* plugin, const char* preset);
 MOD_API void rescan_plugin_presets(const char* uri);
 
 // get all available pedalboards (ie, plugins with pedalboard type)
-MOD_API const PedalboardInfo_Mini* const* get_all_pedalboards(void);
+MOD_API const PedalboardInfo_Mini* const* get_all_pedalboards(int ptype);
 
 // get all currently "broken" pedalboards (ie, pedalboards which contain unavailable plugins)
 MOD_API const char* const* get_broken_pedalboards(void);
