@@ -144,6 +144,7 @@ from mod.tuner import (
 )
 from modtools.utils import (
     charPtrToString,
+    kPedalboardInfoUserOnly, kPedalboardInfoFactoryOnly,
     is_bundle_loaded, add_bundle_to_lilv_world, remove_bundle_from_lilv_world,
     is_plugin_preset_valid, rescan_plugin_presets,
     get_plugin_info, get_plugin_info_essentials, get_pedalboard_info, get_state_port_values,
@@ -219,8 +220,8 @@ def midi_port_alias_to_name(alias, withSpaces):
           .replace("/midi_capture_",space+"MIDI"+space)\
           .replace("/midi_playback_",space+"MIDI"+space)
 
-def get_all_good_and_bad_pedalboards():
-    allpedals  = get_all_pedalboards()
+def get_all_good_and_bad_pedalboards(ptype):
+    allpedals  = get_all_pedalboards(ptype)
     goodpedals = []
     badbundles = []
 
@@ -1074,12 +1075,14 @@ class Host(object):
         self.transport_bpb     = data['bpb']
 
         # load everything
-        allpedalboards, badbundles = get_all_good_and_bad_pedalboards()
-        self.alluserpedalboards = [pb for pb in allpedalboards if not pb['factory']]
-        self.allfactorypedalboards = tuple(pb for pb in allpedalboards if pb['factory'])
+        userpedals, baduserbundles = get_all_good_and_bad_pedalboards(kPedalboardInfoUserOnly)
+        factorypedals, badfactorybundles = get_all_good_and_bad_pedalboards(kPedalboardInfoFactoryOnly)
 
-        self.userbanks = list_banks(badbundles, True, True)
-        self.factorybanks = list_banks(badbundles, False, False)
+        self.alluserpedalboards = userpedals
+        self.allfactorypedalboards = factorypedals
+
+        self.userbanks = list_banks(baduserbundles, True, True)
+        self.factorybanks = list_banks(badfactorybundles, False, False)
 
         bank_id, pedalboard = get_last_bank_and_pedalboard()
 
@@ -1351,10 +1354,14 @@ class Host(object):
             callback(True)
             return
 
-        allpedalboards, badbundles = get_all_good_and_bad_pedalboards()
-        self.alluserpedalboards = [pb for pb in allpedalboards if not pb['factory']]
-        self.userbanks = list_banks(badbundles, True, False)
-        self.factorybanks = list_banks(badbundles, False, False)
+        userpedals, baduserbundles = get_all_good_and_bad_pedalboards(kPedalboardInfoUserOnly)
+        factorypedals, badfactorybundles = get_all_good_and_bad_pedalboards(kPedalboardInfoFactoryOnly)
+
+        self.alluserpedalboards = userpedals
+        self.allfactorypedalboards = factorypedals
+
+        self.userbanks = list_banks(baduserbundles, True, False)
+        self.factorybanks = list_banks(badfactorybundles, False, False)
 
         numUserBanks = len(self.userbanks)
         numFactoryBanks = len(self.factorybanks)
@@ -1464,9 +1471,9 @@ class Host(object):
         self.hmi.ui_con(cb)
 
     def end_session(self, callback):
-        allpedalboards, badbundles = get_all_good_and_bad_pedalboards()
-        self.alluserpedalboards = [pb for pb in allpedalboards if not pb['factory']]
-        self.userbanks = list_banks(badbundles, True, False)
+        userpedals, baduserbundles = get_all_good_and_bad_pedalboards(kPedalboardInfoUserOnly)
+        self.alluserpedalboards = userpedals
+        self.userbanks = list_banks(baduserbundles, True, False)
 
         self.web_connected = False
         if not self.web_data_ready_ok:
@@ -5055,10 +5062,6 @@ _:b%i
             else:
                 pedalboard_id = 0
 
-        #if pedalboard_id < 0 or pedalboard_id > numPedals:
-            #callback(False, "0 0 0")
-            #return
-
         if numPedals <= 9 or pedalboard_id < 4:
             startIndex = 0
         elif pedalboard_id+4 >= numPedals:
@@ -5070,7 +5073,8 @@ _:b%i
         pedalboardsData = '%d %d %d' % (numPedals, startIndex, endIndex)
 
         for i in range(startIndex, endIndex):
-            pedalboardsData += ' %s %d' % (normalize_for_hw(pedalboards[i]['title']), i+1)
+            pedalboardFlags = 1 if pedalboards[i]['hasTrialPlugins'] else 0
+            pedalboardsData += ' %d %d %s' % (pedalboardFlags, i+1, normalize_for_hw(pedalboards[i]['title']))
 
         callback(True, pedalboardsData)
 

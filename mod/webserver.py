@@ -57,6 +57,7 @@ from mod.bank import list_banks, save_banks, remove_pedalboard_from_banks
 from mod.session import SESSION
 from mod.licensing import check_missing_licenses, save_license, get_new_licenses_and_flush
 from modtools.utils import (
+    kPedalboardInfoBoth,
     init as lv2_init, cleanup as lv2_cleanup,
     get_plugin_list, get_all_plugins, get_plugin_info, get_non_cached_plugin_info,
     get_plugin_gui, get_plugin_gui_mini,
@@ -1280,12 +1281,12 @@ class PackageUninstall(JsonRequestHandler):
 
 class PedalboardList(JsonRequestHandler):
     def get(self):
-        all = get_all_pedalboards()
-        default_pb = next((p for p in all if p['bundle'] == DEFAULT_PEDALBOARD), None)
+        allpedals = get_all_pedalboards(kPedalboardInfoBoth)
+        default_pb = next((p for p in allpedals if p['bundle'] == DEFAULT_PEDALBOARD), None)
         if default_pb:
             default_pb['title'] = "Default"
             default_pb['broken'] = False
-        self.write(all)
+        self.write(allpedals)
 
 class PedalboardSave(JsonRequestHandler):
     @web.asynchronous
@@ -1640,14 +1641,11 @@ class BankLoad(JsonRequestHandler):
         # But for the GUI we need to know information about the used pedalboards
 
         # First we get all pedalboard info
-        pedalboards_data = dict((os.path.abspath(pb['bundle']), pb) for pb in get_all_pedalboards())
+        allpedals = get_all_pedalboards(kPedalboardInfoBoth)
+        pedalboards_data = dict((os.path.abspath(pb['bundle']), pb) for pb in allpedals)
 
         # List the broken pedalboards, we do not want to show those
-        broken_pedalboards = []
-
-        for bundlepath, pedalboard in pedalboards_data.items():
-            if pedalboard['broken']:
-                broken_pedalboards.append(bundlepath)
+        broken_pedalboards = tuple(pb['bundle'] for pb in allpedals if pb['broken'])
 
         # Get the banks using our broken pedalboards filter
         banks = list_banks(broken_pedalboards)

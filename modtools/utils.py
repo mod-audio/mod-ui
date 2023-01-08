@@ -151,6 +151,16 @@ if os.path.exists(tryPath1):
 else:
     utils = cdll.LoadLibrary(tryPath2)
 
+# PluginLicenseType
+kPluginLicenseNonCommercial = 0
+kPluginLicenseTrial = -1
+kPluginLicensePaid = 1
+
+# PedalboardInfoType
+kPedalboardInfoUserOnly = 0
+kPedalboardInfoFactoryOnly = 1
+kPedalboardInfoBoth = 2
+
 class PluginAuthor(Structure):
     _fields_ = [
         ("name", c_char_p),
@@ -175,6 +185,7 @@ class PluginGUI(Structure):
         ("stylesheet", c_char_p),
         ("screenshot", c_char_p),
         ("thumbnail", c_char_p),
+        ("discussionURL", c_char_p),
         ("documentation", c_char_p),
         ("brand", c_char_p),
         ("label", c_char_p),
@@ -446,9 +457,9 @@ class PedalboardInfo(Structure):
 
 class PedalboardInfo_Mini(Structure):
     _fields_ = [
-        ("valid", c_bool),
         ("broken", c_bool),
         ("factory", c_bool),
+        ("hasTrialPlugins", c_bool),
         ("uri", c_char_p),
         ("bundle", c_char_p),
         ("title", c_char_p),
@@ -520,13 +531,13 @@ utils.init.restype  = None
 utils.cleanup.argtypes = None
 utils.cleanup.restype  = None
 
-utils.is_bundle_loaded.argtypes = [c_char_p]
+utils.is_bundle_loaded.argtypes = (c_char_p,)
 utils.is_bundle_loaded.restype  = c_bool
 
-utils.add_bundle_to_lilv_world.argtypes = [c_char_p]
+utils.add_bundle_to_lilv_world.argtypes = (c_char_p,)
 utils.add_bundle_to_lilv_world.restype  = POINTER(c_char_p)
 
-utils.remove_bundle_from_lilv_world.argtypes = [c_char_p, c_char_p]
+utils.remove_bundle_from_lilv_world.argtypes = (c_char_p, c_char_p)
 utils.remove_bundle_from_lilv_world.restype  = POINTER(c_char_p)
 
 utils.get_plugin_list.argtypes = None
@@ -535,55 +546,55 @@ utils.get_plugin_list.restype  = POINTER(c_char_p)
 utils.get_all_plugins.argtypes = None
 utils.get_all_plugins.restype  = POINTER(POINTER(PluginInfo_Mini))
 
-utils.get_plugin_info.argtypes = [c_char_p]
+utils.get_plugin_info.argtypes = (c_char_p,)
 utils.get_plugin_info.restype  = POINTER(PluginInfo)
 
-utils.get_non_cached_plugin_info.argtypes = [c_char_p]
+utils.get_non_cached_plugin_info.argtypes = (c_char_p,)
 utils.get_non_cached_plugin_info.restype  = POINTER(NonCachedPluginInfo)
 
-utils.get_plugin_gui.argtypes = [c_char_p]
+utils.get_plugin_gui.argtypes = (c_char_p,)
 utils.get_plugin_gui.restype  = POINTER(PluginGUI)
 
-utils.get_plugin_gui_mini.argtypes = [c_char_p]
+utils.get_plugin_gui_mini.argtypes = (c_char_p,)
 utils.get_plugin_gui_mini.restype  = POINTER(PluginGUI_Mini)
 
-utils.get_plugin_control_inputs.argtypes = [c_char_p]
+utils.get_plugin_control_inputs.argtypes = (c_char_p,)
 utils.get_plugin_control_inputs.restype  = POINTER(PluginPort)
 
-utils.get_plugin_info_essentials.argtypes = [c_char_p]
+utils.get_plugin_info_essentials.argtypes = (c_char_p,)
 utils.get_plugin_info_essentials.restype  = POINTER(PluginInfo_Essentials)
 
-utils.is_plugin_preset_valid.argtypes = [c_char_p, c_char_p]
+utils.is_plugin_preset_valid.argtypes = (c_char_p, c_char_p)
 utils.is_plugin_preset_valid.restype  = c_bool
 
-utils.rescan_plugin_presets.argtypes = [c_char_p]
+utils.rescan_plugin_presets.argtypes = (c_char_p,)
 utils.rescan_plugin_presets.restype  = None
 
-utils.get_all_pedalboards.argtypes = None
+utils.get_all_pedalboards.argtypes = (c_int,)
 utils.get_all_pedalboards.restype  = POINTER(POINTER(PedalboardInfo_Mini))
 
 utils.get_broken_pedalboards.argtypes = None
 utils.get_broken_pedalboards.restype  = POINTER(c_char_p)
 
-utils.get_pedalboard_info.argtypes = [c_char_p]
+utils.get_pedalboard_info.argtypes = (c_char_p,)
 utils.get_pedalboard_info.restype  = POINTER(PedalboardInfo)
 
-utils.get_pedalboard_size.argtypes = [c_char_p]
+utils.get_pedalboard_size.argtypes = (c_char_p,)
 utils.get_pedalboard_size.restype  = POINTER(c_int)
 
-utils.get_pedalboard_plugin_values.argtypes = [c_char_p]
+utils.get_pedalboard_plugin_values.argtypes = (c_char_p,)
 utils.get_pedalboard_plugin_values.restype  = POINTER(PedalboardPluginValues)
 
-utils.get_state_port_values.argtypes = [c_char_p]
+utils.get_state_port_values.argtypes = (c_char_p,)
 utils.get_state_port_values.restype  = POINTER(StatePortValue)
 
-utils.list_plugins_in_bundle.argtypes = [c_char_p]
+utils.list_plugins_in_bundle.argtypes = (c_char_p,)
 utils.list_plugins_in_bundle.restype  = POINTER(c_char_p)
 
-utils.file_uri_parse.argtypes = [c_char_p]
+utils.file_uri_parse.argtypes = (c_char_p,)
 utils.file_uri_parse.restype  = c_char_p
 
-utils.set_cpu_affinity.argtypes = [c_int]
+utils.set_cpu_affinity.argtypes = (c_int,)
 utils.set_cpu_affinity.restype  = None
 
 utils.init_jack.argtypes = None
@@ -592,19 +603,19 @@ utils.init_jack.restype  = c_bool
 utils.close_jack.argtypes = None
 utils.close_jack.restype  = None
 
-utils.get_jack_data.argtypes = [c_bool]
+utils.get_jack_data.argtypes = (c_bool,)
 utils.get_jack_data.restype  = POINTER(JackData)
 
 utils.get_jack_buffer_size.argtypes = None
 utils.get_jack_buffer_size.restype  = c_uint
 
-utils.set_jack_buffer_size.argtypes = [c_uint]
+utils.set_jack_buffer_size.argtypes = (c_uint,)
 utils.set_jack_buffer_size.restype  = c_uint
 
 utils.get_jack_sample_rate.argtypes = None
 utils.get_jack_sample_rate.restype  = c_float
 
-utils.get_jack_port_alias.argtypes = [c_char_p]
+utils.get_jack_port_alias.argtypes = (c_char_p,)
 utils.get_jack_port_alias.restype  = c_char_p
 
 utils.has_midi_beat_clock_sender_port.argtypes = None
@@ -625,19 +636,19 @@ utils.has_midi_broadcaster_input_port.restype  = c_bool
 utils.has_duox_split_spdif.argtypes = None
 utils.has_duox_split_spdif.restype  = c_bool
 
-utils.get_jack_hardware_ports.argtypes = [c_bool, c_bool]
+utils.get_jack_hardware_ports.argtypes = (c_bool, c_bool)
 utils.get_jack_hardware_ports.restype  = POINTER(c_char_p)
 
-utils.connect_jack_ports.argtypes = [c_char_p, c_char_p]
+utils.connect_jack_ports.argtypes = (c_char_p, c_char_p)
 utils.connect_jack_ports.restype  = c_bool
 
-utils.connect_jack_midi_output_ports.argtypes = [c_char_p]
+utils.connect_jack_midi_output_ports.argtypes = (c_char_p,)
 utils.connect_jack_midi_output_ports.restype  = c_bool
 
-utils.disconnect_jack_ports.argtypes = [c_char_p, c_char_p]
+utils.disconnect_jack_ports.argtypes = (c_char_p, c_char_p)
 utils.disconnect_jack_ports.restype  = c_bool
 
-utils.disconnect_all_jack_ports.argtypes = [c_char_p]
+utils.disconnect_all_jack_ports.argtypes = (c_char_p,)
 utils.disconnect_all_jack_ports.restype  = c_bool
 
 utils.reset_xruns.argtypes = None
@@ -646,19 +657,19 @@ utils.reset_xruns.restype  = None
 utils.init_bypass.argtypes = None
 utils.init_bypass.restype  = None
 
-utils.get_truebypass_value.argtypes = [c_bool]
+utils.get_truebypass_value.argtypes = (c_bool,)
 utils.get_truebypass_value.restype  = c_bool
 
-utils.set_truebypass_value.argtypes = [c_bool, c_bool]
+utils.set_truebypass_value.argtypes = (c_bool, c_bool)
 utils.set_truebypass_value.restype  = c_bool
 
-utils.get_master_volume.argtypes = [c_bool]
+utils.get_master_volume.argtypes = (c_bool,)
 utils.get_master_volume.restype  = c_float
 
-utils.set_util_callbacks.argtypes = [JackBufSizeChanged, JackPortAppeared, JackPortDeleted, TrueBypassStateChanged]
+utils.set_util_callbacks.argtypes = (JackBufSizeChanged, JackPortAppeared, JackPortDeleted, TrueBypassStateChanged)
 utils.set_util_callbacks.restype  = None
 
-utils.set_extra_util_callbacks.argtypes = [CvExpInputModeChanged]
+utils.set_extra_util_callbacks.argtypes = (CvExpInputModeChanged,)
 utils.set_extra_util_callbacks.restype  = None
 
 # ------------------------------------------------------------------------------------------------------------
@@ -763,36 +774,53 @@ def rescan_plugin_presets(uri):
 # ------------------------------------------------------------------------------------------------------------
 
 _allpedalboards = None
+_alluserpedalboards = None
 
 # get all available pedalboards (ie, plugins with pedalboard type)
-def get_all_pedalboards():
-    global _allpedalboards
-    if _allpedalboards is None:
-        pbs = structPtrPtrToList(utils.get_all_pedalboards())
-        utitles = []
-        for pb in pbs:
-            if not pb['valid']:
-                continue
-            if pb['factory']:
-                continue
-            ntitle = get_unique_name(pb['title'], utitles)
-            if ntitle is not None:
-                pb['title'] = ntitle
-            utitles.append(pb['title'])
-        _allpedalboards = pbs
-    return _allpedalboards
+def get_all_pedalboards(ptype):
+    if ptype == kPedalboardInfoFactoryOnly:
+        return structPtrPtrToList(utils.get_all_pedalboards(ptype))
+
+    if ptype == kPedalboardInfoUserOnly:
+        global _alluserpedalboards
+        if _alluserpedalboards is None:
+            pbs = structPtrPtrToList(utils.get_all_pedalboards(ptype))
+            utitles = []
+            for pb in pbs:
+                ntitle = get_unique_name(pb['title'], utitles)
+                if ntitle is not None:
+                    pb['title'] = ntitle
+                utitles.append(pb['title'])
+            _alluserpedalboards = pbs
+        return _alluserpedalboards
+
+    if ptype == kPedalboardInfoBoth:
+        global _allpedalboards
+        if _allpedalboards is None:
+            pbs = structPtrPtrToList(utils.get_all_pedalboards(ptype))
+            utitles = []
+            for pb in pbs:
+                if pb['factory']:
+                    continue
+                ntitle = get_unique_name(pb['title'], utitles)
+                if ntitle is not None:
+                    pb['title'] = ntitle
+                utitles.append(pb['title'])
+            _allpedalboards = pbs
+        return _allpedalboards
 
 # handy function to reset our last call value
 def reset_get_all_pedalboards_cache():
     global _allpedalboards
-    _allpedalboards = None
+    global _alluserpedalboards
+    _allpedalboards = _alluserpedalboards = None
 
 # handy function to update cached pedalboard version
 def update_cached_pedalboard_version(bundle):
-    global _allpedalboards
-    if _allpedalboards is None:
+    global _alluserpedalboards
+    if _alluserpedalboards is None:
         return
-    for pedalboard in _allpedalboards:
+    for pedalboard in _alluserpedalboards:
         if pedalboard['bundle'] == bundle:
             pedalboard['version'] += 1
             return
@@ -800,7 +828,7 @@ def update_cached_pedalboard_version(bundle):
 
 # handy function to get only the names from all user pedalboards
 def get_all_user_pedalboard_names():
-    return tuple(pb['title'] for pb in get_all_pedalboards() if not pb['factory'])
+    return tuple(pb['title'] for pb in get_all_pedalboards(kPedalboardInfoUserOnly))
 
 # get all currently "broken" pedalboards (ie, pedalboards which contain unavailable plugins)
 def get_broken_pedalboards():
