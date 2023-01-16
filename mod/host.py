@@ -1380,7 +1380,7 @@ class Host(object):
         if pedalboard:
             if os.path.exists(pedalboard):
                 # out of bounds
-                if bankd_id < 0 or bank_id > numBanks:
+                if bank_id < 0 or bank_id >= numBanks:
                     pass
                 # divider
                 elif bank_id == numUserBanks + 1:
@@ -5087,8 +5087,9 @@ _:b%i
 
         numUserBanks = len(self.userbanks)
         numFactoryBanks = len(self.factorybanks)
+        numBanks = numUserBanks + numFactoryBanks + 3
 
-        if bank_id < 0 or bank_id >= numUserBanks + numFactoryBanks + 3:
+        if bank_id < 0 or bank_id >= numBanks:
             logging.error("Trying to list pedalboards with an out of bounds bank id (%d %d %d)",
                           props, pedalboard_id, bank_id)
             callback(False, "0 0 0")
@@ -5496,8 +5497,9 @@ _:b%i
 
         numUserBanks = len(self.userbanks)
         numFactoryBanks = len(self.factorybanks)
+        numBanks = numUserBanks + numFactoryBanks + 3
 
-        if bank_id < 0 or bank_id >= numUserBanks + numFactoryBanks + 2:
+        if bank_id < 0 or bank_id >= numBanks:
             print("ERROR: Trying to load pedalboard using out of bounds bank id %i" % (bank_id))
             callback(False)
             return
