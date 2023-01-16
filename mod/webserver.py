@@ -1223,6 +1223,10 @@ class ServerWebSocket(websocket.WebSocketHandler):
             rolling = bool(int(data[1]))
             SESSION.host.set_transport_rolling(rolling, True, True, False, False)
 
+        elif cmd == "show_external_ui":
+            inst = data[1]
+            SESSION.ws_show_external_ui(inst)
+
         else:
             print("Unexpected command received over websocket")
 

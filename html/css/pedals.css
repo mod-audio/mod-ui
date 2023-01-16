@@ -72,6 +72,20 @@
 }
 .mod-pedal .mod-actions .mod-information:hover { color: #eee; }
 
+.mod-pedal .mod-actions .mod-external-ui {
+    font-family: fontello !important;
+    cursor: pointer;
+    position: absolute;
+    width: 32px;
+    right: 4.5em;
+    color: #666;
+    transition: color 0.33s;
+}
+.mod-external-ui:after {
+    content: '\e800';
+}
+.mod-pedal .mod-actions .mod-external-ui:hover { color: #eee; }
+
 /* = DRAG HANDLE
 ================================================ */
 .mod-pedal .mod-drag-handle {

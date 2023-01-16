@@ -1501,6 +1501,10 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
             self.effectBox.effectBox('showPluginInfo', pluginData)
         },
 
+        showExternalUI: function (instance) {
+            ws.send(sprintf("show_external_ui %s", instance))
+        },
+
         pluginParameterChange: function (port, value) {
             self.pedalboardModified = true
             ws.send(sprintf("param_set %s %f", port, value))

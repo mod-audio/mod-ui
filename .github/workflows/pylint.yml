@@ -7,7 +7,7 @@ jobs:
     runs-on: ubuntu-22.04
     name: pylint
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Install virtualenv
         run: |
           sudo apt install python3-virtualenv
