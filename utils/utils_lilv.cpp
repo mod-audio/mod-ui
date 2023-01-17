@@ -2257,7 +2257,7 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
         // discussionURL, optional
         if (LilvNode* const modgui_discussionURL = lilv_world_get(W, modguigui, ns.modgui_discussionURL, nullptr))
         {
-            info.gui.discussionURL = lilv_file_abspath(lilv_node_as_string(modgui_discussionURL));
+            info.gui.discussionURL = strdup(lilv_node_as_uri(modgui_discussionURL));
             lilv_node_free(modgui_discussionURL);
         }
         if (info.gui.discussionURL == nullptr)
