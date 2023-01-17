@@ -3006,9 +3006,9 @@ static void _fill_plugin_info_mini_from_full(const PluginInfo& info2, const Plug
     info->builder          = info2.builder;
     info->licensed         = info2.licensed;
 
-    info->gui.resourcesDirectory = info2.gui.resourcesDirectory;
-    info->gui.screenshot = info2.gui.screenshot;
-    info->gui.thumbnail  = info2.gui.thumbnail;
+    info->gui.resourcesDirectory = info2.gui.resourcesDirectory != nc ? strdup(info2.gui.resourcesDirectory) : nc;
+    info->gui.screenshot         = info2.gui.screenshot         != nc ? strdup(info2.gui.screenshot)         : nc;
+    info->gui.thumbnail          = info2.gui.thumbnail          != nc ? strdup(info2.gui.thumbnail)          : nc;
 }
 
 // --------------------------------------------------------------------------------------------------------
