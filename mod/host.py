@@ -240,10 +240,12 @@ def get_all_good_and_bad_pedalboards(ptype):
     if len(goodpedals) == 0:
         goodpedals.append({
             'broken': False,
-            "uri": "file://" + DEFAULT_PEDALBOARD,
-            "bundle": DEFAULT_PEDALBOARD,
-            "title": UNTITLED_PEDALBOARD_NAME,
-            "version": 0,
+            'factory': False,
+            'hasTrialPlugins': False,
+            'uri': "file://" + DEFAULT_PEDALBOARD,
+            'bundle': DEFAULT_PEDALBOARD,
+            'title': UNTITLED_PEDALBOARD_NAME,
+            'version': 0,
         })
 
     return goodpedals, badbundles
@@ -1391,7 +1393,7 @@ class Host(object):
                 pedalboard = ""
 
         flags = 0
-        if bank_id == 0:
+        if bank_id <= 0:
             pedalboards = self.alluserpedalboards
         elif bank_id <= numUserBanks:
             pedalboards = self.userbanks[bank_id - 1]['pedalboards']
@@ -5333,8 +5335,13 @@ _:b%i
         print("hmi_pedalboard_save_as", title, "->", bundlepath)
 
         pedalboard = {
+            'broken': False,
+            'factory': False,
+            'hasTrialPlugins': False,
+            'uri': "file://" + bundlepath,
             'bundle': bundlepath,
             'title': title,
+            'version': 0,
         }
         self.alluserpedalboards.append(pedalboard)
 

@@ -1286,6 +1286,7 @@ class PackageUninstall(JsonRequestHandler):
 class PedalboardList(JsonRequestHandler):
     def get(self):
         allpedals = get_all_pedalboards(kPedalboardInfoBoth)
+        # FIXME deal with this on C++ side
         default_pb = next((p for p in allpedals if p['bundle'] == DEFAULT_PEDALBOARD), None)
         if default_pb:
             default_pb['title'] = "Default"

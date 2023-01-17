@@ -467,6 +467,7 @@ JqueryClass('effectBox', {
                 favorite_class: FAVORITES.indexOf(plugin.uri) >= 0 ? "favorite" : "",
                 plugin_href: PLUGINS_URL + '/' + btoa(plugin.uri),
                 pedalboard_href: desktop.getPedalboardHref(plugin.uri),
+                discussion_href: plugin.gui.discussionURL,
                 documentation_href: (plugin.gui && plugin.gui.documentation)
                                   ? '/effect/file/documentation?uri=' + uri + '&v=' + ver
                                   : '',
