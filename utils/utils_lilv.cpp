@@ -103,7 +103,7 @@ const LilvPlugins* PLUGINS = nullptr;
 
 // plugin info, mapped to URIs
 std::unordered_map<std::string, PluginInfo> PLUGNFO;
-std::unordered_map<std::string, PluginInfo_Mini> PLUGNFO_Mini;
+std::unordered_map<std::string, const PluginInfo_Mini*> PLUGNFO_Mini;
 
 // list of plugins that need reload (preset data only)
 std::list<std::string> PLUGINStoReload;
@@ -170,9 +170,11 @@ static const std::vector<std::string> BLACKLIST = {
 
 // --------------------------------------------------------------------------------------------------------
 
-inline char* getenv_strup_or_null(const char* const value)
+inline char* getenv_strdup_or_null(const char* const env)
 {
-    return value != nullptr ? strdup(value) : nullptr;
+    if (const char* const value = getenv(env))
+        return strdup(value);
+    return nullptr;
 }
 
 template<typename T>
@@ -1082,7 +1084,7 @@ void _refresh()
 
         // store empty dict for later
         PLUGNFO[uri] = PluginInfo_Init;
-        PLUGNFO_Mini[uri] = PluginInfo_Mini_Init;
+        PLUGNFO_Mini[uri] = nullptr;
 
         _fill_bundles_for_plugin(BUNDLES, p, pset_Preset);
     }
@@ -1387,17 +1389,12 @@ static const char* _get_lv2_pedalboards_path()
     return path.c_str();
 }
 
-const PluginInfo_Mini& _get_plugin_info_mini(const LilvPlugin* const p, const NamespaceDefinitions_Mini& ns)
+const PluginInfo_Mini* _get_plugin_info_mini(const LilvPlugin* const p, const NamespaceDefinitions_Mini& ns)
 {
-    static PluginInfo_Mini info;
-    memset(&info, 0, sizeof(PluginInfo_Mini));
-
     // --------------------------------------------------------------------------------------------------------
     // uri
 
-    info.uri = lilv_node_as_uri(lilv_plugin_get_uri(p));
-
-    printf("NOTICE: Now mini-scanning plugin '%s'...\n", info.uri);
+    const char* const uri = lilv_node_as_uri(lilv_plugin_get_uri(p));
 
     // --------------------------------------------------------------------------------------------------------
     // check if plugin if supported
@@ -1469,17 +1466,23 @@ const PluginInfo_Mini& _get_plugin_info_mini(const LilvPlugin* const p, const Na
 
     if (! supported)
     {
-        printf("Plugin '%s' uses non-supported port types\n", info.uri);
-        return info;
+        printf("Plugin '%s' uses non-supported port types\n", uri);
+        return nullptr;
     }
 
     // --------------------------------------------------------------------------------------------------------
     // category
 
-    info.category = _get_plugin_categories(p, ns.rdf_type, &supported);
+    const char* const* const category = _get_plugin_categories(p, ns.rdf_type, &supported);
 
     if (! supported)
-        return info;
+        return nullptr;
+
+    // --------------------------------------------------------------------------------------------------------
+
+    PluginInfo_Mini* const info = new PluginInfo_Mini;
+    info->uri = uri;
+    info->category = category;
 
     // --------------------------------------------------------------------------------------------------------
     // name
@@ -1487,15 +1490,15 @@ const PluginInfo_Mini& _get_plugin_info_mini(const LilvPlugin* const p, const Na
     if (LilvNode* const node = lilv_plugin_get_name(p))
     {
         if (const char* const name = lilv_node_as_string(node))
-            info.name = strdup(name);
+            info->name = strdup(name);
         else
-            info.name = nc;
+            info->name = nc;
 
         lilv_node_free(node);
     }
     else
     {
-        info.name = nc;
+        info->name = nc;
     }
 
     // --------------------------------------------------------------------------------------------------------
@@ -1506,18 +1509,18 @@ const PluginInfo_Mini& _get_plugin_info_mini(const LilvPlugin* const p, const Na
     if (LilvNodes* const nodes = lilv_plugin_get_value(p, ns.mod_brand))
     {
         strncpy(brand, lilv_node_as_string(lilv_nodes_get_first(nodes)), 16);
-        info.brand = strdup(brand);
+        info->brand = strdup(brand);
         lilv_nodes_free(nodes);
     }
     else if (LilvNode* const node = lilv_plugin_get_author_name(p))
     {
         strncpy(brand, lilv_node_as_string(node), 16);
-        info.brand = strdup(brand);
+        info->brand = strdup(brand);
         lilv_node_free(node);
     }
     else
     {
-        info.brand = nc;
+        info->brand = nc;
     }
 
     // --------------------------------------------------------------------------------------------------------
@@ -1528,23 +1531,23 @@ const PluginInfo_Mini& _get_plugin_info_mini(const LilvPlugin* const p, const Na
     if (LilvNodes* const nodes = lilv_plugin_get_value(p, ns.mod_label))
     {
         strncpy(label, lilv_node_as_string(lilv_nodes_get_first(nodes)), 24);
-        info.label = strdup(label);
+        info->label = strdup(label);
         lilv_nodes_free(nodes);
     }
-    else if (info.name == nc)
+    else if (info->name == nc)
     {
-        info.label = nc;
+        info->label = nc;
     }
     else
     {
-        if (strlen(info.name) <= 24)
+        if (strlen(info->name) <= 24)
         {
-            info.label = strdup(info.name);
+            info->label = strdup(info->name);
         }
         else
         {
-            strncpy(label, info.name, 24);
-            info.label = strdup(label);
+            strncpy(label, info->name, 24);
+            info->label = strdup(label);
         }
     }
 
@@ -1553,12 +1556,12 @@ const PluginInfo_Mini& _get_plugin_info_mini(const LilvPlugin* const p, const Na
 
     if (LilvNodes* const nodes = lilv_plugin_get_value(p, ns.rdfs_comment))
     {
-        info.comment = strdup(lilv_node_as_string(lilv_nodes_get_first(nodes)));
+        info->comment = strdup(lilv_node_as_string(lilv_nodes_get_first(nodes)));
         lilv_nodes_free(nodes);
     }
     else
     {
-        info.comment = nc;
+        info->comment = nc;
     }
 
     // --------------------------------------------------------------------------------------------------------
@@ -1566,26 +1569,42 @@ const PluginInfo_Mini& _get_plugin_info_mini(const LilvPlugin* const p, const Na
 
     if (LilvNodes* const minorvers = lilv_plugin_get_value(p, ns.lv2core_minorVersion))
     {
-        info.minorVersion = lilv_node_as_int(lilv_nodes_get_first(minorvers));
+        info->minorVersion = lilv_node_as_int(lilv_nodes_get_first(minorvers));
         lilv_nodes_free(minorvers);
+    }
+    else
+    {
+        info->minorVersion = 0;
     }
 
     if (LilvNodes* const microvers = lilv_plugin_get_value(p, ns.lv2core_microVersion))
     {
-        info.microVersion = lilv_node_as_int(lilv_nodes_get_first(microvers));
+        info->microVersion = lilv_node_as_int(lilv_nodes_get_first(microvers));
         lilv_nodes_free(microvers);
+    }
+    else
+    {
+        info->microVersion = 0;
     }
 
     if (LilvNodes* const releasenode = lilv_plugin_get_value(p, ns.mod_release))
     {
-        info.release = lilv_node_as_int(lilv_nodes_get_first(releasenode));
+        info->release = lilv_node_as_int(lilv_nodes_get_first(releasenode));
         lilv_nodes_free(releasenode);
+    }
+    else
+    {
+        info->release = 0;
     }
 
     if (LilvNodes* const buildernode = lilv_plugin_get_value(p, ns.mod_builder))
     {
-        info.builder = lilv_node_as_int(lilv_nodes_get_first(buildernode));
+        info->builder = lilv_node_as_int(lilv_nodes_get_first(buildernode));
         lilv_nodes_free(buildernode);
+    }
+    else
+    {
+        info->builder = 0;
     }
 
     // --------------------------------------------------------------------------------------------------------
@@ -1596,24 +1615,24 @@ const PluginInfo_Mini& _get_plugin_info_mini(const LilvPlugin* const p, const Na
         const char* const buildEnvironment = lilv_node_as_string(lilv_nodes_get_first(nodes));
 
         /**/ if (strcmp(buildEnvironment, "prod") == 0)
-            info.buildEnvironment = kBuildEnvironmentProd;
+            info->buildEnvironment = kBuildEnvironmentProd;
         else if (strcmp(buildEnvironment, "dev") == 0)
-            info.buildEnvironment = kBuildEnvironmentDev;
+            info->buildEnvironment = kBuildEnvironmentDev;
         else if (strcmp(buildEnvironment, "labs") == 0)
-            info.buildEnvironment = kBuildEnvironmentLabs;
+            info->buildEnvironment = kBuildEnvironmentLabs;
         else
-            info.buildEnvironment = strdup(buildEnvironment);
+            info->buildEnvironment = strdup(buildEnvironment);
 
         lilv_nodes_free(nodes);
     }
     // if cloud built the plugin, but no buildEnvironment was set, switch to prod for backwards compat
-    else if (info.release >= 1 && info.builder >= 1)
+    else if (info->release >= 1 && info->builder >= 1)
     {
-        info.buildEnvironment = kBuildEnvironmentProd;
+        info->buildEnvironment = kBuildEnvironmentProd;
     }
     else
     {
-        info.buildEnvironment = nc;
+        info->buildEnvironment = nc;
     }
 
     // --------------------------------------------------------------------------------------------------------
@@ -1621,9 +1640,13 @@ const PluginInfo_Mini& _get_plugin_info_mini(const LilvPlugin* const p, const Na
 
     if (KEYS_PATHlen > 0 && lilv_plugin_has_extension_data(p, ns.modlicense_interface))
     {
-        const std::string licensefile(KEYS_PATH + sha1(info.uri));
+        const std::string licensefile(KEYS_PATH + sha1(info->uri));
 
-        info.licensed = std::ifstream(licensefile).good() ? kPluginLicensePaid : kPluginLicenseTrial;
+        info->licensed = std::ifstream(licensefile).good() ? kPluginLicensePaid : kPluginLicenseTrial;
+    }
+    else
+    {
+        info->licensed = kPluginLicenseNonCommercial;
     }
 
     // --------------------------------------------------------------------------------------------------------
@@ -1665,37 +1688,35 @@ const PluginInfo_Mini& _get_plugin_info_mini(const LilvPlugin* const p, const Na
 
     if (modguigui != nullptr && resdir != nullptr)
     {
-        info.gui.resourcesDirectory = resdir;
+        info->gui.resourcesDirectory = resdir;
 
         if (LilvNode* const modgui_scrn = lilv_world_get(W, modguigui, ns.modgui_screenshot, nullptr))
         {
-            info.gui.screenshot = lilv_file_abspath(lilv_node_as_string(modgui_scrn));
+            info->gui.screenshot = lilv_file_abspath(lilv_node_as_string(modgui_scrn));
             lilv_node_free(modgui_scrn);
         }
-        if (info.gui.screenshot == nullptr)
-            info.gui.screenshot = nc;
+        if (info->gui.screenshot == nullptr)
+            info->gui.screenshot = nc;
 
         if (LilvNode* const modgui_thumb = lilv_world_get(W, modguigui, ns.modgui_thumbnail, nullptr))
         {
-            info.gui.thumbnail = lilv_file_abspath(lilv_node_as_string(modgui_thumb));
+            info->gui.thumbnail = lilv_file_abspath(lilv_node_as_string(modgui_thumb));
             lilv_node_free(modgui_thumb);
         }
-        if (info.gui.thumbnail == nullptr)
-            info.gui.thumbnail = nc;
+        if (info->gui.thumbnail == nullptr)
+            info->gui.thumbnail = nc;
 
         lilv_node_free(modguigui);
     }
     else
     {
-        info.gui.resourcesDirectory = nc;
-        info.gui.screenshot = nc;
-        info.gui.thumbnail  = nc;
+        info->gui.resourcesDirectory = nc;
+        info->gui.screenshot = nc;
+        info->gui.thumbnail  = nc;
     }
 
     // --------------------------------------------------------------------------------------------------------
 
-    info.valid = true;
-    info.needsDealloc = true;
     return info;
 }
 
@@ -2912,11 +2933,12 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
     if (size_t count = usedParameters.size())
     {
         PluginParameter* const params = new PluginParameter[count+1];
-        memset(params, 0, sizeof(PluginParameter) * (count+1));
 
         count = 0;
         for (auto& param : usedParameters)
             params[count++] = param.second;
+
+        memset(&params[count], 0, sizeof(PluginParameter));
 
         info.parameters = params;
     }
@@ -2938,70 +2960,55 @@ const PluginInfo& _get_plugin_info(const LilvPlugin* const p, const NamespaceDef
 
 // --------------------------------------------------------------------------------------------------------
 
-static void _clear_plugin_info_mini(PluginInfo_Mini& info)
+static void _clear_plugin_info_mini(const PluginInfo_Mini* const info)
 {
-    if (info.needsDealloc)
-    {
-        if (info.brand != nc)
-            free((void*)info.brand);
-        if (info.label != nc)
-            free((void*)info.label);
-        if (info.name != nc)
-            free((void*)info.name);
-        if (info.comment != nc)
-            free((void*)info.comment);
-        if (info.buildEnvironment != nc &&
-            info.buildEnvironment != kBuildEnvironmentProd &&
-            info.buildEnvironment != kBuildEnvironmentDev &&
-            info.buildEnvironment != kBuildEnvironmentLabs)
-            free((void*)info.buildEnvironment);
-        if (info.gui.resourcesDirectory != nc)
-            free((void*)info.gui.resourcesDirectory);
-        if (info.gui.screenshot != nc)
-            free((void*)info.gui.screenshot);
-        if (info.gui.thumbnail != nc)
-            free((void*)info.gui.thumbnail);
-    }
+    if (info->brand != nc)
+        free((void*)info->brand);
+    if (info->label != nc)
+        free((void*)info->label);
+    if (info->name != nc)
+        free((void*)info->name);
+    if (info->comment != nc)
+        free((void*)info->comment);
+    if (info->buildEnvironment != nc &&
+        info->buildEnvironment != kBuildEnvironmentProd &&
+        info->buildEnvironment != kBuildEnvironmentDev &&
+        info->buildEnvironment != kBuildEnvironmentLabs)
+        free((void*)info->buildEnvironment);
+    if (info->gui.resourcesDirectory != nc)
+        free((void*)info->gui.resourcesDirectory);
+    if (info->gui.screenshot != nc)
+        free((void*)info->gui.screenshot);
+    if (info->gui.thumbnail != nc)
+        free((void*)info->gui.thumbnail);
 
-    memset(&info, 0, sizeof(PluginInfo_Mini));
+    delete info;
 }
 
-static void _fill_plugin_info_mini_from_full(const PluginInfo& info2, PluginInfo_Mini* const miniInfo)
+static void _fill_plugin_info_mini_from_full(const PluginInfo& info2, const PluginInfo_Mini** const miniInfo)
 {
-    if (miniInfo->valid)
-    {
-        if (miniInfo->needsDealloc)
-            _clear_plugin_info_mini(*miniInfo);
-        else
-            return;
-    }
+    if (*miniInfo != nullptr || !info2.valid)
+        return;
 
-    static PluginInfo_Mini info;
-    memset(&info, 0, sizeof(PluginInfo_Mini));
-
-    if (info2.valid)
-    {
-        info.uri              = info2.uri;
-        info.name             = info2.name;
-        info.brand            = info2.brand;
-        info.label            = info2.label;
-        info.comment          = info2.comment;
-        info.buildEnvironment = info2.buildEnvironment;
-        info.category         = info2.category;
-        info.microVersion     = info2.microVersion;
-        info.minorVersion     = info2.minorVersion;
-        info.release          = info2.release;
-        info.builder          = info2.builder;
-        info.licensed         = info2.licensed;
-
-        info.gui.resourcesDirectory = info2.gui.resourcesDirectory;
-        info.gui.screenshot = info2.gui.screenshot;
-        info.gui.thumbnail  = info2.gui.thumbnail;
-
-        info.valid = true;
-    }
-
+    PluginInfo_Mini* const info = new PluginInfo_Mini;
     *miniInfo = info;
+
+    info->uri              = info2.uri;
+    info->name             = info2.name;
+    info->brand            = info2.brand;
+    info->label            = info2.label;
+    info->comment          = info2.comment;
+    info->buildEnvironment = info2.buildEnvironment;
+    info->category         = info2.category;
+    info->microVersion     = info2.microVersion;
+    info->minorVersion     = info2.minorVersion;
+    info->release          = info2.release;
+    info->builder          = info2.builder;
+    info->licensed         = info2.licensed;
+
+    info->gui.resourcesDirectory = info2.gui.resourcesDirectory;
+    info->gui.screenshot = info2.gui.screenshot;
+    info->gui.thumbnail  = info2.gui.thumbnail;
 }
 
 // --------------------------------------------------------------------------------------------------------
@@ -3112,6 +3119,8 @@ static PedalboardInfo_Mini* _get_pedalboard_info_mini(const LilvPlugin* const p,
 
     if (LilvNodes* const blocks = lilv_plugin_get_value(p, ingenblocknode))
     {
+        const NamespaceDefinitions_Mini ns;
+
         LILV_FOREACH(nodes, itblocks, blocks)
         {
             const LilvNode* const block = lilv_nodes_get(blocks, itblocks);
@@ -3120,7 +3129,7 @@ static PedalboardInfo_Mini* _get_pedalboard_info_mini(const LilvPlugin* const p,
             {
                 const std::string uri = lilv_node_as_uri(proto);
 
-                if (! contains(PLUGNFO, uri))
+                if (! contains(PLUGNFO_Mini, uri))
                 {
                     info->broken = true;
                     lilv_node_free(proto);
@@ -3130,17 +3139,16 @@ static PedalboardInfo_Mini* _get_pedalboard_info_mini(const LilvPlugin* const p,
                 // checking for trial plugins, only needs to be done once
                 if (!info->hasTrialPlugins && !info->factory)
                 {
-                    if (!PLUGNFO[uri].valid)
+                    if (PLUGNFO_Mini[uri] == nullptr)
                     {
-                        const NamespaceDefinitions ns;
-                        const PluginInfo& pInfo(_get_plugin_info(lilv_plugins_get_by_uri(PLUGINS, proto), ns));
-
-                        PLUGNFO[uri] = pInfo;
-                        _fill_plugin_info_mini_from_full(pInfo, &PLUGNFO_Mini[uri]);
+                        LilvNode* const urinode = lilv_new_uri(W, uri.c_str());
+                        PLUGNFO_Mini[uri] = _get_plugin_info_mini(lilv_plugins_get_by_uri(PLUGINS, urinode), ns);
+                        lilv_node_free(urinode);
                     }
 
-                    if (PLUGNFO[uri].licensed == kPluginLicenseTrial)
-                        info->hasTrialPlugins = true;
+                    if (const PluginInfo_Mini* const miniInfo = PLUGNFO_Mini[uri])
+                        if (miniInfo->licensed == kPluginLicenseTrial)
+                            info->hasTrialPlugins = true;
                 }
 
                 lilv_node_free(proto);
@@ -3698,7 +3706,7 @@ void cleanup(void)
 
     for (auto& map : PLUGNFO_Mini)
     {
-        PluginInfo_Mini& info = map.second;
+        const PluginInfo_Mini* const info = map.second;
         _clear_plugin_info_mini(info);
     }
 
@@ -3797,7 +3805,7 @@ const char* const* add_bundle_to_lilv_world(const char* const bundle)
     BUNDLES.push_back(bundlepath);
 
     // fill in for any new plugins that appeared
-    std::vector<std::string> addedPlugins;
+    std::vector<const char*> addedPlugins;
 
     // check plugins provided by this bundle
     if (LilvWorld* const w = lilv_world_new())
@@ -3824,9 +3832,9 @@ const char* const* add_bundle_to_lilv_world(const char* const bundle)
 
             // store new empty data
             PLUGNFO[uri] = PluginInfo_Init;
-            PLUGNFO_Mini[uri] = PluginInfo_Mini_Init;
+            PLUGNFO_Mini[uri] = nullptr;
 
-            addedPlugins.push_back(uri);
+            addedPlugins.push_back(strdup(uri.c_str()));
         }
 
         lilv_world_free(w);
@@ -3842,13 +3850,12 @@ const char* const* add_bundle_to_lilv_world(const char* const bundle)
         }
 
         _add_remove_bundles_ret = new const char*[plugCount+1];
-        memset(_add_remove_bundles_ret, 0, sizeof(const char*) * (plugCount+1));
 
         plugCount = 0;
-        for (const std::string& uri : addedPlugins)
-            _add_remove_bundles_ret[plugCount++] = strdup(uri.c_str());
+        for (const char* uri : addedPlugins)
+            _add_remove_bundles_ret[plugCount++] = uri;
 
-        addedPlugins.clear();
+        _add_remove_bundles_ret[plugCount] = nullptr;
 
         return _add_remove_bundles_ret;
     }
@@ -3903,7 +3910,7 @@ const char* const* remove_bundle_from_lilv_world(const char* const bundle, const
     // remove from loaded list
     BUNDLES.remove(bundlepath);
 
-    std::vector<std::string> removedPlugins;
+    std::vector<const char*> removedPlugins;
 
     // remove all plugins that are present on that bundle
     LILV_FOREACH(plugins, itpls, PLUGINS)
@@ -3963,7 +3970,7 @@ const char* const* remove_bundle_from_lilv_world(const char* const bundle, const
             _clear_plugin_info_mini(PLUGNFO_Mini[uri]);
             PLUGNFO_Mini.erase(uri);
 
-            removedPlugins.push_back(uri);
+            removedPlugins.push_back(strdup(uri.c_str()));
             break;
         }
     }
@@ -3990,13 +3997,12 @@ const char* const* remove_bundle_from_lilv_world(const char* const bundle, const
         }
 
         _add_remove_bundles_ret = new const char*[plugCount+1];
-        memset(_add_remove_bundles_ret, 0, sizeof(const char*) * (plugCount+1));
 
         plugCount = 0;
-        for (const std::string& uri : removedPlugins)
-            _add_remove_bundles_ret[plugCount++] = strdup(uri.c_str());
+        for (const char* uri : removedPlugins)
+            _add_remove_bundles_ret[plugCount++] = uri;
 
-        removedPlugins.clear();
+        _add_remove_bundles_ret[plugCount] = nullptr;
 
         // force get_plugin_list/get_all_plugins to reload info next time
         _get_plug_list_lastsize = -1;
@@ -4110,28 +4116,17 @@ const PluginInfo_Mini* const* get_all_plugins(void)
             continue;
 
         // check if it's already cached
-        if (contains(PLUGNFO_Mini, uri) && PLUGNFO_Mini[uri].valid)
+        if (! contains(PLUGNFO_Mini, uri) || PLUGNFO_Mini[uri] == nullptr)
+            PLUGNFO_Mini[uri] = _get_plugin_info_mini(p, ns);
+
+        if (const PluginInfo_Mini* const miniInfo = PLUGNFO_Mini[uri])
         {
 #if SHOW_ONLY_PLUGINS_WITH_MODGUI
-            if (PLUGNFO_Mini[uri].gui.resourcesDirectory == nc)
+            if (miniInfo->gui.resourcesDirectory == nc)
                 continue;
 #endif
-            _get_plugs_mini_ret[curIndex++] = &PLUGNFO_Mini[uri];
-            continue;
+            _get_plugs_mini_ret[curIndex++] = PLUGNFO_Mini[uri];
         }
-
-        // get new info
-        const PluginInfo_Mini& pMiniInfo = _get_plugin_info_mini(p, ns);
-
-        if (! pMiniInfo.valid)
-            continue;
-
-        PLUGNFO_Mini[uri] = pMiniInfo;
-#if SHOW_ONLY_PLUGINS_WITH_MODGUI
-        if (pMiniInfo.gui.resourcesDirectory == nc)
-            continue;
-#endif
-        _get_plugs_mini_ret[curIndex++] = &PLUGNFO_Mini[uri];
     }
 
     return _get_plugs_mini_ret;
@@ -4228,8 +4223,8 @@ const PluginGUI_Mini* get_plugin_gui_mini(const char* uri_)
         return nullptr;
 
     // check if it's already cached
-    if (PLUGNFO_Mini[uri].valid)
-        return &PLUGNFO_Mini[uri].gui;
+    if (const PluginInfo_Mini* const miniInfo = PLUGNFO_Mini[uri])
+        return &miniInfo->gui;
 
     const NamespaceDefinitions_Mini ns;
 
@@ -4245,8 +4240,14 @@ const PluginGUI_Mini* get_plugin_gui_mini(const char* uri_)
 
         // found it
         printf("NOTICE: Plugin '%s' was not (small) cached, scanning it now...\n", uri_);
-        PLUGNFO_Mini[uri] = _get_plugin_info_mini(p, ns);
-        return &PLUGNFO_Mini[uri].gui;
+        if (const PluginInfo_Mini* const miniInfo = _get_plugin_info_mini(p, ns))
+        {
+            PLUGNFO_Mini[uri] = miniInfo;
+            return &miniInfo->gui;
+        }
+
+        // error
+        return nullptr;
     }
 
     // not found
@@ -4405,22 +4406,22 @@ const PedalboardInfo_Mini* const* get_all_pedalboards(const int ptype)
     if (ptype == kPedalboardInfoFactoryOnly && factoryInfo != nullptr)
         return factoryInfo;
 
-    char* const oldlv2path = getenv_strup_or_null("LV2_PATH");
+    char* const oldlv2path = getenv_strdup_or_null("LV2_PATH");
 
     const char* pedalboard_lv2_path;
     switch (ptype)
     {
     case kPedalboardInfoUserOnly:
-        if (const char* const pbdir = getenv("MOD_FACTORY_PEDALBOARDS_DIR"))
-            pedalboard_lv2_path = pbdir;
-        else
-            pedalboard_lv2_path = "/usr/share/mod/pedalboards";
-        break;
-    case kPedalboardInfoFactoryOnly:
         if (const char* const pbdir = getenv("MOD_USER_PEDALBOARDS_DIR"))
             pedalboard_lv2_path = pbdir;
         else
             pedalboard_lv2_path = "~/.pedalboards";
+        break;
+    case kPedalboardInfoFactoryOnly:
+        if (FACTORY_PEDALBOARDS_DIRlen != 0)
+            pedalboard_lv2_path = FACTORY_PEDALBOARDS_DIR;
+        else
+            pedalboard_lv2_path = "/usr/share/mod/pedalboards";
         break;
     default:
         pedalboard_lv2_path = _get_lv2_pedalboards_path();
@@ -4490,10 +4491,9 @@ const PedalboardInfo_Mini* const* get_all_pedalboards(const int ptype)
 
 const char* const* get_broken_pedalboards(void)
 {
-    std::vector<std::string> brokenpedals;
-
+    return nullptr;
     // Custom path for pedalboards
-    char* const oldlv2path = getenv_strup_or_null("LV2_PATH");
+    char* const oldlv2path = getenv_strdup_or_null("LV2_PATH");
     setenv("LV2_PATH", _get_lv2_pedalboards_path(), 1);
 
     LilvWorld* const w = lilv_world_new();
@@ -4513,16 +4513,16 @@ const char* const* get_broken_pedalboards(void)
     LilvNode* const lv2protonode = lilv_new_uri(w, LILV_NS_LV2 "prototype");
     const LilvPlugins* const plugins = lilv_world_get_all_plugins(w);
 
+    std::vector<const char*> brokenpedals;
+    brokenpedals.reserve(lilv_plugins_size(plugins));
+
     LILV_FOREACH(plugins, itpls, plugins)
     {
         const LilvPlugin* const p = lilv_plugins_get(plugins, itpls);
 
         // get new info
         if (_is_pedalboard_broken(p, w, ingenblocknode, lv2protonode))
-        {
-            const std::string pedalboard(lilv_node_as_uri(lilv_plugin_get_uri(p)));
-            brokenpedals.push_back(pedalboard);
-        }
+            brokenpedals.push_back(strdup(lilv_node_as_uri(lilv_plugin_get_uri(p))));
     }
 
     lilv_free(ingenblocknode);
@@ -4539,11 +4539,12 @@ const char* const* get_broken_pedalboards(void)
         }
 
         _get_broken_pedals_ret = new const char*[pbcount+1];
-        memset(_get_broken_pedals_ret, 0, sizeof(void*) * (pbcount+1));
 
         pbcount = 0;
-        for (std::string& pedal : brokenpedals)
-            _get_broken_pedals_ret[pbcount++] = strdup(pedal.c_str());
+        for (const char* pedal : brokenpedals)
+            _get_broken_pedals_ret[pbcount++] = pedal;
+
+        _get_broken_pedals_ret[pbcount] = nullptr;
 
         return _get_broken_pedals_ret;
     }
@@ -5185,11 +5186,12 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
         if (size_t count = midi_ins.size())
         {
             PedalboardHardwareMidiPort* mins = new PedalboardHardwareMidiPort[count+1];
-            memset(mins, 0, sizeof(PedalboardHardwareMidiPort)*(count+1));
 
             count = 0;
             for (const PedalboardHardwareMidiPort& min : midi_ins)
                 mins[count++] = min;
+
+            memset(&mins[count], 0, sizeof(PedalboardHardwareMidiPort));
 
             info.hardware.midi_ins = mins;
         }
@@ -5197,11 +5199,12 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
         if (size_t count = midi_outs.size())
         {
             PedalboardHardwareMidiPort* mouts = new PedalboardHardwareMidiPort[count+1];
-            memset(mouts, 0, sizeof(PedalboardHardwareMidiPort)*(count+1));
 
             count = 0;
             for (const PedalboardHardwareMidiPort& mout : midi_outs)
                 mouts[count++] = mout;
+
+            memset(&mouts[count], 0, sizeof(PedalboardHardwareMidiPort));
 
             info.hardware.midi_outs = mouts;
         }
@@ -5251,8 +5254,6 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
 
 int* get_pedalboard_size(const char* const bundle)
 {
-    static int size[2] = { 0, 0 };
-
     size_t bundlepathsize;
     const char* const bundlepath = _get_safe_bundlepath(bundle, bundlepathsize);
 
@@ -5301,6 +5302,7 @@ int* get_pedalboard_size(const char* const bundle)
         return nullptr;
     }
 
+    static int size[2];
     size[0] = lilv_node_as_int(lilv_nodes_get_first(widthnodes));
     size[1] = lilv_node_as_int(lilv_nodes_get_first(heightnodes));
 
@@ -5309,6 +5311,7 @@ int* get_pedalboard_size(const char* const bundle)
     lilv_node_free(widthnode);
     lilv_node_free(heightnode);
     lilv_world_free(w);
+
     return size;
 }
 
@@ -5624,11 +5627,12 @@ const StatePortValue* get_state_port_values(const char* const state)
             _clear_state_values();
 
             _get_state_values_ret = new StatePortValue[count+1];
-            memset(_get_state_values_ret, 0, sizeof(StatePortValue) * (count+1));
 
             count = 0;
             for (const StatePortValue& v : values)
                 _get_state_values_ret[count++] = v;
+
+            memset(&_get_state_values_ret[count], 0, sizeof(StatePortValue));
 
             return _get_state_values_ret;
         }
@@ -5667,14 +5671,12 @@ const char* const* list_plugins_in_bundle(const char* bundle)
     }
 
     const LilvPlugin* p;
-    std::vector<std::string> pluginURIs;
+    std::vector<const char*> pluginURIs;
 
     LILV_FOREACH(plugins, itpls, plugins)
     {
         p = lilv_plugins_get(plugins, itpls);
-
-        const std::string pluginURI(lilv_node_as_uri(lilv_plugin_get_uri(p)));
-        pluginURIs.push_back(pluginURI);
+        pluginURIs.push_back(strdup(lilv_node_as_uri(lilv_plugin_get_uri(p))));
     }
 
     lilv_world_free(w);
@@ -5689,13 +5691,12 @@ const char* const* list_plugins_in_bundle(const char* bundle)
         }
 
         _add_remove_bundles_ret = new const char*[count+1];
-        memset(_add_remove_bundles_ret, 0, sizeof(const char*) * (count+1));
 
         count = 0;
-        for (const std::string& uri : pluginURIs)
-            _add_remove_bundles_ret[count++] = strdup(uri.c_str());
+        for (const char* uri : pluginURIs)
+            _add_remove_bundles_ret[count++] = uri;
 
-        pluginURIs.clear();
+        _add_remove_bundles_ret[count] = nullptr;
 
         return _add_remove_bundles_ret;
     }

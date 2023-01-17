@@ -196,7 +196,6 @@ typedef struct {
 } NonCachedPluginInfo;
 
 typedef struct {
-    bool valid;
     const char* uri;
     const char* name;
     const char* brand;
@@ -210,7 +209,6 @@ typedef struct {
     int builder;
     int licensed; // PluginLicenseType
     PluginGUI_Mini gui;
-    bool needsDealloc;
 } PluginInfo_Mini;
 
 typedef struct {

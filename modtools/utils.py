@@ -338,7 +338,6 @@ class NonCachedPluginInfo(Structure):
 
 class PluginInfo_Mini(Structure):
     _fields_ = [
-        ("valid", c_bool),
         ("uri", c_char_p),
         ("name", c_char_p),
         ("brand", c_char_p),
@@ -776,45 +775,49 @@ def rescan_plugin_presets(uri):
 
 _allpedalboards = None
 _alluserpedalboards = None
+_allfactorypedalboards = None
+
+def _get_all_pedalboards_user():
+    global _alluserpedalboards
+    if _alluserpedalboards is None:
+        pbs = structPtrPtrToList(utils.get_all_pedalboards(kPedalboardInfoUserOnly))
+        utitles = []
+        for pb in pbs:
+            ntitle = get_unique_name(pb['title'], utitles)
+            if ntitle is not None:
+                pb['title'] = ntitle
+            utitles.append(pb['title'])
+        _alluserpedalboards = pbs
+    return _alluserpedalboards
+
+def _get_all_pedalboards_factory():
+    global _allfactorypedalboards
+    if _allfactorypedalboards is None:
+        _allfactorypedalboards = structPtrPtrToList(utils.get_all_pedalboards(kPedalboardInfoFactoryOnly))
+    return _allfactorypedalboards
 
 # get all available pedalboards (ie, plugins with pedalboard type)
 def get_all_pedalboards(ptype):
-    if ptype == kPedalboardInfoFactoryOnly:
-        return structPtrPtrToList(utils.get_all_pedalboards(ptype))
-
     if ptype == kPedalboardInfoUserOnly:
-        global _alluserpedalboards
-        if _alluserpedalboards is None:
-            pbs = structPtrPtrToList(utils.get_all_pedalboards(ptype))
-            utitles = []
-            for pb in pbs:
-                ntitle = get_unique_name(pb['title'], utitles)
-                if ntitle is not None:
-                    pb['title'] = ntitle
-                utitles.append(pb['title'])
-            _alluserpedalboards = pbs
-        return _alluserpedalboards
+        return _get_all_pedalboards_user()
+
+    if ptype == kPedalboardInfoFactoryOnly:
+        return _get_all_pedalboards_factory()
 
     if ptype == kPedalboardInfoBoth:
         global _allpedalboards
         if _allpedalboards is None:
-            pbs = structPtrPtrToList(utils.get_all_pedalboards(ptype))
-            utitles = []
-            for pb in pbs:
-                if pb['factory']:
-                    continue
-                ntitle = get_unique_name(pb['title'], utitles)
-                if ntitle is not None:
-                    pb['title'] = ntitle
-                utitles.append(pb['title'])
-            _allpedalboards = pbs
+            _allpedalboards = _get_all_pedalboards_user() + _get_all_pedalboards_factory()
         return _allpedalboards
+
+    return []
 
 # handy function to reset our last call value
 def reset_get_all_pedalboards_cache():
     global _allpedalboards
     global _alluserpedalboards
-    _allpedalboards = _alluserpedalboards = None
+    global _allfactorypedalboards
+    _allpedalboards = _alluserpedalboards = _allfactorypedalboards = None
 
 # handy function to update cached pedalboard version
 def update_cached_pedalboard_version(bundle):
@@ -829,7 +832,7 @@ def update_cached_pedalboard_version(bundle):
 
 # handy function to get only the names from all user pedalboards
 def get_all_user_pedalboard_names():
-    return tuple(pb['title'] for pb in get_all_pedalboards(kPedalboardInfoUserOnly))
+    return tuple(pb['title'] for pb in _get_all_pedalboards_user())
 
 # get all currently "broken" pedalboards (ie, pedalboards which contain unavailable plugins)
 def get_broken_pedalboards():
