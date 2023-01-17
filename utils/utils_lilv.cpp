@@ -175,6 +175,18 @@ inline char* getenv_strup_or_null(const char* const value)
     return value != nullptr ? strdup(value) : nullptr;
 }
 
+template<typename T>
+inline bool contains(const std::map<std::string, T>& map, const std::string& value)
+{
+    return map.find(value) != map.end();
+}
+
+template<typename T>
+inline bool contains(const std::unordered_map<std::string, T>& map, const std::string& value)
+{
+    return map.find(value) != map.end();
+}
+
 inline bool ends_with(const std::string& value, const std::string ending)
 {
     if (ending.size() > value.size())
@@ -763,7 +775,7 @@ static void _fill_parameters_for_plugin(const LilvPlugin* const p,
                 const LilvNode* const patch = lilv_nodes_get(patches, itpatches);
                 const char* const patch_uri = lilv_node_as_uri(patch);
 
-                if (usedParameters.count(patch_uri) != 0)
+                if (contains(usedParameters, patch_uri))
                 {
                     PluginParameter& param(usedParameters[patch_uri]);
 
@@ -3032,7 +3044,7 @@ static PedalboardInfo_Mini* _get_pedalboard_info_mini(const LilvPlugin* const p,
     // --------------------------------------------------------------------------------------------------------
     // bundle (required)
 
-    const char* bundle;
+    char* bundle;
 
     if (const LilvNode* const node = lilv_plugin_get_bundle_uri(p))
     {
@@ -3062,6 +3074,7 @@ static PedalboardInfo_Mini* _get_pedalboard_info_mini(const LilvPlugin* const p,
     }
     else
     {
+        free(bundle);
         return nullptr;
     }
 
@@ -3107,7 +3120,7 @@ static PedalboardInfo_Mini* _get_pedalboard_info_mini(const LilvPlugin* const p,
             {
                 const std::string uri = lilv_node_as_uri(proto);
 
-                if (PLUGNFO.count(uri) == 0)
+                if (! contains(PLUGNFO, uri))
                 {
                     info->broken = true;
                     lilv_node_free(proto);
@@ -3172,7 +3185,7 @@ bool _is_pedalboard_broken(const LilvPlugin* const p,
                 const std::string uri = lilv_node_as_uri(proto);
                 lilv_node_free(proto);
 
-                if (PLUGNFO.count(uri) == 0)
+                if (! contains(PLUGNFO, uri))
                 {
                     broken = true;
                     break;
@@ -3898,7 +3911,7 @@ const char* const* remove_bundle_from_lilv_world(const char* const bundle, const
         const LilvPlugin* const p = lilv_plugins_get(PLUGINS, itpls);
         const std::string uri = lilv_node_as_uri(lilv_plugin_get_uri(p));
 
-        if (PLUGNFO.count(uri) == 0)
+        if (! contains(PLUGNFO, uri))
             continue;
 
         const LilvNodes* const bundles = lilv_plugin_get_data_uris(p);
@@ -4097,7 +4110,7 @@ const PluginInfo_Mini* const* get_all_plugins(void)
             continue;
 
         // check if it's already cached
-        if (PLUGNFO_Mini.count(uri) > 0 && PLUGNFO_Mini[uri].valid)
+        if (contains(PLUGNFO_Mini, uri) && PLUGNFO_Mini[uri].valid)
         {
 #if SHOW_ONLY_PLUGINS_WITH_MODGUI
             if (PLUGNFO_Mini[uri].gui.resourcesDirectory == nc)
@@ -4129,7 +4142,7 @@ const PluginInfo* get_plugin_info(const char* const uri_)
     const std::string uri = uri_;
 
     // check if it exists
-    if (PLUGNFO.count(uri) == 0)
+    if (! contains(PLUGNFO, uri))
         return nullptr;
 
     // check if it's already cached
@@ -4176,7 +4189,7 @@ const PluginGUI* get_plugin_gui(const char* uri_)
     const std::string uri = uri_;
 
     // check if it exists
-    if (PLUGNFO.count(uri) == 0)
+    if (! contains(PLUGNFO, uri))
         return nullptr;
 
     // check if it's already cached
@@ -4211,7 +4224,7 @@ const PluginGUI_Mini* get_plugin_gui_mini(const char* uri_)
     const std::string uri = uri_;
 
     // check if it exists
-    if (PLUGNFO_Mini.count(uri) == 0)
+    if (! contains(PLUGNFO_Mini, uri))
         return nullptr;
 
     // check if it's already cached
@@ -4247,7 +4260,7 @@ const PluginPort* get_plugin_control_inputs(const char* const uri_)
     const std::string uri = uri_;
 
     // check if plugin exists
-    if (PLUGNFO.count(uri) == 0)
+    if (! contains(PLUGNFO, uri))
         return nullptr;
 
     // return right-away if already cached
@@ -4288,7 +4301,7 @@ const PluginInfo_Essentials* get_plugin_info_essentials(const char* const uri_)
     const std::string uri = uri_;
 
     // check if plugin exists
-    if (PLUGNFO.count(uri) == 0)
+    if (! contains(PLUGNFO, uri))
         return nullptr;
 
     // check if plugin is already cached
@@ -4347,7 +4360,7 @@ bool is_plugin_preset_valid(const char* const plugin_, const char* const preset)
     const std::string plugin(plugin_);
 
     // check if plugin exists
-    if (PLUGNFO.count(plugin) == 0)
+    if (! contains(PLUGNFO, plugin))
         return false;
 
     // plugin must have been cached before
