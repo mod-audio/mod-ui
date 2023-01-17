@@ -51,6 +51,7 @@
 #include <list>
 #include <map>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #ifdef __linux__
@@ -73,11 +74,14 @@ char* lilv_file_uri_parse2(const char* uri, const char*)
 LilvNode* lilv_new_file_uri2(LilvWorld* world, const char*, const char* path)
 {
     const size_t pathlen = strlen(path);
-    char uripath[pathlen+12];
+    char* const uripath = static_cast<char*>(malloc(pathlen+12));
     strcpy(uripath, "file://");
     strcat(uripath, path);
 
-    return lilv_new_uri(world, uripath);
+    LilvNode* const ret = lilv_new_uri(world, uripath);
+
+    free(uripath);
+    return ret;
 }
 #define lilv_free(x) free(x)
 #define lilv_file_uri_parse(x,y) lilv_file_uri_parse2(x,y)
@@ -98,8 +102,8 @@ std::list<std::string> BUNDLES;
 const LilvPlugins* PLUGINS = nullptr;
 
 // plugin info, mapped to URIs
-std::map<std::string, PluginInfo> PLUGNFO;
-std::map<std::string, PluginInfo_Mini> PLUGNFO_Mini;
+std::unordered_map<std::string, PluginInfo> PLUGNFO;
+std::unordered_map<std::string, PluginInfo_Mini> PLUGNFO_Mini;
 
 // list of plugins that need reload (preset data only)
 std::list<std::string> PLUGINStoReload;
@@ -651,7 +655,7 @@ static char* lilv_file_abspath(const char* const path)
 {
     if (char* const lilvpath = lilv_file_uri_parse(path, nullptr))
     {
-        char* ret = realpath(lilvpath, nullptr);
+        char* const ret = realpath(lilvpath, nullptr);
         lilv_free(lilvpath);
         return ret;
     }
@@ -1328,10 +1332,10 @@ static const char* const* _get_plugin_categories(const LilvPlugin* const p,
                     category = kCategoryMIDIPluginMOD;
                 else if (strcmp(cat2, "MaxGenPlugin") == 0)
                     category = kCategoryMaxGenPluginMOD;
-		else if (strcmp(cat2, "CamomilePlugin") == 0)
-		  category = kCategoryCamomilePluginMOD;
-		else if (strcmp(cat2, "ControlVoltagePlugin") == 0)
-		  category = kCategoryControlVoltagePluginMOD;
+                else if (strcmp(cat2, "CamomilePlugin") == 0)
+                    category = kCategoryCamomilePluginMOD;
+                else if (strcmp(cat2, "ControlVoltagePlugin") == 0)
+                    category = kCategoryControlVoltagePluginMOD;
                 else
                     continue; // invalid mod category
 
@@ -1380,6 +1384,8 @@ const PluginInfo_Mini& _get_plugin_info_mini(const LilvPlugin* const p, const Na
     // uri
 
     info.uri = lilv_node_as_uri(lilv_plugin_get_uri(p));
+
+    printf("NOTICE: Now mini-scanning plugin '%s'...\n", info.uri);
 
     // --------------------------------------------------------------------------------------------------------
     // check if plugin if supported
