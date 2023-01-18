@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2012-2013 AGR Audio, Industria e Comercio LTDA. <contato@moddevices.com>
+# Copyright 2012-2023 MOD Audio UG <contact@mod.audio>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -86,8 +86,9 @@ def save_last_bank_and_pedalboard(bank, pedalboard):
     try:
         with TextFileFlusher(LAST_STATE_JSON_FILE) as fh:
             json.dump({
-                'bank': bank-1,
-                'pedalboard': pedalboard
+                'bank': bank - 2,
+                'pedalboard': pedalboard,
+                'supportsDividers': True
             }, fh)
     except OSError:
         return
@@ -101,7 +102,7 @@ def get_last_bank_and_pedalboard():
         print("last state file does not exist or is corrupt")
         return (-1, None)
 
-    return (data['bank']+1, data['pedalboard'])
+    return (data['bank'] + (2 if data.get('supportsDividers', False) else 1), data['pedalboard'])
 
 # Remove a pedalboard from user banks
 def remove_pedalboard_from_banks(pedalboard):
