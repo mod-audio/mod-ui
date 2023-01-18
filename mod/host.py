@@ -5500,12 +5500,12 @@ _:b%i
         numBanks = numUserBanks + numFactoryBanks + 3
 
         if bank_id < 0 or bank_id >= numBanks:
-            logging.error("Trying to load pedalboard using out of bounds bank id (%d %d %d)", props, pedalboard_id, bank_id)
+            logging.error("Trying to load pedalboard using out of bounds bank id (%d %s)", bank_id, pedalboard_id)
             callback(False)
             return
 
         if bank_id in (0, numUserBanks + 2):
-            logging.error("Trying to load pedalboard using divider bank id (%d %d %d)", props, pedalboard_id, bank_id)
+            logging.error("Trying to load pedalboard using divider bank id (%d %s)", bank_id, pedalboard_id)
             callback(False)
             return
 
