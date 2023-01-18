@@ -1400,7 +1400,7 @@ class Host(object):
             pedalboards = self.userbanks[bank_id - 2]['pedalboards']
 
         # all factory PBs
-        elif bank_id == numUserBanks + 2:
+        elif bank_id == numUserBanks + 3:
             bankflags = FLAG_BANK_FACTORY|FLAG_BANK_READ_ONLY
             pedalflags = FLAG_PEDALBOARD_FACTORY|FLAG_PEDALBOARD_READ_ONLY
             pedalboards = self.allfactorypedalboards
@@ -5108,7 +5108,7 @@ _:b%i
             pedalboards = self.alluserpedalboards
         elif bank_id < numUserBanks + 2:
             pedalboards = self.userbanks[bank_id - 2]['pedalboards']
-        elif bank_id == numUserBanks + 2:
+        elif bank_id == numUserBanks + 3:
             flags = FLAG_PEDALBOARD_FACTORY|FLAG_PEDALBOARD_READ_ONLY
             pedalboards = self.allfactorypedalboards
         else:
@@ -5531,7 +5531,7 @@ _:b%i
             pedalboards = self.alluserpedalboards
         elif bank_id < numUserBanks + 2:
             pedalboards = self.userbanks[bank_id - 2]['pedalboards']
-        elif bank_id == numUserBanks + 2:
+        elif bank_id == numUserBanks + 3:
             pedalboards = self.allfactorypedalboards
         else:
             pedalboards = self.factorybanks[bank_id - numUserBanks - 4]['pedalboards']
