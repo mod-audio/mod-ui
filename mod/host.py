@@ -5338,8 +5338,8 @@ _:b%i
         }
         self.alluserpedalboards.append(pedalboard)
 
-        if self.bank_id != 0:
-            self.userbanks[self.bank_id-1]['pedalboards'].append(pedalboard)
+        if self.bank_id >= 2 and self.bank_id < len(self.userbanks) + 2:
+            self.userbanks[self.bank_id - 2]['pedalboards'].append(pedalboard)
             save_banks(self.userbanks)
 
     def hmi_pedalboard_remove_from_bank(self, bank_id, pedalboard_id, callback):
