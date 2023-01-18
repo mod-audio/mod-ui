@@ -1380,7 +1380,7 @@ class Host(object):
         validpedalboard = False
 
         # out of bounds
-        if bank_id < 0 or bank_id >= numBanks:
+        if bank_id < 1 or bank_id >= numBanks:
             bank_id = 1
         # divider
         elif bank_id in (0, numUserBanks + 2):
@@ -1429,7 +1429,7 @@ class Host(object):
                     break
             else:
                 # we loaded a pedalboard that is not in the bank, try loading from "all pedalboards" bank
-                bank_id = 0
+                bank_id = 1
                 bankflags = FLAG_BANK_READ_ONLY
                 pedalboards = self.alluserpedalboards
 
