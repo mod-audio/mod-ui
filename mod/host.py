@@ -1400,7 +1400,7 @@ class Host(object):
             pedalboards = self.userbanks[bank_id - 2]['pedalboards']
 
         # all factory PBs
-        elif bank_id == numUserBanks + 2:
+        elif bank_id == numUserBanks + 3:
             bankflags = FLAG_BANK_FACTORY|FLAG_BANK_READ_ONLY
             pedalflags = FLAG_PEDALBOARD_FACTORY|FLAG_PEDALBOARD_READ_ONLY
             pedalboards = self.allfactorypedalboards
@@ -5108,7 +5108,7 @@ _:b%i
             pedalboards = self.alluserpedalboards
         elif bank_id < numUserBanks + 2:
             pedalboards = self.userbanks[bank_id - 2]['pedalboards']
-        elif bank_id == numUserBanks + 2:
+        elif bank_id == numUserBanks + 3:
             flags = FLAG_PEDALBOARD_FACTORY|FLAG_PEDALBOARD_READ_ONLY
             pedalboards = self.allfactorypedalboards
         else:
@@ -5338,8 +5338,8 @@ _:b%i
         }
         self.alluserpedalboards.append(pedalboard)
 
-        if self.bank_id != 0:
-            self.userbanks[self.bank_id-1]['pedalboards'].append(pedalboard)
+        if self.bank_id >= 2 and self.bank_id < len(self.userbanks) + 2:
+            self.userbanks[self.bank_id - 2]['pedalboards'].append(pedalboard)
             save_banks(self.userbanks)
 
     def hmi_pedalboard_remove_from_bank(self, bank_id, pedalboard_id, callback):
@@ -5531,7 +5531,7 @@ _:b%i
             pedalboards = self.alluserpedalboards
         elif bank_id < numUserBanks + 2:
             pedalboards = self.userbanks[bank_id - 2]['pedalboards']
-        elif bank_id == numUserBanks + 2:
+        elif bank_id == numUserBanks + 3:
             pedalboards = self.allfactorypedalboards
         else:
             pedalboards = self.factorybanks[bank_id - numUserBanks - 4]['pedalboards']
