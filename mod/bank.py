@@ -86,7 +86,7 @@ def save_last_bank_and_pedalboard(bank, pedalboard):
     try:
         with TextFileFlusher(LAST_STATE_JSON_FILE) as fh:
             json.dump({
-                'bank': bank-1,
+                'bank': bank - 2,
                 'pedalboard': pedalboard
             }, fh)
     except OSError:
@@ -101,7 +101,7 @@ def get_last_bank_and_pedalboard():
         print("last state file does not exist or is corrupt")
         return (-1, None)
 
-    return (data['bank']+1, data['pedalboard'])
+    return (data['bank'] + 2, data['pedalboard'])
 
 # Remove a pedalboard from user banks
 def remove_pedalboard_from_banks(pedalboard):
