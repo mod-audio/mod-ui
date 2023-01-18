@@ -5084,17 +5084,15 @@ _:b%i
 
         numUserBanks = len(self.userbanks)
         numFactoryBanks = len(self.factorybanks)
-        numBanks = numUserBanks + numFactoryBanks + 3
+        numBanks = numUserBanks + numFactoryBanks + 4
 
         if bank_id < 0 or bank_id >= numBanks:
-            logging.error("Trying to list pedalboards with an out of bounds bank id (%d %d %d)",
-                          props, pedalboard_id, bank_id)
+            logging.error("Trying to list pedalboards with an out of bounds bank id (%d %d %d)", props, pedalboard_id, bank_id)
             callback(False, "0 0 0")
             return
 
         if bank_id in (0, numUserBanks + 2):
-            logging.error("Trying to list pedalboards for the factory/user divider (%d %d %d)",
-                          props, pedalboard_id, bank_id)
+            logging.error("Trying to list pedalboards for a divider (%d %d %d)", props, pedalboard_id, bank_id)
             callback(False, "0 0 0")
             return
 
@@ -5514,30 +5512,32 @@ _:b%i
         try:
             pedalboard_id = int(pedalboard_id)
         except:
-            print("ERROR: Trying to load pedalboard using invalid pedalboard_id '%s'" % (pedalboard_id))
-            self.next_hmi_pedalboard_to_load = None
+            logging.error("Trying to load pedalboard using invalid pedalboard_id '%s'", pedalboard_id)
+            callback(False)
+            return
+
+        if pedalboard_id < 0:
+            logging.error("Trying to load pedalboard using out of bounds pedalboard id %d", pedalboard_id)
             callback(False)
             return
 
         if self.next_hmi_pedalboard_to_load is not None:
-            print("NOTE: Delaying loading of %i:%i" % (bank_id, pedalboard_id))
+            logging.info("Delaying loading of %d:%d", bank_id, pedalboard_id)
             self.next_hmi_pedalboard_to_load = (bank_id, pedalboard_id)
             callback(True)
             return
 
         if bank_id == 1:
             pedalboards = self.alluserpedalboards
-        elif bank_id <= numUserBanks:
+        elif bank_id < numUserBanks + 2:
             pedalboards = self.userbanks[bank_id - 2]['pedalboards']
+        elif bank_id == numUserBanks + 2:
+            pedalboards = self.allfactorypedalboards
         else:
-            fbank_id = bank_id - numUserBanks - 1
-            if fbank_id == 0:
-                pedalboards = self.allfactorypedalboards
-            else:
-                pedalboards = self.factorybanks[fbank_id - 1]['pedalboards']
+            pedalboards = self.factorybanks[bank_id - numUserBanks - 4]['pedalboards']
 
-        if pedalboard_id < 0 or pedalboard_id >= len(pedalboards):
-            print("ERROR: Trying to load pedalboard using out of bounds pedalboard id %i" % (pedalboard_id))
+        if pedalboard_id >= len(pedalboards):
+            logging.error("Trying to load pedalboard using out of bounds pedalboard id %d", pedalboard_id)
             callback(False)
             return
 
@@ -5554,7 +5554,7 @@ _:b%i
             self.processing_pending_flag = False
             self.send_notmodified("feature_enable processing 1")
 
-            print("NOTE: Loading of %i:%i finished (2/2)" % (bank_id, pedalboard_id))
+            logging.info("Loading of %d:%d finished (2/2)", bank_id, pedalboard_id)
             next_pedalboard = self.next_hmi_pedalboard_to_load
             self.next_hmi_pedalboard_to_load = None
             self.next_hmi_pedalboard_loading = False
@@ -5589,7 +5589,7 @@ _:b%i
                 load_finish_callback(True)
 
         def pb_host_loaded_callback(_):
-            print("NOTE: Loading of %i:%i finished (1/2)" % next_pb_to_load)
+            logging.info("Loading of %d:%d finished (1/2)", next_pb_to_load[0], next_pb_to_load[1])
             # HMI call, works to notify of index change and also to know when all other HMI messages finish
             if from_hmi:
                 self.hmi.ping(hmi_ready_callback)
