@@ -1406,7 +1406,7 @@ class Host(object):
             pedalboards = self.allfactorypedalboards
 
         # factory PBs
-        elif bank_id >= numUserBanks + 3:
+        elif bank_id > numUserBanks + 2:
             bankflags = FLAG_BANK_FACTORY|FLAG_BANK_READ_ONLY
             pedalflags = FLAG_PEDALBOARD_FACTORY|FLAG_PEDALBOARD_READ_ONLY
             pedalboards = self.factorybanks[bank_id - numUserBanks - 3]['pedalboards']
@@ -5497,7 +5497,7 @@ _:b%i
 
         numUserBanks = len(self.userbanks)
         numFactoryBanks = len(self.factorybanks)
-        numBanks = numUserBanks + numFactoryBanks + 3
+        numBanks = numUserBanks + numFactoryBanks + 4
 
         if bank_id < 0 or bank_id >= numBanks:
             logging.error("Trying to load pedalboard using out of bounds bank id (%d %s)", bank_id, pedalboard_id)
