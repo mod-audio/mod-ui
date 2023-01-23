@@ -585,6 +585,9 @@ utils.get_pedalboard_size.restype  = POINTER(c_int)
 utils.get_pedalboard_plugin_values.argtypes = (c_char_p,)
 utils.get_pedalboard_plugin_values.restype  = POINTER(PedalboardPluginValues)
 
+utils.reset_get_all_pedalboards_cache.argtypes = (c_int,)
+utils.reset_get_all_pedalboards_cache.restype  = None
+
 utils.get_state_port_values.argtypes = (c_char_p,)
 utils.get_state_port_values.restype  = POINTER(StatePortValue)
 
@@ -812,21 +815,32 @@ def get_all_pedalboards(ptype):
 
     return []
 
+def has_pedalboard_cache():
+    global _allpedalboards
+    return _allpedalboards is not None
+
 # handy function to reset our last call value
-def reset_get_all_pedalboards_cache():
+def reset_get_all_pedalboards_cache(ptype):
     global _allpedalboards
     global _alluserpedalboards
     global _allfactorypedalboards
-    _allpedalboards = _alluserpedalboards = _allfactorypedalboards = None
+    if ptype in (kPedalboardInfoUserOnly, kPedalboardInfoBoth):
+        _alluserpedalboards = None
+    if ptype in (kPedalboardInfoFactoryOnly, kPedalboardInfoBoth):
+        _allfactorypedalboards = None
+    _allpedalboards = None
+    utils.reset_get_all_pedalboards_cache(ptype)
 
 # handy function to update cached pedalboard version
 def update_cached_pedalboard_version(bundle):
+    global _allpedalboards
     global _alluserpedalboards
     if _alluserpedalboards is None:
         return
     for pedalboard in _alluserpedalboards:
         if pedalboard['bundle'] == bundle:
             pedalboard['version'] += 1
+            _allpedalboards = None
             return
     print("ERROR: update_cached_pedalboard_version() failed", bundle)
 

@@ -414,6 +414,10 @@ MOD_API int* get_pedalboard_size(const char* bundle);
 // NOTE: may return null
 MOD_API const PedalboardPluginValues* get_pedalboard_plugin_values(const char* bundle);
 
+// Reset pedalboards related cache
+// Needed when plugins are added, as previous "broken" PBs might have been fixed with the change.
+MOD_API void reset_get_all_pedalboards_cache(int ptype);
+
 // Get port values from a plugin state
 MOD_API const StatePortValue* get_state_port_values(const char* state);
 

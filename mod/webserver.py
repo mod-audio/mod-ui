@@ -57,13 +57,13 @@ from mod.bank import list_banks, save_banks, remove_pedalboard_from_banks
 from mod.session import SESSION
 from mod.licensing import check_missing_licenses, save_license, get_new_licenses_and_flush
 from modtools.utils import (
-    kPedalboardInfoBoth,
+    kPedalboardInfoUserOnly, kPedalboardInfoFactoryOnly, kPedalboardInfoBoth,
     init as lv2_init, cleanup as lv2_cleanup,
     get_plugin_list, get_all_plugins, get_plugin_info, get_non_cached_plugin_info,
     get_plugin_gui, get_plugin_gui_mini,
     get_all_pedalboards, get_all_user_pedalboard_names, get_broken_pedalboards, get_pedalboard_info,
     get_jack_buffer_size,
-    reset_get_all_pedalboards_cache, update_cached_pedalboard_version,
+    has_pedalboard_cache, reset_get_all_pedalboards_cache, update_cached_pedalboard_version,
     set_jack_buffer_size, get_jack_sample_rate, set_truebypass_value, set_process_name, reset_xruns
 )
 
@@ -196,7 +196,7 @@ def restart_services(restartJACK2, restartUI):
     if restartUI:
         cmd.append("mod-ui")
     yield gen.Task(run_command, cmd, None)
-    reset_get_all_pedalboards_cache()
+    reset_get_all_pedalboards_cache(kPedalboardInfoBoth)
     lv2_cleanup()
     lv2_init()
 
@@ -204,6 +204,17 @@ def restart_services(restartJACK2, restartUI):
 def start_restore():
     os.sync()
     yield gen.Task(SESSION.hmi.restore, datatype='boolean')
+
+def _reset_get_all_pedalboards_cache_with_refresh_1():
+    get_all_pedalboards(kPedalboardInfoUserOnly)
+
+def _reset_get_all_pedalboards_cache_with_refresh_2():
+    get_all_pedalboards(kPedalboardInfoFactoryOnly)
+    IOLoop.instance().add_callback(_reset_get_all_pedalboards_cache_with_refresh_1)
+
+def reset_get_all_pedalboards_cache_with_refresh(ptype):
+    reset_get_all_pedalboards_cache(ptype)
+    IOLoop.instance().add_callback(_reset_get_all_pedalboards_cache_with_refresh_2)
 
 class TimelessRequestHandler(web.RequestHandler):
     def compute_etag(self):
@@ -723,7 +734,7 @@ class EffectInstaller(SimpleFileReceiver):
     @gen.engine
     def process_file(self, basename, callback=lambda:None):
         def on_finish(resp):
-            reset_get_all_pedalboards_cache()
+            reset_get_all_pedalboards_cache(kPedalboardInfoBoth)
             self.result = resp
             callback()
         install_package(os.path.join(DOWNLOAD_TMP_DIR, basename), on_finish)
@@ -1276,10 +1287,11 @@ class PackageUninstall(JsonRequestHandler):
             }
 
         if len(removed) > 0:
-            # Re-save banks, as pedalboards might contain the removed plugins
+            # Re-save banks and reset cache, as pedalboards might contain the removed plugins
             broken = get_broken_pedalboards()
             if len(broken) > 0:
                 list_banks(broken)
+                reset_get_all_pedalboards_cache(kPedalboardInfoBoth)
 
         self.write(resp)
 
@@ -1310,7 +1322,7 @@ class PedalboardSave(JsonRequestHandler):
         bundlepath, newTitle = SESSION.web_save_pedalboard(title, asNew, saved_cb)
 
         if newTitle:
-            reset_get_all_pedalboards_cache()
+            reset_get_all_pedalboards_cache_with_refresh(kPedalboardInfoUserOnly)
         else:
             update_cached_pedalboard_version(bundlepath)
 
@@ -1402,6 +1414,9 @@ class PedalboardLoadBundle(JsonRequestHandler):
             'name': name or ""
         })
 
+        if not has_pedalboard_cache():
+            IOLoop.instance().add_callback(_reset_get_all_pedalboards_cache_with_refresh_2)
+
 class PedalboardLoadRemote(RemoteRequestHandler):
     def post(self, pedalboard_id):
         if len(SESSION.websockets) == 0:
@@ -1464,7 +1479,7 @@ class PedalboardFactoryCopy(JsonRequestHandler):
         # this is surely not the best way to do this, but it is the fastest
         os.system('sed -i -e \'s/doap:name "%s"/doap:name "%s"/\' %s/*.ttl' % (title, newtitle, newbundlepath))
 
-        reset_get_all_pedalboards_cache()
+        reset_get_all_pedalboards_cache_with_refresh(kPedalboardInfoUserOnly)
 
         pedalboard = get_pedalboard_info(newbundlepath)
         pedalboard['bundlepath'] = newbundlepath
@@ -1486,7 +1501,7 @@ class PedalboardRemove(JsonRequestHandler):
 
         shutil.rmtree(bundlepath)
         remove_pedalboard_from_banks(bundlepath)
-        reset_get_all_pedalboards_cache()
+        reset_get_all_pedalboards_cache_with_refresh(kPedalboardInfoUserOnly)
         self.write(True)
 
 class PedalboardImage(TimelessStaticFileHandler):
