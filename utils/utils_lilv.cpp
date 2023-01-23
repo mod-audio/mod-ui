@@ -108,6 +108,9 @@ std::unordered_map<std::string, const PluginInfo_Mini*> PLUGNFO_Mini;
 // list of plugins that need reload (preset data only)
 std::list<std::string> PLUGINStoReload;
 
+// static factory info (only loaded once)
+const PedalboardInfo_Mini** FACTORYINFO = nullptr;
+
 // read KEYS_PATH. NOTE: assumes trailing separator
 static const char* const KEYS_PATH = getenv("MOD_KEYS_PATH");
 static const size_t KEYS_PATHlen = (KEYS_PATH != NULL && *KEYS_PATH != '\0') 
@@ -3024,13 +3027,13 @@ static void _fill_plugin_info_mini_from_full(const PluginInfo& info2, const Plug
 
 // --------------------------------------------------------------------------------------------------------
 
-static PedalboardInfo_Mini* _get_pedalboard_info_mini(LilvWorld* const w,
-                                                      const LilvPlugin* const p,
-                                                      const LilvNode* const versiontypenode,
-                                                      const LilvNode* const rdftypenode,
-                                                      const LilvNode* const ingenblocknode,
-                                                      const LilvNode* const lv2protonode,
-                                                      const PedalboardInfoType ptype)
+static const PedalboardInfo_Mini* _get_pedalboard_info_mini(LilvWorld* const w,
+                                                            const LilvPlugin* const p,
+                                                            const LilvNode* const versiontypenode,
+                                                            const LilvNode* const rdftypenode,
+                                                            const LilvNode* const ingenblocknode,
+                                                            const LilvNode* const lv2protonode,
+                                                            const PedalboardInfoType ptype)
 {
     // --------------------------------------------------------------------------------------------------------
     // check if plugin is pedalboard
@@ -3230,7 +3233,7 @@ static const PluginInfo_Mini** _get_plugs_mini_ret = nullptr;
 static int _get_plugs_mini_lastsize = 0;
 
 // get_all_pedalboards
-static PedalboardInfo_Mini** _get_pedals_mini_ret = nullptr;
+static const PedalboardInfo_Mini** _get_pedals_mini_ret = nullptr;
 
 // get_broken_pedalboards
 static const char** _get_broken_pedals_ret = nullptr;
@@ -3561,22 +3564,16 @@ static void _clear_pedalboard_info(PedalboardInfo& info)
 
 // --------------------------------------------------------------------------------------------------------
 
-static void _clear_pedalboards()
+static void _clear_pedalboards(const PedalboardInfo_Mini** const pedalboards)
 {
-    if (_get_pedal_info_ret != nullptr)
-    {
-        _clear_pedalboard_info(*_get_pedal_info_ret);
-        _get_pedal_info_ret = nullptr;
-    }
-
-    if (_get_pedals_mini_ret == nullptr)
+    if (pedalboards == nullptr)
         return;
 
-    PedalboardInfo_Mini* info;
+    const PedalboardInfo_Mini* info;
 
     for (int i=0;; ++i)
     {
-        info = _get_pedals_mini_ret[i];
+        info = pedalboards[i];
         if (info == nullptr)
             break;
 
@@ -3588,8 +3585,7 @@ static void _clear_pedalboards()
         delete info;
     }
 
-    delete[] _get_pedals_mini_ret;
-    _get_pedals_mini_ret = nullptr;
+    delete[] pedalboards;
 }
 
 static void _clear_pedalboard_plugin_values()
@@ -3744,7 +3740,18 @@ void cleanup(void)
         _file_uri_parse_ret = nullptr;
     }
 
-    _clear_pedalboards();
+    _clear_pedalboards(_get_pedals_mini_ret);
+    _get_pedals_mini_ret = nullptr;
+
+    _clear_pedalboards(FACTORYINFO);
+    FACTORYINFO = nullptr;
+
+    if (_get_pedal_info_ret != nullptr)
+    {
+        _clear_pedalboard_info(*_get_pedal_info_ret);
+        _get_pedal_info_ret = nullptr;
+    }
+
     _clear_pedalboard_plugin_values();
     _clear_state_values();
 }
@@ -4432,11 +4439,9 @@ void rescan_plugin_presets(const char* const uri_)
 
 const PedalboardInfo_Mini* const* get_all_pedalboards(const int ptype)
 {
-    static const PedalboardInfo_Mini* const* factoryInfo = nullptr;
-
     // factory pedalboards do not change, so return cached value directly
-    if (ptype == kPedalboardInfoFactoryOnly && factoryInfo != nullptr)
-        return factoryInfo;
+    if (ptype == kPedalboardInfoFactoryOnly && FACTORYINFO != nullptr)
+        return FACTORYINFO;
 
     char* const oldlv2path = getenv_strdup_or_null("LV2_PATH");
 
@@ -4481,16 +4486,16 @@ const PedalboardInfo_Mini* const* get_all_pedalboards(const int ptype)
     LilvNode* const lv2protonode = lilv_new_uri(w, LILV_NS_LV2 "prototype");
     const LilvPlugins* const plugins = lilv_world_get_all_plugins(w);
 
-    std::vector<PedalboardInfo_Mini*> allpedals;
+    std::vector<const PedalboardInfo_Mini*> allpedals;
     allpedals.reserve(lilv_plugins_size(plugins));
 
     LILV_FOREACH(plugins, itpls, plugins)
     {
         const LilvPlugin* const p = lilv_plugins_get(plugins, itpls);
 
-        if (PedalboardInfo_Mini* info = _get_pedalboard_info_mini(w, p,
-                                                                  versiontypenode, rdftypenode, ingenblocknode, lv2protonode,
-                                                                  static_cast<PedalboardInfoType>(ptype)))
+        if (const PedalboardInfo_Mini* info = _get_pedalboard_info_mini(w, p,
+                                                                        versiontypenode, rdftypenode, ingenblocknode, lv2protonode,
+                                                                        static_cast<PedalboardInfoType>(ptype)))
         {
             allpedals.push_back(info);
         }
@@ -4504,19 +4509,22 @@ const PedalboardInfo_Mini* const* get_all_pedalboards(const int ptype)
 
     if (size_t pbcount = allpedals.size())
     {
-        _clear_pedalboards();
-
-        _get_pedals_mini_ret = new PedalboardInfo_Mini*[pbcount+1];
+        const PedalboardInfo_Mini** pedals = new const PedalboardInfo_Mini*[pbcount+1];
 
         pbcount = 0;
-        for (PedalboardInfo_Mini* info : allpedals)
-            _get_pedals_mini_ret[pbcount++] = info;
+        for (const PedalboardInfo_Mini* info : allpedals)
+            pedals[pbcount++] = info;
 
-        _get_pedals_mini_ret[pbcount] = nullptr;
+        pedals[pbcount] = nullptr;
 
         if (ptype == kPedalboardInfoFactoryOnly)
-            factoryInfo = _get_pedals_mini_ret;
+        {
+            FACTORYINFO = pedals;
+            return pedals;
+        }
 
+        _clear_pedalboards(_get_pedals_mini_ret);
+        _get_pedals_mini_ret = pedals;
         return _get_pedals_mini_ret;
     }
 
@@ -5547,6 +5555,21 @@ const PedalboardPluginValues* get_pedalboard_plugin_values(const char* bundle)
     _get_pedal_values_ret = plugs;
 
     return plugs;
+}
+
+void reset_get_all_pedalboards_cache(int ptype)
+{
+    if (ptype == kPedalboardInfoUserOnly || ptype == kPedalboardInfoBoth)
+    {
+        _clear_pedalboards(_get_pedals_mini_ret);
+        _get_pedals_mini_ret = nullptr;
+    }
+
+    if (ptype == kPedalboardInfoUserOnly || ptype == kPedalboardInfoBoth)
+    {
+        _clear_pedalboards(FACTORYINFO);
+        FACTORYINFO = nullptr;
+    }
 }
 
 // --------------------------------------------------------------------------------------------------------
