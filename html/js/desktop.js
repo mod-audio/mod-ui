@@ -883,8 +883,7 @@ function Desktop(elements) {
         })
     },
 
-    this.waitForScreenshot = function (generate, callback) {
-        var bundlepath = self.pedalboardBundle
+    this.waitForScreenshot = function (generate, bundlepath, callback) {
         pending_pedalboard_screenshots.push(bundlepath)
 
         if (generate) {
@@ -926,7 +925,7 @@ function Desktop(elements) {
                 success: function (result) {
                     if (result.ok) {
                         // dummy call to keep 1 ajax request active while screenshot is generated
-                        self.waitForScreenshot(false, function(){})
+                        self.waitForScreenshot(false, result.bundlepath, function(){})
                         // all set
                         callback(true, result.bundlepath, result.title)
                     } else {
@@ -1874,7 +1873,7 @@ Desktop.prototype.saveCurrentPedalboard = function (asNew, callback) {
                 return
             }
 
-            if (asNew || ! self.title) {
+            if (asNew || title || ! self.title) {
                 self.titleBox.removeClass("blend");
                 self.previousPedalboardList = null
             }

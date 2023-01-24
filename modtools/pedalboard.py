@@ -26,7 +26,6 @@ from modtools.utils import (
     get_pedalboard_info,
     get_plugin_info,
     get_plugin_gui,
-    set_cpu_affinity,
 )
 
 MAX_THUMB_HEIGHT = 640
@@ -118,10 +117,6 @@ def chunks(l, n):
 
 
 def take_screenshot(bundle_path, html_dir, cache_dir, size):
-    # ugly workaround until we find something better
-    if os.getenv('MOD_MODEL_TYPE') == 'dwarf:aarch64-a35':
-        set_cpu_affinity(1)
-
     os.makedirs(cache_dir, exist_ok=True)
     lv2_init()
     pb = get_pedalboard_info(bundle_path)
@@ -339,7 +334,8 @@ def take_screenshot(bundle_path, html_dir, cache_dir, size):
 
         plugin_map[p['instance']] = p
 
-    lv2_cleanup()
+    # we care more about speed than correctly cleaning up after ourselves
+    # lv2_cleanup()
 
     # calculate image size
     height = 0
