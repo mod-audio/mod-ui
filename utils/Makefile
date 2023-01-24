@@ -2,11 +2,13 @@
 CC  ?= gcc
 CXX ?= g++
 
-CFLAGS += -Wall -Wextra -std=c99 -fPIC -O3
+CFLAGS += -Wall -Wextra -std=c99 -fPIC
 CXXFLAGS += -Wall -Wextra -Wshadow -std=gnu++0x -fPIC
 ifeq ($(DEBUG),1)
+CFLAGS += -g -O0 -DDEBUG
 CXXFLAGS += -g -O0 -DDEBUG
 else
+CFLAGS += -O3 -DNDEBUG
 CXXFLAGS += -O3 -DNDEBUG
 ifneq (,$(findstring apple,$(shell $(CC) -dumpmachine)))
 LDFLAGS += -Wl,-dead_strip -Wl,-dead_strip_dylibs -Wl,-x
