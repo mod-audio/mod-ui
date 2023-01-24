@@ -3008,11 +3008,14 @@ static void _fill_plugin_info_mini_from_full(const PluginInfo& info2, const Plug
     *miniInfo = info;
 
     info->uri              = info2.uri;
-    info->name             = info2.name;
-    info->brand            = info2.brand;
-    info->label            = info2.label;
-    info->comment          = info2.comment;
-    info->buildEnvironment = info2.buildEnvironment;
+    info->name             = info2.name != nc ? strdup(info2.name) : nc;
+    info->brand            = info2.brand != nc ? strdup(info2.brand) : nc;
+    info->label            = info2.label != nc ? strdup(info2.label) : nc;
+    info->comment          = info2.comment != nc ? strdup(info2.comment) : nc;
+    info->buildEnvironment = info2.buildEnvironment == kBuildEnvironmentProd ? kBuildEnvironmentProd :
+                             info2.buildEnvironment == kBuildEnvironmentDev ? kBuildEnvironmentDev :
+                             info2.buildEnvironment == kBuildEnvironmentLabs ? kBuildEnvironmentLabs :
+                             info2.buildEnvironment != nc ? strdup(info2.buildEnvironment) : nc;
     info->category         = info2.category;
     info->microVersion     = info2.microVersion;
     info->minorVersion     = info2.minorVersion;
@@ -3718,8 +3721,8 @@ void cleanup(void)
 
     for (auto& map : PLUGNFO_Mini)
     {
-        const PluginInfo_Mini* const info = map.second;
-        _clear_plugin_info_mini(info);
+        if (const PluginInfo_Mini* const info = map.second)
+            _clear_plugin_info_mini(info);
     }
 
     for (auto& map : PLUGNFO)
@@ -3994,7 +3997,9 @@ const char* const* remove_bundle_from_lilv_world(const char* const bundle, const
             _clear_plugin_info(PLUGNFO[uri]);
             PLUGNFO.erase(uri);
 
-            _clear_plugin_info_mini(PLUGNFO_Mini[uri]);
+            if (const PluginInfo_Mini* const info = PLUGNFO_Mini[uri])
+                _clear_plugin_info_mini(info);
+
             PLUGNFO_Mini.erase(uri);
 
             removedPlugins.push_back(strdup(uri.c_str()));
