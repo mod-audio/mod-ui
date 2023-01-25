@@ -1712,8 +1712,8 @@ class Host(object):
 
             if channel == self.profile.get_midi_prgch_channel("pedalboard"):
                 bank_id = self.bank_id
-                if bank_id > 0 and bank_id <= len(self.userbanks):
-                    pedalboards = self.userbanks[bank_id-1]['pedalboards']
+                if bank_id >= 2 and bank_id <= len(self.userbanks):
+                    pedalboards = self.userbanks[bank_id - 2]['pedalboards']
                 else:
                     pedalboards = self.alluserpedalboards
 
