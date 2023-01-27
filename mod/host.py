@@ -1426,7 +1426,7 @@ class Host(object):
                     pedalboard_index = num
                     break
             else:
-                # we loaded a pedalboard that is not in the bank, try loading from "all pedalboards" bank
+                # we loaded a pedalboard that is not in the bank, try loading from "All User Pedalboards" bank
                 bank_id = 1
                 bankflags = FLAG_NAVIGATION_READ_ONLY
                 pedalboards = self.alluserpedalboards
@@ -5187,7 +5187,7 @@ _:b%i
 
     def hmi_bank_new(self, title, callback):
         utitle = title.upper()
-        if utitle == "ALL PEDALBOARDS":
+        if utitle in ("ALL PEDALBOARDS", "ALL USER PEDALBOARDS"):
             callback(False)
             return
 
@@ -5204,19 +5204,19 @@ _:b%i
         callback(True)
 
     def hmi_bank_delete(self, bank_id, callback):
-        if bank_id <= 0 or bank_id > len(self.userbanks):
+        if bank_id < 2 or bank_id - 2 >= len(self.userbanks):
             print("ERROR: Trying to remove invalid bank id %i" % (bank_id))
             callback(False, -1)
             return
 
         # if we delete the current bank, current pedalboard no longer belongs to it
-        # so this response says where it is located from within the "All Pedalboards" bank
+        # so this response says where it is located from within the "All User Pedalboards" bank
         pb_resp = -1
 
-        # if bank-to-remove is the current one, reset to "All Pedalboards"
+        # if bank-to-remove is the current one, reset to "All User Pedalboards"
         if self.bank_id == bank_id:
-            self.bank_id = 0
-            # find current pedalboard within "All Pedalboards"
+            self.bank_id = 1
+            # find current pedalboard within "All User Pedalboards"
             pb_path = self.pedalboard_path or DEFAULT_PEDALBOARD
             for pbi in range(len(self.alluserpedalboards)):
                 if self.alluserpedalboards[pbi]['bundle'] == pb_path:
@@ -5234,7 +5234,7 @@ _:b%i
         callback(True, pb_resp)
 
     def hmi_bank_add_pedalboards_or_banks(self, dst_bank_id, src_bank_id, pedalboards_or_banks, callback):
-        if dst_bank_id <= 0 or dst_bank_id > len(self.userbanks):
+        if dst_bank_id < 2 or dst_bank_id - 2 >= len(self.userbanks):
             print("ERROR: Trying to add to invalid bank id %i" % (dst_bank_id))
             callback(False)
             return
@@ -5249,7 +5249,7 @@ _:b%i
             self.hmi_bank_add_pedalboards(dst_bank_id, src_bank_id, pedalboards_or_banks, callback)
 
     def hmi_bank_add_banks(self, dst_bank_id, banks, callback):
-        dst_pedalboards = self.userbanks[dst_bank_id-1]['pedalboards']
+        dst_pedalboards = self.userbanks[dst_bank_id - 2]['pedalboards']
 
         for bank_id_str in banks.split(' '):
             try:
@@ -5257,24 +5257,24 @@ _:b%i
             except ValueError:
                 print("ERROR: bank with id %s is invalid, cannot convert to integer" % bank_id_str)
                 continue
-            if bank_id <= 0 or bank_id > len(self.userbanks):
+            if bank_id < 2 or bank_id - 2 >= len(self.userbanks):
                 print("ERROR: Trying to add out of bounds bank id %i" % bank_id)
                 continue
             # TODO remove this print after we verify that all works
-            print("DEBUG: added bank", self.userbanks[bank_id-1]['title'])
-            dst_pedalboards += self.userbanks[bank_id-1]['pedalboards']
+            print("DEBUG: added bank", self.userbanks[bank_id - 2]['title'])
+            dst_pedalboards += self.userbanks[bank_id - 2]['pedalboards']
 
         save_banks(self.userbanks)
         callback(True)
 
     def hmi_bank_add_pedalboards(self, dst_bank_id, src_bank_id, pedalboards, callback):
-        if src_bank_id < 0 or src_bank_id > len(self.userbanks):
+        if src_bank_id < 1 or src_bank_id - 2 >= len(self.userbanks):
             print("ERROR: Trying to add pedalboard from invalid bank id %i" % (src_bank_id))
             callback(False)
             return
 
-        dst_pedalboards = self.userbanks[dst_bank_id-1]['pedalboards']
-        src_pedalboards = self.userbanks[src_bank_id-1]['pedalboards'] if src_bank_id != 0 else self.alluserpedalboards
+        dst_pedalboards = self.userbanks[dst_bank_id - 2]['pedalboards']
+        src_pedalboards = self.userbanks[src_bank_id - 2]['pedalboards'] if src_bank_id != 1 else self.alluserpedalboards
 
         for pedalboard_id_str in pedalboards.split(' '):
             try:
@@ -5293,14 +5293,12 @@ _:b%i
         callback(True)
 
     def hmi_bank_reorder_pedalboards(self, bank_id, src, dst, callback):
-        if bank_id <= 0 or bank_id > len(self.userbanks):
+        if bank_id < 2 or bank_id - 2 >= len(self.userbanks):
             print("ERROR: Trying to reorder pedalboards in invalid bank id %i" % (bank_id))
             callback(False)
             return
 
-        # bank 0 is "All Pedalboards"
-        bank_id -= 1
-        pedalboards = self.userbanks[bank_id]['pedalboards']
+        pedalboards = self.userbanks[bank_id - 2]['pedalboards']
 
         if src < 0 or src >= len(pedalboards):
             callback(False)
@@ -5341,12 +5339,12 @@ _:b%i
             save_banks(self.userbanks)
 
     def hmi_pedalboard_remove_from_bank(self, bank_id, pedalboard_id, callback):
-        if bank_id <= 0 or bank_id > len(self.userbanks):
+        if bank_id < 2 or bank_id - 2 >= len(self.userbanks):
             print("ERROR: Trying to remove pedalboard using out of bounds bank id %i" % (bank_id))
             callback(False, -1)
             return
 
-        pedalboards = self.userbanks[bank_id-1]['pedalboards']
+        pedalboards = self.userbanks[bank_id - 2]['pedalboards']
 
         if pedalboard_id < 0 or pedalboard_id >= len(pedalboards):
             print("ERROR: Trying to remove pedalboard using out of bounds pedalboard id %i" % (pedalboard_id))
@@ -5356,7 +5354,7 @@ _:b%i
         removed_pb = pedalboards.pop(pedalboard_id)
         save_banks(self.userbanks)
 
-        # find current pedalboard within "All Pedalboards"
+        # find current pedalboard within "All User Pedalboards"
         pb_path = removed_pb['bundle']
         for pbi in range(len(self.alluserpedalboards)):
             if self.alluserpedalboards[pbi]['bundle'] == pb_path:
