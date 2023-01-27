@@ -5229,7 +5229,7 @@ _:b%i
         elif self.bank_id >= bank_id:
             self.bank_id -= 1
 
-        self.userbanks.pop(bank_id - 1)
+        self.userbanks.pop(bank_id - 2)
         save_banks(self.userbanks)
         callback(True, pb_resp)
 
