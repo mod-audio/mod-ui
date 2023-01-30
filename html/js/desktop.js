@@ -1763,7 +1763,7 @@ Desktop.prototype.makeBankBox = function (el, trigger) {
                 success: function (resp) {
                     if (resp) {
                         self.previousPedalboardList = null
-                        new Notification('warning', 'Factory pedalboard was copied to user pedalboards')
+                        new Notification('warning', 'Factory pedalboard was duplicated into the User Pedalboards Library')
                         callback(resp)
                     } else {
                         new Bug("Could not copy factory pedalboard")
