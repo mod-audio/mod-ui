@@ -5201,7 +5201,7 @@ _:b%i
             'pedalboards': [],
         })
         save_banks(self.userbanks)
-        callback(True)
+        callback(True, len(self.userbanks) + 1)
 
     def hmi_bank_delete(self, bank_id, callback):
         if bank_id < 2 or bank_id - 2 >= len(self.userbanks):
