@@ -1803,8 +1803,12 @@ JqueryClass('pedalboard', {
             self.data('hardwareManager').removeInstance(instance)
 
             var plugin = plugins[instance]
+            // plugin might have failed to register
+            if (plugin && plugin.data) {
+                var pluginGui = plugin.data('gui')
+                pluginGui && pluginGui.triggerJS({ type: 'end' })
+            }
             if (plugin && plugin.length) {
-                // plugin might have failed to register
                 plugin.remove()
             }
 
@@ -1926,8 +1930,12 @@ JqueryClass('pedalboard', {
         for (var instance in plugins) {
             var plugin = plugins[instance]
 
+            // plugin might have failed to register
+            if (plugin && plugin.data) {
+                var pluginGui = plugin.data('gui')
+                pluginGui && pluginGui.triggerJS({ type: 'end' })
+            }
             if (plugin && plugin.length) {
-                // plugin might have failed to register
                 plugin.remove()
             }
         }
