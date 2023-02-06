@@ -1423,7 +1423,7 @@ class Host(object):
         if pedalboard:
             for num, pb in enumerate(pedalboards):
                 if pb['bundle'] == pedalboard:
-                    pedalboard_id = num + 1
+                    pedalboard_index = num
                     break
             else:
                 # we loaded a pedalboard that is not in the bank, try loading from "All User Pedalboards" bank
@@ -1433,30 +1433,30 @@ class Host(object):
 
                 for num, pb in enumerate(pedalboards):
                     if pb['bundle'] == pedalboard:
-                        pedalboard_id = num + 1
+                        pedalboard_index = num
                         break
                 else:
                     # well, shit
-                    pedalboard_id = 1
+                    pedalboard_index = 0
                     pedalboard = ""
 
         else:
-            pedalboard_id = 1
+            pedalboard_index = 0
 
         numPedals = len(pedalboards)
 
-        if numPedals <= 9 or pedalboard_id < 4:
+        if numPedals <= 9 or pedalboard_index < 4:
             startIndex = 0
-        elif pedalboard_id + 4 >= numPedals:
+        elif pedalboard_index + 4 >= numPedals:
             startIndex = numPedals - 9
         else:
-            startIndex = pedalboard_id - 4
+            startIndex = pedalboard_index - 4
 
         startIndex = max(startIndex, 0)
         endIndex = min(startIndex+9, numPedals)
 
         initial_state_data = '%d %d %d %d %d %d' % (
-            numPedals, startIndex, endIndex, bank_id, bankflags, pedalboard_id
+            numPedals, startIndex, endIndex, bank_id, bankflags, pedalboard_index
         )
         for i in range(startIndex, endIndex):
             initial_state_data += ' %d %d %s' % (i + 1,
@@ -5078,20 +5078,20 @@ _:b%i
 
         callback(True, banksData)
 
-    def hmi_list_bank_pedalboards(self, props, pedalboard_id, bank_id, callback):
-        logging.debug("hmi list bank pedalboards %d %d %d", props, pedalboard_id, bank_id)
+    def hmi_list_bank_pedalboards(self, props, pedalboard_index, bank_id, callback):
+        logging.debug("hmi list bank pedalboards %d %d %d", props, pedalboard_index, bank_id)
 
         numUserBanks = len(self.userbanks)
         numFactoryBanks = len(self.factorybanks)
         numBanks = numUserBanks + numFactoryBanks + 4
 
         if bank_id < 0 or bank_id >= numBanks:
-            logging.error("Trying to list pedalboards with an out of bounds bank id (%d %d %d)", props, pedalboard_id, bank_id)
+            logging.error("Trying to list pedalboards with an out of bounds bank id (%d %d %d)", props, pedalboard_index, bank_id)
             callback(False, "0 0 0")
             return
 
         if bank_id in (0, numUserBanks + 2):
-            logging.error("Trying to list pedalboards for a divider (%d %d %d)", props, pedalboard_id, bank_id)
+            logging.error("Trying to list pedalboards for a divider (%d %d %d)", props, pedalboard_index, bank_id)
             callback(False, "0 0 0")
             return
 
@@ -5100,7 +5100,7 @@ _:b%i
         initial = props & FLAG_PAGINATION_INITIAL_REQ
 
         if not initial:
-            pedalboard_id += 1 if dir_up else -1
+            pedalboard_index += 1 if dir_up else -1
 
         flags = 0
         if bank_id == 1:
@@ -5116,24 +5116,24 @@ _:b%i
 
         numPedals = len(pedalboards)
 
-        if pedalboard_id <= 0 or pedalboard_id > numPedals:
-            if not wrap and pedalboard_id > 0:
-                logging.error("hmi wants out of bounds pedalboard data (%d %d %d)", props, pedalboard_id, bank_id)
+        if pedalboard_index < 0 or pedalboard_index >= numPedals:
+            if not wrap and pedalboard_index >= 0:
+                logging.error("hmi wants out of bounds pedalboard data (%d %d %d)", props, pedalboard_index, bank_id)
                 callback(False, "0 0 0")
                 return
 
             # wrap around mode, neat
-            if pedalboard_id <= 0 and wrap:
-                pedalboard_id = numPedals
+            if pedalboard_index < 0 and wrap:
+                pedalboard_index = numPedals
             else:
-                pedalboard_id = 1
+                pedalboard_index = 0
 
-        if numPedals <= 9 or pedalboard_id <= 4:
+        if numPedals <= 9 or pedalboard_index < 4:
             startIndex = 0
-        elif pedalboard_id + 4 >= numPedals:
+        elif pedalboard_index + 4 >= numPedals:
             startIndex = numPedals - 9
         else:
-            startIndex = pedalboard_id - 4
+            startIndex = pedalboard_index - 4
 
         startIndex = max(startIndex, 0)
         endIndex = min(startIndex+9, numPedals)
@@ -5278,11 +5278,11 @@ _:b%i
         dst_pedalboards = self.userbanks[dst_bank_id - 2]['pedalboards']
         src_pedalboards = self.userbanks[src_bank_id - 2]['pedalboards'] if src_bank_id != 1 else self.alluserpedalboards
 
-        for pedalboard_id_str in pedalboards.split(' '):
+        for pedalboard_index_str in pedalboards.split(' '):
             try:
-                pedalboard_index = int(pedalboard_id_str)
+                pedalboard_index = int(pedalboard_index_str)
             except ValueError:
-                print("ERROR: pedalboard with id %s is invalid, cannot convert to integer" % pedalboard_id_str)
+                print("ERROR: pedalboard with id %s is invalid, cannot convert to integer" % pedalboard_index_str)
                 continue
             if pedalboard_index < 0 or pedalboard_index >= len(src_pedalboards):
                 print("ERROR: Trying to add out of bounds pedalboard id %i" % pedalboard_index)
@@ -5341,7 +5341,7 @@ _:b%i
             self.userbanks[self.bank_id - 2]['pedalboards'].append(pedalboard)
             save_banks(self.userbanks)
 
-    def hmi_pedalboard_remove_from_bank(self, bank_id, pedalboard_id, callback):
+    def hmi_pedalboard_remove_from_bank(self, bank_id, pedalboard_index, callback):
         if bank_id < 2 or bank_id - 2 >= len(self.userbanks):
             print("ERROR: Trying to remove pedalboard using out of bounds bank id %i" % (bank_id))
             callback(False, -1)
@@ -5349,12 +5349,12 @@ _:b%i
 
         pedalboards = self.userbanks[bank_id - 2]['pedalboards']
 
-        if pedalboard_id <= 0 or pedalboard_id > len(pedalboards):
-            print("ERROR: Trying to remove pedalboard using out of bounds pedalboard id %i" % (pedalboard_id))
+        if pedalboard_index < 0 or pedalboard_index >= len(pedalboards):
+            print("ERROR: Trying to remove pedalboard using out of bounds pedalboard id %i" % (pedalboard_index))
             callback(False, -1)
             return
 
-        removed_pb = pedalboards.pop(pedalboard_id - 1)
+        removed_pb = pedalboards.pop(pedalboard_index)
         save_banks(self.userbanks)
 
         # find current pedalboard within "All User Pedalboards"
@@ -5491,7 +5491,7 @@ _:b%i
         else:
             print("ERROR: Delayed loading of %i:%i failed!" % self.next_hmi_pedalboard_to_load)
 
-    def hmi_load_bank_pedalboard(self, bank_id, pedalboard_id, callback, from_hmi=True):
+    def hmi_load_bank_pedalboard(self, bank_id, pedalboard_index, callback, from_hmi=True):
         logging.debug("hmi load bank pedalboard")
 
         numUserBanks = len(self.userbanks)
@@ -5499,30 +5499,30 @@ _:b%i
         numBanks = numUserBanks + numFactoryBanks + 4
 
         if bank_id < 0 or bank_id >= numBanks:
-            logging.error("Trying to load pedalboard using out of bounds bank id (%d %s)", bank_id, pedalboard_id)
+            logging.error("Trying to load pedalboard using out of bounds bank id (%d %s)", bank_id, pedalboard_index)
             callback(False)
             return
 
         if bank_id in (0, numUserBanks + 2):
-            logging.error("Trying to load pedalboard using divider bank id (%d %s)", bank_id, pedalboard_id)
+            logging.error("Trying to load pedalboard using divider bank id (%d %s)", bank_id, pedalboard_index)
             callback(False)
             return
 
         try:
-            pedalboard_id = int(pedalboard_id)
+            pedalboard_index = int(pedalboard_index)
         except:
-            logging.error("Trying to load pedalboard using invalid pedalboard_id '%s'", pedalboard_id)
+            logging.error("Trying to load pedalboard using invalid pedalboard_index '%s'", pedalboard_index)
             callback(False)
             return
 
-        if pedalboard_id <= 0:
-            logging.error("Trying to load pedalboard using out of bounds pedalboard id %d", pedalboard_id)
+        if pedalboard_index < 0:
+            logging.error("Trying to load pedalboard using out of bounds pedalboard id %d", pedalboard_index)
             callback(False)
             return
 
         if self.next_hmi_pedalboard_to_load is not None:
-            logging.info("Delaying loading of %d:%d", bank_id, pedalboard_id)
-            self.next_hmi_pedalboard_to_load = (bank_id, pedalboard_id)
+            logging.info("Delaying loading of %d:%d", bank_id, pedalboard_index)
+            self.next_hmi_pedalboard_to_load = (bank_id, pedalboard_index)
             callback(True)
             return
 
@@ -5535,16 +5535,16 @@ _:b%i
         else:
             pedalboards = self.factorybanks[bank_id - numUserBanks - 4]['pedalboards']
 
-        if pedalboard_id > len(pedalboards):
-            logging.error("Trying to load pedalboard using out of bounds pedalboard id %d", pedalboard_id)
+        if pedalboard_index >= len(pedalboards):
+            logging.error("Trying to load pedalboard using out of bounds pedalboard id %d", pedalboard_index)
             callback(False)
             return
 
-        bundlepath = pedalboards[pedalboard_id - 1]['bundle']
-        pbtitle = pedalboards[pedalboard_id - 1]['title']
+        bundlepath = pedalboards[pedalboard_index]['bundle']
+        pbtitle = pedalboards[pedalboard_index]['title']
         abort_catcher = self.abort_previous_loading_progress("host PB load " + bundlepath)
 
-        next_pb_to_load = (bank_id, pedalboard_id)
+        next_pb_to_load = (bank_id, pedalboard_index)
         self.next_hmi_pedalboard_to_load = next_pb_to_load
         self.next_hmi_pedalboard_loading = True
         callback(True)
@@ -5553,7 +5553,7 @@ _:b%i
             self.processing_pending_flag = False
             self.send_notmodified("feature_enable processing 1")
 
-            logging.info("Loading of %d:%d finished (2/2)", bank_id, pedalboard_id)
+            logging.info("Loading of %d:%d finished (2/2)", bank_id, pedalboard_index)
             next_pedalboard = self.next_hmi_pedalboard_to_load
             self.next_hmi_pedalboard_to_load = None
             self.next_hmi_pedalboard_loading = False
@@ -5593,7 +5593,7 @@ _:b%i
             if from_hmi:
                 self.hmi.ping(hmi_ready_callback)
             else:
-                self.hmi.set_pedalboard_index(pedalboard_id, hmi_ready_callback)
+                self.hmi.set_pedalboard_index(pedalboard_index, hmi_ready_callback)
 
         def load_callback(_):
             self.load(bundlepath, False, abort_catcher)
