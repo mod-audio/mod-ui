@@ -254,6 +254,9 @@ JqueryClass('shareBox', {
             description: self.find('#pedalboard-share-comment').val(),
             title      : self.find('#pedalboard-share-title').val()
         }
+        if (self.find('#pedalboard-share-hidden').prop("checked")) {
+            data.hidden = true
+        }
         self.find('#record-share').attr('disabled', true)
 
         var hasAudio = (step == 4)
