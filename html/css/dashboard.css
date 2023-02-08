@@ -893,6 +893,7 @@ svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1001
 	display: block;
 	width: 100%;
 	padding-top: 10px;
+	float: left;
 }
 
 /*

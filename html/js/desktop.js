@@ -1212,6 +1212,7 @@ function Desktop(elements) {
                     email      : data.email,
                     description: data.description,
                     title      : data.title,
+                    hidden     : data.hidden,
                 }),
                 success: function (resp) {
                     var transfer = new SimpleTransference('/pedalboard/pack_bundle/?bundlepath=' + escape(self.pedalboardBundle),
