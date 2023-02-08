@@ -342,6 +342,7 @@ class Host(object):
         self.current_tuner_mute = self.prefs.get("tuner-mutes-outputs", False, bool)
 
         # TODO use 1 if duo or duox
+        self.supports_factory_banks = True
         self.pedalboard_index_offset = 0
         self.userbanks_offset = 2
 
@@ -1092,7 +1093,11 @@ class Host(object):
         self.allfactorypedalboards = factorypedals
 
         self.userbanks = list_banks(baduserbundles, True, True)
-        self.factorybanks = list_banks(badfactorybundles, False, False)
+
+        if self.supports_factory_banks:
+            self.factorybanks = list_banks(badfactorybundles, False, False)
+        else:
+            self.factorybanks = []
 
         bank_id, pedalboard = get_last_bank_and_pedalboard()
 
@@ -1371,22 +1376,29 @@ class Host(object):
         self.allfactorypedalboards = factorypedals
 
         self.userbanks = list_banks(baduserbundles, True, False)
-        self.factorybanks = list_banks(badfactorybundles, False, False)
+
+        if self.supports_factory_banks:
+            self.factorybanks = list_banks(badfactorybundles, False, False)
+        else:
+            self.factorybanks = []
 
         numUserBanks = len(self.userbanks)
         numFactoryBanks = len(self.factorybanks)
-        numBanks = numUserBanks + numFactoryBanks + 4
+        numBanks = numUserBanks + numFactoryBanks + 1
+
+        if self.supports_factory_banks:
+            numBanks += 3
 
         bank_id, pedalboard = get_last_bank_and_pedalboard()
 
         validpedalboard = False
-        first_valid_bank = self.userbanks_offset - 1
+        first_valid_bank = 1 if self.supports_factory_banks else 0
 
         # out of bounds
         if bank_id < first_valid_bank or bank_id >= numBanks:
             bank_id = first_valid_bank
         # divider
-        elif bank_id in (0, numUserBanks + 2):
+        elif self.supports_factory_banks and bank_id in (0, numUserBanks + 2):
             bank_id = first_valid_bank
 
         if pedalboard:
@@ -1402,15 +1414,14 @@ class Host(object):
             pedalflags = 0
             pedalboards = self.userbanks[bank_id - self.userbanks_offset]['pedalboards']
 
-        # TODO
         # all factory PBs
-        elif bank_id == numUserBanks + 3:
+        elif self.supports_factory_banks and bank_id == numUserBanks + 3:
             bankflags = FLAG_NAVIGATION_FACTORY|FLAG_NAVIGATION_READ_ONLY
             pedalflags = FLAG_NAVIGATION_FACTORY|FLAG_NAVIGATION_READ_ONLY
             pedalboards = self.allfactorypedalboards
 
         # factory PBs
-        elif bank_id > numUserBanks + 2:
+        elif self.supports_factory_banks and bank_id > numUserBanks + 2:
             bankflags = FLAG_NAVIGATION_FACTORY|FLAG_NAVIGATION_READ_ONLY
             pedalflags = FLAG_NAVIGATION_FACTORY|FLAG_NAVIGATION_READ_ONLY
             pedalboards = self.factorybanks[bank_id - numUserBanks - 3]['pedalboards']
@@ -1728,7 +1739,7 @@ class Host(object):
                     while self.next_hmi_pedalboard_loading:
                         yield gen.sleep(0.25)
                     try:
-                        yield gen.Task(self.hmi_load_bank_pedalboard, bank_id, program, from_hmi=False)
+                        yield gen.Task(self.hmi_load_bank_pedalboard, bank_id, program + self.pedalboard_index_offset, from_hmi=False)
                     except Exception as e:
                         logging.exception(e)
 
@@ -5040,7 +5051,10 @@ _:b%i
 
         numUserBanks = len(self.userbanks)
         numFactoryBanks = len(self.factorybanks)
-        numBanks = numUserBanks + numFactoryBanks + 4
+        numBanks = numUserBanks + numFactoryBanks + 1
+
+        if self.supports_factory_banks:
+            numBanks += 3
 
         if dir_up in (0, 1):
             bank_id += 1 if dir_up else -1
@@ -5060,28 +5074,35 @@ _:b%i
         endIndex = min(startIndex+9, numBanks)
         banksData = '%d %d %d' % (numBanks, startIndex, endIndex)
 
-        for bank_id in range(startIndex, endIndex):
-            flags = 0
-            # TODO
-            if bank_id == 0:
-                title = ""
-                flags = FLAG_NAVIGATION_DIVIDER
-            elif bank_id == 1:
-                title = "All User Pedalboards"
-                flags = FLAG_NAVIGATION_READ_ONLY
-            elif bank_id < numUserBanks + 2:
-                title = self.userbanks[bank_id - 2]['title']
-            elif bank_id == numUserBanks + 2:
-                title = ""
-                flags = FLAG_NAVIGATION_DIVIDER
-            elif bank_id == numUserBanks + 3:
-                title = "All Factory Pedalboards"
-                flags = FLAG_NAVIGATION_FACTORY|FLAG_NAVIGATION_READ_ONLY
-            else:
-                title = self.factorybanks[bank_id - numUserBanks - 4]['title']
-                flags = FLAG_NAVIGATION_FACTORY|FLAG_NAVIGATION_READ_ONLY
+        if self.supports_factory_banks:
+            for bank_id in range(startIndex, endIndex):
+                flags = 0
+                if bank_id in (0, numUserBanks + 2):
+                    title = ""
+                    flags = FLAG_NAVIGATION_DIVIDER
+                elif bank_id == 1:
+                    title = "All User Pedalboards"
+                    flags = FLAG_NAVIGATION_READ_ONLY
+                elif bank_id < numUserBanks + 2:
+                    title = self.userbanks[bank_id - 2]['title']
+                elif bank_id == numUserBanks + 3:
+                    title = "All Factory Pedalboards"
+                    flags = FLAG_NAVIGATION_FACTORY|FLAG_NAVIGATION_READ_ONLY
+                else:
+                    title = self.factorybanks[bank_id - numUserBanks - 4]['title']
+                    flags = FLAG_NAVIGATION_FACTORY|FLAG_NAVIGATION_READ_ONLY
+                banksData += ' %d %d %s' % (bank_id, flags, normalize_for_hw(title))
 
-            banksData += ' %d %d %s' % (bank_id, flags, normalize_for_hw(title))
+        else:
+            for bank_id in range(startIndex, endIndex):
+                flags = 0
+                if bank_id == 0:
+                    title = "All Pedalboards"
+                    flags = FLAG_NAVIGATION_READ_ONLY
+                else:
+                    title = self.factorybanks[bank_id - numUserBanks - 1]['title']
+                    flags = FLAG_NAVIGATION_FACTORY|FLAG_NAVIGATION_READ_ONLY
+                banksData += ' %d %d %s' % (bank_id, flags, normalize_for_hw(title))
 
         callback(True, banksData)
 
@@ -5090,14 +5111,17 @@ _:b%i
 
         numUserBanks = len(self.userbanks)
         numFactoryBanks = len(self.factorybanks)
-        numBanks = numUserBanks + numFactoryBanks + 4
+        numBanks = numUserBanks + numFactoryBanks + 1
+
+        if self.supports_factory_banks:
+            numBanks += 3
 
         if bank_id < 0 or bank_id >= numBanks:
             logging.error("Trying to list pedalboards with an out of bounds bank id (%d %d %d)", props, pedalboard_index, bank_id)
             callback(False, "0 0 0")
             return
 
-        if bank_id in (0, numUserBanks + 2):
+        if self.supports_factory_banks and bank_id in (0, numUserBanks + 2):
             logging.error("Trying to list pedalboards for a divider (%d %d %d)", props, pedalboard_index, bank_id)
             callback(False, "0 0 0")
             return
@@ -5109,18 +5133,24 @@ _:b%i
         if not initial:
             pedalboard_index += 1 if dir_up else -1
 
-        # TODO
-        flags = 0
-        if bank_id == 1:
-            pedalboards = self.alluserpedalboards
-        elif bank_id < numUserBanks + 2:
-            pedalboards = self.userbanks[bank_id - 2]['pedalboards']
-        elif bank_id == numUserBanks + 3:
-            flags = FLAG_NAVIGATION_FACTORY|FLAG_NAVIGATION_READ_ONLY
-            pedalboards = self.allfactorypedalboards
+        if self.supports_factory_banks:
+            flags = 0
+            if bank_id == 1:
+                pedalboards = self.alluserpedalboards
+            elif bank_id < numUserBanks + 2:
+                pedalboards = self.userbanks[bank_id - 2]['pedalboards']
+            elif bank_id == numUserBanks + 3:
+                flags = FLAG_NAVIGATION_FACTORY|FLAG_NAVIGATION_READ_ONLY
+                pedalboards = self.allfactorypedalboards
+            else:
+                flags = FLAG_NAVIGATION_FACTORY|FLAG_NAVIGATION_READ_ONLY
+                pedalboards = self.factorybanks[bank_id - numUserBanks - 4]['pedalboards']
         else:
-            flags = FLAG_NAVIGATION_FACTORY|FLAG_NAVIGATION_READ_ONLY
-            pedalboards = self.factorybanks[bank_id - numUserBanks - 4]['pedalboards']
+            flags = 0
+            if bank_id == 0:
+                pedalboards = self.alluserpedalboards
+            else:
+                pedalboards = self.userbanks[bank_id - 1]['pedalboards']
 
         numPedals = len(pedalboards)
 
@@ -5181,16 +5211,16 @@ _:b%i
 
         if numSnapshots <= 9 or snapshot_id < 4:
             startIndex = 0
-        elif snapshot_id+4 >= numSnapshots:
+        elif snapshot_id + 4 >= numSnapshots:
             startIndex = numSnapshots - 9
         else:
             startIndex = snapshot_id - 4
 
-        endIndex = min(startIndex+9, numSnapshots)
+        endIndex = min(startIndex + 9, numSnapshots)
         snapshotData = '%d %d %d' % (numSnapshots, startIndex, endIndex)
 
         for i in range(startIndex, endIndex):
-            snapshotData += ' %s %d' % (normalize_for_hw(self.pedalboard_snapshots[i]['name']), i+1)
+            snapshotData += ' %s %d' % (normalize_for_hw(self.pedalboard_snapshots[i]['name']), i)
 
         logging.debug("hmi list pedalboards snapshots %d %d -> data is '%s'", props, snapshot_id, snapshotData)
         callback(True, snapshotData)
@@ -5280,7 +5310,7 @@ _:b%i
         callback(True)
 
     def hmi_bank_add_pedalboards(self, dst_bank_id, src_bank_id, pedalboards, callback):
-        first_valid_bank = self.userbanks_offset - 1
+        first_valid_bank = 1 if self.supports_factory_banks else 0
 
         if src_bank_id < first_valid_bank or src_bank_id - self.userbanks_offset >= len(self.userbanks):
             print("ERROR: Trying to add pedalboard from invalid bank id %i" % (src_bank_id))
@@ -5512,14 +5542,17 @@ _:b%i
 
         numUserBanks = len(self.userbanks)
         numFactoryBanks = len(self.factorybanks)
-        numBanks = numUserBanks + numFactoryBanks + 4
+        numBanks = numUserBanks + numFactoryBanks + 1
+
+        if self.supports_factory_banks:
+            numBanks += 3
 
         if bank_id < 0 or bank_id >= numBanks:
             logging.error("Trying to load pedalboard using out of bounds bank id (%d %s)", bank_id, pedalboard_index)
             callback(False)
             return
 
-        if bank_id in (0, numUserBanks + 2):
+        if self.supports_factory_banks and bank_id in (0, numUserBanks + 2):
             logging.error("Trying to load pedalboard using divider bank id (%d %s)", bank_id, pedalboard_index)
             callback(False)
             return
@@ -5530,6 +5563,8 @@ _:b%i
             logging.error("Trying to load pedalboard using invalid pedalboard_index '%s'", pedalboard_index)
             callback(False)
             return
+
+        pedalboard_index -= self.pedalboard_index_offset
 
         if pedalboard_index < 0:
             logging.error("Trying to load pedalboard using out of bounds pedalboard id %d", pedalboard_index)
@@ -5542,15 +5577,20 @@ _:b%i
             callback(True)
             return
 
-        # TODO
-        if bank_id == 1:
-            pedalboards = self.alluserpedalboards
-        elif bank_id < numUserBanks + 2:
-            pedalboards = self.userbanks[bank_id - 2]['pedalboards']
-        elif bank_id == numUserBanks + 3:
-            pedalboards = self.allfactorypedalboards
+        if self.supports_factory_banks:
+            if bank_id == 1:
+                pedalboards = self.alluserpedalboards
+            elif bank_id < numUserBanks + 2:
+                pedalboards = self.userbanks[bank_id - 2]['pedalboards']
+            elif bank_id == numUserBanks + 3:
+                pedalboards = self.allfactorypedalboards
+            else:
+                pedalboards = self.factorybanks[bank_id - numUserBanks - 4]['pedalboards']
         else:
-            pedalboards = self.factorybanks[bank_id - numUserBanks - 4]['pedalboards']
+            if bank_id == 0:
+                pedalboards = self.alluserpedalboards
+            else:
+                pedalboards = self.userbanks[bank_id - 1]['pedalboards']
 
         if pedalboard_index >= len(pedalboards):
             logging.error("Trying to load pedalboard using out of bounds pedalboard id %d", pedalboard_index)
@@ -5582,7 +5622,7 @@ _:b%i
             # Check if there's a pending pedalboard to be loaded
             if next_pedalboard != next_pb_to_load:
                 self.hmi_load_bank_pedalboard(next_pedalboard[0],
-                                              next_pedalboard[1],
+                                              next_pedalboard[1] + self.pedalboard_index_offset,
                                               self.load_different_callback,
                                               from_hmi)
 
