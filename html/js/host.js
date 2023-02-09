@@ -483,19 +483,12 @@ $('document').ready(function() {
             return
         }
 
-        if (cmd == "hw_con") {
-            data        = data.split(" ",2)
-            var label   = data[0].replace(/_/g," ")
-            var version = data[1]
-            desktop.ccDeviceConnected(label, version)
-            return
-        }
-
         if (cmd == "hw_dis") {
-            data        = data.split(" ",2)
-            var label   = data[0].replace(/_/g," ")
-            var version = data[1]
-            desktop.ccDeviceDisconnected(label, version)
+            data        = data.split(" ",3)
+            var dev_uri = data[0]
+            var label   = data[1].replace(/_/g," ")
+            var version = data[2]
+            desktop.ccDeviceDisconnected(dev_uri, label, version)
             return
         }
 

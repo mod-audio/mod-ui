@@ -474,7 +474,6 @@ class Host(object):
         self.addressings._task_store_address_data = self.addr_task_store_address_data
         self.addressings._task_hw_added = self.addr_task_hw_added
         self.addressings._task_hw_removed = self.addr_task_hw_removed
-        self.addressings._task_hw_connected = self.addr_task_hw_connected
         self.addressings._task_hw_disconnected = self.addr_task_hw_disconnected
         self.addressings._task_act_added = self.addr_task_act_added
         self.addressings._task_act_removed = self.addr_task_act_removed
@@ -916,11 +915,8 @@ class Host(object):
     def addr_task_hw_removed(self, dev_uri, label, version):
         self.msg_callback("hw_rem %s %s %s" % (dev_uri, label.replace(" ","_"), version))
 
-    def addr_task_hw_connected(self, label, version):
-        self.msg_callback("hw_con %s %s" % (label.replace(" ","_"), version))
-
-    def addr_task_hw_disconnected(self, label, version):
-        self.msg_callback("hw_dis %s %s" % (label.replace(" ","_"), version))
+    def addr_task_hw_disconnected(self, dev_uri, label, version):
+        self.msg_callback("hw_dis %s %s %s" % (dev_uri, label.replace(" ","_"), version))
 
     def addr_task_act_added(self, metadata):
         self.msg_callback("act_add " + b64encode(json.dumps(metadata).encode("utf-8")).decode("utf-8"))
@@ -1988,7 +1984,7 @@ class Host(object):
         websocket.write_message("loading_start %d %d" % (int(self.pedalboard_empty), int(self.pedalboard_modified)))
         websocket.write_message("size %d %d" % (self.pedalboard_size[0], self.pedalboard_size[1]))
 
-        for dev_uri, (dev_id, label, labelsuffix, version) in self.addressings.cchain.hw_versions.items():
+        for dev_uri, label, labelsuffix, version in self.addressings.cchain.hw_versions.values():
             websocket.write_message("hw_add %s %s %s %s" % (dev_uri,
                                                             label.replace(" ","_"),
                                                             labelsuffix.replace(" ","_"),
