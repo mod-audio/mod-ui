@@ -280,8 +280,11 @@ class ControlChainDeviceListener(object):
                 self.hw_versions.pop(dev_uri)
                 self.hw_removed_cb(_dev_id, dev_uri, label+labelsuffix, version)
 
-                if dev_uri in self.hw_counter and not supports_feedback:
-                    self.hw_counter.pop(dev_uri)
+                if dev_uri in self.hw_counter:
+                    if supports_feedback:
+                        self.hw_counter[dev_uri] -= 1
+                    else:
+                        self.hw_counter.pop(dev_uri)
 
             if dev_uri in self.hw_versions:
                 self.hw_connected_cb(dev['label'] + dev_label_suffix, dev['version'])
