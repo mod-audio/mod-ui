@@ -82,6 +82,8 @@ def detect_first_column(uri, img, scan, num_ports, rtol=False):
         return [(455, 89) if rtol else (20, 89)]
     if uri == 'http://moddevices.com/plugins/forward-audio/mega-california-rectifier':
         return [(455, 89) if rtol else (20, 89)]
+    if uri == 'http://VeJaPlugins.com/plugins/Release/Rambler':
+        return [(625, 216) if rtol else (8, 216)]
 
     was_transparent = True
     found = False
