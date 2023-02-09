@@ -483,15 +483,6 @@ $('document').ready(function() {
             return
         }
 
-        if (cmd == "hw_dis") {
-            data        = data.split(" ",3)
-            var dev_uri = data[0]
-            var label   = data[1].replace(/_/g," ")
-            var version = data[2]
-            desktop.ccDeviceDisconnected(dev_uri, label, version)
-            return
-        }
-
         if (cmd == "loading_start") {
             data     = data.split(" ",2)
             empty    = parseInt(data[0]) != 0
