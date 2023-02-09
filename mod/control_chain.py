@@ -18,6 +18,7 @@ CC_MODE_LOGARITHMIC = 0x040
 CC_MODE_COLOURED    = 0x100
 CC_MODE_MOMENTARY   = 0x200
 CC_MODE_REVERSE     = 0x400
+CC_MODE_GROUP       = 0x800
 
 # ---------------------------------------------------------------------------------------------------------------------
 
@@ -244,11 +245,24 @@ class ControlChainDeviceListener(object):
             if 'protocol' in dev:
                 protocol_version = tuple(int(v) for v in dev['protocol'].split("."))
                 supports_feedback = protocol_version >= (0,6)
+                supports_chain_id = protocol_version >= (0,7) and dev.get('chain_id', 0) > 0
             else:
                 protocol_version = (0,0)
                 supports_feedback = False
+                supports_chain_id = False
 
-            if supports_feedback:
+            if supports_chain_id:
+                # use supplied device id
+                dev_unique_id = dev['chain_id']
+
+                if dev_uri not in self.hw_counter:
+                    self.hw_counter[dev_uri] = 1
+                else:
+                    self.hw_counter[dev_uri] += 1
+
+                dev_uri += "#%d" % (dev_unique_id+1)
+
+            elif supports_feedback:
                 # use connected hw counter as id
                 if dev_uri not in self.hw_counter or self.hw_counter[dev_uri] == 0:
                     dev_unique_id = 0
