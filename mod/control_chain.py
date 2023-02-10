@@ -260,18 +260,17 @@ class ControlChainDeviceListener(object):
                 else:
                     self.hw_counter[dev_uri] += 1
 
-                dev_uri += "#%d" % (dev_unique_id+1)
+                dev_uri += "#%d" % dev_unique_id
 
             elif supports_feedback:
                 # use connected hw counter as id
                 if dev_uri not in self.hw_counter or self.hw_counter[dev_uri] == 0:
-                    dev_unique_id = 0
+                    dev_unique_id = 1
                 else:
-                    dev_unique_id = self.hw_counter[dev_uri]
-                    dev_uri += "#%d" % (dev_unique_id+1)
+                    dev_unique_id = self.hw_counter[dev_uri] + 1
+                    dev_uri += "#%d" % dev_unique_id
 
-                # increment counter for next device with the same URI
-                self.hw_counter[dev_uri] = dev_unique_id + 1
+                self.hw_counter[dev_uri] = dev_unique_id
 
             else:
                 # assign an unique id starting from 0
@@ -281,10 +280,10 @@ class ControlChainDeviceListener(object):
                         dev_unique_id += 1
 
                 if dev_unique_id != 0:
-                    dev_uri += "#%d" % (dev_unique_id+1)
+                    dev_uri += "#%d" % dev_unique_id
 
             if dev_unique_id != 0:
-                dev_label_suffix = " " + str(dev_unique_id+1)
+                dev_label_suffix = " " + str(dev_unique_id)
             else:
                 dev_label_suffix = ""
 
