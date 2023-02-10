@@ -709,10 +709,10 @@ class Host(object):
 
             if data['options']:
                 currentNum = 0
-                numBytesFree = 1024-128
+                numBytesFree = 8192-128
 
                 for o in data['options']:
-                    if currentNum > 50:
+                    if currentNum > 250:
                         if rvalue >= currentNum:
                             rvalue = 0
                         rmaximum = currentNum
