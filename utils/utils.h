@@ -1,6 +1,6 @@
 /*
  * MOD-UI utilities
- * Copyright (C) 2015-2016 Filipe Coelho <falktx@falktx.com>
+ * Copyright (C) 2015-2023 Filipe Coelho <falktx@falktx.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -27,6 +27,18 @@ extern "C" {
 
 #define MOD_API __attribute__ ((visibility("default")))
 
+typedef enum {
+    kPluginLicenseNonCommercial = 0,
+    kPluginLicenseTrial = -1,
+    kPluginLicensePaid = 1,
+} PluginLicenseType;
+
+typedef enum {
+    kPedalboardInfoUserOnly = 0,
+    kPedalboardInfoFactoryOnly = 1,
+    kPedalboardInfoBoth = 2,
+} PedalboardInfoType;
+
 typedef struct {
     const char* name;
     const char* homepage;
@@ -48,6 +60,8 @@ typedef struct {
     const char* stylesheet;
     const char* screenshot;
     const char* thumbnail;
+    const char* discussionURL;
+    const char* documentation;
     const char* brand;
     const char* label;
     const char* model;
@@ -111,6 +125,38 @@ typedef struct {
 } PluginPorts;
 
 typedef struct {
+    int64_t min;
+    int64_t max;
+    int64_t def;
+} PluginLongParameterRanges;
+
+typedef struct {
+    char type;
+    union {
+        PluginPortRanges f;
+        PluginLongParameterRanges l;
+        const char* s;
+    };
+} PluginParameterRanges;
+
+typedef struct {
+    bool valid;
+    bool readable;
+    bool writable;
+    const char* uri;
+    const char* label;
+    const char* type;
+    // for regular controls
+    PluginParameterRanges ranges;
+    PluginPortUnits units;
+    const char* comment;
+    const char* shortName;
+    // for path stuff
+    const char* const* fileTypes;
+    const char* const* supportedExtensions;
+} PluginParameter;
+
+typedef struct {
     bool valid;
     const char* uri;
     const char* label;
@@ -126,42 +172,55 @@ typedef struct {
     const char* label;
     const char* license;
     const char* comment;
+    const char* buildEnvironment;
     const char* const* category;
     int microVersion;
     int minorVersion;
     int release;
     int builder;
-    int licensed;
+    int licensed; // PluginLicenseType
+    bool hasExternalUI;
     const char* version;
     const char* stability;
     PluginAuthor author;
     const char* const* bundles;
     PluginGUI gui;
     PluginPorts ports;
+    const PluginParameter* parameters;
     const PluginPreset* presets;
 } PluginInfo;
 
 typedef struct {
-    bool valid;
+    int licensed; // PluginLicenseType
+    const PluginPreset* presets;
+} NonCachedPluginInfo;
+
+typedef struct {
     const char* uri;
     const char* name;
     const char* brand;
     const char* label;
     const char* comment;
+    const char* buildEnvironment;
     const char* const* category;
     int microVersion;
     int minorVersion;
     int release;
     int builder;
-    int licensed;
+    int licensed; // PluginLicenseType
     PluginGUI_Mini gui;
-    bool needsDealloc;
 } PluginInfo_Mini;
 
 typedef struct {
-    const PluginPort* inputs;
+    const PluginPort* controlInputs;
     const char* const* monitoredOutputs;
-} PluginInfo_Controls;
+    const PluginParameter* parameters;
+    const char* buildEnvironment;
+    int microVersion;
+    int minorVersion;
+    int release;
+    int builder;
+} PluginInfo_Essentials;
 
 typedef struct {
     int8_t channel;
@@ -182,6 +241,7 @@ typedef struct {
 typedef struct {
     bool valid;
     bool bypassed;
+    int instanceNumber;
     const char* instance;
     const char* uri;
     PedalboardMidiControl bypassCC;
@@ -235,19 +295,24 @@ typedef struct {
 typedef struct {
     const char* title;
     int width, height;
-    bool midi_legacy_mode;
+    bool factory;
+    bool midi_separated_mode;
+    bool midi_loopback;
     const PedalboardPlugin* plugins;
     const PedalboardConnection* connections;
     PedalboardHardware hardware;
     PedalboardTimeInfo timeInfo;
+    unsigned int version;
 } PedalboardInfo;
 
 typedef struct {
-    bool valid;
     bool broken;
+    bool factory;
+    bool hasTrialPlugins;
     const char* uri;
     const char* bundle;
     const char* title;
+    unsigned int version;
 } PedalboardInfo_Mini;
 
 typedef struct {
@@ -276,6 +341,7 @@ typedef void (*JackBufSizeChanged)(unsigned bufsize);
 typedef void (*JackPortAppeared)(const char* name, bool isOutput);
 typedef void (*JackPortDeleted)(const char* name);
 typedef void (*TrueBypassStateChanged)(bool left, bool right);
+typedef void (*CvExpInputModeChanged)(bool expPedalMode);
 
 // initialize
 MOD_API void init(void);
@@ -292,7 +358,7 @@ MOD_API const char* const* add_bundle_to_lilv_world(const char* bundle);
 
 // remove a bundle from our lilv world
 // returns uri list of removed plugins (null for none)
-MOD_API const char* const* remove_bundle_from_lilv_world(const char* bundle);
+MOD_API const char* const* remove_bundle_from_lilv_world(const char* bundle, const char* resource);
 
 // get list of all available plugins
 MOD_API const char* const* get_plugin_list(void);
@@ -305,6 +371,10 @@ MOD_API const PluginInfo_Mini* const* get_all_plugins(void);
 // NOTE: may return null
 MOD_API const PluginInfo* get_plugin_info(const char* uri);
 
+// get a specific plugin (non-cached specific info)
+// NOTE: may return null
+MOD_API const NonCachedPluginInfo* get_non_cached_plugin_info(const char* uri);
+
 // get a specific plugin's modgui
 // NOTE: may return null
 MOD_API const PluginGUI* get_plugin_gui(const char* uri);
@@ -313,14 +383,20 @@ MOD_API const PluginGUI* get_plugin_gui(const char* uri);
 // NOTE: may return null
 MOD_API const PluginGUI_Mini* get_plugin_gui_mini(const char* uri);
 
-// get all control inputs and monitored outputs for a specific plugin
-MOD_API const PluginInfo_Controls* get_plugin_control_inputs_and_monitored_outputs(const char* uri);
+// get all control inputs for a specific plugin
+MOD_API const PluginPort* get_plugin_control_inputs(const char* uri);
+
+// get essential plugin info for host control (control inputs, monitored outputs, parameters and build environment)
+MOD_API const PluginInfo_Essentials* get_plugin_info_essentials(const char* uri);
+
+// check if a plugin preset is valid (must exist)
+MOD_API bool is_plugin_preset_valid(const char* plugin, const char* preset);
 
 // trigger a preset rescan for a plugin the next time it's loaded
 MOD_API void rescan_plugin_presets(const char* uri);
 
 // get all available pedalboards (ie, plugins with pedalboard type)
-MOD_API const PedalboardInfo_Mini* const* get_all_pedalboards(void);
+MOD_API const PedalboardInfo_Mini* const* get_all_pedalboards(int ptype);
 
 // get all currently "broken" pedalboards (ie, pedalboards which contain unavailable plugins)
 MOD_API const char* const* get_broken_pedalboards(void);
@@ -338,6 +414,10 @@ MOD_API int* get_pedalboard_size(const char* bundle);
 // NOTE: may return null
 MOD_API const PedalboardPluginValues* get_pedalboard_plugin_values(const char* bundle);
 
+// Reset pedalboards related cache
+// Needed when plugins are added, as previous "broken" PBs might have been fixed with the change.
+MOD_API void reset_get_all_pedalboards_cache(int ptype);
+
 // Get port values from a plugin state
 MOD_API const StatePortValue* get_state_port_values(const char* state);
 
@@ -346,6 +426,9 @@ MOD_API const char* const* list_plugins_in_bundle(const char* bundle);
 
 // Convert a file URI to a local path string.
 MOD_API const char* file_uri_parse(const char* fileuri);
+
+// helper utilities
+MOD_API void set_cpu_affinity(int cpu);
 
 // jack stuff
 MOD_API bool init_jack(void);
@@ -361,8 +444,11 @@ MOD_API bool has_serial_midi_input_port(void);
 MOD_API bool has_serial_midi_output_port(void);
 MOD_API bool has_midi_merger_output_port(void);
 MOD_API bool has_midi_broadcaster_input_port(void);
+MOD_API bool has_duox_split_spdif(void);
 MOD_API bool connect_jack_ports(const char* port1, const char* port2);
+MOD_API bool connect_jack_midi_output_ports(const char* port);
 MOD_API bool disconnect_jack_ports(const char* port1, const char* port2);
+MOD_API bool disconnect_all_jack_ports(const char* port);
 MOD_API void reset_xruns(void);
 
 // alsa stuff
@@ -376,6 +462,9 @@ MOD_API void set_util_callbacks(JackBufSizeChanged bufSizeChanged,
                                 JackPortAppeared portAppeared,
                                 JackPortDeleted portDeleted,
                                 TrueBypassStateChanged trueBypassChanged);
+
+// special case until HMI<->system comm is not in place yet
+MOD_API void set_extra_util_callbacks(CvExpInputModeChanged cvExpInputModeChanged);
 
 #ifdef __cplusplus
 } // extern "C"

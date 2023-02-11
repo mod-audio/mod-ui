@@ -260,32 +260,38 @@ function TransportControls(options) {
         }
     })
 
-    this.address = function (el, enabled, feedback) {
+    this.address = function (el, enabled, feedback, forceAddress) {
+      var alreadyAddressed = false
       var addressEl = el.find('.mod-address')
       if (enabled) {
         addressEl.removeClass('addressed')
       } else {
         if (feedback) {
           addressEl.addClass('addressed')
+          alreadyAddressed = true
         } else {
           addressEl.removeClass('addressed')
         }
       }
+
+      if (!alreadyAddressed && forceAddress) {
+        addressEl.addClass('addressed')
+      }
     }
 
-    this.setControlEnabled = function (portSymbol, enabled, feedback) {
-        var disableClassname = feedback ? 'address' : 'disable'
+    this.setControlEnabled = function (portSymbol, enabled, feedback, forceAddress) {
+        var controlWidget = (enabled || feedback) ? 'enable' : 'disable'
         if (portSymbol == ":bpb") {
-            self.address(options.transportBPB, enabled, feedback)
-            self.beatsPerBarPort.widget.controlWidget(enabled ? 'enable' : disableClassname)
+            self.address(options.transportBPB, enabled, feedback, forceAddress)
+            self.beatsPerBarPort.widget.controlWidget(controlWidget)
             options.transportBPB.find(".mod-knob-current-value").attr('contenteditable', enabled || feedback)
         } else if (portSymbol == ":bpm") {
-            self.address(options.transportBPM, enabled, feedback)
-            self.beatsPerMinutePort.widget.controlWidget(enabled ? 'enable' : disableClassname)
+            self.address(options.transportBPM, enabled, feedback, forceAddress)
+            self.beatsPerMinutePort.widget.controlWidget(controlWidget)
             options.transportBPM.find(".mod-knob-current-value").attr('contenteditable', enabled || feedback)
         } else if (portSymbol == ":rolling") {
-            self.address(options.transportPlay, enabled, feedback)
-            self.rollingPort.widget.controlWidget(enabled ? 'enable' : disableClassname)
+            self.address(options.transportPlay, enabled, feedback, forceAddress)
+            self.rollingPort.widget.controlWidget(controlWidget)
         }
     }
 

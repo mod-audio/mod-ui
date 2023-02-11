@@ -1,26 +1,39 @@
-<div class="js-close plugin-info plugin-container">
+<div class="js-close plugin-info plugin-container" mod-uri="{{escaped_uri}}">
     <div class="container box">
-        <span class="js-close alignright btn btn-mini btn-danger">Close</span>
         <div class="row-fluid clearfix">
+          <span class="js-close alignright btn btn-mini btn-danger">Close</span>
+          {{#price}}
+          <div class="description-price-container">
+            <div class="description-price">{{price}}</div>
+          </div>
+          {{/price}}
+          {{#licensed}}
+          <div class="description-price-container">
+            <div class="description-licensed"></div>
+          </div>
+          {{/licensed}}
+          {{#coming}}
+          <div class="description-price-container">
+            <div class="description-coming-soon"></div>
+          </div>
+          {{/coming}}
             <div class="span10 offset1 clearfix">
                 <figure class="screenshot">
+                    {{#demo}}
+                    <div class="demo-plugin demo-mask" title="This plugin is for demo purposes only and shall not be used live or in a studio"></div>
+                    {{/demo}}
+                    {{#show_build_env}}
+                    <div class="beta">{{build_env_uppercase}}</div>
+                    {{/show_build_env}}
                     <img src="{{screenshot_href}}">
                 </figure>
 
                 <div class="plugin-description">
                     <header>
-                        <h1>{{name}}</h1>
+                      <h1>{{name}}</h1>
                         {{#installed}}
                         <a class="favorite-button {{favorite_class}}" title="Favorite Plugin"></a>
                         {{/installed}}
-                        {{#demo}}
-                        <div style="margin-bottom: 5px;">
-                            <span class="status demo"></span>
-                            <span style="display: block;">
-                                This plugin is for demo purposes only and shall not be used live or in a studio.
-                            </span>
-                        </div>
-                        {{/demo}}
                         <br/>
                         <p>
                             <b>URI:</b> {{uri}}<br/>
@@ -37,9 +50,18 @@
                             <span class="js-installed-version">
                                 Installed Version: <span class="bold">{{installed_version}}</span><br/>
                             </span>
-                            <button class="js-install btn btn-info btn-mini">Install</button>
-                            <button class="js-upgrade btn btn-info btn-mini">Upgrade</button>
-                            <button class="js-remove btn btn-danger btn-mini">Remove</button>
+                            <table><tr><td>
+                            <button class="js-install btn btn-info btn-mini">Install{{#trial}} Trial{{/trial}}</button>
+                            <button class="js-upgrade btn btn-info btn-mini">Upgrade{{#trial}} Trial{{/trial}}</button>
+                            <button class="js-remove btn btn-danger btn-mini">
+                              Remove{{#trial}} Trial{{/trial}}
+                            </button>
+                            </td>
+                            {{#shopify_id}}
+                            <td>&nbsp;</td>
+                            <td><div class="buy-button" id='product-component-{{shopify_id}}'></div></td>
+                            {{/shopify_id}}
+                            </tr></table>
                         </p>
                     </header>
                     <p>{{comment}}</p>
@@ -51,6 +73,16 @@
                     <a target="_blank" href="{{plugin_href}}" class="btn btn-info online-button-href">
                         <span>See online</span>
                     </a>
+                    {{#discussion_href}}
+                    <a target="_blank" href="{{discussion_href}}" class="btn btn-info online-button-href">
+                        <span>See discussion</span>
+                    </a>
+                    {{/discussion_href}}
+                    {{#documentation_href}}
+                    <a target="_blank" href="{{documentation_href}}" class="btn btn-info online-button-href">
+                        <span>See documentation</span>
+                    </a>
+                    {{/documentation_href}}
                     <div class="plugin-controlports">
                         <p><strong>CONTROL PORTS:</strong></p>
                         <table class="plugin-specs table table-bordered">
@@ -68,6 +100,44 @@
                             <td>{{formatted.maximum}}</td>
                         </tr>
                         {{/ports.control.input}}
+                        </table>
+                    </div>
+                    <div class="plugin-cvinputs">
+                        <p><strong>CV INPUTS:</strong></p>
+                        <table class="plugin-specs table table-bordered">
+                        <tr>
+                            <th>Port</th>
+                            <th>Default</th>
+                            <th>Min</th>
+                            <th>Max</th>
+                        </tr>
+                        {{#ports.cv.input}}
+                        <tr>
+                            <td>{{shortName}}</td>
+                            <td>{{formatted.default}}</td>
+                            <td>{{formatted.minimum}}</td>
+                            <td>{{formatted.maximum}}</td>
+                        </tr>
+                        {{/ports.cv.input}}
+                        </table>
+                    </div>
+                    <div class="plugin-cvoutputs">
+                        <p><strong>CV OUTPUTS:</strong></p>
+                        <table class="plugin-specs table table-bordered">
+                        <tr>
+                            <th>Port</th>
+                            <th>Default</th>
+                            <th>Min</th>
+                            <th>Max</th>
+                        </tr>
+                        {{#ports.cv.output}}
+                        <tr>
+                            <td>{{shortName}}</td>
+                            <td>{{formatted.default}}</td>
+                            <td>{{formatted.minimum}}</td>
+                            <td>{{formatted.maximum}}</td>
+                        </tr>
+                        {{/ports.cv.output}}
                         </table>
                     </div>
                 </div>

@@ -1,20 +1,37 @@
 <div class="cloud-plugin plugin-container available-plugin js-available-effect" mod-role="cloud-plugin" mod-uri="{{uri}}">
-    <figure class="thumb" style="background-image: url('{{screenshot_href}}');"></figure>
-    <div class="description">
-        <span class="title">{{label}}</span>
-        <span class="author">{{brand}}</span>
-        <hr class="dotted" />
-        <p class="{{has_comment}}">{{comment}}<span class="limiter"></span></p>
-    </div>
-    <div class="status-container">
-        {{#status}}
-        <span class="status {{status}}"></span>
-        {{/status}}
-        {{^stable}}
-        <span class="status unstable"></span>
-        {{/stable}}
-        {{#demo}}
-        <span class="status demo" title="This plugin is for demo purposes only and shall not be used live or in a studio"></span>
-        {{/demo}}
+    <div class="cloud-plugin-border">
+        <figure class="thumb">
+            {{#demo}}
+            <div class="demo-plugin demo-mask" title="This plugin is for demo purposes only and shall not be used live or in a studio"></div>
+            {{/demo}}
+            <img src="{{thumbnail_href}}" />
+        </figure>
+        <div class="description">
+            <span class="title">{{label}}</span>
+            <span class="author">{{brand}}</span>
+            <hr class="dotted" />
+            <p class="{{has_comment}}">{{comment}}<span class="limiter"></span></p>
+        </div>
+        <div class="status-container">
+            {{#status}}
+            <span class="status {{status}}"></span>
+            {{/status}}
+            <span class="status buildEnvironment {{build_env}}"></span>
+            {{#price}}
+            <span class="price-container">
+            <span class="price">{{price}}</span>
+            </span>
+            {{/price}}
+            {{#licensed}}
+            <span class="price-container">
+            <span class="licensed"></span>
+            </span>
+            {{/licensed}}
+            {{#coming}}
+            <span class="price-container">
+            <span class="coming-soon"></span>
+            </span>
+            {{/coming}}
+        </div>
     </div>
 </div>

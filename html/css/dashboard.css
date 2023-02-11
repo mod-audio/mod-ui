@@ -74,6 +74,13 @@
     display: inline-block;
 }
 
+#pedalboard-info > h1 {
+    max-width: calc(100% - 720px);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 #pedalboard-info .title {
     color:#fff;
     cursor:pointer;
@@ -126,6 +133,7 @@
     position:absolute;
     right:0;
     top:0;
+    text-align:right;
 }
 
 #pedalboard-info .actions > button {
@@ -253,6 +261,7 @@
     width: 128px !important;
     height: 56px;
     cursor: pointer;
+    top: 0;
 }
 .mod-audio-output.output-connected .mod-output-jack {
     background-image: url(../img/audio-jack.png);
@@ -305,7 +314,7 @@
 .mod-audio-input.input-connecting-highlight {
     background-image: url(../img/audio-input-connecting-highlight.png);
 }
-.mod-audio-input.input-connected {
+.mod-audio-input.input-connected:not(.expanded) {
     background-image: url(../img/audio-input-connected.png);
 }
 .mod-audio-input.input-connected.input-connecting-highlight {
@@ -378,7 +387,7 @@
 .mod-midi-input.input-connecting-highlight {
     background-image: url(../img/midi-input-connecting-highlight.png);
 }
-.mod-midi-input.input-connected {
+.mod-midi-input.input-connected:not(.expanded) {
     background-image: url(../img/midi-input-connected.png);
 }
 .mod-midi-input.input-connected.input-connecting-highlight {
@@ -400,6 +409,7 @@
     width: 80px !important;
     height: 56px;
     cursor: pointer;
+    top: 0;
 }
 .mod-cv-output.output-connected .mod-output-jack {
     background-image: url(../img/cv-jack.png);
@@ -452,7 +462,7 @@
 .mod-cv-input.input-connecting-highlight {
     background-image: url(../img/cv-input-connecting-highlight.png);
 }
-.mod-cv-input.input-connected {
+.mod-cv-input.input-connected:not(.expanded) {
     background-image: url(../img/cv-input-connected.png);
 }
 .mod-cv-input.input-connected.input-connecting-highlight {
@@ -532,7 +542,7 @@ svg .light {
 
 svg .connecting-shadow { fill: none; stroke: #077; stroke-width: 10; z-index: 1000; }
 svg .connecting-cable { fill: none; stroke: #0AA; stroke-width: 8; z-index: 1000; }
-svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1000; -webkit-transform: translateY(2px); transform: translateY(2px); }
+svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1001; -webkit-transform: translateY(2px); transform: translateY(2px); }
 
 
 /* = PEDALBOARD - ADDRESSING
@@ -697,7 +707,7 @@ svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1000
     position:absolute;
     right:0;
     top:0;
-    z-index:1000;
+    z-index:1001;
 }
 
 .save-popup .box {
@@ -877,13 +887,14 @@ svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1000
 	margin: auto;
 }
 #share-window-wrapper {
-	height: 400px;
+	height: 415px;
 }
 #share-window-bottom {
 	border-top: 1px solid #ddd;
 	display: block;
 	width: 100%;
 	padding-top: 10px;
+	float: left;
 }
 
 /*
@@ -1333,4 +1344,23 @@ svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1000
 }
 .preset-manager .mod-list .mod-button.mod-button-edit {
     right: 113px;
+}
+
+/* = PEDALBOARD - SNAPSHOTS
+================================================ */
+#pedal-presets-list {
+    background-color: inherit;
+}
+#pedal-presets-list-input {
+    z-index: 1;
+}
+#pedal-presets-list-input::selection {
+    background: #883996 !important;
+    color: white !important;
+}
+
+@media only screen and (max-width: 1280px) {
+    #plugins-library .count {
+        display: none;
+    }
 }

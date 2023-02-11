@@ -71,6 +71,7 @@
 @import 'variables.less';
 @import 'cloud_plugins.less';
 @import 'banks.less';
+@import 'file_manager.less';
 @import 'pedalboards.less';
 @import 'nprogress.less';
 @import 'addressings.less';
@@ -89,6 +90,7 @@
          url('../fonts/cooper/cooperhewitt-semibold-webfont.ttf') format('truetype');
     font-weight: 600;
     font-style: normal;
+    font-display: swap;
 }
 @font-face {
     font-family: 'cooper hewitt';
@@ -99,6 +101,7 @@
          url('../fonts/cooper/cooperhewitt-light-webfont.ttf') format('truetype');
     font-weight: 300;
     font-style: normal;
+    font-display: swap;
 }
 @font-face {
     font-family: 'cooper hewitt';
@@ -109,6 +112,7 @@
          url('../fonts/cooper/cooperhewitt-lightitalic-webfont.ttf') format('truetype');
     font-weight: 300;
     font-style: italic;
+    font-display: swap;
 }
 @font-face {
     font-family: 'cooper hewitt';
@@ -119,6 +123,7 @@
          url('../fonts/cooper/cooperhewitt-bookitalic-webfont.ttf') format('truetype');
     font-weight: 400;
     font-style: italic;
+    font-display: swap;
 }
 @font-face {
     font-family: 'cooper hewitt';
@@ -129,6 +134,7 @@
          url('../fonts/cooper/cooperhewitt-book-webfont.ttf') format('truetype');
     font-weight: 400;
     font-style: normal;
+    font-display: swap;
 }
 * {
   outline: 0 !important
@@ -142,8 +148,15 @@ body {
 
 body {
   background: #111;
-
   min-width: 1024px;
+
+  // iOS/iPadOS device-specific styles
+  &.ios {
+    // prevent vertical inertia scrolling
+    position: fixed;
+    // set 980px min-width to match default virtual viewport width
+    min-width: 980px;
+  }
 }
 
 * {
@@ -267,22 +280,8 @@ hr.dotted {
       width: 45px;
     }
   }
-  #mod-social {
-    background-image: url(../img/menu-icons-sprite.png);
-    background-position: 0 top;
-    background-repeat: no-repeat;
-    transition: all 0.33s;
-    &:hover {
-      background-color: #000;
-      background-position: 0 bottom;
-    }
-    &.selected {
-      background-color: #000;
-      background-position: 0 bottom;
-    }
-  }
   #mod-plugins {
-    background-image: url(../img/menu-icons-sprite.png);
+    background-image: url(../img/menu-icons-sprite.png?v=2);
     background-position: -45px top;
     background-repeat: no-repeat;
     transition: all 0.33s;
@@ -296,7 +295,7 @@ hr.dotted {
     }
   }
   #mod-cloud-plugins {
-    background-image: url(../img/menu-icons-sprite.png);
+    background-image: url(../img/menu-icons-sprite.png?v=2);
     background-position: -315px top;
     background-repeat: no-repeat;
     transition: all 0.33s;
@@ -310,7 +309,7 @@ hr.dotted {
     }
   }
   #mod-pedalboard {
-    background-image: url(../img/menu-icons-sprite.png);
+    background-image: url(../img/menu-icons-sprite.png?v=2);
     background-position: -90px top;
     background-repeat: no-repeat;
     transition: all 0.33s;
@@ -324,7 +323,7 @@ hr.dotted {
     }
   }
   #mod-bank {
-    background-image: url(../img/menu-icons-sprite.png);
+    background-image: url(../img/menu-icons-sprite.png?v=2);
     background-position: -135px top;
     background-repeat: no-repeat;
     transition: all 0.33s;
@@ -335,6 +334,20 @@ hr.dotted {
     &.selected {
       background-color: #000;
       background-position: -135px bottom;
+    }
+  }
+  #mod-file-manager {
+    background-image: url(../img/menu-icons-sprite.png?v=2);
+    background-position: -180px top;
+    background-repeat: no-repeat;
+    transition: all 0.33s;
+    &:hover {
+      background-color: #000;
+      background-position: -180px bottom;
+    }
+    &.selected {
+      background-color: #000;
+      background-position: -180px bottom;
     }
   }
   #banks-saving {
@@ -453,14 +466,14 @@ hr.dotted {
 	  font-family: fontello !important;
 	  font-size: 28px;
 	  padding-top: 3px;
-	  padding-left: 5px;
-	  position: relative
+	  padding-left: 10px;
+	  position: relative;
 	  color: #fff;
 	  opacity: 0.66;
 	  cursor: pointer;
       transition: all 0.33s;
 	  &:after {
-		  content: '\e800';
+		  content: '\e802';
 	  }
 	  &:hover {
 		  opacity: 1;
@@ -503,7 +516,8 @@ hr.dotted {
 header#pedalboard-actions,
 #bank-library header,
 #cloud-plugins-library header,
-#pedalboards-library header {
+#pedalboards-library header,
+#file-manager-library header {
   display: block;
   left: 0;
   height: 45px;
@@ -617,6 +631,12 @@ header#pedalboard-actions,
             background-color: @brand-primary;
         }
     }
+    &.js-cv-addressing {
+        background-image: url(../img/icons/25/cv.png);
+        &:hover, &.selected {
+            background-color: @brand-primary;
+        }
+    }
     &.js-cloud {
       background-image: url(../img/icn-share.png);
       background-size: 32px;
@@ -636,7 +656,7 @@ header#pedalboard-actions,
   }
 }
 header#pedalboard-actions {
-    box-shadow: 0 2px 12px black;
+  box-shadow: 0 2px 12px black;
 }
 .tooltip {
   background: white;
@@ -867,6 +887,7 @@ header#pedalboard-actions {
       overflow: hidden;
       position: relative;
       width: 100%;
+      z-index: 1;
       .nav {
         background: url(../img/nav-left.png) 50% 50% no-repeat;
         cursor: pointer;
@@ -921,6 +942,10 @@ header#pedalboard-actions {
         height: 67px;
         cursor: pointer !important;
         position: relative;
+        /* center thumbnail vertically */
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
         &:active {
           cursor: -webkit-grabbing !important;
           cursor: grabbing !important;
@@ -931,6 +956,8 @@ header#pedalboard-actions {
         margin: 0 auto 3px;
         width: auto;
         pointer-events: none;
+        max-width: 256px;
+        max-height: 64px;
       }
       .plugins-wrapper .plugin .status {
         display: block;
@@ -1019,6 +1046,9 @@ header#pedalboard-actions {
       background-color: #111;
       padding: 15px;
       border: 2px solid #333;
+      .row-fluid {
+          position: relative;
+      }
     }
     .close {
       color: #fff;
@@ -1037,6 +1067,17 @@ header#pedalboard-actions {
       min-height: 9em;
       display: inline-block;
       z-index: 0;
+      div.beta {
+          background-color: #FF2927;
+          font-family: "cooper hewitt", sans-serif;
+          font-weight: 700;
+          padding: 5px 10px;
+          color: white;
+          position: absolute;
+          top: 18px;
+          left: 30px;
+          font-size: 16px;
+      }
     }
     figure {
       .make-md-column(4);
@@ -1150,6 +1191,12 @@ header#pedalboard-actions {
       }
       td {
         border-color: #333;
+        &:first-child {
+          width: 40%;
+        }
+        &:not(first-child) {
+          width: 20%;
+        }
       }
     }
     .comments-reviews {
@@ -1462,6 +1509,27 @@ header#pedalboard-actions {
   z-index: 20;
 }
 
+.demo-plugin {
+    background: url("/img/trial.svg") no-repeat center center;
+    background-size: contain;
+    opacity: 0.4;
+    z-index: 11 !important;
+}
+
+.demo-mask {
+    width: 100%;
+    height: 100%;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    position: absolute;
+}
+
+.demo-plugin-light {
+    opacity: 0.1 !important;
+}
+
 .actions {
   z-index: 20;
 }
@@ -1502,7 +1570,7 @@ header#pedalboard-actions {
 	color: #fff !important;
 	span {
 		&:before {
-			content: '\e803';
+			content: '\e804';
 		}
 		font-family: fontello !important;
 	}

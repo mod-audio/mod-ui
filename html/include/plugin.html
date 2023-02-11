@@ -1,11 +1,9 @@
 <div class="plugin available-plugin js-available-effect plugin-container" mod-role="available-plugin" mod-uri="{{{uri}}}">
     <div class="thumb">
-        <img src="{{{thumbnail_href}}}">
         {{#demo}}
-            <div class="demo-container">
-                <span class="status demo" title="This plugin is for demo purposes only and shall not be used live or in a studio."></span>
-            </div>
+        <div class="demo-plugin demo-mask" title="This plugin is for demo purposes only and shall not be used live or in a studio"></div>
         {{/demo}}
+        <img src="{{{thumbnail_href}}}">
     </div>
     <span class="title">{{{label}}}</span>
     <span class="author">{{{brand}}}</span>

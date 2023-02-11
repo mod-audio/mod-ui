@@ -19,6 +19,7 @@ var loadedIcons = {}
 var loadedSettings = {}
 var loadedCSSs = {}
 var loadedJSs = {}
+var loadedFilenames = {}
 var isSDK = false
 
 function shouldSkipPort(port) {
@@ -37,14 +38,49 @@ function shouldSkipPort(port) {
     return false;
 }
 
-function loadDependencies(gui, effect, callback) { //source, effect, bundle, callback) {
+function loadFileTypesList(parameter, dummy, callback) {
+    var files = []
+    if (parameter.ranges.default) {
+        var sdef = parameter.ranges.default
+        files.push({
+            'fullname': sdef,
+            'basename': sdef.slice(sdef.lastIndexOf('/')+1),
+        })
+    }
+    if (dummy) {
+        parameter.files = files
+        parameter.path = true
+        callback()
+        return
+    }
+    $.ajax({
+        url: '/files/list',
+        data: {
+            'types': parameter.fileTypes.join(","),
+        },
+        success: function (data) {
+            parameter.files = files.concat(data.files)
+            parameter.path = true
+            callback()
+        },
+        error: function () {
+            callback()
+        },
+        cache: false,
+        dataType: 'json',
+    })
+}
+
+function loadDependencies(gui, effect, dummy, callback) { //source, effect, bundle, callback) {
     var iconLoaded = true
     var settingsLoaded = true
     var cssLoaded = true
     var jsLoaded = true
+    var nonCachedInfoLoaded = true
+    var filelistLoaded = true
 
     var cb = function () {
-        if (iconLoaded && settingsLoaded && cssLoaded && jsLoaded) {
+        if (iconLoaded && settingsLoaded && cssLoaded && jsLoaded && nonCachedInfoLoaded && filelistLoaded) {
             setTimeout(callback, 0)
         }
     }
@@ -55,8 +91,35 @@ function loadDependencies(gui, effect, callback) { //source, effect, bundle, cal
         baseUrl.replace(/\/?$/, '')
     }
 
-    var version    = [effect.builder, effect.microVersion, effect.minorVersion, effect.release].join('_')
+    effect.renderedVersion = [effect.builder, effect.microVersion, effect.minorVersion, effect.release].join('_')
+
+    if (isSDK || !effect.buildEnvironment) {
+        nonCachedInfoLoaded = true
+        effect.renderedVersion += '_' + Date.now()
+    } else if (! dummy) {
+        nonCachedInfoLoaded = false
+        $.ajax({
+            url: '/effect/get_non_cached',
+            data: {
+                uri: effect.uri
+            },
+            success: function (data) {
+                effect.licensed = data.licensed
+                effect.presets = data.presets
+                nonCachedInfoLoaded = true
+                cb()
+            },
+            error: function () {
+                nonCachedInfoLoaded = true
+                cb()
+            },
+            cache: false,
+            dataType: 'json'
+        })
+    }
+
     var escapeduri = escape(effect.uri)
+    var version    = effect.renderedVersion
     var plughash   = escapeduri + version
 
     if (effect.gui.iconTemplate) {
@@ -102,7 +165,7 @@ function loadDependencies(gui, effect, callback) { //source, effect, bundle, cal
         })
     }
 
-    if (effect.gui.javascript) {
+    if (effect.gui.javascript && !dummy) {
         if (loadedJSs[plughash]) {
             gui.jsCallback = loadedJSs[plughash]
         } else {
@@ -116,7 +179,7 @@ function loadDependencies(gui, effect, callback) { //source, effect, bundle, cal
                         eval('method = ' + code)
                     } catch (err) {
                         method = null
-                        console.log("Failed to evaluate javascript for '"+effect.uri+"' plugin")
+                        console.log("Failed to evaluate javascript for '"+effect.uri+"' plugin, reason:\n",err)
                     }
                     loadedJSs[plughash] = method
                     gui.jsCallback = method
@@ -131,6 +194,27 @@ function loadDependencies(gui, effect, callback) { //source, effect, bundle, cal
         }
     }
 
+    if (effect.parameters.length != 0) {
+        var numPathParametersHandled = 0,
+            numPathParametersTotal = 0;
+
+        for (var i in effect.parameters) {
+            var parameter = effect.parameters[i]
+
+            if (parameter.type === "http://lv2plug.in/ns/ext/atom#Path" && parameter.fileTypes.length !== 0) {
+                filelistLoaded = false;
+                ++numPathParametersTotal;
+
+                loadFileTypesList(parameter, dummy, function() {
+                    if (++numPathParametersHandled == numPathParametersTotal) {
+                        filelistLoaded = true
+                        cb()
+                    }
+                })
+            }
+        }
+    }
+
     cb()
 }
 
@@ -138,8 +222,14 @@ function GUI(effect, options) {
     var self = this
 
     options = $.extend({
-        change: function(symbol, value) {
-            console.log("PARAM CHANGE =>", symbol, value)
+        change: function (symbol, value) {
+            console.log("CONTROL PORT CHANGE =>", symbol, value)
+        },
+        patchGet: function (uri) {
+            console.log("PATCH GET =>", uri)
+        },
+        patchSet: function (uri, valuetype, value) {
+            console.log("PATCH SET =>", uri, valuetype, value)
         },
         click: function (event) {
         },
@@ -165,6 +255,7 @@ function GUI(effect, options) {
         defaultIconTemplate: 'Template missing',
         defaultSettingsTemplate: 'Template missing',
         loadDependencies: true,
+        dummy: false,
     }, options)
 
     if (!effect.gui)
@@ -175,7 +266,7 @@ function GUI(effect, options) {
     if (options.loadDependencies) {
         self.dependenciesLoaded = false
 
-        loadDependencies(this, effect, function () {
+        loadDependencies(this, effect, options.dummy, function () {
             self.dependenciesLoaded = true
             for (var i in self.dependenciesCallbacks) {
                 self.dependenciesCallbacks[i]()
@@ -191,6 +282,10 @@ function GUI(effect, options) {
 
     self.bypassed = options.bypassed
     self.currentPreset = ""
+
+    // initialized during `render`
+    self.controls = []
+    self.parameters = []
 
     this.makePortIndexes = function (ports) {
         var i, port, porti, indexes = {}
@@ -224,75 +319,152 @@ function GUI(effect, options) {
             indexes[port.symbol] = port
         }
 
+        // Bypass needs to be represented as a port since it shares the hardware addressing
+        // structure with ports. We use the symbol ':bypass' that is an invalid lv2 symbol and
+        // so will cause no conflict
+        // Be aware that this is being acessed directly in pedalboard.js
+        indexes[':bypass'] = {
+            name: 'Bypass',
+            symbol: ':bypass',
+            ranges: {
+                minimum: 0,
+                maximum: 1,
+                default: 1,
+            },
+            comment: "",
+            designation: "",
+            properties: ["toggled", "integer"],
+            widgets: [],
+            enabled: true,
+            value: self.bypassed ? 1 : 0,
+            format: null,
+            scalePoints: [],
+            scalePointsIndex: null,
+            valueFields: [],
+
+            // FIXME: limits of mustache
+            default: 1,
+            maximum: 1,
+            minimum: 0,
+            enumeration: false,
+            integer: true,
+            logarithmic: false,
+            toggled: true,
+            trigger: false,
+        }
+
+        // The same with bypass applies to presets, as ':presets' symbol
+        indexes[':presets'] = {
+            name: 'Presets',
+            symbol: ':presets',
+            ranges: {
+                minimum: -1,
+                maximum: 0,
+                default: -1,
+            },
+            comment: "",
+            designation: "",
+            properties: ["enumeration", "integer"],
+            widgets: [],
+            enabled: true,
+            value: -1,
+            format: null,
+            scalePoints: [],
+            scalePointsIndex: null,
+            valueFields: []
+        }
+
         return indexes
     }
 
-    self.controls = self.makePortIndexes(effect.ports.control.input)
+    this.makeParameterIndexes = function (parameters) {
+        var i, parameter, parameteri, properties, indexes = {}
 
-    // Bypass needs to be represented as a port since it shares the hardware addressing
-    // structure with ports. We use the symbol ':bypass' that is an invalid lv2 symbol and
-    // so will cause no conflict
-    // Be aware that this is being acessed directly in pedalboard.js
-    self.controls[':bypass'] = {
-        name: 'Bypass',
-        symbol: ':bypass',
-        ranges: {
-            minimum: 0,
-            maximum: 1,
-            default: 1,
-        },
-        comment: "",
-        designation: "",
-        properties: ["toggled", "integer"],
-        widgets: [],
-        enabled: true,
-        value: self.bypassed ? 1 : 0,
-        format: null,
-        scalePoints: [],
-        scalePointsIndex: null,
-        valueFields: [],
+        for (i in parameters) {
+            parameteri = parameters[i]
 
-        // FIXME: limits of mustache
-        default: 1,
-        maximum: 1,
-        minimum: 0,
-        enumeration: false,
-        integer: true,
-        logarithmic: false,
-        toggled: true,
-        trigger: false,
+            if (!parameteri.ranges) {
+                continue
+            }
+
+            if (parameteri.type === "http://lv2plug.in/ns/ext/atom#Bool") {
+                properties = ["toggled", "integer"]
+                parameteri.ranges.default = parameteri.ranges.default|0
+                parameteri.ranges.minimum = parameteri.ranges.minimum|0
+                parameteri.ranges.maximum = parameteri.ranges.maximum|0
+            } else if (parameteri.type === "http://lv2plug.in/ns/ext/atom#Int" ||
+                       parameteri.type === "http://lv2plug.in/ns/ext/atom#Long") {
+                properties = ["integer"]
+                parameteri.ranges.default = Math.round(parameteri.ranges.default)
+                parameteri.ranges.minimum = Math.round(parameteri.ranges.minimum)
+                parameteri.ranges.maximum = Math.round(parameteri.ranges.maximum)
+            } else if (parameteri.type === "http://lv2plug.in/ns/ext/atom#Float") {
+                properties = []
+            } else if (parameteri.type === "http://lv2plug.in/ns/ext/atom#Double") {
+                properties = []
+            } else {
+                properties = null
+            }
+
+            // some parameters have no ranges, we can't show those
+            if (properties !== null && parameteri.ranges.minimum != parameteri.ranges.maximum)
+            {
+                // make this presentable as control widget
+                parameteri.control = true;
+
+                parameter = {
+                    path: false,
+                    enabled: true,
+                    widgets: [],
+                    format: null,
+                    scalePointsIndex: null,
+                    valueFields: [],
+                    // stuff not used in parameters
+                    designation: "",
+                    properties: properties,
+                    scalePoints: [],
+                }
+                $.extend(parameter, parameteri)
+            }
+            else
+            {
+                // make this presentable as string
+                parameteri.string = parameteri.type === "http://lv2plug.in/ns/ext/atom#String";
+
+                parameter = {
+                    control: false,
+                    enabled: true,
+                    widgets: [],
+                    format: null,
+                    scalePointsIndex: null,
+                    valueFields: [],
+                    // stuff not used in parameters
+                    designation: "",
+                    properties: [],
+                    scalePoints: [],
+                }
+                $.extend(parameter, parameteri)
+            }
+
+            // set initial value
+            parameter.value = parameter.ranges.default
+
+            // ready
+            indexes[parameter.uri] = parameter
+        }
+
+        return indexes
     }
 
-    // The same with bypass applies to presets, as ':presets' symbol
-    self.controls[':presets'] = {
-        name: 'Presets',
-        symbol: ':presets',
-        ranges: {
-            minimum: -1,
-            maximum: 0,
-            default: -1,
-        },
-        comment: "",
-        designation: "",
-        properties: ["enumeration", "integer"],
-        widgets: [],
-        enabled: true,
-        value: -1,
-        format: null,
-        scalePoints: [],
-        scalePointsIndex: null,
-        valueFields: []
-    }
-
+    // changes control port
     this.setPortValue = function (symbol, value, source) {
         if (isNaN(value)) {
             throw "Invalid NaN value for " + symbol
         }
         var port = self.controls[symbol]
-        var mod_port = source ? source.attr("mod-port") : (self.instance ? self.instance+'/'+symbol : symbol)
-        if (!port.enabled || port.value == value)
+        if (!port.enabled) {
             return
-
+        }
         if (value < port.ranges.minimum) {
             value = port.ranges.minimum
             console.log("WARNING: setPortValue called with < min value, symbol:", symbol)
@@ -300,16 +472,25 @@ function GUI(effect, options) {
             value = port.ranges.maximum
             console.log("WARNING: setPortValue called with > max value, symbol:", symbol)
         }
+        if (port.value == value) {
+            return
+        }
+
+        // let the host know about this change
+        var mod_port = source && source !== "from-js"
+                     ? source.attr("mod-port")
+                     : (self.instance ? self.instance+'/'+symbol : symbol)
+        options.change(mod_port, value)
+
+        // let the HMI know about this change
+        if (self.instance) {
+            // FIXME totally wrong place for this
+            var paramchange = (self.instance + '/' + symbol + '/' + value)
+            desktop.ParameterSet(paramchange)
+        }
 
         // update our own widgets
         self.setPortWidgetsValue(symbol, value, source, false)
-
-        // let the host know about this change
-        options.change(mod_port, value)
-
-        //let the HMI know about this change
-        paramchange = (self.instance + '/' + symbol + '/' + value)
-        desktop.ParameterSet(paramchange)
     }
 
     this.setPortWidgetsValue = function (symbol, value, source, only_gui) {
@@ -320,7 +501,7 @@ function GUI(effect, options) {
 
         for (var i in port.widgets) {
             widget = port.widgets[i]
-            if (source == null || widget != source) {
+            if (source == null || source === "from-js" || widget != source) {
                 widget.controlWidget('setValue', value, only_gui)
             }
         }
@@ -336,7 +517,9 @@ function GUI(effect, options) {
             valueField.text(label)
         }
 
-        self.triggerJS({ type: 'change', symbol: symbol, value: value })
+        if (source !== "from-js") {
+            self.triggerJS({ type: 'change', symbol: symbol, value: value })
+        }
 
         // If trigger, switch back to default value after a few miliseconds
         // Careful not to actually send the change to the host, it's not needed
@@ -346,7 +529,7 @@ function GUI(effect, options) {
 
                 // When running SDK there's no host, so simulate trigger here.
                 if (isSDK) options.change(mod_port, port.ranges.default);
-            }, 200)
+            }, 100)
         }
     }
 
@@ -354,8 +537,156 @@ function GUI(effect, options) {
         self.triggerJS({ type: 'change', symbol: symbol, value: value })
     }
 
-    this.getPortValue = function (symbol) {
-        return self.controls[symbol].value
+    // lv2 patch messages, mostly used for parameters
+    this.lv2PatchGet = function (uri) {
+        // let the host know about this
+        options.patchGet(uri)
+    }
+    this.lv2PatchSet = function (uri, valuetype, value, source) {
+        var parameter = self.parameters[uri]
+        if (parameter) {
+            if (!parameter.enabled) {
+                return
+            }
+            if (parameter.control) {
+                if (value < parameter.ranges.minimum) {
+                    value = parameter.ranges.minimum
+                    console.log("WARNING: setPortValue called with < min value, uri:", uri)
+                } else if (value > parameter.ranges.maximum) {
+                    value = parameter.ranges.maximum
+                    console.log("WARNING: setPortValue called with > max value, uri:", uri)
+                }
+            }
+            if (parameter.value == value) {
+                return
+            }
+        }
+
+        // convert value for host (as string)
+        var svalue
+        switch (valuetype)
+        {
+        case 'b':
+            svalue = !!value ? '1' : '0';
+            break;
+        case 'i':
+        case 'l':
+            svalue = value.toFixed(0);
+            break;
+        case 'f':
+        case 'g':
+            svalue = value.toString();
+            break;
+        case 'v':
+            if (value.length === 0 || value[0].length !== 1 || "bilfg".indexOf(value[0][0]) < 0) {
+                console.log("lv2PatchSet: vector is missing child type")
+                return
+            }
+            var childtype = value[0][0];
+            svalue = sprintf("%d-%c-", value.length-1, childtype);
+            switch (childtype)
+            {
+            case 'b':
+                svalue += value.slice(1).map(function(v) { return !!v ? '1' : '0' }).join(':')
+                break;
+            case 'i':
+            case 'l':
+                svalue += value.slice(1).map(function(v) { return v.toFixed(0) }).join(':')
+                break;
+            case 'f':
+            case 'g':
+                svalue += value.slice(1).join(':')
+                break;
+            }
+            svalue = value
+            break;
+        default:
+            svalue = value
+            break;
+        }
+        // let the host know about this
+        options.patchSet(uri, valuetype, svalue)
+
+        if (!parameter)
+            return
+
+        // update our own widgets
+        self.setWritableParameterValue(uri, parameter.valuetype, value, source, false)
+    }
+
+    this._decodePatchValue = function (valuetype, value) {
+        switch (valuetype)
+        {
+        case 'b':
+            return parseInt(value) != 0 ? 1 : 0
+        case 'i':
+        case 'l':
+            return parseInt(value)
+        case 'f':
+        case 'g':
+            return parseFloat(value)
+        case 'v':
+            var snum, stype
+            var svalue = value.split(/-/,2)
+            snum  = parseInt(svalue[0])
+            stype = svalue[1]
+            value = value.substr(value.indexOf(stype+'-')+2).split(/:/,snum)
+            switch (stype)
+            {
+            case 'b':
+                return value.map(function(v) { return parseInt(v) != 0 ? 1 : 0 })
+            case 'i':
+            case 'l':
+                return value.map(function(v) { return parseInt(v) })
+            case 'f':
+            case 'g':
+                return value.map(function(v) { return parseFloat(v) })
+            default:
+                return null
+            }
+        }
+        return value
+    }
+
+    this.setReadableParameterValue = function (uri, valuetype, valuedata) {
+        self.triggerJS({ type: 'change', uri: uri, value: self._decodePatchValue(valuetype, valuedata) })
+    }
+
+    this.setWritableParameterValue = function (uri, valuetype, value, source, only_gui) {
+        var valueField, widget,
+            parameter = self.parameters[uri]
+
+        // when host.js is used the source is null and value needs conversion
+        if (source == null) {
+            value = self._decodePatchValue(valuetype, value)
+        }
+
+        parameter.value = value
+
+        for (var i in parameter.widgets) {
+            widget = parameter.widgets[i]
+            if (source == null || source === "from-js" || widget != source) {
+                widget.controlWidget('setValue', value, only_gui)
+            }
+        }
+
+        for (var i in parameter.valueFields) {
+            valueField = parameter.valueFields[i]
+            valueField.data('value', value)
+            if (parameter.string) {
+                if (valueField.is("textarea")) {
+                    valueField.val(value)
+                } else {
+                    valueField.text(value)
+                }
+            } else {
+                valueField.text(sprintf(parameter.format, value))
+            }
+        }
+
+        if (source !== "from-js") {
+            self.triggerJS({ type: 'change', uri: uri, value: value })
+        }
     }
 
     this.selectPreset = function (value) {
@@ -400,7 +731,7 @@ function GUI(effect, options) {
         }
     }
 
-    this.addressPort = function (symbol) {
+    this.addressPort = function (symbol, feedback, momentaryMode) {
       var port = self.controls[symbol]
       if (symbol !== ":presets") {
         // add "addressed" class to all related widgets
@@ -409,8 +740,11 @@ function GUI(effect, options) {
         } else {
           self.settings.find('.mod-address[mod-port-symbol="'+symbol+'"]').addClass('addressed')
         }
-        for (var i in port.widgets) {
-            port.widgets[i].controlWidget('address')
+        // allow feedback when interacting with widget
+        if (feedback) {
+          for (var i in port.widgets) {
+              port.widgets[i].controlWidget('address', momentaryMode || 0)
+          }
         }
       } else {
         self.settings.find('[mod-role=presets-address]').addClass('addressed')
@@ -477,10 +811,17 @@ function GUI(effect, options) {
         }
     }
 
+    this.preRender = function () {
+        self.controls = self.makePortIndexes(effect.ports.control.input)
+        self.parameters = self.makeParameterIndexes(effect.parameters)
+    }
+
     this.render = function (instance, callback, skipNamespace) {
         self.instance = instance
 
         var render = function () {
+            self.preRender()
+
             if (instance) {
                 self.icon = $('<div mod-instance="' + instance + '" class="mod-pedal">')
             } else {
@@ -540,7 +881,8 @@ function GUI(effect, options) {
 
             var presetElem = self.settings.find('.mod-presets')
 
-            if (instance && (totalPresetCount > 0 || self.effect.ports.control.input.length > 0))
+            if (instance &&
+                (totalPresetCount > 0 || self.effect.parameters.length + self.effect.ports.control.input.length > 0))
             {
                 presetElem.data('enabled', true)
 
@@ -578,6 +920,11 @@ function GUI(effect, options) {
                         return
                     }
                     options.presetSaveReplace(uri, path, name, function (resp) {
+                        if (! resp.ok) {
+                            return
+                        }
+                        item.attr('mod-path', resp.bundle)
+                        item.attr('mod-uri', resp.uri)
                     })
                 })
 
@@ -590,7 +937,7 @@ function GUI(effect, options) {
                     if (item) {
                         name = item.text()
                     }
-                    desktop.openPresetSaveWindow(name, function (newName) {
+                    desktop.openPresetSaveWindow("Saving Preset", name, function (newName) {
                         options.presetSaveNew(newName, function (resp) {
                             var newItem = $('<div mod-role="enumeration-option" mod-uri="'+resp.uri+'" mod-path="'+resp.bundle+'">'+newName+'</div>')
                             newItem.appendTo(presetElem.find('.mod-preset-user')).click(presetItemClicked)
@@ -621,8 +968,10 @@ function GUI(effect, options) {
                     if (! path || ! uri) {
                         return
                     }
-                    desktop.openPresetSaveWindow(name, function (newName) {
+                    desktop.openPresetSaveWindow("Renaming Preset", name, function (newName) {
                         options.presetSaveReplace(uri, path, newName, function (resp) {
+                            item.attr('mod-path', resp.bundle)
+                            item.attr('mod-uri', resp.uri)
                             item.text(newName)
                         })
                     })
@@ -682,6 +1031,25 @@ function GUI(effect, options) {
                 presetElem.hide()
             }
 
+            if (instance && self.effect.parameters.length)
+            {
+                self.settings.find('.mod-file-list').each(function () {
+                    var elem = $(this)
+                    var list = elem.find('.mod-enumerated-list')
+                    if (list.length == 1 && list[0].childElementCount > 5) {
+                        elem.find('.file-list-btn-expand').click(function () {
+                            if (elem.hasClass('expanded')) {
+                                elem.removeClass('expanded')
+                            } else {
+                                elem.addClass('expanded')
+                            }
+                        })
+                    } else {
+                        elem.find('.file-list-btn-expand').hide()
+                    }
+                })
+            }
+
             if (! instance) {
                 self.settings.find(".js-close").hide()
                 self.settings.find(".mod-address").hide()
@@ -726,11 +1094,11 @@ function GUI(effect, options) {
             }, 1)
 
             // make list of ports to pass to javascript 'start' event
-            var port, value, jsPorts = [{
+            var port, value, jsParameters = [], jsPorts = [{
                 symbol: ":bypass",
                 value : self.bypassed ? 1 : 0
             }]
-            // inputs
+            // input ports
             for (var i in self.effect.all_control_in_ports) {
                 port = self.effect.all_control_in_ports[i]
 
@@ -747,7 +1115,7 @@ function GUI(effect, options) {
                     value : value
                 })
             }
-            // outputs
+            // output ports
             for (var i in self.effect.ports.control.output) {
                 port = self.effect.ports.control.output[i]
 
@@ -762,8 +1130,18 @@ function GUI(effect, options) {
                     value : value
                 })
             }
+            // parameters
+            for (var i in self.parameters) {
+                port = self.parameters[i]
+
+                jsParameters.push({
+                    uri  : port.uri,
+                    value: port.value
+                })
+            }
+            // ready!
             self.jsStarted = true
-            self.triggerJS({ type: 'start', ports: jsPorts })
+            self.triggerJS({ type: 'start', parameters: jsParameters, ports: jsPorts })
 
             callback(self.icon, self.settings)
         }
@@ -777,9 +1155,16 @@ function GUI(effect, options) {
 
     this.renderDummyIcon = function (callback) {
         var render = function () {
-            var icon = $('<div class="mod-pedal dummy">')
+            self.preRender()
+            var icon = $('<div class="mod-pedal dummy ignore-arrive">')
             icon.html(Mustache.render(effect.gui.iconTemplate || options.defaultIconTemplate,
                       self.getTemplateData(effect, false)))
+            icon.find('[mod-role="input-audio-port"]').addClass("mod-audio-input")
+            icon.find('[mod-role="output-audio-port"]').addClass("mod-audio-output")
+            icon.find('[mod-role="input-midi-port"]').addClass("mod-midi-input")
+            icon.find('[mod-role="output-midi-port"]').addClass("mod-midi-output")
+            icon.find('[mod-role="input-cv-port"]').addClass("mod-cv-input")
+            icon.find('[mod-role="output-cv-port"]').addClass("mod-cv-output")
             self.assignControlFunctionality(icon, true)
             callback(icon)
         }
@@ -788,6 +1173,77 @@ function GUI(effect, options) {
         } else {
             self.dependenciesCallbacks.push(render)
         }
+    }
+
+    this.setupValueField = function (valueField, port, setValueFn) {
+        // For ports that are not enumerated, we allow
+        // editing the value directly
+        valueField.attr('contenteditable', !port.string || port.writable)
+        valueField.focus(function () {
+            if (! port.string) {
+                valueField.text(sprintf(port.format, valueField.data('value')))
+            }
+        })
+        valueField.keydown(function (e) {
+            // everything if string
+            if (port.string) {
+                // special case - if text area, allow shift+enter
+                if (e.keyCode == 13) {
+                    if (!valueField.is("textarea") || !e.shiftKey) {
+                        valueField.blur()
+                        return false
+                    }
+                }
+                return true;
+            }
+            // enter
+            if (e.keyCode == 13) {
+                valueField.blur()
+                return false
+            }
+            // numbers
+            if (e.keyCode >= 48 && e.keyCode <= 57) {
+                return true;
+            }
+            if (e.keyCode >= 96 && e.keyCode <= 105) {
+                return true;
+            }
+            // backspace and delete
+            if (e.keyCode == 8 || e.keyCode == 46 || e.keyCode == 110) {
+                return true;
+            }
+            // left, right, dot
+            if (e.keyCode == 37 || e.keyCode == 39 || e.keyCode == 190) {
+                return true;
+            }
+            // minus
+            if (e.keyCode == 109 || e.keyCode == 189) {
+                return true;
+            }
+            // prevent key
+            e.preventDefault();
+            return false
+        })
+        valueField.blur(function () {
+            if (port.string) {
+                if (valueField.is("textarea")) {
+                    setValueFn(valueField.val())
+                } else {
+                    setValueFn(valueField.text())
+                }
+                return
+            }
+            var value = parseFloat(valueField.text())
+            if (isNaN(value)) {
+                value = valueField.data('value')
+                valueField.text(sprintf(port.format, value))
+            }
+            else if (value < port.ranges.minimum)
+                value = port.ranges.minimum;
+            else if (value > port.ranges.maximum)
+                value = port.ranges.maximum;
+            setValueFn(value)
+        })
     }
 
     this.assignIconFunctionality = function (element) {
@@ -850,51 +1306,7 @@ function GUI(effect, options) {
                                              port.properties.indexOf("toggled") < 0 &&
                                              port.properties.indexOf("trigger") < 0)
                 {
-                    // For ports that are not enumerated, we allow
-                    // editing the value directly
-                    valueField.attr('contenteditable', true)
-                    valueField.focus(function () {
-                        valueField.text(sprintf(port.format, valueField.data('value')))
-                    })
-                    valueField.keydown(function (e) {
-                        // enter
-                        if (e.keyCode == 13) {
-                            valueField.blur()
-                            return false
-                        }
-                        // numbers
-                        if (e.keyCode >= 48 && e.keyCode <= 57) {
-                            return true;
-                        }
-                        if (e.keyCode >= 96 && e.keyCode <= 105) {
-                            return true;
-                        }
-                        // backspace and delete
-                        if (e.keyCode == 8 || e.keyCode == 46 || e.keyCode == 110) {
-                            return true;
-                        }
-                        // left, right, dot
-                        if (e.keyCode == 37 || e.keyCode == 39 || e.keyCode == 190) {
-                            return true;
-                        }
-                        // minus
-                        if (e.keyCode == 109 || e.keyCode == 189) {
-                            return true;
-                        }
-                        // prevent key
-                        e.preventDefault();
-                        return false
-                    })
-                    valueField.blur(function () {
-                        var value = parseFloat(valueField.text())
-                        if (isNaN(value)) {
-                            value = valueField.data('value')
-                            valueField.text(sprintf(port.format, value))
-                        }
-                        else if (value < port.ranges.minimum)
-                            value = port.ranges.minimum;
-                        else if (value > port.ranges.maximum)
-                            value = port.ranges.maximum;
+                    self.setupValueField(valueField, port, function (value) {
                         self.setPortValue(symbol, value, control)
                         // setPortWidgetsValue() skips this control as it's the same as the 'source'
                         control.controlWidget('setValue', value, true)
@@ -971,17 +1383,109 @@ function GUI(effect, options) {
             self.setPortWidgetsValue(':bypass', onlySetValues ? 0 : (self.bypassed ? 1 : 0), $(this), true)
         })
 
+        element.find('[mod-role=input-parameter]').each(function () {
+            var control = $(this)
+            var uri = $(this).attr('mod-parameter-uri')
+            var parameter = self.parameters[uri]
+
+            if (parameter)
+            {
+                /*  */ if (parameter.type === "http://lv2plug.in/ns/ext/atom#Bool") {
+                    parameter.valuetype = 'b'
+                } else if (parameter.type === "http://lv2plug.in/ns/ext/atom#Int") {
+                    parameter.valuetype = 'i'
+                } else if (parameter.type === "http://lv2plug.in/ns/ext/atom#Long") {
+                    parameter.valuetype = 'l'
+                } else if (parameter.type === "http://lv2plug.in/ns/ext/atom#Float") {
+                    parameter.valuetype = 'f'
+                } else if (parameter.type === "http://lv2plug.in/ns/ext/atom#Double") {
+                    parameter.valuetype = 'g'
+                } else if (parameter.type === "http://lv2plug.in/ns/ext/atom#String") {
+                    parameter.valuetype = 's'
+                } else if (parameter.type === "http://lv2plug.in/ns/ext/atom#Path") {
+                    parameter.valuetype = 'p'
+                } else if (parameter.type === "http://lv2plug.in/ns/ext/atom#URI") {
+                    parameter.valuetype = 'u'
+                } else if (parameter.type === "http://lv2plug.in/ns/ext/atom#Vector") {
+                    parameter.valuetype = 'v'
+                } else {
+                    return
+                }
+
+                if (parameter.control || parameter.string)
+                {
+                    // Set the display formatting of this control
+                    if (parameter.string)
+                        parameter.format = '%s'
+                    else if (parameter.units.render)
+                        parameter.format = parameter.units.render.replace('%f', '%.2f')
+                    else
+                        parameter.format = '%.2f'
+
+                    if (parameter.properties.indexOf("integer") >= 0) {
+                        parameter.format = parameter.format.replace(/%\.\d+f/, '%d')
+                    }
+
+                    var valueField = element.find('[mod-role=input-parameter-value][mod-parameter-uri="' + uri + '"]')
+                    parameter.valueFields.push(valueField)
+
+                    if (valueField.length > 0 && parameter.properties.indexOf("toggled") < 0)
+                    {
+                        self.setupValueField(valueField, parameter, function (value) {
+                            self.lv2PatchSet(uri, parameter.valuetype, value, control)
+                            // setWritableParameterValue() skips this control as it's the same as the 'source'
+                            control.controlWidget('setValue', value, true)
+                        })
+                    }
+                }
+                else if (parameter.path)
+                {
+                    // TODO?
+                }
+                else
+                {
+                    return
+                }
+
+                control.controlWidget({
+                    dummy: onlySetValues,
+                    port: parameter,
+                    change: function (e, value) {
+                        self.lv2PatchSet(uri, parameter.valuetype, value, control)
+                    }
+                })
+
+                if (instance) {
+                    control.attr("mod-instance", instance)
+                }
+
+                parameter.widgets.push(control)
+
+                self.setWritableParameterValue(uri, parameter.valuetype, parameter.value, control, true)
+            }
+            else
+            {
+                control.text('No such parameter: ' + uri)
+            }
+        })
+
         if (onlySetValues) {
             return
         }
 
         element.find('[mod-role=input-control-minimum]').each(function () {
-            var symbol = $(this).attr('mod-port-symbol')
-            if (!symbol) {
-                $(this).html('missing mod-port-symbol attribute')
-                return
+            var port, symbol = $(this).attr('mod-port-symbol')
+            if (symbol) {
+                port = self.controls[symbol]
+            } else {
+                symbol = $(this).attr('mod-parameter-uri')
+                if (symbol) {
+                    port = self.parameters[symbol]
+                } else {
+                    $(this).html('missing mod-port-symbol or mod-parameter-uri attribute')
+                    return
+                }
             }
-            var port = self.controls[symbol]
             if (! port) {
                 return
             }
@@ -1008,12 +1512,18 @@ function GUI(effect, options) {
         });
 
         element.find('[mod-role=input-control-maximum]').each(function () {
-            var symbol = $(this).attr('mod-port-symbol')
-            if (!symbol) {
-                $(this).html('missing mod-port-symbol attribute')
-                return
+            var port, symbol = $(this).attr('mod-port-symbol')
+            if (symbol) {
+                port = self.controls[symbol]
+            } else {
+                symbol = $(this).attr('mod-parameter-uri')
+                if (symbol) {
+                    port = self.parameters[symbol]
+                } else {
+                    $(this).html('missing mod-port-symbol or mod-parameter-uri attribute')
+                    return
+                }
             }
-            var port = self.controls[symbol]
             if (! port) {
                 return
             }
@@ -1042,7 +1552,7 @@ function GUI(effect, options) {
         // Following events will be forwarded to proper widget
         element[0].addEventListener('gesturestart', function (ev) {
             ev.preventDefault()
-            element.find('[mod-role=input-control-port]').each(function () {
+            var startGesture = function () {
                 var widget = $(this)
                 var top = widget.offset().top
                 var left = widget.offset().left
@@ -1052,7 +1562,9 @@ function GUI(effect, options) {
                     element.data('gestureWidget', widget)
                     widget.controlWidget('gestureStart')
                 }
-            });
+            }
+            element.find('[mod-role=input-control-port]').each(startGesture)
+            element.find('[mod-role=input-parameter]').each(startGesture)
             ev.handled = true
         })
         element[0].addEventListener('gestureend', function (ev) {
@@ -1080,8 +1592,8 @@ function GUI(effect, options) {
         var data = $.extend({}, options.gui.templateData)
         data.effect = options
 
-        var version    = [options.builder, options.microVersion, options.minorVersion, options.release].join('_')
         var escapeduri = escape(options.uri)
+        var version    = options.renderedVersion
 
         if (skipNamespace) {
             data.ns  = ''
@@ -1144,6 +1656,7 @@ function GUI(effect, options) {
                 port['logarithmic'] = port.properties.indexOf("logarithmic") >= 0
                 port['toggled'    ] = port.properties.indexOf("toggled") >= 0
                 port['trigger'    ] = port.properties.indexOf("trigger") >= 0
+                port['steps'      ] = port.ranges.maximum - port.ranges.minimum + 1
 
                 inputs.push(port)
             }
@@ -1154,6 +1667,16 @@ function GUI(effect, options) {
         else
         {
             data.effect.all_control_in_ports = []
+        }
+
+        for (var i in data.effect.parameters) {
+            var parameter = data.effect.parameters[i]
+
+            if (parameter.control) {
+                var sparameter = self.parameters[parameter.uri]
+                parameter['integer'] = sparameter.properties.indexOf("integer") >= 0
+                parameter['toggled'] = sparameter.properties.indexOf("toggled") >= 0
+            }
         }
 
         if (isSDK) {
@@ -1170,16 +1693,59 @@ function GUI(effect, options) {
     this.jsFuncs = {
         // added in v1: allow plugin js code to change plugin controls
         set_port_value: function (symbol, value) {
-            self.setPortValue(symbol, value, null)
-        }
+            self.setPortValue(symbol, value, "from-js")
+        },
+        // added in v2: allow plugin js code to send lv2 patch messages
+        patch_get: function (uri) {
+            self.lv2PatchGet(uri)
+        },
+        patch_set: function (uri, valuetype, value) {
+            self.lv2PatchSet(uri, valuetype, value, "from-js")
+        },
+        // added in v3: a few handy utilities
+        get_custom_resource_filename: function (filename) {
+            return '/effect/file/custom?filename='+filename+'&uri='+escape(self.effect.uri)+'&v='+self.effect.renderedVersion+'&r='+VERSION
+        },
+        get_port_index_for_symbol: function (symbol) {
+            var i, port;
+            for (i in self.effect.ports.control.input) {
+                port = self.effect.ports.control.input[i]
+                if (port.symbol == symbol) {
+                    return port.index
+                }
+            }
+            for (i in self.effect.ports.control.output) {
+                port = self.effect.ports.control.output[i]
+                if (port.symbol == symbol) {
+                    return port.index
+                }
+            }
+            return -1;
+        },
+        get_port_symbol_for_index: function (index) {
+            var i, port;
+            for (i in self.effect.ports.control.input) {
+                port = self.effect.ports.control.input[i]
+                if (port.index == index) {
+                    return port.symbol
+                }
+            }
+            for (i in self.effect.ports.control.output) {
+                port = self.effect.ports.control.output[i]
+                if (port.index == index) {
+                    return port.symbol
+                }
+            }
+            return null;
+        },
     }
 
     this.triggerJS = function (event) {
         if (!self.jsCallback || !self.jsStarted)
             return
 
-        // bump this everytime the data structure or funtions change
-        event.api_version = 1
+        // bump this everytime the data structure or functions change
+        event.api_version = 3
 
         // normal data
         event.data     = self.jsData
@@ -1190,7 +1756,7 @@ function GUI(effect, options) {
             self.jsCallback(event, self.jsFuncs)
         } catch (err) {
             self.jsCallback = null
-            console.log("A plugin javascript code is broken and has been disabled")
+            console.log("A plugin javascript code is broken and has been disabled, reason:\n", err)
         }
     }
 }
@@ -1222,7 +1788,9 @@ function JqueryClass() {
             'switch': 'switchWidget',
             'bypass': 'bypassWidget',
             'select': 'selectWidget',
-            'custom-select': 'customSelect'
+            'string': 'stringWidget',
+            'custom-select': 'customSelect',
+            'custom-select-path': 'customSelectPath',
         }
         var name = self.attr('mod-widget') || 'film'
         name = widgets[name]
@@ -1231,6 +1799,7 @@ function JqueryClass() {
 })(jQuery);
 
 var baseWidget = {
+    // NOTE: for filmstrips, config is called with a delay
     config: function (options) {
         var self = $(this)
             // Very quick bugfix. When pedalboard is unserialized, the disable() of addressed knobs
@@ -1242,23 +1811,35 @@ var baseWidget = {
 
         var port = options.port
 
-        var portSteps
+        var portSteps, dragPrecision, isLinear
         if (port.properties.indexOf("toggled") >= 0) {
-            portSteps = 2
+            portSteps = dragPrecision = 1
+            isLinear = false
         } else if (port.properties.indexOf("enumeration") >= 0 && port.scalePoints.length >= 2) {
-            portSteps = port.scalePoints.length
-            //port.scalePoints.sort(function (a, b) { return a.value - b.value })
+            portSteps = port.scalePoints.length - 1
+            dragPrecision = portSteps * 8
+            isLinear = false
+        } else if (port.properties.indexOf("integer") >= 0 && port.properties.indexOf("logarithmic") < 0) {
+            portSteps = port.ranges.maximum - port.ranges.minimum
+            while (portSteps > 300) {
+                portSteps = Math.round(portSteps / 2)
+            }
+            dragPrecision = portSteps + 50 * Math.log10(1 + Math.pow(2, 1 / portSteps))
+            isLinear = false
         } else {
             portSteps = self.data('filmSteps')
+            dragPrecision = portSteps / 2
+            isLinear = true
         }
 
-        if (port.rangeSteps) {
-            portSteps = Math.min(port.rangeSteps, portSteps)
+        if (port.rangeSteps && port.rangeSteps >= 2) {
+            portSteps = dragPrecision = Math.min(port.rangeSteps - 1, portSteps)
         }
 
         // This is a bit verbose and could be optmized, but it's better that
         // each port property used is documented here
         self.data('symbol',       port.symbol)
+        self.data('uri',          port.uri)
         self.data('default',      port.ranges.default)
         self.data('maximum',      port.ranges.maximum)
         self.data('minimum',      port.ranges.minimum)
@@ -1267,6 +1848,7 @@ var baseWidget = {
         self.data('logarithmic',  port.properties.indexOf("logarithmic") >= 0)
         self.data('toggled',      port.properties.indexOf("toggled") >= 0)
         self.data('trigger',      port.properties.indexOf("trigger") >= 0)
+        self.data('linear',       isLinear)
         self.data('scalePoints',  port.scalePoints)
 
         if (port.properties.indexOf("logarithmic") >= 0) {
@@ -1284,8 +1866,24 @@ var baseWidget = {
         self.data('wheelStep', wheelStep)
         self.data('stepDivider', stepDivider)
 
-        self.data('dragPrecisionVertical', Math.ceil(100 / portSteps))
-        self.data('dragPrecisionHorizontal', Math.ceil(portSteps / 10))
+        self.data('dragPrecisionVertical', Math.ceil(100 / dragPrecision))
+        self.data('dragPrecisionHorizontal', Math.ceil(200 / dragPrecision))
+
+        var preferredMomentaryMode
+        if (port.properties.indexOf("preferMomentaryOffByDefault") >= 0) {
+            preferredMomentaryMode = 2
+        } else if (port.properties.indexOf("preferMomentaryOnByDefault") >= 0) {
+            preferredMomentaryMode = 1
+        } else {
+            preferredMomentaryMode = 0
+        }
+        self.data('preferredMomentaryMode', preferredMomentaryMode)
+
+        // momentary could have been set already, don't override it
+        var momentary = self.data('momentary')
+        if (momentary === undefined) {
+            self.data('momentary', preferredMomentaryMode)
+        }
     },
 
     setValue: function (value, only_gui) {
@@ -1302,10 +1900,15 @@ var baseWidget = {
         $(this).addClass('disabled').data('enabled', false)
     },
     enable: function () {
-        $(this).removeClass('addressed').removeClass('disabled').data('enabled', true)
+        var self = $(this)
+        self.removeClass('addressed').removeClass('disabled').data('enabled', true)
+        // this is called during unaddressing, we can reset momentary mode here
+        self.data('momentary', self.data('preferredMomentaryMode'))
     },
-    address: function () {
-        $(this).data('enabled', true)
+    address: function (momentary) {
+        var self = $(this)
+        self.data('enabled', true)
+        self.data('momentary', momentary)
     },
 
     valueFromSteps: function (steps) {
@@ -1314,11 +1917,11 @@ var baseWidget = {
         var max = self.data('scaleMaximum')
         var portSteps = self.data('portSteps')
 
-        steps = Math.min(portSteps-1, Math.max(0, steps))
+        steps = Math.min(portSteps, Math.max(0, steps))
 
         var portSteps = self.data('portSteps')
 
-        var value = min + steps * (max - min) / (portSteps - 1)
+        var value = min + steps * (max - min) / portSteps
         if (self.data('logarithmic')) {
             value = Math.pow(2, value)
         }
@@ -1371,7 +1974,7 @@ var baseWidget = {
             value = Math.round(value)
         }
 
-        return Math.round((value - min) * (portSteps - 1) / (max - min))
+        return Math.round((value - min) * portSteps / (max - min))
     },
 
     prevent: function (e) {
@@ -1392,7 +1995,7 @@ var baseWidget = {
             img.remove()
             self.data('prevent', false)
         }, 500)
-        new Notification("warn", "Cannot change a parameter addressed to hardware", 3000)
+        new Notification("warn", "Parameter value change blocked by the active adressing", 3000)
     }
 }
 
@@ -1438,14 +2041,6 @@ JqueryClass('film', baseWidget, {
             }
          })
 
-        self.data('wheelBuffer', 0)
-        self.bind('mousewheel', function (e) {
-            if (!self.data('enabled')) {
-                return self.film('prevent', e)
-            }
-            self.film('mouseWheel', e)
-        })
-
         self.bind('touchstart', function (e) {
             e.preventDefault();
             if (!self.data('enabled')) {
@@ -1461,6 +2056,20 @@ JqueryClass('film', baseWidget, {
         })
         self.bind('touchend', function (e) {
             self.film('mouseUp', e.originalEvent.changedTouches[0])
+            self.click()
+        })
+
+        if (options.port.properties.indexOf("trigger") >= 0) {
+            // stop here, ignoring mousewheel and clicks for triggers
+            return self
+        }
+
+        self.data('wheelBuffer', 0)
+        self.bind('mousewheel', function (e) {
+            if (!self.data('enabled')) {
+                return self.film('prevent', e)
+            }
+            self.film('mouseWheel', e)
         })
 
         self.click(function (e) {
@@ -1471,6 +2080,11 @@ JqueryClass('film', baseWidget, {
                 /* If we get a click after dragging the knob, ignore the click.
                    This happens when the user releases the mouse while hovering the knob.
                    We DO NOT want this click event, as it will bump the current value again. */
+                return
+            }
+            if (self.data('momentary')) {
+                /* If we get a click while momentary mode is on, ignore the click.
+                   We will use mouseDown/Up instead as a way to deal with momentary action. */
                 return
             }
             self.film('mouseClick', e)
@@ -1495,6 +2109,19 @@ JqueryClass('film', baseWidget, {
 
     getAndSetSize: function (dummy, callback) {
         var self = $(this)
+
+        // if widget provides mod-widget-rotation attribute, use it instead of film strip steps
+        var widgetRotation = parseInt(self.attr('mod-widget-rotation') || 0)
+        if (widgetRotation) {
+            self.data('filmSteps', widgetRotation)
+            self.data('widgetRotation', true)
+            callback()
+            if (! isSDK && desktop != null) {
+                desktop.pedalboard.pedalboard('scheduleAdapt', false)
+            }
+            return
+        }
+
         var binded = false
         var handled = false
 
@@ -1528,12 +2155,14 @@ JqueryClass('film', baseWidget, {
             bgImg.onload = function () {
                 var w = this.naturalWidth;
                 var h = this.naturalHeight;
-                var sw = self.width();
+                var computedStyle = window.getComputedStyle(self.get(0));
+                var computedStyleWidth = computedStyle.getPropertyValue('width')
+                var sw = computedStyleWidth ? Math.round(parseFloat(computedStyleWidth)) : self.outerWidth();
                 if (w == 0) {
                     new Notification('error', 'Apparently your browser does not support all features you need. Install latest Chromium, Google Chrome or Safari')
                 }
                 height = height || h;
-                self.data('filmSteps', Math.round(height * w / (sw * h)));
+                self.data('filmSteps', Math.max(1, Math.round(height * w / (sw * h)) - 1));
                 self.data('size', sw)
                 callback()
                 if (! isSDK && desktop != null) {
@@ -1551,32 +2180,67 @@ JqueryClass('film', baseWidget, {
         self.data('dragged', false)
         self.data('lastY', e.pageY)
         self.data('lastX', e.pageX)
+
+        if (self.data('trigger')) {
+            self.film('setValue', self.data('maximum'), false)
+            return
+        }
+
+        var value
+        switch (self.data('momentary'))
+        {
+        case 1:
+            value = self.data('maximum')
+            break;
+        case 2:
+            value = self.data('minimum')
+            break;
+        default:
+            return;
+        }
+
+        self.film('setValue', value, false)
     },
 
     mouseUp: function (e) {
         var self = $(this)
+
+        var value
+        switch (self.data('momentary'))
+        {
+        case 1:
+            value = self.data('minimum')
+            break;
+        case 2:
+            value = self.data('maximum')
+            break;
+        default:
+            return;
+        }
+
+        self.film('setValue', value, false)
     },
 
     mouseMove: function (e) {
         var self = $(this)
         self.data('dragged', true)
 
+        var hdiff = (self.data('lastX') - e.pageX) / self.data('dragPrecisionHorizontal')
         var vdiff = (self.data('lastY') - e.pageY) / self.data('dragPrecisionVertical')
-        var hdiff = (e.pageX - self.data('lastX')) / self.data('dragPrecisionHorizontal')
         var portSteps = self.data("portSteps")
 
-        if (Math.abs(vdiff) > 0) {
-            self.data('lastY', e.pageY)
-        }
         if (Math.abs(hdiff) > 0) {
             self.data('lastX', e.pageX)
         }
+        if (Math.abs(vdiff) > 0) {
+            self.data('lastY', e.pageY)
+        }
 
         var position = self.data('position')
-        var diff = (vdiff + hdiff) * self.data('stepDivider')
+        var diff = (vdiff - hdiff) * self.data('stepDivider')
 
         position += diff
-        position = Math.min(portSteps-1, Math.max(0, position));
+        position = Math.min(portSteps, Math.max(0, position));
 
         self.data('position', position)
         self.film('setRotation', position)
@@ -1590,25 +2254,26 @@ JqueryClass('film', baseWidget, {
         var self = $(this)
         var portSteps = self.data('portSteps')
         var position = self.data('position')
+        var step = self.data('widgetRotation') && self.data('linear') ? 4 : 1
 
         if (e.shiftKey) {
             // going down
-            position -= 1
+            position -= step
             if (position < 0) {
                 if (self.data('enumeration') || self.data('toggled')) {
-                    position = portSteps-1
+                    position = portSteps
                 } else {
                     position = 0
                 }
             }
         } else {
             // going up
-            position += 1
-            if (position >= portSteps) {
+            position += step
+            if (position > portSteps) {
                 if (self.data('enumeration') || self.data('toggled')) {
                     position = 0
                 } else {
-                    position = portSteps-1
+                    position = portSteps
                 }
             }
         }
@@ -1624,9 +2289,10 @@ JqueryClass('film', baseWidget, {
         var portSteps = self.data("portSteps")
         var wheelStep = self.data("wheelStep")
         var delta = ('wheelDelta' in e.originalEvent) ? e.originalEvent.wheelDelta : -wheelStep * e.originalEvent.detail;
+        var mult = self.data('widgetRotation') && self.data('linear') ? 4 : 1
         delta += self.data('wheelBuffer')
         self.data('wheelBuffer', delta % wheelStep)
-        var diff = (delta / wheelStep) * self.data("stepDivider")
+        var diff = (delta / wheelStep) * self.data("stepDivider") * mult
         if (diff == 0.0) {
             return
         }
@@ -1637,7 +2303,7 @@ JqueryClass('film', baseWidget, {
         }
         var position = self.data('position')
         position += diff
-        position = Math.min(portSteps-1, Math.max(0, position))
+        position = Math.min(portSteps, Math.max(0, position))
         self.data('position', position)
         if (Math.abs(diff) > 0) {
             self.data('lastY', e.pageY)
@@ -1666,25 +2332,24 @@ JqueryClass('film', baseWidget, {
     setRotation: function (steps) {
         var self = $(this)
 
-        var filmSteps = self.data('filmSteps')
-        var portSteps = self.data('portSteps')
-        var rotation
-
-        if (portSteps == 1) {
-        // this is very dummy, a control with only one possible. let's just avoid zero division
-        // in this theoric case.
-            rotation = Math.round(filmSteps / 2)
-        } else if (portSteps != null) {
-            rotation = Math.round(steps) * Math.round(filmSteps / portSteps)
+        if (self.data('integer')) {
+            steps = Math.round(steps)
         }
 
-        rotation = Math.min(filmSteps-1, Math.max(0, rotation))
+        var filmSteps = self.data('filmSteps')
+        var portSteps = self.data('portSteps')
+        var rotation = Math.min(filmSteps, Math.max(0, Math.round(steps / portSteps * filmSteps)))
+
+        if (self.data('widgetRotation')) {
+            rotation -= filmSteps/2
+            self.css('transform', 'rotate('+rotation+'deg)')
+            return;
+        }
 
         var bgShift = rotation * -self.data('size')
         bgShift += 'px 0px'
         self.css('background-position', bgShift)
     }
-
 })
 
 JqueryClass('selectWidget', baseWidget, {
@@ -1713,13 +2378,53 @@ JqueryClass('switchWidget', baseWidget, {
         var self = $(this)
         self.switchWidget('config', options)
         self.switchWidget('setValue', options.port.ranges.default, true)
+
+        var upHandler = function (e) {
+            self.switchWidget('mouseUp', e)
+            $(document).unbind('mouseup', upHandler)
+        }
+
+        self.mousedown(function (e) {
+            e.preventDefault();
+            if (!self.data('enabled')) {
+                return self.switchWidget('prevent', e)
+            }
+            if (e.which == 1) { // left button
+                self.switchWidget('mouseDown', e)
+                $(document).bind('mouseup', upHandler)
+            }
+         })
+
+        self.bind('touchstart', function (e) {
+            e.preventDefault();
+            if (!self.data('enabled')) {
+                return self.switchWidget('prevent', e)
+            }
+            self.switchWidget('mouseDown', e.originalEvent.changedTouches[0])
+        })
+        self.bind('touchend', function (e) {
+            self.switchWidget('mouseUp', e.originalEvent.changedTouches[0])
+            self.click()
+        })
+
+        if (options.port.properties.indexOf("trigger") >= 0) {
+            // stop here, ignoring clicks for triggers
+            return self
+        }
+
         self.click(function (e) {
             if (!self.data('enabled')) {
                 return self.switchWidget('prevent', e)
             }
+            if (self.data('momentary')) {
+                /* If we get a click while momentary mode is on, ignore the click.
+                   We will use mouseDown/Up instead as a way to deal with momentary action. */
+                return
+            }
             var nextValue = (self.data('value') == self.data('minimum')) ? self.data('maximum') : self.data('minimum')
             self.switchWidget('setValue', nextValue, false)
         })
+
         return self
     },
     setValue: function (value, only_gui) {
@@ -1735,7 +2440,48 @@ JqueryClass('switchWidget', baseWidget, {
         if (!only_gui) {
             self.trigger('valuechange', value)
         }
-    }
+    },
+    mouseDown: function (e) {
+        var self = $(this)
+
+        if (self.data('trigger')) {
+            self.switchWidget('setValue', self.data('maximum'), false)
+            return
+        }
+
+        var value
+        switch (self.data('momentary'))
+        {
+        case 1:
+            value = self.data('maximum')
+            break;
+        case 2:
+            value = self.data('minimum')
+            break;
+        default:
+            return;
+        }
+
+        self.switchWidget('setValue', value, false)
+    },
+    mouseUp: function (e) {
+        var self = $(this)
+
+        var value
+        switch (self.data('momentary'))
+        {
+        case 1:
+            value = self.data('minimum')
+            break;
+        case 2:
+            value = self.data('maximum')
+            break;
+        default:
+            return;
+        }
+
+        self.switchWidget('setValue', value, false)
+    },
 })
 
 // this is the same as switchWidget with extra bypass-specific stuff
@@ -1745,13 +2491,48 @@ JqueryClass('bypassWidget', baseWidget, {
         self.data('changeLights', options.changeLights)
         self.bypassWidget('config', options)
         self.bypassWidget('setValue', options.port.ranges.default, true)
+
+        var upHandler = function (e) {
+            self.bypassWidget('mouseUp', e)
+            $(document).unbind('mouseup', upHandler)
+        }
+
+        self.mousedown(function (e) {
+            e.preventDefault();
+            if (!self.data('enabled')) {
+                return self.bypassWidget('prevent', e)
+            }
+            if (e.which == 1) { // left button
+                self.bypassWidget('mouseDown', e)
+                $(document).bind('mouseup', upHandler)
+            }
+         })
+
+        self.bind('touchstart', function (e) {
+            e.preventDefault();
+            if (!self.data('enabled')) {
+                return self.bypassWidget('prevent', e)
+            }
+            self.bypassWidget('mouseDown', e.originalEvent.changedTouches[0])
+        })
+        self.bind('touchend', function (e) {
+            self.bypassWidget('mouseUp', e.originalEvent.changedTouches[0])
+            self.click()
+        })
+
         self.click(function (e) {
             if (!self.data('enabled')) {
                 return self.bypassWidget('prevent', e)
             }
+            if (self.data('momentary')) {
+                /* If we get a click while momentary mode is on, ignore the click.
+                   We will use mouseDown/Up instead as a way to deal with momentary action. */
+                return
+            }
             var nextValue = (self.data('value') == self.data('minimum')) ? self.data('maximum') : self.data('minimum')
             self.bypassWidget('setValue', nextValue, false)
         })
+
         return self
     },
     setValue: function (value, only_gui) {
@@ -1768,6 +2549,44 @@ JqueryClass('bypassWidget', baseWidget, {
         if (!only_gui) {
             self.trigger('valuechange', value)
         }
+    },
+    mouseDown: function (e) {
+        var self = $(this)
+
+        // NOTE values are purposefully inverted
+        var value
+        switch (self.data('momentary'))
+        {
+        case 1:
+            value = self.data('minimum')
+            break;
+        case 2:
+            value = self.data('maximum')
+            break;
+        default:
+            return;
+        }
+
+        self.bypassWidget('setValue', value, false)
+    },
+    mouseUp: function (e) {
+        var self = $(this)
+
+        // NOTE values are purposefully inverted
+        var value
+        switch (self.data('momentary'))
+        {
+        case 1:
+            value = self.data('maximum')
+            break;
+        case 2:
+            value = self.data('minimum')
+            break;
+        default:
+            return;
+        }
+
+        self.bypassWidget('setValue', value, false)
     },
 })
 
@@ -1795,10 +2614,11 @@ JqueryClass('customSelect', baseWidget, {
 
     setValue: function (value, only_gui) {
         var self = $(this)
-        value = parseFloat(value)
         self.find('[mod-role=enumeration-option]').removeClass('selected')
 
-        var selected = self.find('[mod-role=enumeration-option][mod-port-value="' + value + '"]')
+        value = parseFloat(value)
+
+        var selected = self.customSelect('getSelectedByValue', value)
         selected.addClass('selected')
 
         var valueField = self.find('[mod-role=input-control-value]')
@@ -1810,5 +2630,96 @@ JqueryClass('customSelect', baseWidget, {
         if (!only_gui) {
             self.trigger('valuechange', value)
         }
-    }
+    },
+
+    // NOTE: this code matches the one in server-side `get_nearest_valid_scalepoint_value`
+    getSelectedByValue: function (value) {
+        var self = $(this)
+
+        var selected = self.find('[mod-role=enumeration-option][mod-port-value="' + value + '"]')
+        if (selected.length !== 0) {
+            return selected
+        }
+
+        var options = self.find('[mod-role=enumeration-option]')
+        var ovalue, nvalue
+        for (var i=0; i<options.length; ++i) {
+            ovalue = options[i].getAttribute("mod-port-value")
+            if (Math.abs(parseFloat(ovalue)-value) < 0.0001) {
+                return self.find('[mod-role=enumeration-option][mod-port-value="' + ovalue + '"]')
+            }
+        }
+
+        for (var i=0; i<options.length-1; ++i) {
+            ovalue = options[i].getAttribute("mod-port-value")
+            nvalue = options[i+1].getAttribute("mod-port-value")
+
+            if (Math.abs(parseFloat(ovalue)-value) < Math.abs(parseFloat(nvalue)-value)) {
+                return self.find('[mod-role=enumeration-option][mod-port-value="' + ovalue + '"]')
+            }
+        }
+
+        return self.find('[mod-role=enumeration-option][mod-port-value="' + nvalue + '"]')
+    },
+})
+
+JqueryClass('customSelectPath', baseWidget, {
+    init: function (options) {
+        var self = $(this)
+        self.customSelectPath('config', options)
+        self.customSelectPath('setValue', options.port.value, true)
+        self.find('[mod-role=enumeration-option]').each(function () {
+            var opt = $(this)
+            opt.click(function (e) {
+                if (!self.data('enabled')) {
+                    return self.customSelectPath('prevent', e)
+                }
+                var value = opt.attr('mod-parameter-value')
+                self.customSelectPath('setValue', value, false)
+            })
+        })
+        self.click(function () {
+            self.find('.mod-enumerated-list').toggle()
+        })
+
+        return self
+    },
+
+    setValue: function (value, only_gui) {
+        var self = $(this)
+        self.find('[mod-role=enumeration-option]').removeClass('selected')
+
+        var selected = self.find('[mod-role=enumeration-option][mod-parameter-value="' + value + '"]')
+        if (selected.length === 0) {
+            return
+        }
+
+        selected.addClass('selected')
+
+        var valueField = self.find('[mod-role=input-parameter-value]')
+        if (valueField) {
+            valueField.data('value', value)
+            valueField.text(selected.text())
+        }
+
+        if (!only_gui) {
+            self.trigger('valuechange', value)
+        }
+    },
+})
+
+JqueryClass('stringWidget', baseWidget, {
+    init: function (options) {
+        var self = $(this)
+        self.stringWidget('config', options)
+        self.stringWidget('setValue', options.port.value, true)
+        return self
+    },
+
+    setValue: function (value, only_gui) {
+        var self = $(this)
+        if (!only_gui) {
+            self.trigger('valuechange', value)
+        }
+    },
 })

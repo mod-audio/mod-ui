@@ -49,22 +49,21 @@ JqueryClass('effectBox', {
         self.data('searchbox', searchbox)
         searchbox.cleanableInput()
 
-        var lastKeyUp = null
+        var lastKeyTimeout = null
         searchbox.keydown(function (e) {
-            if (e.keyCode == 13) { //detect enter
-                if (lastKeyUp != null) {
-                    clearTimeout(lastKeyUp)
-                    lastKeyUp = null
+            if (e.keyCode == 13) { // detect enter
+                if (lastKeyTimeout != null) {
+                    clearTimeout(lastKeyTimeout)
+                    lastKeyTimeout = null
                 }
                 self.effectBox('search')
                 return false
             }
-            else if (e.keyCode == 8 || e.keyCode == 46) { //detect delete and backspace
-                if (lastKeyUp != null) {
-                    clearTimeout(lastKeyUp)
-                    lastKeyUp = null
+            else if (e.keyCode == 8 || e.keyCode == 46) { // detect delete and backspace
+                if (lastKeyTimeout != null) {
+                    clearTimeout(lastKeyTimeout)
                 }
-                lastKeyUp = setTimeout(function () {
+                lastKeyTimeout = setTimeout(function () {
                     self.effectBox('search')
                 }, 400);
             }
@@ -73,11 +72,26 @@ JqueryClass('effectBox', {
             if (e.which == 13) {
                 return
             }
-            if (lastKeyUp != null) {
-                clearTimeout(lastKeyUp)
-                lastKeyUp = null
+            if (lastKeyTimeout != null) {
+                clearTimeout(lastKeyTimeout)
             }
-            lastKeyUp = setTimeout(function () {
+            lastKeyTimeout = setTimeout(function () {
+                self.effectBox('search')
+            }, 400);
+        })
+        searchbox.on('cut', function(e) {
+            if (lastKeyTimeout != null) {
+                clearTimeout(lastKeyTimeout)
+            }
+            lastKeyTimeout = setTimeout(function () {
+                self.effectBox('search')
+            }, 400);
+        })
+        searchbox.on('paste', function(e) {
+            if (lastKeyTimeout != null) {
+                clearTimeout(lastKeyTimeout)
+            }
+            lastKeyTimeout = setTimeout(function () {
                 self.effectBox('search')
             }, 400);
         })
@@ -287,7 +301,7 @@ JqueryClass('effectBox', {
         // display plugin count
         for (category in categories) {
             var tab = self.find('#effect-tab-' + category)
-            tab.html(tab.html() + ' (' + categories[category] + ')')
+            tab.find('.count').text('(' + categories[category] + ')')
         }
 
         if (categories[category] == 0) {
@@ -308,7 +322,7 @@ JqueryClass('effectBox', {
 
         // render plugins
         var plugin
-        function renderNextPlugin(c) {
+        function renderNextPlugin() {
             if (self.data('showPluginsRenderId') != currentRenderId) {
                 // another render is in place, stop this one
                 if (callback) { callback() }
@@ -341,16 +355,13 @@ JqueryClass('effectBox', {
             }
 
             renderedIndex += 1
-
-            c = c || 0;
-            if (c < 20) renderNextPlugin(c+1);
-            else setTimeout(renderNextPlugin, 1);
+            setTimeout(renderNextPlugin, 1);
         }
 
         renderNextPlugin(0)
     },
 
-    renderPlugin: function (plugin, container) {
+    renderPlugin: function (plugin, container, replace) {
         var self = $(this)
         if (container.length == 0)
             return
@@ -364,7 +375,10 @@ JqueryClass('effectBox', {
             thumbnail_href: (plugin.gui && plugin.gui.thumbnail)
                           ? ("/effect/image/thumbnail.png?uri=" + uri + "&v=" + ver)
                           :  "/resources/pedals/default-thumbnail.png",
-            demo: plugin.licensed < 0
+        }
+
+        if (window.devicePixelRatio && window.devicePixelRatio >= 2) {
+            plugin_data.thumbnail_href = plugin_data.thumbnail_href.replace("thumbnail","screenshot")
         }
 
         var div = document.createElement("div");
@@ -389,17 +403,20 @@ JqueryClass('effectBox', {
             self.effectBox('showPluginInfo', plugin)
         })
 
-        container.append(rendered)
+        if (replace) {
+            rendered.insertAfter(replace)
+            replace.remove()
+        } else {
+            container.append(rendered)
+        }
+
+        var index = self.data('index')
+        if (!index[plugin.uri])
+            index[plugin.uri] = []
+        index[plugin.uri].push([plugin, rendered, container])
     },
 
     showPluginInfo: function (plugin) {
-
-        function formatNum(x) {
-            var parts = x.toString().split(".");
-            parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-            return parts.join(".");
-        }
-
         var self = $(this)
         var uri  = escape(plugin.uri)
 
@@ -407,11 +424,19 @@ JqueryClass('effectBox', {
 
             // formating numbers and flooring ranges up to two decimal cases
             for (var i = 0; i < plugin.ports.control.input.length; i++) {
-                plugin.ports.control.input[i].formatted = {
-                    "default": formatNum(Math.floor(plugin.ports.control.input[i].ranges.default * 100) / 100),
-                    "maximum": formatNum(Math.floor(plugin.ports.control.input[i].ranges.maximum * 100) / 100),
-                    "minimum": formatNum(Math.floor(plugin.ports.control.input[i].ranges.minimum * 100) / 100)
-                }
+                plugin.ports.control.input[i].formatted = format(plugin.ports.control.input[i])
+            }
+
+            if (plugin.ports.cv && plugin.ports.cv.input) {
+              for (var i = 0; i < plugin.ports.cv.input.length; i++) {
+                plugin.ports.cv.input[i].formatted = format(plugin.ports.cv.input[i])
+              }
+            }
+
+            if (plugin.ports.cv && plugin.ports.cv.output) {
+              for (var i = 0; i < plugin.ports.cv.output.length; i++) {
+                plugin.ports.cv.output[i].formatted = format(plugin.ports.cv.output[i])
+              }
             }
 
             var ver = [plugin.builder, plugin.microVersion, plugin.minorVersion, plugin.release].join('_')
@@ -434,83 +459,108 @@ JqueryClass('effectBox', {
                 name  : plugin.name,
                 label : plugin.label,
                 ports : plugin.ports,
-                demo  : plugin.licensed < 0,
                 installed: true,
                 favorite_class: FAVORITES.indexOf(plugin.uri) >= 0 ? "favorite" : "",
                 plugin_href: PLUGINS_URL + '/' + btoa(plugin.uri),
                 pedalboard_href: desktop.getPedalboardHref(plugin.uri),
+                discussion_href: plugin.gui.discussionURL,
+                documentation_href: (plugin.gui && plugin.gui.documentation)
+                                  ? '/effect/file/documentation?uri=' + uri + '&v=' + ver
+                                  : '',
+                build_env_uppercase: (plugin.buildEnvironment || "LOCAL").toUpperCase(),
+                show_build_env: plugin.buildEnvironment !== "prod",
             };
 
-            var info = $(Mustache.render(TEMPLATES.cloudplugin_info, metadata))
+            var render = function(metadata) {
+                var info = $(Mustache.render(TEMPLATES.cloudplugin_info, metadata))
 
-            // hide install etc buttons
-            info.find('.js-remove').hide()
-            info.find('.js-install').hide()
-            info.find('.js-upgrade').hide()
-            info.find('.js-latest-version').hide()
+                // hide install etc buttons
+                info.find('.js-remove').hide()
+                info.find('.js-install').hide()
+                info.find('.js-upgrade').hide()
+                info.find('.js-latest-version').hide()
 
-            // hide control ports table if none available
-            if (plugin.ports.control.input.length == 0) {
-                info.find('.plugin-controlports').hide()
+                // hide control ports table if none available
+                if (plugin.ports.control.input.length == 0) {
+                    info.find('.plugin-controlports').hide()
+                }
+
+                // hide cv inputs table if none available
+                if (!plugin.ports.cv || (plugin.ports.cv && plugin.ports.cv.input && plugin.ports.cv.input.length == 0)) {
+                    info.find('.plugin-cvinputs').hide()
+                }
+
+                // hide cv ouputs ports table if none available
+                if (!plugin.ports.cv || (plugin.ports.cv && plugin.ports.cv.output && plugin.ports.cv.output.length == 0)) {
+                    info.find('.plugin-cvoutputs').hide()
+                }
+
+                info.find('.favorite-button').on('click', function () {
+                    var isFavorite = $(this).hasClass('favorite'),
+                        widget = $(this)
+
+                    $.ajax({
+                        url: '/favorites/' + (isFavorite ? 'remove' : 'add'),
+                        type: 'POST',
+                        data: {
+                            uri: plugin.uri,
+                        },
+                        success: function (ok) {
+                            if (! ok) {
+                                console.log("favorite action failed")
+                                return
+                            }
+
+                            if (isFavorite) {
+                                // was favorite, not anymore
+                                widget.removeClass('favorite');
+                                remove_from_array(FAVORITES, plugin.uri)
+                                self.find('#effect-content-Favorites').find('[mod-uri="'+escape(plugin.uri)+'"]').remove()
+
+                            } else {
+                                // was not favorite, now is
+                                widget.addClass('favorite');
+                                FAVORITES.push(plugin.uri)
+                                self.effectBox('renderPlugin', plugin, self.find('#effect-content-Favorites'))
+                            }
+
+                            self.find('#effect-tab-Favorites').find('.count').text('(' + FAVORITES.length + ')')
+                        },
+                        cache: false,
+                        dataType: 'json'
+                    })
+                });
+
+                info.window({
+                    windowName: "Plugin Info",
+                    windowManager: self.data('windowManager'),
+                    close: function () {
+                        info.remove()
+                        self.data('info', null)
+                    }
+                })
+
+                info.appendTo($('body'))
+                info.window('open')
+                self.data('info', info)
             }
 
-            info.find('.favorite-button').on('click', function () {
-                var isFavorite = $(this).hasClass('favorite'),
-                    widget = $(this)
-
-                $.ajax({
-                    url: '/favorites/' + (isFavorite ? 'remove' : 'add'),
-                    type: 'POST',
-                    data: {
-                        uri: plugin.uri,
-                    },
-                    success: function (ok) {
-                        if (! ok) {
-                            console.log("favorite action failed")
-                            return
-                        }
-
-                        if (isFavorite) {
-                            // was favorite, not anymore
-                            widget.removeClass('favorite');
-                            remove_from_array(FAVORITES, plugin.uri)
-                            self.find('#effect-content-Favorites').find('[mod-uri="'+escape(plugin.uri)+'"]').remove()
-
-                        } else {
-                            // was not favorite, now is
-                            widget.addClass('favorite');
-                            FAVORITES.push(plugin.uri)
-                            self.effectBox('renderPlugin', plugin, self.find('#effect-content-Favorites'))
-                        }
-
-                        self.find('#effect-tab-Favorites').html('Favorites (' + FAVORITES.length + ')')
-                    },
-                    cache: false,
-                    dataType: 'json'
-                })
-            });
-
-            info.window({
-                windowName: "Plugin Info",
-                windowManager: self.data('windowManager'),
-                close: function () {
-                    info.remove()
-                    self.data('info', null)
-                }
-            })
-
-            info.appendTo($('body'))
-            info.window('open')
-            self.data('info', info)
+            render(metadata)
         }
 
         if (plugin.bundles) {
             showInfo()
         } else {
+            var renderedVersion = [plugin.builder,
+                                   plugin.microVersion,
+                                   plugin.minorVersion,
+                                   plugin.release].join('_');
             $.ajax({
                 url: "/effect/get",
                 data: {
-                    uri: plugin.uri
+                    uri: plugin.uri,
+                    version: VERSION,
+                    plugin_version: renderedVersion,
                 },
                 success: function (pluginData) {
                     plugin = $.extend(plugin, pluginData)
@@ -518,7 +568,7 @@ JqueryClass('effectBox', {
                     desktop.pluginIndexerData[plugin.uri] = plugin
                     showInfo()
                 },
-                cache: false,
+                cache: !!plugin.buildEnvironment,
                 dataType: 'json'
             })
         }
@@ -527,17 +577,11 @@ JqueryClass('effectBox', {
     cleanResults: function () {
         var self = $(this)
         self.find('.plugins-wrapper').html('')
-        self.find('ul.js-category-tabs li').each(function () {
-            var content = $(this).html().split(/\s/)
-            if (content.length >= 2 && content[1] == "Utility") {
-                $(this).html(content[0] + " Utility")
-            } else if (content.length >= 2 && content[1] == "gen~") {
-                $(this).html(content[0] + " gen~")
-            } else {
-                $(this).html(content[0])
-            }
+        self.find('ul.js-category-tabs li span.count').each(function () {
+            $(this).text()
         });
         self.effectBox('resetShift')
+        self.data('index', {})
             //$('#js-effect-info').hide()
     },
 

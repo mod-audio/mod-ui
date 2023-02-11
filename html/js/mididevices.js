@@ -31,7 +31,8 @@ function MidiPortsWindow(options) {
     options.midiPortsWindow.find('.js-submit').click(function () {
         var devs = []
 
-        var midiAggregatedMode = $('input[name=midi-mode]:checked').val() === "aggregated";
+        var midiAggregatedMode = options.midiPortsWindow.find('input[name=midi-mode]:checked').val() === "aggregated";
+        var midiLoopback = !!options.midiPortsWindow.find('#midi-loopback').prop('checked');
 
         $.each(options.midiPortsList.find('input'), function (index, input) {
             var input = $(input)
@@ -40,7 +41,7 @@ function MidiPortsWindow(options) {
             }
         })
 
-        self.selectDevices(devs, midiAggregatedMode)
+        self.selectDevices(devs, midiAggregatedMode, midiLoopback)
         options.midiPortsWindow.hide()
         return false
     })
@@ -51,26 +52,34 @@ function MidiPortsWindow(options) {
         options.midiPortsList.find('span').remove()
 
         self.getDeviceList(function (devsInUse, devList, names, midiAggregatedMode) {
-            if (devList.length == 0) {
-                return new Notification("info", "No MIDI devices available")
-            }
+            hasMidiLoopback = false
 
             // add new ones
             for (var i in devList) {
                 var dev  = devList[i]
                 var name = names[dev]
                 var elem = $('<input type="checkbox" name="' + name + '" value="' + dev + '" autocomplete="off"'
-                         + (devsInUse.indexOf(dev) >= 0 ? 'checked="checked"' : '') + '/><span>' + name + '<br/></span>')
+                         + (devsInUse.indexOf(dev) >= 0 ? ' checked="checked"' : '')
+                         + '/><span>' + name + '<br/></span>')
 
-                elem.appendTo(options.midiPortsList)
+                if (name === "MIDI Loopback") {
+                    hasMidiLoopback = true
+                    options.midiPortsWindow.find('#midi-loopback').prop('checked', devsInUse.indexOf(dev) >= 0).parent().show()
+                } else {
+                    elem.appendTo(options.midiPortsList)
+                }
             }
 
             // Check midi mode
-            var midiModeRadios = $('input:radio[name=midi-mode]');
-            if(midiAggregatedMode) {
+            var midiModeRadios = options.midiPortsWindow.find('input:radio[name=midi-mode]');
+            if (midiAggregatedMode) {
                 midiModeRadios.filter('[value=aggregated]').prop('checked', true);
             } else {
-              midiModeRadios.filter('[value=legacy]').prop('checked', true);
+                midiModeRadios.filter('[value=separated]').prop('checked', true);
+            }
+
+            if (! hasMidiLoopback) {
+                options.midiPortsWindow.find('#midi-loopback').prop('checked', false).parent().hide()
             }
 
             options.midiPortsWindow.show()
@@ -92,11 +101,15 @@ function MidiPortsWindow(options) {
         })
     }
 
-    this.selectDevices = function (devs, midiAggregatedMode) {
+    this.selectDevices = function (devs, midiAggregatedMode, midiLoopback) {
         $.ajax({
             url: '/jack/set_midi_devices',
             type: 'POST',
-            data: JSON.stringify({ devs: devs, midiAggregatedMode: midiAggregatedMode }),
+            data: JSON.stringify({
+                devs: devs,
+                midiAggregatedMode: midiAggregatedMode,
+                midiLoopback: midiLoopback,
+            }),
             error: function () {
                 new Bug("Failed to enable some MIDI devices")
             },

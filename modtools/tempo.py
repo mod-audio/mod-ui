@@ -141,16 +141,19 @@ def get_divider_value(b, v):
     """
     return 240 / (b * v)
 
-def get_port_value(b, s):
+def get_port_value(b, s, port_unit_symbol):
     """Compute Control Port value if BPM addressed
 
     Args:
         b (float): BPM s-1
         s (float): divider value (subdivider)
+        port_unit_symbol (string): Control port unit symbol
 
     Returns:
         float: control port value in seconds
     """
+    if port_unit_symbol == "BPM":
+        return b / s;
     return 240 / (b * s)
 
 def convert_equivalent(value, conversion_factor, port_unit_symbol):
@@ -164,12 +167,12 @@ def convert_equivalent(value, conversion_factor, port_unit_symbol):
     Returns:
         float: output value
     """
+    if value == 0: # avoid division by zero
+        value = 0.001
     if port_unit_symbol == "s" or port_unit_symbol == "ms" or port_unit_symbol == "min":
-        return round(conversion_factor * value, 3)
+        return conversion_factor * value
     elif port_unit_symbol == "Hz" or port_unit_symbol == "MHz" or port_unit_symbol == "kHz":
-        if value == 0: # avoid division by zero
-            value = 0.001
-        return round(conversion_factor / value, 3)
+        return conversion_factor / value
     else:
         return None
 
@@ -205,48 +208,6 @@ def convert_port_value_to_seconds_equivalent(value, port_unit_symbol):
     conversion_factor = unit['to']
     return convert_equivalent(value, conversion_factor, port_unit_symbol)
 
-def get_options_port_values(port_unit_symbol, b, divider_options):
-    """Get list of possible port values based on bpm and list of dividers
-
-    Args:
-        port_unit_symbol (string): Control port unit symbol
-        b (float): bpm
-        divider_options (list): list of dicts { value: dividerValue, label: dividerLabel }
-
-    Returns:
-        list: list of dicts { value: portValue, label: dividerLabel }
-    """
-    if divider_options is None:
-        return None
-    port_values_with_divider_labels = []
-    for option in divider_options:
-        port_value_sec = get_port_value(b, option['value'])
-        port_value = convert_seconds_to_port_value_equivalent(port_value_sec, port_unit_symbol)
-        port_values_with_divider_labels.append({'value': port_value, 'label': option['label']})
-    return port_values_with_divider_labels
-
-def get_value_from_options(options, divider_value):
-    """Get value from options list where label corresponds to divider_value
-
-    Args:
-        options: list of dicts { value: portValue, label: dividerLabel }
-        divider_value (float): subdivider value
-
-    Returns:
-        value (flat): corresponding port value
-    """
-    divider_label = None
-    value = None
-    for i, divider in enumerate(dividers):
-        if divider['value'] == divider_value:
-            divider_label = divider['label']
-    if divider_label:
-        for i, option in enumerate(options):
-            if option['label'] == divider_label:
-                value = option['value']
-    return value
-
-
 def get_divider_options(port, min_bpm, max_bpm):
     """Get dividers options for given port and bpmPort min and max
 
@@ -258,15 +219,21 @@ def get_divider_options(port, min_bpm, max_bpm):
     Return:
      list: all available dividers as dicts with subdivider value and label
     """
-    # First, convert min and max port values to equivalent in seconds
-    min_value = convert_port_value_to_seconds_equivalent(port['ranges']['minimum'], port['units']['symbol'])
-    max_value = convert_port_value_to_seconds_equivalent(port['ranges']['maximum'], port['units']['symbol'])
+    if port['units']['symbol'] == "BPM":
+        s1_min_bpm = min_bpm / port['ranges']['minimum']
+        s2_min_bpm = min_bpm / port['ranges']['maximum']
+        s1_max_bpm = max_bpm / port['ranges']['minimum']
+        s2_max_bpm = max_bpm / port['ranges']['maximum']
+    else:
+        # First, convert min and max port values to equivalent in seconds
+        min_value = convert_port_value_to_seconds_equivalent(port['ranges']['minimum'], port['units']['symbol'])
+        max_value = convert_port_value_to_seconds_equivalent(port['ranges']['maximum'], port['units']['symbol'])
 
-    # Then, compute min and max subdividers that will fit all bpms
-    s1_min_bpm = get_divider_value(min_bpm, min_value)
-    s2_min_bpm = get_divider_value(min_bpm, max_value)
-    s1_max_bpm = get_divider_value(max_bpm, min_value)
-    s2_max_bpm = get_divider_value(max_bpm, max_value)
+        # Then, compute min and max subdividers that will fit all bpms
+        s1_min_bpm = get_divider_value(min_bpm, min_value)
+        s2_min_bpm = get_divider_value(min_bpm, max_value)
+        s1_max_bpm = get_divider_value(max_bpm, min_value)
+        s2_max_bpm = get_divider_value(max_bpm, max_value)
 
     if "hasStrictBounds" in port['properties']:
         smin = max(s1_min_bpm, s1_max_bpm) if s1_min_bpm < s2_min_bpm else max(s2_min_bpm, s2_max_bpm)

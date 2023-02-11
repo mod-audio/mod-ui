@@ -1,6 +1,6 @@
 /*
  * MOD-UI utilities
- * Copyright (C) 2015-2019 Filipe Coelho <falktx@falktx.com>
+ * Copyright (C) 2015-2022 Filipe Coelho <falktx@falktx.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -20,7 +20,9 @@
 #include <cstdio>
 #include <cstring>
 
+#ifdef HAVE_ALSA
 #include <alsa/asoundlib.h>
+#endif
 #include <jack/jack.h>
 
 #include <algorithm>
@@ -33,6 +35,7 @@
 #define ALSA_CONTROL_BYPASS_RIGHT  "Right True-Bypass"
 #define ALSA_CONTROL_LOOPBACK1     "LOOPBACK"
 #define ALSA_CONTROL_LOOPBACK2     "Loopback Switch"
+#define ALSA_CONTROL_SPDIF_ENABLE  "SPDIF Enable"
 #define ALSA_CONTROL_MASTER_VOLUME "DAC"
 
 #define JACK_SLAVE_PREFIX     "mod-slave"
@@ -51,25 +54,34 @@ static std::vector<std::string> gRegisteredPorts;
 static std::mutex gPortUnregisterMutex;
 static std::vector<std::string> gUnregisteredPorts;
 
+#ifdef HAVE_ALSA
 static snd_mixer_t* gAlsaMixer = nullptr;
 static snd_mixer_elem_t* gAlsaControlLeft  = nullptr;
 static snd_mixer_elem_t* gAlsaControlRight = nullptr;
-static bool gLastAlsaValueLeft  = false;
-static bool gLastAlsaValueRight = false;
+static snd_mixer_elem_t* gAlsaControlCvExp = nullptr;
+static bool gLastAlsaValueLeft  = true;
+static bool gLastAlsaValueRight = true;
+static bool gLastAlsaValueCvExp = false;
+#endif
 
 static JackBufSizeChanged     jack_bufsize_changed_cb = nullptr;
 static JackPortAppeared       jack_port_appeared_cb   = nullptr;
 static JackPortDeleted        jack_port_deleted_cb    = nullptr;
 static TrueBypassStateChanged true_bypass_changed_cb  = nullptr;
+#ifdef HAVE_ALSA
+static CvExpInputModeChanged  cv_exp_mode_changed_cb  = nullptr;
+#endif
 
 // --------------------------------------------------------------------------------------------------------
 
+#ifdef HAVE_ALSA
 static bool _get_alsa_switch_value(snd_mixer_elem_t* const elem)
 {
     int val = 0;
     snd_mixer_selem_get_playback_switch(elem, SND_MIXER_SCHN_MONO, &val);
     return (val != 0);
 }
+#endif
 
 // --------------------------------------------------------------------------------------------------------
 
@@ -148,6 +160,7 @@ static void JackShutdown(void*)
 
 bool init_jack(void)
 {
+#ifdef HAVE_ALSA
     if (gAlsaMixer == nullptr)
     {
         if (snd_mixer_open(&gAlsaMixer, SND_MIXER_ELEM_SIMPLE) == 0)
@@ -170,15 +183,18 @@ bool init_jack(void)
             {
                 snd_mixer_selem_id_set_index(sid, 0);
                 snd_mixer_selem_id_set_name(sid, ALSA_CONTROL_BYPASS_LEFT);
-
-                if ((gAlsaControlLeft = snd_mixer_find_selem(gAlsaMixer, sid)) != nullptr)
-                    gLastAlsaValueLeft = _get_alsa_switch_value(gAlsaControlLeft);
+                gAlsaControlLeft = snd_mixer_find_selem(gAlsaMixer, sid);
 
                 snd_mixer_selem_id_set_index(sid, 0);
                 snd_mixer_selem_id_set_name(sid, ALSA_CONTROL_BYPASS_RIGHT);
+                gAlsaControlRight = snd_mixer_find_selem(gAlsaMixer, sid);
 
-                if ((gAlsaControlRight = snd_mixer_find_selem(gAlsaMixer, sid)) != nullptr)
-                    gLastAlsaValueRight = _get_alsa_switch_value(gAlsaControlRight);
+#ifdef _MOD_DEVICE_DUOX
+                // special case until HMI<->system comm is not in place yet
+                snd_mixer_selem_id_set_index(sid, 0);
+                snd_mixer_selem_id_set_name(sid, "CV/Exp.Pedal Mode");
+                gAlsaControlCvExp = snd_mixer_find_selem(gAlsaMixer, sid);
+#endif
 
                 snd_mixer_selem_id_free(sid);
             }
@@ -189,6 +205,7 @@ bool init_jack(void)
             }
         }
     }
+#endif
 
     if (gClient != nullptr)
     {
@@ -224,6 +241,7 @@ void close_jack(void)
         gPortListRet = nullptr;
     }
 
+#ifdef HAVE_ALSA
     if (gAlsaMixer != nullptr)
     {
         gAlsaControlLeft = nullptr;
@@ -231,6 +249,7 @@ void close_jack(void)
         snd_mixer_close(gAlsaMixer);
         gAlsaMixer = nullptr;
     }
+#endif
 
     if (gClient == nullptr)
     {
@@ -256,11 +275,7 @@ JackData* get_jack_data(bool withTransport)
 
     if (gClient != nullptr)
     {
-        if (gXrunCount != 0 && data.xruns != gXrunCount)
-            data.cpuLoad = 100.0f;
-        else
-            data.cpuLoad = jack_cpu_load(gClient);
-
+        data.cpuLoad = jack_cpu_load(gClient);
         data.xruns = gXrunCount;
 
         if (withTransport)
@@ -335,9 +350,10 @@ JackData* get_jack_data(bool withTransport)
         jack_bufsize_changed_cb(bufsize);
     }
 
-    if (gAlsaMixer != nullptr && true_bypass_changed_cb != nullptr)
+#ifdef HAVE_ALSA
+    if (gAlsaMixer != nullptr && (true_bypass_changed_cb != nullptr || cv_exp_mode_changed_cb != nullptr))
     {
-        bool changed = false;
+        bool changedBypass = false;
         snd_mixer_handle_events(gAlsaMixer);
 
         if (gAlsaControlLeft != nullptr)
@@ -346,7 +362,7 @@ JackData* get_jack_data(bool withTransport)
 
             if (gLastAlsaValueLeft != newValue)
             {
-                changed = true;
+                changedBypass = true;
                 gLastAlsaValueLeft = newValue;
             }
         }
@@ -357,14 +373,56 @@ JackData* get_jack_data(bool withTransport)
 
             if (gLastAlsaValueRight != newValue)
             {
-                changed = true;
+                changedBypass = true;
                 gLastAlsaValueRight = newValue;
             }
         }
 
-        if (changed)
+        if (changedBypass && true_bypass_changed_cb != nullptr)
             true_bypass_changed_cb(gLastAlsaValueLeft, gLastAlsaValueRight);
+
+#ifdef _MOD_DEVICE_DUOX
+        // special case until HMI<->system comm is not in place yet
+        bool changedCvExpMode = false;
+
+        if (gAlsaControlCvExp != nullptr)
+        {
+            bool newValue = gLastAlsaValueCvExp;
+
+            // open new mixer to force read of cv/exp value
+            snd_mixer_t* mixer;
+            if (snd_mixer_open(&mixer, SND_MIXER_ELEM_SIMPLE) == 0)
+            {
+                snd_mixer_selem_id_t* sid;
+                if (snd_mixer_attach(mixer, "hw:DUOX") == 0 &&
+                    snd_mixer_selem_register(mixer, nullptr, nullptr) == 0 &&
+                    snd_mixer_load(mixer) == 0 &&
+                    snd_mixer_selem_id_malloc(&sid) == 0)
+                {
+                    snd_mixer_selem_id_set_index(sid, 0);
+                    snd_mixer_selem_id_set_name(sid, "CV/Exp.Pedal Mode");
+
+                    if (snd_mixer_elem_t* const elem = snd_mixer_find_selem(mixer, sid))
+                        newValue = _get_alsa_switch_value(elem);
+
+                    snd_mixer_selem_id_free(sid);
+                }
+
+                snd_mixer_close(mixer);
+            }
+
+            if (gLastAlsaValueCvExp != newValue)
+            {
+                changedCvExpMode = true;
+                gLastAlsaValueCvExp = newValue;
+            }
+        }
+
+        if (changedCvExpMode && cv_exp_mode_changed_cb != nullptr)
+            cv_exp_mode_changed_cb(gLastAlsaValueCvExp);
+#endif
     }
+#endif
 
     return &data;
 }
@@ -398,7 +456,7 @@ float get_jack_sample_rate(void)
 
 const char* get_jack_port_alias(const char* portname)
 {
-    static char  aliases[2][0xff];
+    static char  aliases[2][320];
     static char* aliasesptr[2] = {
         aliases[0],
         aliases[1]
@@ -429,6 +487,57 @@ const char* const* get_jack_hardware_ports(const bool isAudio, bool isOutput)
 
     if (ports == nullptr)
         return nullptr;
+
+    // hide midi-through capture ports
+    if (!isAudio && !isOutput)
+    {
+        static char  aliases[2][320];
+        static char* aliasesptr[2] = {
+            aliases[0],
+            aliases[1]
+        };
+
+        for (int i=0; ports[i] != nullptr; ++i)
+        {
+            if (strncmp(ports[i], "system:midi_capture_", 20))
+                continue;
+
+            jack_port_t* const port = jack_port_by_name(gClient, ports[i]);
+
+            if (port == nullptr)
+                continue;
+            if (jack_port_get_aliases(port, aliasesptr) <= 0)
+                continue;
+            if (strncmp(aliases[0], "alsa_pcm:Midi-Through/", 22))
+                continue;
+
+            for (int j=i; ports[j] != nullptr; ++j)
+                ports[j] = ports[j+1];
+            --i;
+        }
+    }
+
+#ifdef _MOD_DEVICE_DUOX
+    // Duo X special case for SPDIF mirrored mode
+    if (isAudio && isOutput && ! has_duox_split_spdif())
+    {
+        for (int i=0; ports[i] != nullptr; ++i)
+        {
+            if (ports[i+1] == nullptr)
+                break;
+            if (std::strcmp(ports[i], "system:playback_3") != 0)
+                continue;
+            if (std::strcmp(ports[i+1], "system:playback_4") != 0)
+                continue;
+
+            for (int j=i+2; ports[j] != nullptr; ++i, ++j)
+                ports[i] = ports[j];
+
+            ports[i] = nullptr;
+            break;
+        }
+    }
+#endif
 
     gPortListRet = ports;
 
@@ -484,6 +593,17 @@ bool has_midi_broadcaster_input_port(void)
     return (jack_port_by_name(gClient, "mod-midi-broadcaster:in") != nullptr);
 }
 
+bool has_duox_split_spdif(void)
+{
+#ifdef _MOD_DEVICE_DUOX
+    if (gClient == nullptr)
+        return false;
+
+    return (jack_port_by_name(gClient, "mod-monitor:in_3") != nullptr);
+#else
+    return false;
+#endif
+}
 
 // --------------------------------------------------------------------------------------------------------
 
@@ -505,6 +625,33 @@ bool connect_jack_ports(const char* port1, const char* port2)
     return false;
 }
 
+bool connect_jack_midi_output_ports(const char* port)
+{
+    if (gClient == nullptr)
+        return false;
+
+    int ret;
+
+    if (jack_port_by_name(gClient, "mod-midi-broadcaster:in") != nullptr)
+    {
+        ret = jack_connect(gClient, port, "mod-midi-broadcaster:in");
+        return (ret == 0 || ret == EEXIST);
+    }
+
+    if (const char** const ports = jack_get_ports(gClient, "",
+                                                  JACK_DEFAULT_MIDI_TYPE,
+                                                  JackPortIsPhysical | JackPortIsInput))
+    {
+        for (int i=0; ports[i] != nullptr; ++i)
+            jack_connect(gClient, port, ports[i]);
+
+        jack_free(ports);
+        return true;
+    }
+
+    return false;
+}
+
 bool disconnect_jack_ports(const char* port1, const char* port2)
 {
     if (gClient == nullptr)
@@ -518,6 +665,34 @@ bool disconnect_jack_ports(const char* port1, const char* port2)
     return false;
 }
 
+bool disconnect_all_jack_ports(const char* portname)
+{
+    if (gClient == nullptr)
+        return false;
+
+    jack_port_t* const port = jack_port_by_name(gClient, portname);
+
+    if (port == nullptr)
+        return false;
+
+    const bool isOutput = jack_port_flags(port) & JackPortIsOutput;
+
+    if (const char** const ports = jack_port_get_all_connections(gClient, port))
+    {
+        for (int i=0; ports[i] != nullptr; ++i)
+        {
+            if (isOutput)
+                jack_disconnect(gClient, portname, ports[i]);
+            else
+                jack_disconnect(gClient, ports[i], portname);
+        }
+
+        jack_free(ports);
+    }
+
+    return true;
+}
+
 void reset_xruns(void)
 {
     gXrunCount = 0;
@@ -527,20 +702,21 @@ void reset_xruns(void)
 
 void init_bypass(void)
 {
+#ifdef HAVE_ALSA
     if (gAlsaMixer == nullptr)
         return;
 
     if (gAlsaControlLeft != nullptr)
-    {
-        gLastAlsaValueLeft = false;
         snd_mixer_selem_set_playback_switch_all(gAlsaControlLeft, 0);
-    }
 
     if (gAlsaControlRight != nullptr)
-    {
-        gLastAlsaValueRight = false;
         snd_mixer_selem_set_playback_switch_all(gAlsaControlRight, 0);
-    }
+
+#ifdef _MOD_DEVICE_DUOX
+    // special case until HMI<->system comm is not in place yet
+    if (gAlsaControlCvExp != nullptr)
+        gLastAlsaValueCvExp = _get_alsa_switch_value(gAlsaControlCvExp);
+#endif
 
     snd_mixer_selem_id_t* sid;
     if (snd_mixer_selem_id_malloc(&sid) == 0)
@@ -557,17 +733,32 @@ void init_bypass(void)
         if (snd_mixer_elem_t* const elem = snd_mixer_find_selem(gAlsaMixer, sid))
             snd_mixer_selem_set_playback_switch_all(elem, 0);
 
+        snd_mixer_selem_id_set_index(sid, 0);
+        snd_mixer_selem_id_set_name(sid, ALSA_CONTROL_SPDIF_ENABLE);
+
+        if (snd_mixer_elem_t* const elem = snd_mixer_find_selem(gAlsaMixer, sid))
+            snd_mixer_selem_set_playback_switch_all(elem, 1);
+
         snd_mixer_selem_id_free(sid);
     }
+#endif
 }
 
 bool get_truebypass_value(bool right)
 {
+#ifdef HAVE_ALSA
     return right ? gLastAlsaValueRight : gLastAlsaValueLeft;
+#else
+    return false;
+
+    // unused
+    (void)right;
+#endif
 }
 
 bool set_truebypass_value(bool right, bool bypassed)
 {
+#ifdef HAVE_ALSA
     if (gAlsaMixer == nullptr)
         return false;
 
@@ -581,12 +772,20 @@ bool set_truebypass_value(bool right, bool bypassed)
         if (gAlsaControlLeft != nullptr)
             return (snd_mixer_selem_set_playback_switch_all(gAlsaControlLeft, bypassed) == 0);
     }
+#endif
 
     return false;
+
+#ifndef HAVE_ALSA
+    // unused
+    (void)right;
+    (void)bypassed;
+#endif
 }
 
 float get_master_volume(bool right)
 {
+#ifdef HAVE_ALSA
     if (gAlsaMixer == nullptr)
         return -127.5f;
 
@@ -614,6 +813,12 @@ float get_master_volume(bool right)
 
     snd_mixer_selem_id_free(sid);
     return val;
+#else
+    return -127.5f;
+
+    // unused
+    (void)right;
+#endif
 }
 
 // --------------------------------------------------------------------------------------------------------
@@ -627,6 +832,21 @@ void set_util_callbacks(JackBufSizeChanged bufSizeChanged,
     jack_port_appeared_cb   = portAppeared;
     jack_port_deleted_cb    = portDeleted;
     true_bypass_changed_cb  = trueBypassChanged;
+}
+
+
+void set_extra_util_callbacks(CvExpInputModeChanged cvExpInputModeChanged)
+{
+#ifdef _MOD_DEVICE_DUOX
+    cv_exp_mode_changed_cb = cvExpInputModeChanged;
+#else
+    // unused
+    (void)cvExpInputModeChanged;
+#ifdef HAVE_ALSA
+    (void)gAlsaControlCvExp;
+    (void)gLastAlsaValueCvExp;
+#endif
+#endif
 }
 
 // --------------------------------------------------------------------------------------------------------

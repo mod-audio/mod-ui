@@ -1,4 +1,5 @@
 <div class="mod-pedal-settings-address">
+    <div class="mod-spacer"></div>
     <div class="mod-box">
         <h1 class="pull-left">{{label}} - <strong>{{name}}</strong></h1><span class="js-close close">&times;</span>
         <div class="clearfix"></div>
@@ -7,13 +8,12 @@
             <div class="form-container">
               <div>
                 <div class="main-form-container">
-                  <div class="tempo form-group clearfix mod-hidden"> <!-- Disabled for 1.7 initial release -->
+                  <div class="tempo form-group clearfix">
                     <label>Tempo</label>
                     <div>
                       <input type="checkbox" name="tempo"> Translate value to musical tempo
                     </div>
                     <div>
-                      <span>Note value:</span>
                       <select class="form-control" name="divider">
                       </select>
                     </div>
@@ -25,11 +25,13 @@
                          <option>Device</option>
                          <option>MIDI</option>
                          <option>Control Chain</option>
+                         <option>CV</option>
                       </select>
                       <input type="hidden" name="type">
                   </div>
                   <div class="dynamic-field device-table form-group clearfix" style="display: none;">
                     <input type="hidden" name="hmi-page" type="number">
+                    <input type="hidden" name="hmi-subpage" type="number">
                     <input type="hidden" name="hmi-uri">
                   </div>
                   <span class="dynamic-field midi-learn-hint" style="display: none;">To map this parameter to your MIDI controller, press "save" and move the desired control on your MIDI device.</span>
@@ -51,8 +53,17 @@
                         <select class="form-control" name="cc-actuator"></select>
                     </div>
                   </div>
+                  <span class="dynamic-field no-cv" style="display: none;">
+                    To add a Control Voltage addressing source,
+                    press the "Manage CV Ports" button in the top-bar of the Pedalboard Constructor and check the box that appears next to the Control Voltage output jack of a plugin.
+                  </span>
+                  <div class="dynamic-field cv-select form-group clearfix" style="display: none;">
+                    <div class="mod-controls" style="width: 100%">
+                        <select class="form-control" name="cv-port"></select>
+                    </div>
+                  </div>
                 </div>
-                <hr class="col-xs-12" style="padding:0" />
+                <hr class="col-xs-12" style="padding:0;margin:0 0 10px;" />
                 <div class="buttons-container textright clearfix">
                     <span class="btn btn-danger js-close">Cancel</span>
                     <span class="btn btn-success js-save">Save</span>
@@ -65,6 +76,35 @@
                       <label>Label</label>
                       <div class="mod-controls">
                           <input class="form-control" name="label" type="text"/>
+                      </div>
+                  </div>
+                  <div class="led-colour form-group clearfix">
+                      <label>LED Colour</label>
+                      <div class="mod-controls mod-range">
+                          <select class="form-control" name="led-color-mode">
+                            <option value="0">Static</option>
+                            <option value="1">Cycle</option>
+                          </select>
+                      </div>
+                  </div>
+                  <div class="momentary-sw form-group clearfix">
+                      <label>Mode</label>
+                      <div class="mod-controls mod-range">
+                          <select class="form-control" name="momentary-sw-mode">
+                            <option value="0">Latching</option>
+                            <option value="1">Momentary On</option>
+                            <option value="2">Momentary Off</option>
+                          </select>
+                      </div>
+                  </div>
+                  <div class="cv-op-mode form-group clearfix">
+                      <label>Operational mode</label>
+                      <div class="mod-controls mod-range">
+                          <select class="form-control" name="cv-op-mode">
+                            <option value="-">- Unipolar (-10 to 0)</option>
+                            <option value="b">Bipolar (-5 to +5)</option>
+                            <option value="+">+ Unipolar (0 to +10)</option>
+                          </select>
                       </div>
                   </div>
               </div>

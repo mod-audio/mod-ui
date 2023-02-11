@@ -21,6 +21,7 @@ import shutil
 
 from datetime import datetime
 from functools import wraps
+from unicodedata import normalize
 
 from mod.settings import HARDWARE_DESC_FILE
 
@@ -53,14 +54,17 @@ def json_handler(obj):
 def check_environment():
     from mod.settings import (LV2_PEDALBOARDS_DIR,
                               DEFAULT_PEDALBOARD, DEFAULT_PEDALBOARD_COPY,
-                              DATA_DIR, DOWNLOAD_TMP_DIR, KEYS_PATH,
-                              BANKS_JSON_FILE, FAVORITES_JSON_FILE,
+                              DATA_DIR, DOWNLOAD_TMP_DIR, PEDALBOARD_TMP_DIR,
+                              KEYS_PATH, USER_BANKS_JSON_FILE, FAVORITES_JSON_FILE,
                               UPDATE_CC_FIRMWARE_FILE, UPDATE_MOD_OS_FILE,
                               CAPTURE_PATH, PLAYBACK_PATH)
 
     # create temp dirs
     if not os.path.exists(DOWNLOAD_TMP_DIR):
         os.makedirs(DOWNLOAD_TMP_DIR)
+    if os.path.exists(PEDALBOARD_TMP_DIR):
+        shutil.rmtree(PEDALBOARD_TMP_DIR)
+    os.makedirs(PEDALBOARD_TMP_DIR)
 
     # remove temp files
     for path in (CAPTURE_PATH, PLAYBACK_PATH, UPDATE_CC_FIRMWARE_FILE):
@@ -89,8 +93,8 @@ def check_environment():
     if os.path.exists(DEFAULT_PEDALBOARD_COPY) and not os.path.exists(DEFAULT_PEDALBOARD):
         shutil.copytree(DEFAULT_PEDALBOARD_COPY, DEFAULT_PEDALBOARD)
 
-    if not os.path.exists(BANKS_JSON_FILE):
-        with open(BANKS_JSON_FILE, 'w') as fh:
+    if not os.path.exists(USER_BANKS_JSON_FILE):
+        with open(USER_BANKS_JSON_FILE, 'w') as fh:
             fh.write("[]")
 
     if not os.path.exists(FAVORITES_JSON_FILE):
@@ -98,11 +102,67 @@ def check_environment():
             fh.write("[]")
 
     # remove previous update file
-    if os.path.exists(UPDATE_MOD_OS_FILE):
+    if os.path.exists(UPDATE_MOD_OS_FILE) and not os.path.exists("/root/check-upgrade-system"):
         os.remove(UPDATE_MOD_OS_FILE)
         os.sync()
 
     return True
+
+
+def get_nearest_valid_scalepoint_value(value, options):
+    if not options:
+        return value
+
+    # find a value that matches
+    for i, (ovalue, _) in enumerate(options):
+        if ovalue == value:
+            ivalue = i
+            return (i, ovalue)
+
+    # find a value within a small range
+    for i, (ovalue, _) in enumerate(options):
+        if abs(ovalue - value) <= 0.0001:
+            ivalue = i
+            return (i, ovalue)
+
+    # find closest match
+    smallestdiff = None
+    smallestpos = 0
+    for i, (ovalue, _) in enumerate(options):
+        diff = abs(ovalue - value)
+        if smallestdiff is None or diff < smallestdiff:
+            smallestdiff = diff
+            smallestpos = i
+
+    return (smallestpos, options[smallestpos][0])
+
+
+def get_unique_name(name, names):
+    if name not in names:
+        return None
+
+    regex = r'^.* \(([0-9]*)\)$'
+    match = re.match(regex, name)
+
+    if match is None:
+        name += ' (2)'
+        if name in names:
+            match = re.match(regex, name)
+
+    while match is not None:
+        num = int(match.groups()[0])
+        name = name[:name.rfind('(')] + '({})'.format(num + 1)
+        if name not in names:
+            return name
+        match = re.match(regex, name)
+
+    return name
+
+
+def normalize_for_hw(string, limit = 31):
+    return '"%s"' % (
+        normalize('NFKD',string).encode('ascii','ignore').decode('ascii','ignore').replace('"','')[:limit].upper()
+    )
 
 
 def safe_json_load(path, objtype):
@@ -124,6 +184,7 @@ def safe_json_load(path, objtype):
 def symbolify(name):
     if len(name) == 0:
         return "_"
+    name = normalize('NFKD', name).encode('ascii', 'ignore').decode('ascii', 'ignore')
     name = re.sub("[^_a-zA-Z0-9]+", "_", name)
     if name[0].isdigit():
         name = "_" + name

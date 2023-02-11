@@ -1,6 +1,6 @@
 import os, subprocess, time
 from signal import SIGINT
-from tornado import ioloop
+from tornado.ioloop import IOLoop
 from mod.settings import CAPTURE_PATH, PLAYBACK_PATH, DEVICE_KEY
 
 class Recorder(object):
@@ -47,20 +47,20 @@ class Player(object):
         self.proc = subprocess.Popen(cmd, stdout=subprocess.PIPE)
         self.fhandle = fhandle
         self.stop_callback = stop_callback
-        ioloop.IOLoop().instance().add_handler(self.proc.stdout.fileno(), self.end_callback, 16)
+        IOLoop.instance().add_handler(self.proc.stdout.fileno(), self.end_callback, 16)
 
     def end_callback(self, fileno, _):
         self.proc.stdout.read() # just to flush memory
         if self.proc.poll() is None:
             return
-        ioloop.IOLoop.instance().remove_handler(fileno)
+        IOLoop.instance().remove_handler(fileno)
         self.fhandle.seek(0)
         self.callback()
 
     def stop(self):
         if self.proc is None:
             return
-        ioloop.IOLoop.instance().remove_handler(self.proc.stdout.fileno())
+        IOLoop.instance().remove_handler(self.proc.stdout.fileno())
         if self.proc.poll() is None:
             self.proc.send_signal(SIGINT)
             self.proc.wait()

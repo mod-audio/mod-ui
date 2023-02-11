@@ -16,7 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import logging
-from tornado import ioloop
+from tornado.ioloop import IOLoop
 from mod.hmi import HMI
 from mod.host import Host
 
@@ -28,7 +28,10 @@ class FakeHMI(HMI):
         return True
 
     def init(self, callback):
-        ioloop.IOLoop.instance().add_callback(callback)
+        IOLoop.instance().add_callback(callback)
+
+    def set_host_map_callback(self, host_map):
+        return
 
     def send(self, msg, callback=None, datatype='int'):
         logging.info(msg)

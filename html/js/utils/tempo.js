@@ -113,6 +113,15 @@ var unitConversionFactors = {
   }
 };
 
+var tempoDividerUnits = [
+  "s",
+  "ms",
+  "min",
+  "Hz",
+  "MHz",
+  "kHz",
+  'BPM'
+];
 
 /**
  * Get list of filtered dividers s such as sMin <= s <= sMax
@@ -146,9 +155,13 @@ function getDividerValue(b, v) {
  * Compute Control Port value if BPM addressed
  * @param  {float} b BPM s-1
  * @param  {float} s divider value (subdivider)
+ * @param  {string} portUnitSymbol Control port unit symbol
  * @return  {float} Control Port value in seconds
  */
-function getPortValue(b, s) {
+function getPortValue(b, s, portUnitSymbol) {
+  if (portUnitSymbol === "BPM") {
+    return b / s;
+  }
   return 240 / (b * s);
 }
 
@@ -162,16 +175,15 @@ function getPortValue(b, s) {
  * @return {float}                  Output value
  */
 function convertEquivalent(value, conversionFactor, portUnitSymbol) {
-  // var portUnitSymbol = port.units.symbol;
+  if (value === 0) { // avoid division by zero
+    value = 0.001;
+  }
   if (portUnitSymbol === "s" || portUnitSymbol === "ms" || portUnitSymbol === "min") {
     var v = conversionFactor * value;
-    return  parseFloat(v.toFixed(3));
+    return v;
   } else if (portUnitSymbol === "Hz" || portUnitSymbol === "MHz" || portUnitSymbol === "kHz") {
-    if (value === 0) { // avoid division by zero
-      value = 0.001;
-    }
     var v = conversionFactor / value;
-    return parseFloat(v.toFixed(3));
+    return v;
   } else {
     return;
   }
@@ -187,7 +199,6 @@ function convertEquivalent(value, conversionFactor, portUnitSymbol) {
 function convertSecondsToPortValueEquivalent(value, portUnitSymbol) {
   var unit = unitConversionFactors[portUnitSymbol]
   if (unit === undefined) {
-    // TODO handle error
     return;
   }
   var conversionFactor = unit.from;
@@ -204,31 +215,10 @@ function convertSecondsToPortValueEquivalent(value, portUnitSymbol) {
 function convertPortValueToSecondsEquivalent(value, portUnitSymbol) {
   var unit = unitConversionFactors[portUnitSymbol]
   if (unit === undefined) {
-    // TODO handle error
     return;
   }
   var conversionFactor = unit.to;
   return convertEquivalent(value, conversionFactor, portUnitSymbol);
-}
-
-/**
- * Get list of possible port values based on bpm and list of dividers
- * @param  {string} portUnitSymbol       Control port unit symbol
- * @param  {float} b        bpm
- * @param  {array} dividerOptions array of objects { value: dividerValue, label: dividerLabel }
- * @return {array}          array of objects { value: portValue, label: dividerLabel }
- */
-function getOptionsPortValues(portUnitSymbol, b, dividerOptions) {
-  if (!dividerOptions) {
-    return;
-  }
-  var portValuesWithDividerLabels = [];
-  for (i = 0; i < dividerOptions.length; i++) {
-    var portValueSec = getPortValue(b, dividerOptions[i].value);
-    var portValue = convertSecondsToPortValueEquivalent(portValueSec, portUnitSymbol);
-    portValuesWithDividerLabels.push({ value: portValue, label: dividerOptions[i].label });
-  }
-  return portValuesWithDividerLabels;
 }
 
 /**
@@ -239,21 +229,27 @@ function getOptionsPortValues(portUnitSymbol, b, dividerOptions) {
  * @return {array}      array of all available dividers as objects with subdivider value and label
  */
 function getDividerOptions(port, minBpm, maxBpm) {
-  // First, convert min and max port values to equivalent in seconds
-  var min = convertPortValueToSecondsEquivalent(port.ranges.minimum, port.units.symbol);
-  var max = convertPortValueToSecondsEquivalent(port.ranges.maximum, port.units.symbol);
+  var s1minBpm
+  var s2minBpm
+  var s1maxBpm
+  var s2maxBpm
 
-  // OLD
-  // var s1 = getDividerValue(bpmPort.value, min)
-  // var s2 = getDividerValue(bpmPort.value, max)
-  // var sMin = s1 < s2 ? s1 : s2
-  // var sMax = s1 < s2 ? s2 : s1
+  if (port.units.symbol === 'BPM') {
+    s1minBpm = minBpm / port.ranges.minimum
+    s2minBpm = minBpm / port.ranges.maximum
+    s1maxBpm = maxBpm / port.ranges.minimum
+    s2maxBpm = maxBpm / port.ranges.maximum
+  } else {
+    // First, convert min and max port values to equivalent in seconds
+    var min = convertPortValueToSecondsEquivalent(port.ranges.minimum, port.units.symbol);
+    var max = convertPortValueToSecondsEquivalent(port.ranges.maximum, port.units.symbol);
 
-  // Then, compute min and max subdividers that will fit all bpms
-  var s1minBpm = getDividerValue(minBpm, min);
-  var s2minBpm = getDividerValue(minBpm, max);
-  var s1maxBpm = getDividerValue(maxBpm, min);
-  var s2maxBpm = getDividerValue(maxBpm, max);
+    // Then, compute min and max subdividers that will fit all bpms
+    s1minBpm = getDividerValue(minBpm, min);
+    s2minBpm = getDividerValue(minBpm, max);
+    s1maxBpm = getDividerValue(maxBpm, min);
+    s2maxBpm = getDividerValue(maxBpm, max);
+  }
 
   if (hasStrictBounds(port)) {
     var sMin = s1minBpm < s2minBpm ? Math.max(s1minBpm, s1maxBpm) : Math.max(s2minBpm, s2maxBpm);
@@ -262,7 +258,6 @@ function getDividerOptions(port, minBpm, maxBpm) {
     var sMin = Math.min(s1minBpm, s2minBpm, s1maxBpm, s2maxBpm);
     var sMax = Math.max(s1minBpm, s2minBpm, s1maxBpm, s2maxBpm);
   }
-
 
   // Finally, filter options s such as sMin <= s <= sMax
   return getFilteredDividers(sMin, sMax);
@@ -274,8 +269,8 @@ function getDividerOptions(port, minBpm, maxBpm) {
  * @return {Boolean}
  */
 function hasTempoRelatedDynamicScalePoints(port) {
-  return port.properties.indexOf("tempoRelatedDynamicScalePoints") > -1
-  // return designation === "http://lv2plug.in/ns/ext/time/#beatsPerMinute" || designation === "http://lv2plug.in/ns/ext/time#beatsPerMinute"
+  return port.properties.indexOf("tempoRelatedDynamicScalePoints") > -1 &&
+         tempoDividerUnits.indexOf(port.units.symbol) > -1
 }
 
 /**

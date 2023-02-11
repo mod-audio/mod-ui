@@ -49,6 +49,49 @@
             </div>
             <!-- END PRESET LIST -->
 
+            {{#effect.parameters}}
+            {{#writable}}
+            {{#path}}
+            <div class="mod-enumerated mod-file-list">
+                <span class="mod-enumerated-title">{{label}}</span>
+                <div class="mod-file-list-buttons">
+                    <button class="btn btn-xs btn-primary file-list-btn-expand" title="Expand">EXP</button>
+                </div>
+                <div class="mod-enumerated-list" mod-role="input-parameter" mod-parameter-uri="{{uri}}" mod-widget="custom-select-path">
+                    {{#files}}
+                    <div mod-role="enumeration-option" mod-parameter-value="{{fullname}}">{{basename}}</div>
+                    {{/files}}
+                </div>
+            </div>
+            {{/path}}
+            {{#string}}
+            <div class="mod-string">
+                <span class="mod-string-title">{{label}}</span>
+                <div class="mod-string-content" mod-role="input-parameter" mod-parameter-uri="{{uri}}" mod-widget="string">
+                    <textarea autocomplete=off spellcheck=false class="mod-string-value" mod-role="input-parameter-value" mod-parameter-uri="{{uri}}"></textarea>
+                </div>
+            </div>
+            {{/string}}
+            {{#control}}
+            {{^toggled}}
+            <div class="mod-knob" title="{{comment}}">
+                <span class="mod-knob-title">{{shortName}}</span>
+                <span class="mod-knob-min-value" mod-role="input-control-minimum" mod-parameter-uri="{{uri}}"></span>
+                <span class="mod-knob-max-value" mod-role="input-control-maximum" mod-parameter-uri="{{uri}}"></span>
+                <span class="mod-knob-current-value" mod-role="input-parameter-value" mod-parameter-uri="{{uri}}"></span>
+                <div class="mod-knob-image" mod-role="input-parameter" mod-parameter-uri="{{uri}}" mod-widget="film"></div>
+            </div>
+            {{/toggled}}
+            {{#toggled}}
+            <div class="mod-switch" title="{{comment}}">
+                <span class="mod-switch-title">{{shortName}}</span>
+                <div class="mod-switch-image" mod-role="input-parameter" mod-parameter-uri="{{uri}}" mod-widget="film"></div>
+            </div>
+            {{/toggled}}
+            {{/control}}
+            {{/writable}}
+            {{/effect.parameters}}
+
             {{#effect.ports.control.input}}
             {{#enumeration}}
             <div class="mod-enumerated">
@@ -64,17 +107,22 @@
             {{^enumeration}}
                 {{^trigger}}
                     {{^toggled}}
-                    <div class="mod-knob">
+                    <div class="mod-knob" title="{{comment}}">
                         <span class="mod-knob-title">{{shortName}}</span>
                         <span class="mod-knob-min-value" mod-role="input-control-minimum" mod-port-symbol="{{symbol}}"></span>
                         <span class="mod-knob-max-value" mod-role="input-control-maximum" mod-port-symbol="{{symbol}}"></span>
                         <span class="mod-knob-current-value" mod-role="input-control-value" mod-port-symbol="{{symbol}}"></span>
+                        {{#integer}}
+                        <div class="mod-knob-image mod-knob-image-steps-{{steps}}" mod-role="input-control-port" mod-port-symbol="{{symbol}}" mod-widget="film"></div>
+                        {{/integer}}
+                        {{^integer}}
                         <div class="mod-knob-image" mod-role="input-control-port" mod-port-symbol="{{symbol}}" mod-widget="film"></div>
+                        {{/integer}}
                         <div class="mod-address" mod-role="input-control-address" mod-port-symbol="{{symbol}}"></div>
                     </div>
                     {{/toggled}}
                     {{#toggled}}
-                    <div class="mod-switch">
+                    <div class="mod-switch" title="{{comment}}">
                         <span class="mod-switch-title">{{shortName}}</span>
                         <div class="mod-switch-image" mod-role="input-control-port" mod-port-symbol="{{symbol}}" mod-widget="film"></div>
                         <div class="mod-address" mod-role="input-control-address" mod-port-symbol="{{symbol}}"></div>
@@ -82,7 +130,7 @@
                     {{/toggled}}
                 {{/trigger}}
                 {{#trigger}}
-                <div class="mod-switch">
+                <div class="mod-switch" title="{{comment}}">
                     <span class="mod-switch-title">{{shortName}}</span>
                     <div class="mod-footswitch-image" mod-role="input-control-port" mod-port-symbol="{{symbol}}" mod-widget="film"></div>
                     <div class="mod-address" mod-role="input-control-address" mod-port-symbol="{{symbol}}"></div>

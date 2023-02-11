@@ -42,7 +42,7 @@
         position: fixed;
         text-align: left;
         top: 45px;
-        width: 50%;
+        width: calc(70% - 290px);
         overflow-y: auto;
     }
     .settings-page-content h1 {
@@ -86,6 +86,13 @@
         padding-right: 5px;
         text-align: center;
     }
+    #bank-library #bank-list div.add-bank.disabled {
+        color: #666;
+    }
+    #bank-library #bank-list div.add-bank.disabled:hover {
+        background: #222222;
+        cursor: default;
+    }
 
     #bank-pedalboards-search #bank-pedalboards-result {
         background: none;
@@ -98,6 +105,16 @@
     #bank-pedalboards-search #bank-pedalboards-result .form {
         min-height: 50px;
         color: #AAA;
+    }
+
+    /* smaller screen setup */
+    @media screen and (width < 1100px) {
+        .settings-page-content {
+            width: calc(100% - 290px);
+        }
+        #bank-pedalboards-search {
+            display: none;
+        }
     }
 </style>
 
@@ -117,6 +134,7 @@
     VERSION          = '{{version}}'
     var TEMPLATES    = {}
     var NOTIFICATIONS_ENABLED = true
+    var HMI_EEPROM = {{hmi_eeprom}}
     var PREFERENCES = {{preferences}}
 
     var INFO = {
@@ -141,6 +159,9 @@ function refresh_sysinfo() {
             $("#info-kernel-machine").text(INFO.uname.machine)
             $("#info-kernel-release").text(INFO.uname.release)
             $("#info-kernel-version").text(INFO.uname.version)
+            if (info.platform != "duox" || info.model == "duox:aarch64-a53") {
+                $("#prefs-audio-separate-spdif-outs_div").hide()
+            }
         },
         cache: false,
         global: false,
@@ -164,13 +185,13 @@ function refresh_sysprefs() {
                 $("#prefs-bluetooth-name").prop("disabled", true)
             }
 
-            $("#prefs-prefs-disable-peakmeter").prop("checked", resp.disable_peakmeter)
             $("#prefs-audio-256-frames").prop("checked", resp.jack_256_frames)
             $("#prefs-audio-mono-copy").prop("checked", resp.jack_mono_copy)
             $("#prefs-audio-sync-mode").prop("checked", resp.jack_sync_mode)
-            $("#prefs-service-mixserver").prop("checked", resp.service_mixserver)
+            $("#prefs-audio-separate-spdif-outs").prop("checked", resp.separate_spdif_outs)
             $("#prefs-service-mod-sdk").prop("checked", resp.service_mod_sdk)
             $("#prefs-service-netmanager").prop("checked", resp.service_netmanager)
+            $("#prefs-workarounds-autorestart-hmi").prop("checked", resp.autorestart_hmi)
         },
         cache: false,
         global: false,
@@ -220,7 +241,7 @@ function refresh_device_updates(respDev, respVer) {
         elem.append(text)
     }
 
-    $("#tab-device-updates").show()
+    $("#tab-device-updates").removeClass("disabled")
 
     $(".button-action-update-firmware").click(function () {
         var self = $(this)
@@ -255,6 +276,29 @@ function refresh_device_updates(respDev, respVer) {
     })
 }
 
+function show_blocker (action) {
+    var block = $('<div class="screen-disconnected blocker">');
+    var text;
+
+    if (action == "delete") {
+        text = 'Deleting data, please wait...';
+    } else if (action == "reflash") {
+        text = 'Flashing controller, please wait...';
+    } else if (action == "export") {
+        text = 'Exporting data, please wait...';
+    } else if (action == "import") {
+        text = 'Import data, please wait...<br/>This might take a few minutes.';
+    } else {
+        text = 'Please wait..'
+    }
+
+    block.html('<p>' + text + '</p>')
+    block.css('overflow', 'hidden')
+
+    $('body').append(block)
+    return block
+}
+
 function config_set(key, value) {
     $.ajax({
         url: '/config/set',
@@ -268,6 +312,32 @@ function config_set(key, value) {
         },
         error: function (resp) {
             console.log("error", resp)
+        },
+        cache: false,
+        dataType: 'json'
+    })
+}
+
+function system_cleanup(favorites, hmiSettings, licenseKeys, banks, pedalboards, plugins, callback) {
+    $.ajax({
+        url: '/system/cleanup',
+        method: 'POST',
+        data: {
+            favorites: favorites ? 1 : 0,
+            hmiSettings: hmiSettings ? 1 : 0,
+            licenseKeys: licenseKeys ? 1 : 0,
+            banks: banks ? 1 : 0,
+            pedalboards: pedalboards ? 1 : 0,
+            plugins: plugins ? 1 : 0,
+        },
+        success: function (resp) {
+            if (callback) {
+                callback(resp)
+            }
+        },
+        error: function (resp) {
+            console.log("error", resp)
+            alert("An error occurred: " + resp)
         },
         cache: false,
         dataType: 'json'
@@ -293,12 +363,13 @@ function system_exechange(data, callback) {
     })
 }
 
-function enable_service(name, enable, inverted) {
+function enable_service(name, enable, inverted, persistent) {
     system_exechange({
-        'type'    : 'service',
-        'name'    : name,
-        'enable'  : enable ? 1 : 0,
-        'inverted': inverted ? 1 : 0,
+        'type'      : 'service',
+        'name'      : name,
+        'enable'    : enable ? 1 : 0,
+        'inverted'  : inverted ? 1 : 0,
+        'persistent': persistent ? 1 : 0,
     })
 }
 
@@ -413,10 +484,13 @@ $('document').ready(function() {
     })
 
     $("#tab-device-updates").click(function () {
+        if ($(this).hasClass("disabled")) {
+            return
+        }
         // hide all
         $(".add-bank").removeClass("selected")
         $(".settings-page").hide()
-        // show dangerous
+        // show device updates
         $("#tab-device-updates").addClass("selected")
         $("#settings-page-device-updates").show()
     })
@@ -456,8 +530,12 @@ $('document').ready(function() {
     if (PREFERENCES['dev-mode'] == "on") {
         $("#prefs-ui-developer-mode").prop("checked", true)
     }
-    if (PREFERENCES['show-unstable-plugins'] == "true") {
-        $("#prefs-ui-unstable-plugins").prop("checked", true)
+    if (PREFERENCES['show-labs-plugins'] == "true") {
+        $("#prefs-ui-labs-plugins").prop("checked", true)
+    }
+    if (! HMI_EEPROM) {
+        $("#prefs-delete-hmi-settings_br").hide()
+        $("#prefs-delete-hmi-settings_label").hide()
     }
 
     // ----------------------------------------------------------------------------------------------------------------
@@ -472,7 +550,7 @@ $('document').ready(function() {
         }
 
         var name
-        if ($("#prefs-bluetooth-name").prop("checked")) {
+        if ($("#prefs-bluetooth-custom").prop("checked")) {
             name = $("#prefs-bluetooth-name").val()
         } else {
             name = ""
@@ -530,31 +608,10 @@ $('document').ready(function() {
     })
 
     // ----------------------------------------------------------------------------------------------------------------
-    // --- Preferences
-
-    $("#prefs-prefs-disable-peakmeter").click(function () {
-        enable_service("mod-peakmeter", $(this).prop("checked"), true)
-    })
-    
-    // ----------------------------------------------------------------------------------------------------------------
     // --- Backup & Restore
 
-    function show_blocker (exporting) {
-        var block = $('<div class="screen-disconnected blocker">')
-
-        if (exporting) {
-            block.html('<p>Exporting data, please wait...</p>')
-        } else {
-            block.html('<p>Import data, please wait...<br/>This might take a few minutes.</p>')
-        }
-        block.css('overflow', 'hidden')
-
-        $('body').append(block)
-        return block
-    }
-
     $("#button-action-backup-export").click(function () {
-        var block = show_blocker(true),
+        var block = show_blocker("export"),
             pConfigs = $("#prefs-backup-configs").prop("checked") ? '1' : '0',
             pPlugins = $("#prefs-backup-plugins").prop("checked") ? '1' : '0'
 
@@ -574,7 +631,7 @@ $('document').ready(function() {
             return
         }
 
-        var block = show_blocker(false),
+        var block = show_blocker("import"),
             pConfigs = $("#prefs-backup-configs").prop("checked") ? '1' : '0',
             pPlugins = $("#prefs-backup-plugins").prop("checked") ? '1' : '0'
 
@@ -630,6 +687,9 @@ $('document').ready(function() {
     $("#prefs-audio-sync-mode").click(function () {
         create_or_delete_file("jack-sync-mode", $(this).prop("checked"))
     })
+    $("#prefs-audio-separate-spdif-outs").click(function () {
+        create_or_delete_file("separate-spdif-outs", $(this).prop("checked"))
+    })
 
     // ----------------------------------------------------------------------------------------------------------------
     // --- User Interface
@@ -638,36 +698,160 @@ $('document').ready(function() {
         config_set("dev-mode", $(this).prop("checked") ? "on" : "off")
     })
 
-    $("#prefs-ui-unstable-plugins").click(function () {
-        config_set("show-unstable-plugins", bool2str($(this).prop("checked")))
+    $("#prefs-ui-labs-plugins").click(function () {
+        config_set("show-labs-plugins", bool2str($(this).prop("checked")))
     })
 
     // ----------------------------------------------------------------------------------------------------------------
     // --- Services
 
-    $("#prefs-service-mixserver").click(function () {
-        enable_service("mixserver", $(this).prop("checked"))
-    })
-
     $("#prefs-service-mod-sdk").click(function () {
-        enable_service("mod-sdk", $(this).prop("checked"))
+        enable_service("mod-sdk", $(this).prop("checked"), false, true)
     })
 
     $("#prefs-service-netmanager").click(function () {
-        enable_service("netmanager", $(this).prop("checked"))
+        enable_service("netmanager", $(this).prop("checked"), false, true)
     })
+
+    // ----------------------------------------------------------------------------------------------------------------
+    // --- Workarounds
+
+    $("#prefs-workarounds-autorestart-hmi").click(function () {
+        create_or_delete_file("autorestart-hmi", $(this).prop("checked"), true)
+    })
+
+    // ----------------------------------------------------------------------------------------------------------------
+    // --- Cleanup
+
+    $("#button-action-delete").attr('disabled', true)
+
+    var deleteEnabled = function() {
+        var ok = $("#prefs-delete-confirm").val().toUpperCase() == "DELETE";
+        var favorites = !!$("#prefs-delete-favorites").prop('checked');
+        var hmiSettings = !!$("#prefs-delete-hmi-settings").prop('checked');
+        var licenseKeys = !!$("#prefs-delete-license-keys").prop('checked');
+        var banks = !!$("#prefs-delete-banks").prop('checked');
+        var pedalboards = !!$("#prefs-delete-pedalboards").prop('checked');
+        var plugins = !!$("#prefs-delete-plugins").prop('checked');
+        var title = '';
+        if (!favorites && !hmiSettings && !licenseKeys && !banks && !pedalboards && !plugins) {
+            title = "You need to check at least one checkbox above";
+        } else if (!ok) {
+            title = 'You need type "DELETE" on the input above to confirm data removal';
+        }
+        var disabled = !ok || (!favorites && !hmiSettings && !licenseKeys && !banks && !pedalboards && !plugins);
+        $("#button-action-delete").attr('disabled', disabled);
+        $("#button-action-delete").attr('title', title);
+    }
+
+    $("#prefs-delete-confirm").change(deleteEnabled);
+    $("#prefs-delete-confirm").keyup(deleteEnabled);
+    $("#prefs-delete-favorites").click(deleteEnabled);
+    $("#prefs-delete-hmi-settings").click(deleteEnabled);
+    $("#prefs-delete-license-keys").click(deleteEnabled);
+    $("#prefs-delete-banks").click(deleteEnabled);
+    $("#prefs-delete-pedalboards").click(deleteEnabled);
+    $("#prefs-delete-plugins").click(deleteEnabled);
+    deleteEnabled();
+
+    $("#button-action-delete").click(function() {
+        var favorites = !!$("#prefs-delete-favorites").prop('checked');
+        var hmiSettings = !!$("#prefs-delete-hmi-settings").prop('checked');
+        var licenseKeys = !!$("#prefs-delete-license-keys").prop('checked');
+        var banks = !!$("#prefs-delete-banks").prop('checked');
+        var pedalboards = !!$("#prefs-delete-pedalboards").prop('checked');
+        var plugins = !!$("#prefs-delete-plugins").prop('checked');
+
+        var block = show_blocker("delete");
+
+        system_cleanup(favorites, hmiSettings, licenseKeys, banks, pedalboards, plugins, function (resp) {
+            if (resp.ok) {
+                setTimeout(function () {
+                    block.html('<p>Delete operation complete!</p>')
+
+                    var re = $("<div class='button icon'>Reload</div>").appendTo(block);
+                    re.css("background-image", "url(img/icons/25/reload.png)");
+                    re.click(function () { location.reload(); });
+                }, 1000)
+            } else {
+                block.html('<p>Delete operation failed!<br/>' + resp.error + '</p>')
+            }
+        })
+    });
+
+    $("#form-action-delete").click(function() {
+        if ($("#prefs-delete-confirm").val().toUpperCase() == "DELETE") {
+            $("#button-action-delete").click();
+        }
+        return false;
+    });
+
+    // ----------------------------------------------------------------------------------------------------------------
+    // --- HMI Reflash
+
+    $("#button-action-reflash").attr('disabled', true)
+
+    var reflashEnabled = function() {
+        var ok = $("#prefs-reflash-confirm").val().toUpperCase() == "REFLASH";
+        var title = '';
+        if (!ok) {
+            title = 'You need type "REFLASH" on the input above to confirm Controller reflash';
+        }
+        $("#button-action-reflash").attr('disabled', !ok);
+        $("#button-action-reflash").attr('title', title);
+    }
+
+    $("#prefs-reflash-confirm").change(reflashEnabled);
+    $("#prefs-reflash-confirm").keyup(reflashEnabled);
+    reflashEnabled();
+
+    $("#button-action-reflash").click(function() {
+        var block = show_blocker("reflash");
+
+        var checkAlive = function() {
+            $.ajax({
+                url: '/hello',
+                method: 'GET',
+                cache: false,
+                global: false,
+                timeout: 1000,
+                success: function() {
+                    block.html('<p>Controller reflash complete!</p>')
+
+                    var re = $("<div class='button icon'>Reload</div>").appendTo(block);
+                    re.css("background-image", "url(img/icons/25/reload.png)");
+                    re.click(function () { location.reload(); });
+                },
+                error: function() {
+                    setTimeout(checkAlive, 2000);
+                },
+            })
+        }
+
+        // Check if mod-ui is alive after 30 seconds
+        setTimeout(checkAlive, 30000);
+
+        enable_service("hmi-update", true, false, false);
+    });
+
+    $("#form-action-reflash").click(function() {
+        if ($("#prefs-reflash-confirm").val().toUpperCase() == "REFLASH") {
+            $("#button-action-reflash").click();
+        }
+        return false;
+    });
 
     // ----------------------------------------------------------------------------------------------------------------
     // --- Device Updates
 
-    var respDev, respVer
+    var deviceUpdatesRespDev, deviceUpdatesRespVer
 
     $.ajax({
         method: 'GET',
         url: CONTROLCHAIN_URL + '/devices',
         success: function (resp) {
-            respDev = resp
-            refresh_device_updates(respDev, respVer)
+            deviceUpdatesRespDev = resp
+            refresh_device_updates(deviceUpdatesRespDev, deviceUpdatesRespVer)
         },
         error: function () {
             console.log("Error: failed to get devices information")
@@ -680,8 +864,8 @@ $('document').ready(function() {
         method: 'GET',
         url: CONTROLCHAIN_URL + '/versions',
         success: function (resp) {
-            respVer = resp
-            refresh_device_updates(respDev, respVer)
+            deviceUpdatesRespVer = resp
+            refresh_device_updates(deviceUpdatesRespDev, deviceUpdatesRespVer)
         },
         error: function () {
         },
@@ -750,8 +934,8 @@ $('document').ready(function() {
         <div id="bank-list">
             <div id="tab-basic" class="add-bank selected">Basic</div>
             <div id="tab-advanced" class="add-bank">Advanced</div>
-            <div id="tab-device-updates" class="add-bank mod-hidden">Device Updates</div>
-            <!--<div id="tab-dangerous" class="add-bank">Dangerous</div>-->
+            <div id="tab-device-updates" class="add-bank disabled">Device Updates</div>
+            <div id="tab-dangerous" class="add-bank">Dangerous</div>
             <a href="/" id="go-back"><span class="icon-return"></span>Go back</a>
         </div>
         <!-- END BANK|SETTINGS-LIST -->
@@ -765,7 +949,7 @@ $('document').ready(function() {
                         <input type="checkbox" autocomplete="off" id="prefs-bluetooth-custom">
                             Use custom Bluetooth device name: &nbsp;
                         </input>
-                        <input type="text" value="" id="prefs-bluetooth-name" disabled></input>
+                        <input type="text" value="" id="prefs-bluetooth-name" autocomplete="off" disabled></input>
                     </label>
                 </form>
 
@@ -848,16 +1032,6 @@ $('document').ready(function() {
                     </p>
                     -->
                     <label>
-                        <input type="checkbox" autocomplete="off" id="prefs-prefs-disable-peakmeter">
-                            Disable audio peak meters
-                        </input>
-                    </label>
-                    <p>
-                        If you are experiencing issues because of the peak meters, you can disable them here.<br/>
-                        This is a temporary countermeasure against issues in a few Duo X units.
-                    </p>
-
-                    <label>
                         <input type="checkbox" autocomplete="off" id="prefs-audio-mono-copy">
                             Copy mono output buffer to unused channel
                         </input>
@@ -867,6 +1041,20 @@ $('document').ready(function() {
                         With this enabled, the 2 outputs will receive the same data if one of them is unconnected.<br/>
                         Note that changing this option requires a reboot for changes to take effect.
                     </p>
+
+                    <div id="prefs-audio-separate-spdif-outs_div">
+                        <label>
+                            <input type="checkbox" autocomplete="off" id="prefs-audio-separate-spdif-outs">
+                                Separate S/PDIF outputs
+                            </input>
+                        </label>
+                        <p>
+                            The Duo X S/PDIF outputs can be set to mirror the analog output or be treated independently.<br/>
+                            Mirror mode is default, where S/PDIF will contain the same audio signal as the analog outputs.<br/>
+                            Enable this option to have 2 extra outputs on your pedalboard.<br/>
+                            Note that changing this option requires a reboot for changes to take effect.
+                        </p>
+                    </div>
 
                     <label>
                         <input type="checkbox" autocomplete="off" id="prefs-audio-256-frames">
@@ -886,10 +1074,6 @@ $('document').ready(function() {
                         Note: Each additional service you enable consumes a small amount of CPU.<br/>
                         Only enable services that you absolutely need.
                     </p>
-                    <label>
-                        <input type="checkbox" autocomplete="off" id="prefs-service-netmanager"> JACK Net Manager (EXPERIMENTAL)</input>
-                    </label>
-                    <br/>
                     <!--
                     <label>
                         <input type="checkbox" autocomplete="off" id="prefs-service-mod-sdk"> MOD SDK</input>
@@ -897,8 +1081,9 @@ $('document').ready(function() {
                     <br/>
                     -->
                     <label>
-                        <input type="checkbox" autocomplete="off" id="prefs-service-mixserver"> Remote Mix Server</input>
+                        <input type="checkbox" autocomplete="off" id="prefs-service-netmanager"> JACK Net Manager (EXPERIMENTAL)</input>
                     </label>
+                    <br/>
                 </form>
 
                 <h1>User Interface</h1>
@@ -912,16 +1097,32 @@ $('document').ready(function() {
                         Show a few more options on the Web Interface, useful for developers.
                     </p>
                     <label>
-                        <input type="checkbox" autocomplete="off" id="prefs-ui-unstable-plugins">
-                            Show beta plugins in the Store
+                        <input type="checkbox" autocomplete="off" id="prefs-ui-labs-plugins">
+                            Show MOD Labs plugins in the store
                         </input>
                     </label>
                     <p>
-                        Show option to list 'beta' plugins in the Plugin Store.<br/>
-                        Note that beta plugins can be unstable and cause crashes.
-                        If you share a pedalboard containing beta plugins, it will only be available to users that explicitly accept pedalboards with beta plugins.<br/>
+                        Show option to access "MOD Labs" plugins in the Plugin Store.<br/>
+                        Please note that MOD Labs plugins are community maintained, can be unstable and can cause crashes.
+                        If you share a pedalboard containing MOD Labs plugins, it will only be available to users that explicitly accept pedalboards using MOD Labs plugins.
                         Just remember: things can break!
                     </p>
+                </form>
+
+                <h1>Workarounds</h1>
+                <form class="form">
+                    <div id="workarounds-autorestart-hmi">
+                        <label>
+                            <input type="checkbox" autocomplete="off" id="prefs-workarounds-autorestart-hmi">
+                                Automatically restart controller screen
+                            </input>
+                        </label>
+                        <p>
+                            If the controller displays locks up or stops working correctly, we can try to detect this and automatically trigger a restart.<br/>
+                            This is not completely safe though, false positives can happen and the controller screen might be restarted by mistake.<br/>
+                            A reboot is required in order for this option to take place.
+                        </p>
+                    </div>
                 </form>
             </div>
         </div>
@@ -935,28 +1136,74 @@ $('document').ready(function() {
                 </form>
             </div>
         </div>
-        <!-- SETTINGS PAGE (ADVANCED) -->
+        <!-- SETTINGS PAGE (DEVICES) -->
 
         <!-- SETTINGS PAGE (DANGEROUS) -->
         <div class="settings-page mod-hidden" id="settings-page-dangerous">
             <div class="settings-page-content">
                 <h1>Cleanup</h1>
                 <form class="form">
+                    <p>
+                        <b>Delete selected user data from the device.</b><br />
+                        This will PERMANENTLY DELETE the selected USER DATA. This action is IRREVERSIBLE.
+                        The device won't work properly until new items are created or installed.
+                    </p>
                     <label>
-                        <input type="checkbox" autocomplete="off" id="prefs-delete-banks"> Banks</input>
+                        <input type="checkbox" autocomplete="off" id="prefs-delete-favorites"> Clear favorite plugin list</input>
+                    </label>
+                    <br/>
+                    <label id="prefs-delete-hmi-settings_label">
+                        <input type="checkbox" autocomplete="off" id="prefs-delete-hmi-settings"> Clear device settings</input>
+                    </label>
+                    <br id="prefs-delete-hmi-settings_br"/>
+                    <label>
+                        <input type="checkbox" autocomplete="off" id="prefs-delete-license-keys"> Clear plugin license keys</input>
                     </label>
                     <br/>
                     <label>
-                        <input type="checkbox" autocomplete="off" id="prefs-delete-pedalboards"> Pedalboards</input>
+                        <input type="checkbox" autocomplete="off" id="prefs-delete-banks"> Delete all Banks</input>
                     </label>
                     <br/>
                     <label>
-                        <input type="checkbox" autocomplete="off" id="prefs-delete-plugins"> Plugins</input>
+                        <input type="checkbox" autocomplete="off" id="prefs-delete-pedalboards"> Delete all Pedalboards</input>
+                    </label>
+                    <br/>
+                    <label>
+                        <input type="checkbox" autocomplete="off" id="prefs-delete-plugins"> Delete all Plugins</input>
+                    </label>
+                    <br/>
+                    <label>
+                        To confirm, please type the word "DELETE": &nbsp;
+                        <input type="text" id="prefs-delete-confirm" autocomplete="off" size="10" style="text-transform: uppercase" />
                     </label>
                     <br/>
                     <label>
                         <input type="button" id="button-action-delete" value="Delete"></input>
                     </label>
+                    <br/>
+                    <input type="submit" id="form-action-delete" style="display: none;"></input>
+                </form>
+
+                <h1>Reflash controller</h1>
+                <form class="form">
+                    <p>
+                        <b>Reinstall the firmware for the controller board.</b><br/>
+                        This option is here for support reasons; If the power to your device was cut while installing the controller firmware,
+                        your device may end up in a state where the controller is not fully functional.<br/>
+                        <br />
+                        While the reflashing is happening, please DO NOT DISCONNECT THE POWER to the device.<br/>
+                        There is a RISK OF BRICKING THE DEVICE if the power is cut.
+                    </p>
+                    <label>
+                        To confirm, please type the word "REFLASH": &nbsp;
+                        <input type="text" id="prefs-reflash-confirm" size="10" style="text-transform: uppercase" autocomplete="off" />
+                    </label>
+                    <br/>
+                    <label>
+                        <input type="button" id="button-action-reflash" value="Reflash"></input>
+                    </label>
+                    <br/>
+                    <input type="submit" id="form-action-reflash" style="display: none;"></input>
                 </form>
             </div>
         </div>
@@ -1024,7 +1271,7 @@ $('document').ready(function() {
                         <ul>
                             <li>Disconnect the device from the Control Chain/Ethernet port</li>
                             <li>Hold down the first footswitch on the Control Chain device</li>
-                            <li>While the first footswitch is down, connect the device to the MOD Duo via USB</li>
+                            <li>While the first footswitch is down, connect the device to the MOD unit via USB</li>
                             <li>Wait for the "update completed" message</li>
                             <li>Disconnect the device from the USB port</li>
                             <li>Connect it to the Control Chain/Ethernet port once again</li>

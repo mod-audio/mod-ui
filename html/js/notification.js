@@ -17,8 +17,10 @@
 
 function Notification(type, message, timeout) {
     var self = this
-    if(type == 'error')
+    if (type == 'error')
         type = 'danger' //fix for bootstrap
+    else if (type == 'warn')
+        type = 'warning'
 
     var delay = 200
 

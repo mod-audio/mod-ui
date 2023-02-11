@@ -1,6 +1,16 @@
 <div class="featured" mod-role="cloud-plugin" mod-uri="{{uri}}" data-priority="{{featured.priority}}">
   <div class="box">
 	<div class="inner-box">
+	  {{#price}}
+	  <span class="price-container">
+		<span class="price">{{price}}</span>
+	  </span>
+	  {{/price}}
+	  {{#licensed}}
+	  <span class="price-container">
+		<span class="licensed"></span>
+	  </span>
+	  {{/licensed}}
 	  <h3>{{label}}</h3>
 	  <div class="img-container">
 		<img src="{{screenshot_href}}"/>

@@ -49,7 +49,7 @@ JqueryClass('shareBox', {
             share: function (data, callback) {
                 callback({ok:true})
             },
-            waitForScreenshot: function (generate, callback) {
+            waitForScreenshot: function (generate, bundlepath, callback) {
                 callback(true)
             },
         }, options)
@@ -254,6 +254,9 @@ JqueryClass('shareBox', {
             description: self.find('#pedalboard-share-comment').val(),
             title      : self.find('#pedalboard-share-title').val()
         }
+        if (self.find('#pedalboard-share-hidden').prop("checked")) {
+            data.hidden = true
+        }
         self.find('#record-share').attr('disabled', true)
 
         var hasAudio = (step == 4)
@@ -343,21 +346,21 @@ JqueryClass('shareBox', {
             self.shareBox('showStep', self.data('step'))
         }
 
-        self.data('waitForScreenshot')(false, function (ok) {
+        self.data('waitForScreenshot')(false, bundlepath, function (ok) {
             if (ok) {
                 done()
                 return
             }
             // 2nd try
             self.find('#share-wait-message').show().text("Generating screenshot...")
-            self.data('waitForScreenshot')(true, function (ok) {
+            self.data('waitForScreenshot')(true, bundlepath, function (ok) {
                 if (ok) {
                     done()
                     return
                 }
                 // 3rd and final try
                 self.find('#share-wait-message').show().text("Generating for screenshot... (final attempt)")
-                self.data('waitForScreenshot')(true, function (ok) {
+                self.data('waitForScreenshot')(true, bundlepath, function (ok) {
                     // shit! just upload without screenshot then.. :(
                     self.find('#share-wait-message').show().text("Generating for screenshot... failed!")
                     done()

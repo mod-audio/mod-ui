@@ -61,12 +61,15 @@
     {% autoescape None %}
     var TEMPLATES = {}
     SITEURL = '{{cloud_url}}'
+    CLOUD_LABS_URL = '{{cloud_labs_url}}'
     PLUGINS_URL      = '{{plugins_url}}'
     PEDALBOARDS_URL  = '{{pedalboards_url}}'
+    PEDALBOARDS_LABS_URL  = '{{pedalboards_labs_url}}'
     CONTROLCHAIN_URL = '{{controlchain_url}}'
     LV2_PLUGIN_DIR   = '{{lv2_plugin_dir}}'
     VERSION          = '{{version}}'
     BIN_COMPAT       = '{{bin_compat}}'
+    PLATFORM         = '{{platform}}'
     var SAMPLERATE   = {{sampleRate}}
     var NOTIFICATIONS_ENABLED = true
     var HARDWARE_PROFILE = JSON.parse(atob('{{hardware_profile}}'))
@@ -75,8 +78,7 @@
     var DEFAULT_PEDALBOARD = '{{default_pedalboard}}'
     var FAVORITES = {{favorites}}
     var PREFERENCES = {{preferences}}
-    var PAGES_NB = {{pages_nb}}
-    var PAGES_CB = {{pages_cb}}
+    var ADDRESSING_PAGES = {{addressing_pages}}
     var DEBUG = true;
     if (!DEBUG) {
         console = console || {}
@@ -112,11 +114,10 @@ $('document').ready(function() {
         saveButton: $('#pedalboard-info .js-save'),
         saveAsButton: $('#pedalboard-info .js-save-as'),
         resetButton:  $('#pedalboard-info .js-reset'),
-        pedalboardPresetsEnabler: $('#pedalboard-info #js-preset-enabler'),
-        presetSaveButton: $('#pedalboard-info .js-preset-save'),
-        presetSaveAsButton: $('#pedalboard-info .js-preset-save-as'),
-        presetManageButton: $('#pedalboard-info .js-preset-manage'),
-        presetDisableButton: $('#pedalboard-info .js-preset-disable'),
+        cvAddressingButton:  $('#pedalboard-info .js-cv-addressing'),
+        snapshotSaveButton: $('#pedalboard-info .js-preset-save'),
+        snapshotSaveAsButton: $('#pedalboard-info .js-preset-save-as'),
+        snapshotManageButton: $('#pedalboard-info .js-preset-manage'),
         transportButton: $('#mod-transport-icon'),
         transportWindow: $('#mod-transport-window'),
         transportPlay: $('#mod-switch-transport-play'),
@@ -132,6 +133,8 @@ $('document').ready(function() {
         bankBox: $('#bank-library'),
         bankBoxTrigger: $('#main-menu #mod-bank'),
         bankList: $('#bank-list'),
+        fileManagerBox: $('#file-manager-library'),
+        fileManagerBoxTrigger: $('#main-menu #mod-file-manager'),
         shareButton: $('#pedalboard-info .js-cloud'),
         shareWindow: $('#share-window'),
         presetSaveBox: $('#save-preset'),
@@ -155,6 +158,11 @@ $('document').ready(function() {
         desktop.pedalboardModified = true
     }
 
+    if (!{{codec_truebypass}}) {
+        $('#mod-bypassLeft').hide()
+        $('#mod-bypassRight').hide()
+    }
+
     if ({{using_app}}) {
         desktop.setupApp()
     }
@@ -163,6 +171,7 @@ $('document').ready(function() {
         desktop.authenticateDevice(function (ok) {
             if (ok) {
                 console.log("MOD authentication succeeded")
+                desktop.resetPedalboardStats();
             } else {
                 console.log("MOD authentication failed")
                 desktop.upgradeWindow.upgradeWindow('setErrored')
@@ -189,9 +198,10 @@ $('document').ready(function() {
     if (PREFERENCES['plugins-folded'] == "true") {
         desktop.effectBox.effectBox('toggle')
     }
-    if (PREFERENCES['show-unstable-plugins'] == "true") {
-        $("#cloud-plugins-stable").parent().show()
+    if (PREFERENCES['show-labs-plugins'] == "true") {
+        $("#cloud-plugins-source").parent().show()
     }
+    desktop.pedalboardBox.pedalboardBox('initViewMode', PREFERENCES['pb-view-mode'])
 
     // start code for ajax loading bar
 
@@ -221,7 +231,26 @@ $('document').ready(function() {
     });
     */
 
-    desktop.resetPedalboardStats();
+    // add iOS/iPadOS-specific document body class `.ios`
+    /*
+    (function () {
+        var isiOSPlatform = [
+            'iPad Simulator',
+            'iPhone Simulator',
+            'iPod Simulator',
+            'iPad',
+            'iPhone',
+            'iPod'
+        ].includes(navigator.platform);
+        var isiPadOS13SUserAgent = (navigator.userAgent.includes("Mac") && "ontouchend" in document);
+        var isiOSUserAgent = /(iPad|iPhone|iPod)/g.test(navigator.userAgent);
+        var isiOS = isiOSPlatform || isiPadOS13SUserAgent || isiOSUserAgent;
+
+        if (isiOS) {
+            $('body').addClass('ios');
+        }
+    })();
+    */
 })
 </script>
 
@@ -236,6 +265,7 @@ $('document').ready(function() {
 <script type="text/javascript" src="js/desktop.js?v={{version}}"></script>
 <script type="text/javascript" src="js/pedalboard.js?v={{version}}"></script>
 <script type="text/javascript" src="js/pedalboards.js?v={{version}}"></script>
+<script type="text/javascript" src="js/file_manager.js?v={{version}}"></script>
 <script type="text/javascript" src="js/banks.js?v={{version}}"></script>
 <script type="text/javascript" src="js/effects.js?v={{version}}"></script>
 <script type="text/javascript" src="js/cloudplugin.js?v={{version}}"></script>
@@ -249,7 +279,8 @@ $('document').ready(function() {
 <script type="text/javascript" src="js/cc-manager.js?v={{version}}"></script>
 <script type="text/javascript" src="js/transport.js?v={{version}}"></script>
 <script type="text/javascript" src="js/nprogress.js?v={{version}}"></script>
-<script type="text/javascript" src="js/tempoHelper.js?v={{version}}"></script>
+<script type="text/javascript" src="js/utils/tempo.js?v={{version}}"></script>
+<script type="text/javascript" src="js/utils/plugins.js?v={{version}}"></script>
 
 </head>
 <!-- END HEAD -->
@@ -334,7 +365,7 @@ $('document').ready(function() {
         <!-- SAVE SNAPSHOTS WINDOW -->
         <div id="save-preset" class="save-popup mod-hidden" style="z-index:1001;">
             <div class="mod-box">
-                <h1 class="pull-left">Saving Snapshot</h1><span class="js-cancel-saving close">&times;</span>
+                <h1 class="pull-left">Saving</h1><span class="js-cancel-saving close">&times;</span>
                 <form class="bottom">
                     <div class="clearfix"></div>
                     <div class="controls">
@@ -355,7 +386,7 @@ $('document').ready(function() {
             <div class="box">
                 <h1 class="pull-left">SHARE</h1><span class="js-cancel close">&times;</span>
                 <div class="unstable-warning mod-hidden">
-                  <b>Warning:</b> This pedalboard contains beta plugins and won't be available to most users
+                  <b>Warning:</b> This pedalboard contains MOD Labs plugins and won't be available to most users
                 </div>
                 <form>
                     <div class="clearfix"></div>
@@ -375,6 +406,9 @@ $('document').ready(function() {
                         <label for="pedalboard-share-title">
                             PEDALBOARD NAME <br/>
                             <input type="text" class="form-control" id="pedalboard-share-title" placeholder="How will you call this pedalboard?"/>
+                        </label>
+                        <label for="pedalboard-share-hidden">
+                            <input type="checkbox" id="pedalboard-share-hidden" style="margin-right:4px">Hide pedalboard from public feed</input>
                         </label>
                         <label for="pedalboard-share-comment">
                             <textarea rows="4" id="pedalboard-share-comment" class="form-control" placeholder="What's special about this pedalboard?"></textarea>
@@ -455,19 +489,20 @@ $('document').ready(function() {
             <div id="pedalboard-info">
                 <h1 class="top bottom {{titleblend}}">{{fulltitle}}</h1>
                 <div class="actions">
-                    <button class="js-preset" id="js-preset-enabler">Snapshots</button>
-                    <button class="js-preset menu-trigger mod-hidden" id="js-preset-menu">Snapshots</button>
-                    <ul class="drop-menu clearfix js-pedalboard-presets-menu" style="cursor:pointer;">
-                        <li class="js-preset-save">Save</li>
-                        <li class="js-preset-save-as">Save as</li>
-                        <!--
-                        <li class="sub-menu-trigger">Load <span class="pull-right">&rsaquo;</span>
-                            <ul class="menu-preset-list sub-menu"></ul>
-                        </li>
-                        -->
-                        <li class="js-preset-manage">Load / Manage</li>
-                        <li class="js-preset-disable">Disable</li>
-                    </ul>
+                    <button class="js-cv-addressing" id="js-cv-addressing-toggle">Manage CV Ports</button>
+                    <div id="js-preset-menu" style="display:inline-block;">
+                        <button class="js-preset menu-trigger">Snapshots</button>
+                        <ul class="drop-menu clearfix js-pedalboard-presets-menu" style="cursor:pointer;text-align:left;">
+                            <li class="js-preset-save">Save</li>
+                            <li class="js-preset-save-as">Save as</li>
+                            <!--
+                            <li class="sub-menu-trigger">Load <span class="pull-right">&rsaquo;</span>
+                                <ul class="menu-preset-list sub-menu"></ul>
+                            </li>
+                            -->
+                            <li class="js-preset-manage">Load / Manage</li>
+                        </ul>
+                    </div>
                     <button class="js-reset">New Pedalboard</button>
                     <button class="js-save">Save</button>
                     <button class="js-save-as">Save as</button>
@@ -495,26 +530,33 @@ $('document').ready(function() {
             <div class="mod-box" id="midi-ports-box">
                 <h1>MIDI Ports List</h1>
                 <form class="bottom">
-                  <fieldset>
-                    <div>
-                      <label>
-                        <input type="radio" autocomplete="off" name="midi-mode" value="aggregated" id="midi-mode-aggregate">
-                            Aggregated mode
-                        </input>
-                      </label>
-                    </div>
-                    <div class="mod-hidden"> <!-- Temporally hidden -->
-                      <label>
-                          <input type="radio" autocomplete="off" name="midi-mode" value="legacy" id="midi-mode-legacy">
-                              Legacy mode
-                          </input>
-                      </label>
-                    </div>
-                    <div class="controls clearfix" id="midi-ports-list"></div>
-                    <div class="controls actions">
-                        <button class="js-cancel btn btn-danger">Cancel</button>
-                        <button class="js-submit btn btn-success">Save</button>
-                    </div>
+                    <fieldset>
+                        <div>
+                            <label>
+                                <input type="checkbox" autocomplete="off" id="midi-loopback">
+                                    Enable Virtual MIDI Loopback
+                                </input>
+                            </label>
+                        </div>
+                        <div>
+                            <label>
+                                <input type="radio" autocomplete="off" name="midi-mode" value="aggregated" id="midi-mode-aggregate">
+                                    Aggregated mode
+                                </input>
+                            </label>
+                        </div>
+                        <div>
+                            <label>
+                                <input type="radio" autocomplete="off" name="midi-mode" value="separated" id="midi-mode-separated">
+                                    Separated mode
+                                </input>
+                            </label>
+                        </div>
+                        <div class="controls clearfix" id="midi-ports-list"></div>
+                        <div class="controls actions">
+                            <button class="js-cancel btn btn-danger">Cancel</button>
+                            <button class="js-submit btn btn-success">Save</button>
+                        </div>
                     </fieldset>
                 </form>
             </div>
@@ -528,7 +570,7 @@ $('document').ready(function() {
                 <form class="bottom">
                     <div class="controls clearfix">
                         <input type="text" name="pedal-presets-list" value="" id="pedal-presets-list-input"/>
-                        <select class="preset-list" size="9" id="pedal-presets-list" style="background-color:inherit;"></select>
+                        <select class="preset-list" size="9" id="pedal-presets-list"></select>
                     </div>
                     <div class="controls actions">
                         <button class="js-rename btn btn-default">Rename</button>
@@ -549,18 +591,18 @@ $('document').ready(function() {
                     <div class="clearfix"></div>
                     <div id="cc-device-update-text">
                         <p>
-                            Your Control Chain device firmware is ready to be updated.
+                            Your Control Chain (CC) device firmware is ready to be updated.
                         </p>
                         <p>
-                            To begin, follow these steps:
+                            To continue, please follow these steps:
                         </p>
                         <ul>
-                            <li>Disconnect the device from the Control Chain/Ethernet port</li>
-                            <li>Hold down the first footswitch on the Control Chain device</li>
-                            <li>While the first footswitch is down, connect the device to the MOD Duo via USB</li>
+                            <li>Disconnect the CC device from the Control Chain port</li>
+                            <li>Hold down the first footswitch on the CC device</li>
+                            <li>While the first footswitch is held down, connect the CC device to your MOD device via USB</li>
                             <li>Wait for the "update completed" message</li>
-                            <li>Disconnect the device from the USB port</li>
-                            <li>Connect it to the Control Chain/Ethernet port once again</li>
+                            <li>Disconnect the CC device from the USB port</li>
+                            <li>Connect the CC device to the Control Chain port once again</li>
                         </ul>
                         <p>
                             Note: The update should only take a few seconds.
@@ -579,6 +621,7 @@ $('document').ready(function() {
         <div id="mod-plugins" class="icon selected" data-message="Constructor"></div>
         <div id="mod-pedalboard" class="icon" data-message="Pedalboards Library"></div>
         <div id="mod-bank" class="icon" data-message="Banks"></div>
+        <div id="mod-file-manager" class="icon" data-message="File Manager"></div>
         <div id="mod-cloud-plugins" class="icon" data-message="Plugin Store"></div>
         <div id="banks-saving">Auto saving banks...</div>
         <div id="mod-update" class="status icon"></div>
@@ -610,27 +653,27 @@ $('document').ready(function() {
     <!-- END MAIN MENU-->
 
     <!-- PLUGINS LIBRARY -->
-    <div id="plugins-library" class="js-main-library mod-init-hidden">
+    <div id="plugins-library" class="js-main-library mod-init-hidden ignore-arrive">
 
         <!-- EFFECTS MENU ITEMS -->
         <ul class="clearfix js-category-tabs">
-            <li id="effect-tab-Favorites">Favorites</li>
-            <li id="effect-tab-All">All</li>
-            <li id="effect-tab-ControlVoltage">Control&nbsp;Voltage</li>
-            <li id="effect-tab-Delay">Delay</li>
-            <li id="effect-tab-Distortion">Distortion</li>
-            <li id="effect-tab-Dynamics">Dynamics</li>
-            <li id="effect-tab-Filter">Filter</li>
-            <li id="effect-tab-Generator">Generator</li>
-            <li id="effect-tab-MIDI">MIDI Utility</li>
-            <li id="effect-tab-Modulator">Modulator</li>
-            <li id="effect-tab-Reverb">Reverb</li>
-            <li id="effect-tab-Simulator">Simulator</li>
-            <li id="effect-tab-Spatial">Spatial</li>
-            <li id="effect-tab-Spectral">Spectral</li>
-            <li id="effect-tab-Utility">Utility</li>
-            <li id="effect-tab-MaxGen" style="display:none;">Max&nbsp;gen~</li>
-            <li id="effect-tab-Camomile" style="display:none;">Camomile</li>
+            <li id="effect-tab-Favorites">Favorites <span class="count"></span></li>
+            <li id="effect-tab-All">All <span class="count"></span></li>
+            <li id="effect-tab-ControlVoltage">Control&nbsp;Voltage <span class="count"></span></li>
+            <li id="effect-tab-Delay">Delay <span class="count"></span></li>
+            <li id="effect-tab-Distortion">Distortion <span class="count"></span></li>
+            <li id="effect-tab-Dynamics">Dynamics <span class="count"></span></li>
+            <li id="effect-tab-Filter">Filter <span class="count"></span></li>
+            <li id="effect-tab-Generator">Generator <span class="count"></span></li>
+            <li id="effect-tab-MIDI">MIDI Utility <span class="count"></span></li>
+            <li id="effect-tab-Modulator">Modulator <span class="count"></span></li>
+            <li id="effect-tab-Reverb">Reverb <span class="count"></span></li>
+            <li id="effect-tab-Simulator">Simulator <span class="count"></span></li>
+            <li id="effect-tab-Spatial">Spatial <span class="count"></span></li>
+            <li id="effect-tab-Spectral">Spectral <span class="count"></span></li>
+            <li id="effect-tab-Utility">Utility <span class="count"></span></li>
+            <li id="effect-tab-MaxGen" style="display:none;">Max&nbsp;gen~ <span class="count"></span></li>
+            <li id="effect-tab-Camomile" style="display:none;">Camomile <span class="count"></span></li>
         </ul>
         <span class="js-settings-trigger settings selected"></span>
         <span class="js-effects-fold fold"></span>
@@ -640,7 +683,7 @@ $('document').ready(function() {
         <div id="plugins-library-settings-window">
             <form class="box form-inline">
                 <div class="form-group">
-                    <input id="effectSearch" class="form-control" placeholder="Keyword(s)" type="search"/>
+                    <input id="effectSearch" class="form-control" placeholder="Keyword(s)" type="search" autocomplete="off" />
                 </div>
             </form>
         </div>
@@ -692,9 +735,20 @@ $('document').ready(function() {
                     <input type="checkbox" name="installed" id="cloud-plugins-installed" />
                     <label for="cloud-plugins-installed">Installed only</label>
                 </div>
+                <div class="control-group">
+                    <input type="checkbox" name="non-installed" id="cloud-plugins-non-installed" />
+                    <label for="cloud-plugins-non-installed">Non-Installed only</label>
+                </div>
                 <div class="control-group mod-hidden">
-                    <input type="checkbox" name="unstable" id="cloud-plugins-stable" />
-                    <label for="cloud-plugins-stable">Show beta plugins</label>
+                    <div class="switch" id="cloud-plugins-source">
+                      <input type="radio" id="cloud-radio-official" name="plugins-source" value="official" checked="checked">
+                      <label for="official">Official</label>
+                      <input type="radio" id="cloud-radio-labs" name="plugins-source" value="labs">
+                      <label for="labs">Labs</label>
+                      <span class="toggle-outside">
+                        <span class="toggle-inside"></span>
+                      </span>
+                    </div>
                 </div>
                 <ul class="categories list list-unstyled">
                     <li id="cloud-plugin-tab-All">All</li>
@@ -715,7 +769,7 @@ $('document').ready(function() {
                     <!-- <li id="cloud-plugin-tab-Camomile">Camomile</li> -->
                 </ul>
                 <div class="form-group">
-                    <input class="form-control" placeholder="Filter by keyword(s)" type="search"/>
+                    <input class="form-control" placeholder="Filter by keyword(s)" type="search" autocomplete="off" />
                 </div>
             </div>
 
@@ -757,15 +811,30 @@ $('document').ready(function() {
                     Pedalboards Library
                 </h1>
                 <div class="form-group">
-                    <input id="searchPedalboard" class="form-control" maxlength="20" placeholder="Filter by keyword(s)" type="search"/>
+                    <input id="searchPedalboard" class="form-control" maxlength="20" placeholder="Filter by keyword(s)" type="search" autocomplete="off" />
                 </div>
                 <a style="display:inline-block;float:right;color:#AAA;font-size:1.1em;margin-right:30px;"
                    href="http://pedalboards.moddevices.com/" target="_blank">
                     <img style="width: 1.2em; height: 1.2em; opacity: 0.6; vertical-align: middle;" src="img/icons/25/language.png" alt=""/>
                     <span style="vertical-align: middle;">Browse Online Pedalboards</span>
                 </a>
+                <span class="view-modes">
+                  <i id="view-mode-grid" class="view-mode icon-th-1"></i>
+                  <i id="view-mode-list" class="view-mode icon-th-list"></i>
+                </span>
             </header>
-            <div class="pedalboards clearfix js-pedalboards"></div>
+            <div class="pedalboards clearfix">
+                <div class="clearfix">
+                    <span class="separator-title">User Pedalboards</span>
+                    <div class="separator separator-user"></div>
+                    <div class="js-pedalboards js-user-pedalboards"></div>
+                </div>
+                <div class="clearfix">
+                    <span class="separator-title">Factory Pedalboards</span>
+                    <div class="separator separator-factory"></div>
+                    <div class="js-pedalboards js-factory-pedalboards"></div>
+                </div>
+            </div>
         </div>
     </div>
     <!-- END PEDALBOARDS LIBRARY -->
@@ -773,7 +842,7 @@ $('document').ready(function() {
     <!-- BANK LIBRARY -->
     <div id="bank-library" class="mod-hidden mod-init-hidden"><div class="box">
         <header>
-            <h1 class="bottom top">Banks</h1>
+            <h1 class="bottom top">User Banks</h1>
         </header>
 
         <!-- BANK-LIST -->
@@ -787,8 +856,18 @@ $('document').ready(function() {
         <div id="bank-edit">
             <div id="bank-title" class="mod-hidden">
                 <h1>Untitled</h1>
-	    </div>
+            </div>
             <div id="bank-pedalboards" class="grid-selected"></div>
+            <div id="bank-init" class="grid-selected" style="color:#ccc;margin-left:30px;">
+                <h2>
+                    This page is dedicated to user banks.<br>
+                    Factory banks are not displayed in this area.
+                </h2>
+                <p>
+                    To start using banks click on "Add Bank" on the left side,
+                    give it a name and then drag and drop pedalboards from the right side.
+                </p>
+            </div>
         </div>
         <!-- END BANK-PEDALBOARDS -->
 
@@ -798,8 +877,8 @@ $('document').ready(function() {
             <div class="filter clearfix">
                 <div class="clearfix">
                     <div class="form-group">
-                        <label for="searchBank" >Select pedalboards</label>
-                        <input id="searchBank" class="form-control" maxlength="20" placeholder="Filter by keyword(s)" type="search"/>
+                        <label for="searchBank">Select pedalboards</label>
+                        <input id="searchBank" class="form-control" maxlength="20" placeholder="Filter by keyword(s)" type="search" autocomplete="off" />
                     </div>
                 </div>
             </div>
@@ -807,7 +886,16 @@ $('document').ready(function() {
 
             <!-- BANK-PEDALBOARDS-RESULT -->
             <div id="bank-pedalboards-result">
-                <div class="js-canvas grid-selected"></div>
+                <div class="clearfix">
+                    <span class="separator-title">User Pedalboards</span>
+                    <div class="separator separator-user"></div>
+                    <div class="js-canvas js-user-pedalboards"></div>
+                </div>
+                <div class="clearfix">
+                    <span class="separator-title">Factory Pedalboards</span>
+                    <div class="separator separator-factory"></div>
+                    <div class="js-canvas js-factory-pedalboards"></div>
+                </div>
             </div>
             <!-- END BANK-PEDALBOARDS-RESULT -->
 
@@ -816,6 +904,17 @@ $('document').ready(function() {
 
     </div></div>
     <!-- END BANK LIBRARY -->
+
+    <!-- FILE MANAGER -->
+    <div id="file-manager-library" class="mod-hidden mod-init-hidden"><div class="box">
+        <header>
+            <h1 class="bottom top">File Manager</h1>
+        </header>
+        <div id="file-manager-wrapper">
+            <iframe title="File Manager" allowtransparency="true"></iframe>
+        </div>
+    </div></div>
+    <!-- END FILE MANAGER -->
 
     <!-- MOD UPDATE/UPGRADE TOOLTIP -->
     <div class="tooltip mod-hidden" style="right:102px;">
@@ -840,7 +939,11 @@ $('document').ready(function() {
                     Update version <b>0.0.0</b>.<br/>
                     Released on 0000-00-00.
                 </p>
-                <p>For more information about this release <a href="#" target="_blank">click here</a>.</p>
+                <p>
+                    Curious about this release? Check out
+                    <a href="#" target="_blank">this forum post</a>
+                    where you can read more details and discuss with our community.
+                </p>
                 <p class="textright">
                     <button class="js-close btn btn-xs btn-danger">Cancel</button>
                     <button class="js-upgrade btn btn-xs btn-info">Download</button>

@@ -16,8 +16,12 @@
                  5px 20px 50px rgba(0,0,0,0.9),
                  4px 12px 30px rgba(0,0,0,0.5);
 }
-.mod-input .mod-output-jack{
+.mod-input .mod-output-jack {
     z-index: 100;
+}
+
+.mod-input.input-connected.expanded {
+  z-index: 101;
 }
 
 /* = ACTIONS - Icons above: settings, remove, etc
@@ -38,7 +42,7 @@
     transition: color 0.33s;
 }
 .mod-settings:after {
-    content: '\e800';
+    content: '\e802';
 }
 .mod-pedal .mod-actions .mod-settings:hover { color: #eee;}
 .mod-pedal .mod-actions .mod-remove {
@@ -51,7 +55,7 @@
     transition: color 0.33s;
 }
 .mod-remove:after {
-    content: '\e801';
+    content: '\e803';
 }
 .mod-pedal .mod-actions .mod-remove:hover { color: #eee; }
 .mod-pedal .mod-actions .mod-information {
@@ -64,9 +68,23 @@
     transition: color 0.33s;
 }
 .mod-information:after {
-    content: '\e802';
+    content: '\e808';
 }
 .mod-pedal .mod-actions .mod-information:hover { color: #eee; }
+
+.mod-pedal .mod-actions .mod-external-ui {
+    font-family: fontello !important;
+    cursor: pointer;
+    position: absolute;
+    width: 32px;
+    right: 4.5em;
+    color: #666;
+    transition: color 0.33s;
+}
+.mod-external-ui:after {
+    content: '\e800';
+}
+.mod-pedal .mod-actions .mod-external-ui:hover { color: #eee; }
 
 /* = DRAG HANDLE
 ================================================ */
@@ -117,12 +135,12 @@
 /* = INPUT
 ================================================ */
 .mod-pedal-input-wrapper {
-    background: rgba(0, 0, 0, 0.8);
+    background: rgba(0, 0, 0, 0.5);
     height:100px;
     position:relative;
     z-index:35;
     padding: 0 10px;
-    border-radius:10px;
+    border-radius:20px;
 }
 
 .mod-pedal .mod-pedal-input {
@@ -395,6 +413,52 @@ body > .mod-settings.mod-window-visible {
     opacity:.3;
 }
 
+.mod-pedal-settings .mod-knob .mod-knob-image.mod-knob-image-steps-3 {
+    background-image:url(../img/knob_steps_3.png);
+}
+.mod-pedal-settings .mod-knob .mod-knob-image.mod-knob-image-steps-4 {
+    background-image:url(../img/knob_steps_4.png);
+}
+.mod-pedal-settings .mod-knob .mod-knob-image.mod-knob-image-steps-5 {
+    background-image:url(../img/knob_steps_5.png);
+}
+.mod-pedal-settings .mod-knob .mod-knob-image.mod-knob-image-steps-6 {
+    background-image:url(../img/knob_steps_6.png);
+}
+.mod-pedal-settings .mod-knob .mod-knob-image.mod-knob-image-steps-7 {
+    background-image:url(../img/knob_steps_7.png);
+}
+.mod-pedal-settings .mod-knob .mod-knob-image.mod-knob-image-steps-8 {
+    background-image:url(../img/knob_steps_8.png);
+}
+.mod-pedal-settings .mod-knob .mod-knob-image.mod-knob-image-steps-9 {
+    background-image:url(../img/knob_steps_9.png);
+}
+.mod-pedal-settings .mod-knob .mod-knob-image.mod-knob-image-steps-10 {
+    background-image:url(../img/knob_steps_10.png);
+}
+.mod-pedal-settings .mod-knob .mod-knob-image.mod-knob-image-steps-11 {
+    background-image:url(../img/knob_steps_11.png);
+}
+.mod-pedal-settings .mod-knob .mod-knob-image.mod-knob-image-steps-12 {
+    background-image:url(../img/knob_steps_12.png);
+}
+.mod-pedal-settings .mod-knob .mod-knob-image.mod-knob-image-steps-13 {
+    background-image:url(../img/knob_steps_13.png);
+}
+.mod-pedal-settings .mod-knob .mod-knob-image.mod-knob-image-steps-14 {
+    background-image:url(../img/knob_steps_14.png);
+}
+.mod-pedal-settings .mod-knob .mod-knob-image.mod-knob-image-steps-15 {
+    background-image:url(../img/knob_steps_15.png);
+}
+.mod-pedal-settings .mod-knob .mod-knob-image.mod-knob-image-steps-16 {
+    background-image:url(../img/knob_steps_16.png);
+}
+.mod-pedal-settings .mod-knob .mod-knob-image.mod-knob-image-steps-17 {
+    background-image:url(../img/knob_steps_17.png);
+}
+
 /* = ENUMERATED
 ================================================ */
 .mod-pedal-settings .mod-enumerated {
@@ -406,8 +470,9 @@ body > .mod-settings.mod-window-visible {
     width:160px;
 }
 
-.mod-presets {
-    width: 320px !important;
+.mod-presets,
+.mod-file-list {
+    width: 322px !important;
 }
 .radio-preset {
     height: 9px !important;
@@ -422,6 +487,34 @@ body > .mod-settings.mod-window-visible {
     height:95px;
     overflow:auto;
     position:relative;
+}
+.mod-pedal-settings .mod-enumerated.mod-file-list .mod-file-list-buttons {
+    position: absolute;
+    top: 0px;
+    right: 0px;
+    margin: 3px;
+}
+.mod-pedal-settings .mod-enumerated.mod-file-list .mod-enumerated-list {
+    height:130px;
+}
+.mod-pedal-settings .mod-enumerated.mod-file-list.expanded .mod-enumerated-list {
+    height: calc(100vh - 175px);
+    z-index: 1;
+    background: #212121;
+}
+.mod-pedal-settings .mod-enumerated.mod-file-list .btn-primary {
+    background-color: black;
+    border-color: #773284;
+}
+.mod-pedal-settings .mod-enumerated.mod-file-list .btn-primary:hover {
+    border-color: #4f2157;
+}
+.mod-pedal-settings .mod-enumerated.mod-file-list.expanded .btn-primary {
+    background-color: #773284;
+    border-color: black;
+}
+.mod-pedal-settings .mod-enumerated.mod-file-list.expanded .btn-primary:hover {
+    background-color: #883996;
 }
 
 .mod-pedal-settings .mod-enumerated .mod-enumerated-list > div {
@@ -457,6 +550,55 @@ body > .mod-settings.mod-window-visible {
     text-transform:uppercase;
 }
 
+
+/* = STRING
+================================================ */
+.mod-pedal-settings .mod-string {
+    background:#212121;
+    float:left;
+    height:160px;
+    margin:0 2px 2px 0;
+    position:relative;
+    text-align:center;
+    width:322px !important;
+}
+.mod-pedal-settings .mod-string > span.mod-string-title {
+    color:white;
+    display:block;
+    font-size:11px;
+    font-weight:bold;
+    height:11px;
+    line-height:1;
+    margin:9px 0;
+    position:relative;
+    overflow:hidden;
+    text-transform:uppercase;
+}
+
+.mod-pedal-settings .mod-string-content {
+    font-weight:bold;
+    background: black;
+    height:131px;
+    display:flex;
+}
+.mod-pedal-settings .mod-string-content > textarea.mod-string-value {
+    flex:1;
+    padding:2px;
+    border:1px solid #000;
+    white-space:pre-wrap;
+    resize: none;
+    background: inherit;
+}
+.mod-pedal-settings .mod-string-content > textarea.mod-string-value:focus {
+    border: 1px solid #883996;
+    background: black;
+}
+.mod-pedal-settings .mod-string-content > textarea.mod-string-value::selection {
+  background: #883996;
+}
+.mod-pedal-settings .mod-string-content > textarea.mod-string-value::-moz-selection {
+  background: #883996;
+}
 
 /* = SLIDER
 ================================================ */
@@ -672,16 +814,36 @@ body > .mod-settings.mod-window-visible {
     right:0;
     top:0;
     z-index:1000;
+    /* new style */
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:start;
+}
+
+.mod-pedal-settings-address .mod-spacer {
+    height:10%;
 }
 
 .mod-pedal-settings-address .mod-box {
     background:white;
-    left:50%;
-    margin:-150px -193px;
-    padding:18px;
-    position:absolute;
+    padding:18px 18px 0 18px;
+    width:766px;
+    overflow-y:auto;
+    overflow-x:hidden;
+    /* old style */
+    /*
+    margin:-150px -430px;
+    left:48%;
     top:40%;
-    width:450px;
+    max-height:70%;
+    position:absolute;
+    */
+    /* new style */
+    margin:0;
+    max-height:90%;
+    position:initial;
+    position:unset;
 }
 
 .mod-pedal-settings-address h1 {
@@ -712,6 +874,7 @@ body > .mod-settings.mod-window-visible {
 }
 
 .mod-pedal-settings-address .mod-range input[type="number"] {
+    padding-right: 4px;
     width: 41% !important;
     float: left;
 }
@@ -728,3 +891,121 @@ body > .mod-settings.mod-window-visible {
 .mod-pedal-settings-address select {
     width:202px;
 }
+
+/* FIXME put it in the right place */
+#pedalboards-library .js-pedalboards {
+    padding: 8px 0;
+}
+
+#pedalboards-library .separator-title {
+    color: #fff;
+    font-size: 1.4em;
+    margin: 0 8px 0 1%;
+}
+
+#pedalboards-library .separator {
+    background: rgb(153, 153, 153);
+    display: inline-block;
+    height: 2px;
+    vertical-align: middle;
+}
+
+#pedalboards-library .separator.separator-user {
+    width: calc(99% - 8px - 17rem);
+}
+
+#pedalboards-library .separator.separator-factory {
+    width: calc(99% - 8px - 19.5rem);
+}
+
+/* FIXME put it in the right place */
+#pedalboards-library .js-pedalboards.list-selected .img {
+  display: none;
+}
+
+#bank-library #bank-pedalboards {
+    width: 680px;
+}
+
+#bank-library #bank-title {
+    width: unset;
+    height: unset;
+}
+
+#bank-library #bank-pedalboards {
+    top: 110px;
+}
+
+/*#bank-library #bank-pedalboards .ui-sortable-helper .pedalboard {
+    cursor: -webkit-grabbing !important;
+    cursor: grabbing !important;
+}*/
+
+#bank-library #bank-pedalboards .pedalboard .img > img {
+    max-width: 100%;
+}
+
+#bank-library #bank-pedalboards-search,
+#bank-library #bank-pedalboards-search #bank-pedalboards-result {
+    width: calc(80% - 680px);
+}
+
+#bank-library #bank-pedalboards-search .pedalboard {
+    margin: 10px;
+}
+
+#bank-library #bank-pedalboards-search .separator-title {
+    color: #fff;
+    font-size: 1.4em;
+    margin: 0 10px;
+}
+
+#bank-library #bank-pedalboards-search .separator {
+    background: rgb(153, 153, 153);
+    display: inline-block;
+    height: 2px;
+    vertical-align: middle;
+}
+
+#bank-library #bank-pedalboards-search .separator.separator-user {
+    width: calc(100% - 20px - 16.5rem);
+}
+
+#bank-library #bank-pedalboards-search .separator.separator-factory {
+    width: calc(100% - 20px - 19rem);
+}
+
+#bank-library #bank-pedalboards-search .js-canvas {
+    display: flex;
+    padding: 8px 0;
+    flex-flow: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    /* these ones below are not always supported, default to center in worst case */
+    justify-content: space-evenly;
+    justify-content: space-around;
+}
+
+#bank-library #bank-pedalboards-search .js-canvas .js-pedalboard-item {
+    width: 33%;
+    min-width: 230px;
+    max-width: 320px;
+}
+
+#bank-library #bank-pedalboards-search .input-clean {
+    top: 38px !important;
+}
+
+@media only screen and (max-width: 1450px) {
+    #bank-library #bank-pedalboards {
+        width: 500px;
+    }
+    #bank-library #bank-pedalboards-search,
+    #bank-library #bank-pedalboards-search #bank-pedalboards-result {
+        width: calc(80% - 500px);
+    }
+}
+
+/*#bank-library #bank-pedalboards .pedalboard > img {
+    width: 100%;
+}*/

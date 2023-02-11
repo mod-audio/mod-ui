@@ -37,10 +37,17 @@ function SnapshotsManager(options) {
         }
     })
 
-    options.pedalPresetsOverlay.hide().blur(self.pedalPresetRenamed).keydown(function (e) {
+    options.pedalPresetsOverlay
+    .hide()
+    .blur(self.pedalPresetRenamed)
+    .keydown(function (e) {
+        if (e.keyCode == 27) { // esc
+            return self.hideRenameOverlay()
+        }
         if (e.keyCode == 13) { // enter
             return self.pedalPresetRenamed()
         }
+        return true
     })
 
     options.pedalPresetsWindow.keyup(function (e) {
@@ -48,6 +55,7 @@ function SnapshotsManager(options) {
             options.pedalPresetsList.find('option:selected').click()
             return false
         }
+        return true
     })
 
     options.pedalPresetsWindow.find('.js-cancel').click(function () {
@@ -66,6 +74,8 @@ function SnapshotsManager(options) {
         }
 
         var selected = options.editingElem = options.pedalPresetsList.find('option:selected')
+        var selectedHtml = selected.html()
+        var name = selectedHtml.substring(selectedHtml.indexOf(".") + 1);
 
         options.pedalPresetsOverlay.css({
             position: "absolute",
@@ -73,7 +83,7 @@ function SnapshotsManager(options) {
             height: selected.height()+2,
             top: selected.position().top,
             left: selected.position().left
-        }).prop("value", selected.html()).show().focus()
+        }).prop("value", name).show().focus()
 
         return false
     })
@@ -98,13 +108,23 @@ function SnapshotsManager(options) {
             },
             success: function () {
                 selected.remove()
-                options.pedalPresetsList.find('option:first').prop('selected','selected').click()
+                options.renamedCallback()
+                options.pedalPresetsWindow.find('.js-delete').addClass('disabled')
 
                 options.presetCount -= 1
                 if (options.presetCount <= 1) {
                     options.pedalPresetsWindow.find('.js-assign-all').addClass('disabled')
-                    options.pedalPresetsWindow.find('.js-delete').addClass('disabled')
                 }
+
+                // Replace options value and text so we can a sequential list 0, 1, 2, etc.
+                var i = 0
+                options.pedalPresetsList.children().each(function(option) {
+                  var optionHtml = $(this).html()
+                  var prtitle = optionHtml.substring(optionHtml.indexOf(".") + 1)
+                  $(this).html((i+1) + "." + prtitle)
+                  $(this).val(i)
+                  i++
+                })
             },
             error: function () {},
             cache: false,
@@ -129,7 +149,7 @@ function SnapshotsManager(options) {
         }
 
         var port = {
-            name: 'Presets',
+            name: 'Snapshots',
             symbol: ':presets',
             ranges: {
                 minimum: -1,
@@ -183,7 +203,7 @@ function SnapshotsManager(options) {
 
             // add new ones
             for (var i in presets) {
-                var elem = $('<option value="'+i+'">'+presets[i]+'</option>')
+                var elem = $('<option value="'+i+'">'+(parseInt(i)+1)+"."+presets[i]+'</option>')
 
                 if (currentId == i && ! options.currentlyAddressed) {
                     elem.prop('selected', 'selected')
@@ -220,11 +240,17 @@ function SnapshotsManager(options) {
         self.hideRenameOverlay()
 
         var selectId = $(this).val()
-        var prtitle  = $(this).html()
 
-        if (options.currentlyAddressed && !options.canFeedback) {
-            options.pedalPresetsList.find('option:selected').removeProp('selected')
-            return self.prevent(e)
+        var selectedHtml = $(this).html()
+        var prtitle = selectedHtml.substring(selectedHtml.indexOf(".") + 1)
+
+        if (options.currentlyAddressed) {
+            if (!options.canFeedback) {
+                options.pedalPresetsList.find('option:selected').removeProp('selected')
+                return self.prevent(e)
+            }
+        } else if (options.presetCount > 1) {
+            options.pedalPresetsWindow.find('.js-delete').removeClass('disabled')
         }
 
         $.ajax({
@@ -244,6 +270,7 @@ function SnapshotsManager(options) {
     this.hideRenameOverlay = function () {
         options.editingElem = null
         options.pedalPresetsOverlay.prop("value","").hide()
+        return false
     }
 
     this.pedalPresetRenamed = function () {
@@ -255,7 +282,6 @@ function SnapshotsManager(options) {
         var text = options.pedalPresetsOverlay.hide().val()
         var elem = options.editingElem
         var prId = elem.val()
-
         options.editingElem = null
 
         if (text == "") {
@@ -269,9 +295,12 @@ function SnapshotsManager(options) {
                 id   : prId,
                 title: text,
             },
-            success: function () {
-                elem.html(text)
-                options.renamedCallback(text)
+            success: function (resp) {
+                if (!resp.ok) {
+                    return
+                }
+                elem.html((parseInt(prId)+1) + "." + resp.title)
+                options.renamedCallback(resp.title)
             },
             error: function () {},
             cache: false,

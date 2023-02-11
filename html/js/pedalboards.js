@@ -38,11 +38,11 @@ function PedalboardSearcher(opt) {
         })
 
     }
-    this.lastKeyUp = null
+    this.lastKeyTimeout = null
     this.search = function () {
-        if (self.lastKeyUp != null) {
-            clearTimeout(self.lastKeyUp)
-            self.lastKeyUp = null
+        if (self.lastKeyTimeout != null) {
+            clearTimeout(self.lastKeyTimeout)
+            self.lastKeyTimeout = null
         }
         var query = self.searchbox.val()
         var local = self.mode == 'installed'
@@ -65,14 +65,14 @@ function PedalboardSearcher(opt) {
     }
 
     this.searchbox.keydown(function (e) {
-        if (e.keyCode == 13) { //detect enter
+        if (e.keyCode == 13) { // detect enter
             self.search()
             return false
-        } else if (e.keyCode == 8 || e.keyCode == 46) { //detect delete and backspace
-            if (self.lastKeyUp != null) {
-                clearTimeout(self.lastKeyUp)
+        } else if (e.keyCode == 8 || e.keyCode == 46) { // detect delete and backspace
+            if (self.lastKeyTimeout != null) {
+                clearTimeout(self.lastKeyTimeout)
             }
-            self.lastKeyUp = setTimeout(function () {
+            self.lastKeyTimeout = setTimeout(function () {
                 self.search()
             }, 400)
         }
@@ -81,19 +81,36 @@ function PedalboardSearcher(opt) {
         if (e.which == 13) {
             return
         }
-        if (self.lastKeyUp != null) {
-            clearTimeout(self.lastKeyUp)
+        if (self.lastKeyTimeout != null) {
+            clearTimeout(self.lastKeyTimeout)
         }
-        self.lastKeyUp = setTimeout(function () {
+        self.lastKeyTimeout = setTimeout(function () {
             self.search()
         }, 400)
     })
+    this.searchbox.on('cut', function(e) {
+        if (self.lastKeyTimeout != null) {
+            clearTimeout(self.lastKeyTimeout)
+        }
+        self.lastKeyTimeout = setTimeout(function () {
+            self.search()
+        }, 400);
+    })
+    this.searchbox.on('paste', function(e) {
+        if (self.lastKeyTimeout != null) {
+            clearTimeout(self.lastKeyTimeout)
+        }
+        self.lastKeyTimeout = setTimeout(function () {
+            self.search()
+        }, 400);
+    })
 
-    if (this.searchbutton)
+    if (this.searchbutton) {
         this.searchbutton.click(function () {
             self.search()
             return false
         })
+    }
 }
 
 
@@ -115,7 +132,11 @@ JqueryClass('pedalboardBox', {
         var self = $(this)
 
         options = $.extend({
-            resultCanvas: self.find('.js-pedalboards'),
+            resultCanvasUser: self.find('.js-user-pedalboards'),
+            resultCanvasFactory: self.find('.js-factory-pedalboards'),
+            viewModes: self.find('.view-modes'),
+            viewModeList: self.find('#view-mode-list'),
+            viewModeGrid: self.find('#view-mode-grid'),
             list: function (callback) {
                 callback([])
             },
@@ -127,6 +148,9 @@ JqueryClass('pedalboardBox', {
             },
             load: function (bundlepath, broken, callback) {
                 callback()
+            },
+            saveConfigValue: function (key, value, callback) {
+                callback([])
             },
             isMainWindow: true,
             windowName: "Pedalboards",
@@ -146,7 +170,8 @@ JqueryClass('pedalboardBox', {
                 self.pedalboardBox('showPedalboard', pedalboard)
             },
             cleanResults: function () {
-                self.data('resultCanvas').html('')
+                self.data('resultCanvasUser').html('')
+                self.data('resultCanvasFactory').html('')
                 self.data('results', {})
             }
         }, options))
@@ -164,7 +189,23 @@ JqueryClass('pedalboardBox', {
             self.window('close')
         })
 
+        options.viewModes.pedalboardsModeSelector(options.resultCanvasUser,
+                                                  options.resultCanvasFactory,
+                                                  options.saveConfigValue)
+
         return self
+    },
+
+    initViewMode: function (viewMode) {
+        var self = $(this)
+        if (viewMode === 'list') {
+            self.data('resultCanvasUser').addClass('list-selected')
+            self.data('resultCanvasFactory').addClass('list-selected')
+            self.data('viewModeList').addClass('selected')
+            self.data('viewModeGrid').removeClass('selected')
+        } else { // grid or no value yet (grid is default)
+            self.data('viewModeGrid').addClass('selected')
+        }
     },
 
     mode: function (mode) {
@@ -179,7 +220,7 @@ JqueryClass('pedalboardBox', {
     showPedalboard: function (pedalboard) {
         var self = $(this)
         var results = self.data('results')
-        var canvas = self.data('resultCanvas')
+        var canvas = pedalboard.factory ? self.data('resultCanvasFactory') : self.data('resultCanvasUser')
         self.pedalboardBox('render', pedalboard, canvas)
         results[pedalboard.bundle] = pedalboard
     },
@@ -201,7 +242,7 @@ JqueryClass('pedalboardBox', {
             return false
         })
 
-        if (pedalboard.bundle == DEFAULT_PEDALBOARD) {
+        if (pedalboard.factory || pedalboard.bundle == DEFAULT_PEDALBOARD) {
             rendered.find('.js-remove').hide()
         } else {
             rendered.find('.js-remove').click(function (e) {
@@ -215,13 +256,13 @@ JqueryClass('pedalboardBox', {
 
         canvas.append(rendered)
 
-        wait_for_pedalboard_screenshot(pedalboard.bundle, function (resp) {
+        wait_for_pedalboard_screenshot(pedalboard.bundle, pedalboard.version, function (resp) {
             var img = rendered.find('.img');
 
             if (resp.ok)
             {
                 img.css({backgroundImage: "url(/pedalboard/image/thumbnail.png?bundlepath="+
-                                            escape(pedalboard.bundle)+"&tstamp="+resp.ctime+")"});
+                                            escape(pedalboard.bundle)+"&tstamp="+resp.ctime+"&v="+pedalboard.version+")"});
                 img.addClass("loaded");
             }
             else
@@ -242,19 +283,22 @@ JqueryClass('pedalboardBox', {
  * Takes a pedalboard canvas and select between grid and list mode
  */
 JqueryClass('pedalboardsModeSelector', {
-    init: function (canvas) {
+    init: function (canvasUser, canvasFactory, saveConfigValue) {
         var self = $(this)
-        self.find('.grid').click(function () {
-            self.children().removeClass('selected')
-            $(this).addClass('selected')
-            canvas.removeClass('list-selected')
-            canvas.addClass('grid-selected')
+        self.click(function () {
+            // self.toggleClass('icon-th-1')
+            // self.toggleClass('icon-th-list')
+            // save view mode in user preferences
+            var viewModeList = self.find('#view-mode-list')
+            var viewModeGrid = self.find('#view-mode-grid')
+            var newViewMode = viewModeList.hasClass('selected') ? 'grid' : 'list'
+            saveConfigValue('pb-view-mode', newViewMode, function () {
+              canvasUser.toggleClass('list-selected')
+              canvasFactory.toggleClass('list-selected')
+              viewModeList.toggleClass('selected')
+              viewModeGrid.toggleClass('selected')
+            })
         })
-        self.find('.list').click(function () {
-            self.children().removeClass('selected')
-            $(this).addClass('selected')
-            canvas.removeClass('grid-selected')
-            canvas.addClass('list-selected')
-        })
+
     }
 })

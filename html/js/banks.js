@@ -6,11 +6,11 @@ JqueryClass('bankBox', {
             bankCanvas: self.find('#bank-list .js-canvas'),
             addButton: self.find('#js-add-bank'),
             pedalboardCanvas: self.find('#bank-pedalboards'),
-            pedalboardCanvasMode: self.find('#bank-pedalboards-mode'),
+            initMessage: self.find('#bank-init'),
             searchForm: self.find('#bank-pedalboards-search'),
             searchBox: self.find('input[type=search]'),
-            resultCanvas: self.find('#bank-pedalboards-result .js-canvas'),
-            resultCanvasMode: self.find('#bank-pedalboards-result .js-mode'),
+            resultCanvasUser: self.find('#bank-pedalboards-result .js-user-pedalboards'),
+            resultCanvasFactory: self.find('#bank-pedalboards-result .js-factory-pedalboards'),
             bankTitle: self.find('#bank-title'),
             saving: $('#banks-saving'),
             previousBankTitle: null,
@@ -26,20 +26,20 @@ JqueryClass('bankBox', {
             save: function (data, callback) {
                 callback(true)
             },
+            copyFactoryPedalboard: function (bundlepath, title, callback) {
+                callback({})
+            },
             isMainWindow: true,
             windowName: "Banks"
         }, options)
 
         self.data(options)
 
-        options.pedalboardCanvasMode.pedalboardsModeSelector(options.pedalboardCanvas)
-        options.resultCanvasMode.pedalboardsModeSelector(options.resultCanvas)
-
         options.pedalboardCanvas.hide()
-        options.pedalboardCanvasMode.hide()
         options.searchForm.hide()
-        options.resultCanvas.hide()
-        options.resultCanvasMode.hide()
+        options.resultCanvasUser.hide()
+        options.resultCanvasFactory.hide()
+        options.initMessage.show()
         options.addButton.click(function () {
             self.bankBox('create')
         })
@@ -51,33 +51,84 @@ JqueryClass('bankBox', {
             render: function (pedalboard, url) {
                 var rendered = self.bankBox('renderPedalboard', pedalboard)
                 rendered.draggable({
-                    cursor: "moz-grabbing !important",
-                    cursor: "webkit-grabbing !important",
+                    cursor: "grabbing !important",
                     revert: 'invalid',
                     connectToSortable: options.pedalboardCanvas,
                     helper: function () {
                         var helper = rendered.clone().appendTo(self)
                         helper.addClass('mod-banks-drag-item')
-                        helper.width(rendered.width())
+                        helper.removeClass('js-pedalboard-item')
+                        helper.find('.js-remove').hide()
                         return helper
                     }
                 })
-                self.data('resultCanvas').append(rendered)
+                if (pedalboard.factory) {
+                    self.data('resultCanvasFactory').append(rendered)
+                } else {
+                    self.data('resultCanvasUser').append(rendered)
+                }
             },
             cleanResults: function () {
-                self.data('resultCanvas').html('')
+                self.data('resultCanvasUser').html('')
+                self.data('resultCanvasFactory').html('')
             }
         }, options))
 
         options.pedalboardCanvas.sortable({
-            cursor: "moz-grabbing !important",
-            cursor: "webkit-grabbing !important",
+            cursor: "grabbing !important",
             revert: true,
-            update: function (e, ui) {
-                if (self.droppedBundle && !ui.item.data('pedalboardBundle')) {
-                    ui.item.data('pedalboardBundle', self.droppedBundle)
+            receive: function (e, ui) {
+                // the next update call will be acting on a cloned item, not this one.
+                // as such, we need to cache these values and set them on the newly cloned object for the update
+                self.droppedBundle = ui.item.data('pedalboardBundle')
+                self.droppedTitle = ui.item.data('pedalboardTitle')
+                self.isFactoryPedalboard = ui.item.data('isFactoryPedalboard')
+                if (self.isFactoryPedalboard) {
+                    self.clonedFactoryItem = ui.item.clone()
                 }
-                self.droppedBundle = null
+            },
+            update: function (e, ui) {
+                if (self.droppedBundle) {
+                    // cloned item that got moved into the central area, re-set data attributes
+                    ui.item.data('pedalboardBundle', self.droppedBundle)
+                    ui.item.data('pedalboardTitle', self.droppedTitle)
+                    ui.item.data('isFactoryPedalboard', self.isFactoryPedalboard)
+
+                    // if factory pedalboard was dropped, handle user-data copying
+                    if (self.isFactoryPedalboard) {
+                        self.data('copyFactoryPedalboard')(self.droppedBundle, self.droppedTitle, function(pb) {
+                            ui.item.data('pedalboardBundle', pb.bundlepath)
+                            ui.item.data('pedalboardTitle', pb.title)
+                            ui.item.data('isFactoryPedalboard', false)
+                            ui.item.find('.js-title').text(pb.title)
+
+                            // add the newly copied pedalboard to the user-data canvas area
+                            var clone = self.clonedFactoryItem
+                            clone.draggable({
+                                cursor: "grabbing !important",
+                                revert: 'invalid',
+                                connectToSortable: options.pedalboardCanvas,
+                                helper: function () {
+                                    var helper = clone.clone().appendTo(self)
+                                    helper.addClass('mod-banks-drag-item')
+                                    helper.removeClass('js-pedalboard-item')
+                                    helper.find('.js-remove').hide()
+                                    return helper
+                                }
+                            })
+                            clone.data('pedalboardBundle', pb.bundlepath)
+                            clone.data('pedalboardTitle', pb.title)
+                            clone.data('isFactoryPedalboard', false)
+                            clone.find('.js-title').text(pb.title)
+                            self.data('resultCanvasUser').append(clone)
+                            self.clonedFactoryItem = null
+
+                            self.bankBox('save')
+                        })
+                    }
+                }
+
+                ui.item.removeClass('js-pedalboard-item')
 
                 // TODO the code below is repeated. The former click event is not triggered because
                 // the element is cloned
@@ -91,13 +142,13 @@ JqueryClass('bankBox', {
                     })
                 })
 
-                self.bankBox('save')
-            },
-            receive: function (e, ui) {
-                // Very weird. This should not be necessary, but for some reason the ID is lost between
-                // receive and update. The behaviour that can be seen at http://jsfiddle.net/wngchng87/h3WJH/11/
-                // does not happens here
-                self.droppedBundle = ui.item.data('pedalboardBundle')
+                // if this is a factory pedalboard drop, do not save just yet
+                if (!self.isFactoryPedalboard) {
+                    self.bankBox('save')
+                }
+
+                self.droppedBundle = self.droppedTitle = null
+                self.isFactoryPedalboard = false
             },
         })
 
@@ -124,10 +175,9 @@ JqueryClass('bankBox', {
         if (self.data('loaded')) {
             self.data('currentBank', null)
             self.data('pedalboardCanvas').html('').hide()
-            self.data('pedalboardCanvasMode').hide()
             self.data('searchForm').hide()
-            self.data('resultCanvas').hide()
-            self.data('resultCanvasMode').hide()
+            self.data('resultCanvasUser').hide()
+            self.data('resultCanvasFactory').hide()
             self.data('bankTitle').hide()
         } else {
             self.data('loaded', true)
@@ -160,12 +210,13 @@ JqueryClass('bankBox', {
             var pedalboardData = []
             pedalboards.children().each(function () {
                 var bundle = $(this).data('pedalboardBundle')
+                var title = $(this).data('pedalboardTitle')
                 if (!bundle) {
                     return
                 }
                 pedalboardData.push({
-                    title : $(this).find('.js-title').text(),
                     bundle: bundle,
+                    title: title,
                 })
             })
 
@@ -178,6 +229,7 @@ JqueryClass('bankBox', {
         self.data('save')(serialized, function (ok) {
             if (ok)
                 self.data('saving').html('Auto saving banks... Done!').show()
+
             else {
                 self.data('saving').html('Auto saving banks... Error!').show()
                 new Notification('error', 'Error saving banks!')
@@ -191,11 +243,17 @@ JqueryClass('bankBox', {
             }, 500)
             self.data('savingTimeout', timeout)
         })
+        // Update displayed indexes
+        self.data('pedalboardCanvas').children().each(function (i) {
+          var pedalboard = $(this)
+          var index = pedalboard.find(".js-index")
+          index.html((i+1) + ".&nbsp;")
+        })
     },
 
     create: function () {
         var self = $(this)
-        if(self.data('resultCanvas').children().length === 0){
+        if (self.data('resultCanvasUser').children().length + self.data('resultCanvasFactory').children().length === 0) {
             new Notification('error', 'Before creating banks you must save a pedalboard first.')
             return;
         }
@@ -222,7 +280,7 @@ JqueryClass('bankBox', {
 
         var i, pedalboardData, rendered
         for (i = 0; i < bankData.pedalboards.length; i++) {
-            rendered = self.bankBox('renderPedalboard', bankData.pedalboards[i])
+            rendered = self.bankBox('renderPedalboard', bankData.pedalboards[i], i+1)
             rendered.find('.js-remove').show()
             rendered.appendTo(bank.data('pedalboards'))
         }
@@ -262,17 +320,20 @@ JqueryClass('bankBox', {
             // addressing is already saved, every time select is changed
         }
 
-        if(pedalboards.children().length == 0)
+        if (pedalboards.children().length == 0) {
             new Notification('warning', 'This bank is empty - drag pedalboards from the right panel', 5000)
+        }
 
         canvas.append(bank.data('pedalboards').children())
 
-        // Show everything
+        // Hide initial message
+        self.data('initMessage').hide()
+
+        // Show everything else
         canvas.show()
-        self.data('pedalboardCanvasMode').show()
         self.data('searchForm').show()
-        self.data('resultCanvas').show()
-        self.data('resultCanvasMode').show()
+        self.data('resultCanvasUser').show()
+        self.data('resultCanvasFactory').show()
 
         // Mark this bank as selected
         self.data('currentBank', bank)
@@ -281,7 +342,7 @@ JqueryClass('bankBox', {
         self.data('bankCanvas').children().removeClass('selected')
         bank.addClass('selected')
 
-	// Replace the title string
+        // Replace the title string
         self.data('bankTitle').find('h1').text(bank.data('title') || "Untitled")
         self.data('bankTitle').show()
     },
@@ -329,10 +390,9 @@ JqueryClass('bankBox', {
             self.data('currentBank', null)
             self.data('previousBankTitle', null)
             self.data('pedalboardCanvas').html('').hide()
-            self.data('pedalboardCanvasMode').hide()
             self.data('searchForm').hide()
-            self.data('resultCanvas').hide()
-            self.data('resultCanvasMode').hide()
+            self.data('resultCanvasUser').hide()
+            self.data('resultCanvasFactory').hide()
             self.data('bankTitle').hide()
         }
         bank.animate({
@@ -344,18 +404,21 @@ JqueryClass('bankBox', {
         })
     },
 
-    renderPedalboard: function (pedalboard) {
+    renderPedalboard: function (pedalboard, index) {
         var self = $(this)
 
         var metadata = {
+            index: index ? (index + ".") : "",
             title: pedalboard.title,
             image: "/img/loading-pedalboard.gif",
         }
 
         var rendered = $(Mustache.render(TEMPLATES.bank_pedalboard, metadata))
 
-        // TODO is this necessary?
-        rendered.addClass('js-pedalboard-item')
+        if (!index) {
+            rendered.addClass('js-pedalboard-item')
+            rendered.removeClass('clearfix')
+        }
 
         // Assign remove functionality. If removal is not desired (it's a search result),
         // then the remove clickable element will be hidden
@@ -370,12 +433,14 @@ JqueryClass('bankBox', {
         })
 
         rendered.data('pedalboardBundle', pedalboard.bundle)
+        rendered.data('pedalboardTitle', pedalboard.title)
+        rendered.data('isFactoryPedalboard', pedalboard.factory)
 
-        wait_for_pedalboard_screenshot(pedalboard.bundle, function (resp) {
+        wait_for_pedalboard_screenshot(pedalboard.bundle, pedalboard.version, function (resp) {
             var img = rendered.find('.img img');
 
             if (resp.ok) {
-                img.attr("src", "/pedalboard/image/thumbnail.png?bundlepath="+escape(pedalboard.bundle)+"&tstamp="+resp.ctime)
+                img.attr("src", "/pedalboard/image/thumbnail.png?bundlepath="+escape(pedalboard.bundle)+"&tstamp="+resp.ctime+"&v="+pedalboard.version)
                 img.css({ top: (img.parent().height() - img.height()) / 2 })
             } else {
                 img.attr("src", "/img/icons/broken_image.svg")

@@ -1,6 +1,6 @@
 /*
  * MOD-UI utilities
- * Copyright (C) 2015-2016 Filipe Coelho <falktx@falktx.com>
+ * Copyright (C) 2015-2023 Filipe Coelho <falktx@falktx.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -41,7 +41,7 @@ void scanPlugins()
     {
         for (int i=0; plugins[i] != nullptr; ++i)
         {
-            if (! plugins[i]->valid)
+            if (! plugins[i])
             {
                 printf("Invalid plugin found\n");
                 break;
@@ -50,7 +50,8 @@ void scanPlugins()
             get_plugin_info(plugins[i]->uri);
             get_plugin_gui(plugins[i]->uri);
             get_plugin_gui_mini(plugins[i]->uri);
-            get_plugin_control_inputs_and_monitored_outputs(plugins[i]->uri);
+            get_plugin_control_inputs(plugins[i]->uri);
+            get_plugin_info_essentials(plugins[i]->uri);
         }
     }
 #endif
@@ -63,11 +64,11 @@ void scanPlugins()
             continue;
     }
 
-    if (const PedalboardInfo_Mini* const* const pedalboards = get_all_pedalboards())
+    if (const PedalboardInfo_Mini* const* const pedalboards = get_all_pedalboards(kPedalboardInfoBoth))
     {
         for (int i=0; pedalboards[i] != nullptr; ++i)
         {
-            if (! pedalboards[i]->valid)
+            if (! pedalboards[i])
             {
                 printf("Invalid pedalboard found\n");
                 break;
@@ -92,7 +93,8 @@ int main()
     get_plugin_info(PLUGIN_TEST_URI);
     get_plugin_gui(PLUGIN_TEST_URI);
     get_plugin_gui_mini(PLUGIN_TEST_URI);
-    get_plugin_control_inputs_and_monitored_outputs(PLUGIN_TEST_URI);
+    get_plugin_control_inputs(PLUGIN_TEST_URI);
+    get_plugin_info_essentials(PLUGIN_TEST_URI);
 # undef PLUGIN_TEST_URI
 # endif
     cleanup();

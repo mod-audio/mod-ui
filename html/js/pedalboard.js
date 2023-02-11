@@ -15,6 +15,56 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+
+ $.ui.intersect = function(draggable, droppable, toleranceMode) {
+
+ 	if (!droppable.offset) {
+ 		return false;
+ 	}
+
+ 	var draggableLeft, draggableTop,
+ 		x1 = (draggable.positionAbs || draggable.position.absolute).left,
+ 		y1 = (draggable.positionAbs || draggable.position.absolute).top,
+ 		x2 = x1 + draggable.helperProportions.width,
+ 		y2 = y1 + draggable.helperProportions.height,
+ 		l = droppable.offset.left,
+ 		t = droppable.offset.top,
+ 		r = l + droppable.proportions.width,
+ 		b = t + droppable.proportions.height;
+
+ 	switch (toleranceMode) {
+   case "custom":
+ 			return (l < x1 + (draggable.helperProportions.width / 2) && // Right Half
+ 				x2 - (draggable.helperProportions.width / 2) < r && // Left Half
+        t < y1 + (draggable.helperProportions.height / 2.5) && // Bottom Half
+        y2 - (draggable.helperProportions.height / 2.5) < b ); // Top Half
+ 		case "fit":
+ 			return (l <= x1 && x2 <= r && t <= y1 && y2 <= b);
+ 		case "intersect":
+ 			return (l < x1 + (draggable.helperProportions.width / 2) && // Right Half
+ 				x2 - (draggable.helperProportions.width / 2) < r && // Left Half
+ 				t < y1 + (draggable.helperProportions.height / 2) && // Bottom Half
+ 				y2 - (draggable.helperProportions.height / 2) < b ); // Top Half
+ 		case "pointer":
+ 			draggableLeft = ((draggable.positionAbs || draggable.position.absolute).left + (draggable.clickOffset || draggable.offset.click).left);
+ 			draggableTop = ((draggable.positionAbs || draggable.position.absolute).top + (draggable.clickOffset || draggable.offset.click).top);
+ 			return isOverAxis( draggableTop, t, droppable.proportions().height ) && isOverAxis( draggableLeft, l, droppable.proportions().width );
+ 		case "touch":
+ 			return (
+ 				(y1 >= t && y1 <= b) ||	// Top edge touching
+ 				(y2 >= t && y2 <= b) ||	// Bottom edge touching
+ 				(y1 < t && y2 > b)		// Surrounded vertically
+ 			) && (
+ 				(x1 >= l && x1 <= r) ||	// Left edge touching
+ 				(x2 >= l && x2 <= r) ||	// Right edge touching
+ 				(x1 < l && x2 > r)		// Surrounded horizontally
+ 			);
+ 		default:
+ 			return false;
+ 		}
+
+ };
+
 JqueryClass('pedalboard', {
     init: function (options) {
         var self = $(this)
@@ -39,6 +89,8 @@ JqueryClass('pedalboard', {
             // This is a margin, in pixels, that will be disconsidered from pedalboard height when calculating
             // hardware ports positioning
             bottomMargin: 0,
+
+            cvAddressing: false,
 
             // Below are functions that application uses to integrate functionality to pedalboard.
             // They all receive a callback as last parameter, which must be called with a true value
@@ -81,6 +133,12 @@ JqueryClass('pedalboard', {
             // Changes the parameter of a plugin's control port
             pluginParameterChange: function (port, value) {},
 
+            // Get value of a plugin parameter
+            pluginPatchGet: function (instance, uri) {},
+
+            // Set value of a plugin parameter
+            pluginPatchSet: function (instance, uri, valuetype, value) {},
+
             // Connects two ports
             portConnect: function (fromPort, toPort, callback) {
                 callback(true)
@@ -109,6 +167,10 @@ JqueryClass('pedalboard', {
             showPluginInfo: function (pluginData) {
             },
 
+            // Show the plugin's native UI, in an external desktop window
+            showExternalUI: function (instance) {
+            },
+
             // Sets the size of the pedalboard
             windowSize: function (width, height) {},
 
@@ -117,12 +179,26 @@ JqueryClass('pedalboard', {
                 callback()
             },
 
+            // Add new plugin cv output port to available addressable cv ports
+            // or update existing cv port's name
+            addCVAddressingPluginPort: function (uri, label, callback) {
+              callback(true)
+            },
+
+            // Remove plugin cv output port from available addressable cv ports
+            removeCVAddressingPluginPort: function (uri, callback) {
+              callback(true)
+            },
+
+            // Show notification that we are using a demo plugin
+            notifyDemoPluginLoaded: function () {
+            },
         }, options)
 
         self.pedalboard('wrapApplicationFunctions', options, [
             'pluginLoad', 'pluginRemove',
             'pluginPresetLoad', 'pluginPresetSaveNew', 'pluginPresetSaveReplace', 'pluginPresetDelete',
-            'pluginParameterChange', 'pluginMove',
+            'pluginParameterChange', 'pluginPatchGet', 'pluginPatchSet', 'pluginMove',
             'portConnect', 'portDisconnect', 'reset', 'getPluginsData'
         ])
 
@@ -203,6 +279,7 @@ JqueryClass('pedalboard', {
         // Must be much bigger than screen, so that nothing can be
         // dropped outside it even if mouse goes outside window
         var bg = $('<div>')
+        bg.addClass('ignore-arrive')
         bg.css({
             width: '300%',
             height: '300%',
@@ -299,6 +376,11 @@ JqueryClass('pedalboard', {
         return self
     },
 
+    setCvAddressing: function (cvAddressing) {
+      var self = $(this);
+      self.data('cvAddressing', cvAddressing);
+    },
+
     initGestures: function () {
         var self = $(this)
             // Gestures for tablets
@@ -368,7 +450,8 @@ JqueryClass('pedalboard', {
 
     fakeLoadFromServerData: function (data, callback, bypassApplication) {
         var self = $(this)
-
+        console.log("PEDALBOARD_DATA")
+        console.log(data)
         /*
          * Unserialization will first call all application callbacks and after everything is done,
          * build the pedalboard in screen.
@@ -455,49 +538,50 @@ JqueryClass('pedalboard', {
                 var symbol
                 for (var i=1, count=data.hardware.audio_ins; i<=count; i++) {
                     symbol = (i < 3) ? ('/graph/capture_' + i) : ('/graph/audio_from_slave_' + (i-2))
-                    var hw = $('<div class="hardware-output" mod-port-index="' + i + '" title="Hardware Capture ' + i + '">')
+                    var hw = $('<div class="ignore-arrive hardware-output" mod-port-index="' + i + '" title="Hardware Capture ' + i + '">')
                     self.pedalboard('addHardwareOutput', hw, symbol, 'audio')
                 }
                 for (var i=1, count=data.hardware.audio_outs; i<=count; i++) {
                     symbol = (i < 3) ? ('/graph/playback_' + i) : ('/graph/audio_to_slave_' + (i-2))
-                    var hw = $('<div class="hardware-input" mod-port-index="' + i + '" title="Hardware Playback ' + i + '">')
+                    var hw = $('<div class="ignore-arrive hardware-input" mod-port-index="' + i + '" title="Hardware Playback ' + i + '">')
                     self.pedalboard('addHardwareInput', hw, '/graph/playback_' + i, 'audio')
                 }
                 for (var i=1, count=data.hardware.cv_ins; i<=count; i++) {
-                    var hw = $('<div class="hardware-output" mod-port-index="' + i + '" title="Hardware CV Capture ' + i + '">')
+                    var hw = $('<div class="ignore-arrive hardware-output" mod-port-index="' + i + '" title="Hardware CV Capture ' + i + '">')
                     self.pedalboard('addHardwareOutput', hw, '/graph/cv_capture_' + i + '_in', 'cv')
                 }
                 for (var i=1, count=data.hardware.cv_outs; i<=count; i++) {
-                    var hw = $('<div class="hardware-input" mod-port-index="' + i + '" title="Hardware CV Playback ' + i + '">')
+                    var hw = $('<div class="ignore-arrive hardware-input" mod-port-index="' + i + '" title="Hardware CV Playback ' + i + '">')
                     self.pedalboard('addHardwareInput', hw, '/graph/cv_playback_' + i + '_out', 'cv')
                 }
                 if (data.hardware.serial_midi_in) {
-                    var hw = $('<div class="hardware-output" mod-port-index="1" title="Hardware DIN MIDI In">')
+                    var hw = $('<div class="ignore-arrive hardware-output" mod-port-index="1" title="Hardware DIN MIDI In">')
                     self.pedalboard('addHardwareOutput', hw, '/graph/serial_midi_in', 'midi')
                 }
                 if (data.hardware.serial_midi_out) {
-                    var hw = $('<div class="hardware-input" mod-port-index="1" title="Hardware DIN MIDI Out">')
+                    var hw = $('<div class="ignore-arrive hardware-input" mod-port-index="1" title="Hardware DIN MIDI Out">')
                     self.pedalboard('addHardwareInput', hw, '/graph/serial_midi_out', 'midi')
                 }
                 if (data.hardware.midi_merger_in) {
-                    var hw = $('<div class="hardware-output" mod-port-index="2" title="All MIDI In">')
+                    var hw = $('<div class="ignore-arrive hardware-output" mod-port-index="2" title="All MIDI In">')
                     self.pedalboard('addHardwareOutput', hw, '/graph/midi_merger_in', 'midi')
                 }
                 if (data.hardware.midi_merger_out) {
-                    var hw = $('<div class="hardware-input" mod-port-index="2" title="All MIDI Out">')
+                    var hw = $('<div class="ignore-arrive hardware-input" mod-port-index="2" title="All MIDI Out">')
                     self.pedalboard('addHardwareInput', hw, '/graph/midi_merger_out', 'midi')
                 }
-                var portdata, pindex
+                var portdata, pindex, prefix
                 for (var i in data.hardware.midi_ins) {
                     portdata = data.hardware.midi_ins[i]
                     pindex   = parseInt(portdata.symbol.replace("midi_capture_",""))+1
-                    var hw = $('<div class="hardware-output" mod-port-index=' + pindex + ' title="Hardware ' + portdata.name + '">')
+                    var hw = $('<div class="ignore-arrive hardware-output" mod-port-index=' + pindex + ' title="Hardware ' + portdata.name + '">')
                     self.pedalboard('addHardwareOutput', hw, '/graph/' + portdata.symbol, 'midi')
                 }
                 for (var i in data.hardware.midi_outs) {
                     portdata = data.hardware.midi_outs[i]
                     pindex   = parseInt(portdata.symbol.replace("midi_playback_",""))+1
-                    var hw = $('<div class="hardware-input" mod-port-index=' + pindex + ' title="Hardware ' + portdata.name + '">')
+                    prefix   = portdata.name === 'MIDI Loopback' ? 'Virtual' : 'Hardware'
+                    var hw = $('<div class="ignore-arrive hardware-input" mod-port-index=' + pindex + ' title="' + prefix + ' ' + portdata.name + '">')
                     self.pedalboard('addHardwareInput', hw, '/graph/' + portdata.symbol, 'midi')
                 }
             }
@@ -612,13 +696,14 @@ JqueryClass('pedalboard', {
         })
 
         var options = {
-            defaultIconTemplate: DEFAULT_ICON_TEMPLATE
+            defaultIconTemplate: DEFAULT_ICON_TEMPLATE,
+            dummy: true,
         }
         var thumb = element.children(".thumb");
         var img = thumb.children("img");
         element.draggable($.extend(draggableOptions, {
             helper: function (event) {
-                var dummy = $('<div class="mod-pedal dummy">');
+                var dummy = $('<div class="mod-pedal ignore-arrive dummy">');
                 var imgrect = img.position();
                 imgrect.width = img.width();
                 imgrect.height = img.height();
@@ -628,10 +713,16 @@ JqueryClass('pedalboard', {
                                   y: Math.min(imgrect.height, Math.max(0, (event.offsetY - imgrect.top))) / imgrect.height };
                 var pad = { left: parseInt(element.css("padding-left")),
                             top: parseInt(element.css("padding-top")) };
+                var renderedVersion = [pluginData.builder,
+                                       pluginData.microVersion,
+                                       pluginData.minorVersion,
+                                       pluginData.release].join('_');
                 $.ajax({
                     url: '/effect/get',
                     data: {
-                        uri: pluginData.uri
+                        uri: pluginData.uri,
+                        version: VERSION,
+                        plugin_version: renderedVersion,
                     },
                     success: function (plugin) {
                         new GUI(plugin, options).renderDummyIcon(function (icon) {
@@ -665,7 +756,7 @@ JqueryClass('pedalboard', {
                             dummy.append(children);
                         })
                     },
-                    cache: false,
+                    cache: !!pluginData.buildEnvironment,
                     dataType: 'json'
                 })
                 $('body').append(dummy)
@@ -806,6 +897,11 @@ JqueryClass('pedalboard', {
             duration == 400
         }
 
+        // workaround some browsers that send a zero value at step start, which is an invalid scale
+        var usingInitialZero = false
+        var oldScale = self.data('scale')
+        var newScale = scale
+
         self.animate({
             scale: scale,
             top: offsetY,
@@ -816,6 +912,15 @@ JqueryClass('pedalboard', {
                 if (prop.prop != 'scale') {
                     return
                 }
+                // if we receive a value of 0, which is impossible for the scale variable, trigger workaround
+                if (value == 0) {
+                    usingInitialZero = true
+                }
+                if (usingInitialZero) {
+                    var per = value / newScale
+                    value = (oldScale * (1.0 - per)) + (newScale * per)
+                }
+
                 self.css({
                     webkitTransform: 'scale(' + value + ')',
                     MozTransform: 'scale(' + value + ')',
@@ -895,10 +1000,10 @@ JqueryClass('pedalboard', {
     // Enlarge the pedalboard to a minimum size capable of accommodating all plugins.
     adapt: function (forcedUpdate) {
         var self = $(this)
-            // First, get the minmum bounding rectangle,
-            // given by minX, maxX, minY and maxY
+        // First, get the minmum bounding rectangle,
+        // given by minX, maxX, minY and maxY
         var minX, maxX, minY, maxY, rightMargin, w, h, x, y, plugin, pos
-            //var pedals = self.find('.js-effect')
+        //var pedals = self.find('.js-effect')
         var plugins = self.data('plugins')
         var scale = self.data('scale')
         minX = 0
@@ -1000,6 +1105,21 @@ JqueryClass('pedalboard', {
 
         self.data('minScale', newScale)
 
+        // if we are at scale 1, it is very much likely that we do not want to zoom out now
+        // keep current scale if that is the case
+        if (scale == 1 && ! forcedUpdate) {
+            var width = viewWidth / newScale
+            var height = viewHeight / newScale
+            self.width(width)
+            self.height(height)
+            self.pedalboard('positionHardwarePorts')
+            return
+        }
+
+        // workaround some browsers that send a zero value at step start, which is an invalid scale
+        var usingInitialZero = false
+        var oldScale = scale
+
         self.animate({
             scale: newScale,
         }, {
@@ -1008,6 +1128,15 @@ JqueryClass('pedalboard', {
                 if (prop.prop != 'scale') {
                     return
                 }
+                // if we receive a scale of 0, which is impossible for the scale variable, trigger workaround
+                if (scale == 0) {
+                    usingInitialZero = true
+                }
+                if (usingInitialZero) {
+                    var per = scale / newScale
+                    scale = (oldScale * (1.0 - per)) + (newScale * per)
+                }
+
                 var width = viewWidth / scale
                 var height = viewHeight / scale
                 var offsetX = (viewWidth - width) / 2
@@ -1191,6 +1320,10 @@ JqueryClass('pedalboard', {
             instance = "_" + instance
         var i = 1;
         instance = '/graph/' + instance
+        // the prefix "/graph/cv_" is reserved, make sure we dont use it
+        if (instance === '/graph/cv') {
+            instance = instance + 'x'
+        }
         if (instance in self.data('plugins')) {
             instance = instance + "_1"
             while (instance in self.data('plugins')) {
@@ -1250,6 +1383,12 @@ JqueryClass('pedalboard', {
             change: function (port, value) {
                 self.data('pluginParameterChange')(port, value)
             },
+            patchGet: function (uri) {
+                self.data('pluginPatchGet')(instance, uri)
+            },
+            patchSet: function (uri, valuetype, value) {
+                self.data('pluginPatchSet')(instance, uri, valuetype, value)
+            },
             presetLoad: function (uri) {
                 self.data('pluginPresetLoad')(instance, uri, function (ok) {
                         if (ok) {
@@ -1283,6 +1422,7 @@ JqueryClass('pedalboard', {
             defaultSettingsTemplate: DEFAULT_SETTINGS_TEMPLATE
         }, guiOptions)
 
+        /* FIXME this is not used anywhere. remove?
         var preset_list = []
         for (var key in pluginData['presets']) {
             preset_list.push({
@@ -1293,10 +1433,12 @@ JqueryClass('pedalboard', {
         pluginData = $.extend({
             preset_list: preset_list
         }, pluginData)
+        */
         var pluginGui = new GUI(pluginData, options)
 
         pluginGui.render(instance, function (icon, settings) {
             obj.icon = icon
+            icon.attr('mod-uri', escape(pluginData.uri));
 
             self.data('plugins')[instance] = icon
 
@@ -1356,7 +1498,7 @@ JqueryClass('pedalboard', {
                         element = icon.find('[mod-role=' + direction + '-' + type + '-port][mod-port-symbol=' + symbol + ']')
                         if (element.length == 0)
                             continue
-                            // call either makeInput or makeOutput
+                        // call either makeInput or makeOutput
                         var method = 'make' + direction.charAt(0).toUpperCase() + direction.slice(1)
                         self.pedalboard(method, element, instance)
                     }
@@ -1372,7 +1514,14 @@ JqueryClass('pedalboard', {
                 $('body').bind('mouseup touchend', upHandler)
             })
 
-            var actions = $('<div>').addClass('mod-actions').appendTo(icon)
+            var actions = $('<div>').addClass('ignore-arrive').addClass('mod-actions').appendTo(icon)
+            if (pluginData.hasExternalUI) {
+                $('<div>').addClass('mod-external-ui').click(function () {
+                    self.pedalboard('finishConnection')
+                    self.data('showExternalUI')(instance)
+                    return false
+                }).appendTo(actions)
+            }
             $('<div>').addClass('mod-information').click(function () {
                 self.pedalboard('finishConnection')
                 self.data('showPluginInfo')(pluginData)
@@ -1385,7 +1534,7 @@ JqueryClass('pedalboard', {
             }).appendTo(actions)
             $('<div>').addClass('mod-remove').click(function () {
                 self.pedalboard('finishConnection')
-                self.pedalboard('removePlugin', instance)
+                self.pedalboard('removePlugin', instance, pluginData.ports)
                 return false
             }).appendTo(actions)
 
@@ -1398,6 +1547,23 @@ JqueryClass('pedalboard', {
                 left: x,
                 top: y
             }).appendTo(self)
+
+            // adjust position of cv out checkboxes if needed
+            var lastCvPosY = -1, lastCvElem
+            for (k = 0; k < pluginData.ports['cv']['output'].length; k++) {
+                symbol = pluginData.ports['cv']['output'][k].symbol
+                element = icon.find('[mod-role=' + direction + '-' + type + '-port][mod-port-symbol=' + symbol + ']')
+                if (element.length == 0)
+                    continue
+                var curCvPosY = element.position().top
+                if (lastCvPosY != -1 && Math.abs(curCvPosY - lastCvPosY) < 50) {
+                    element.find('.output-cv-checkbox').css({left:'50px',top:'10px'})
+                    lastCvElem.find('.output-cv-checkbox').css({left:'50px',top:'10px'})
+                }
+                lastCvElem = element
+                lastCvPosY = curCvPosY
+            }
+
             self.data('z_index', self.data('z_index')+1)
             if (renderCallback)
                 renderCallback()
@@ -1437,72 +1603,62 @@ JqueryClass('pedalboard', {
         return Object.keys(uris)
     },
 
-    setPortEnabled: function (instance, symbol, enabled, feedback) {
+    setPortEnabled: function (instance, symbol, enabled, feedback, forceAddress, momentaryMode) {
         var self = $(this)
-        var targetname1, targetname2
-        var callbackId  = instance+'/'+symbol+":enabled"
+        var targetname = '.mod-pedal[mod-instance="'+instance+'"]'
+        var callbackId = instance+'/'+symbol+":enabled"
         var gui = self.pedalboard('getGui', instance)
 
-        if (symbol == ":presets") {
-            targetname1 = '.mod-pedal[mod-instance="'+instance+'"] [mod-role="presets"]'
-            targetname2 = '[mod-instance="'+instance+'"] .mod-pedal-settings .mod-presets'
-        } else {
-            targetname1 = '.mod-pedal [mod-port="'+instance+'/'+symbol+'"]'
-            targetname2 = '.mod-pedal-settings [mod-port="'+instance+'/'+symbol+'"]'
-        }
-
-        if (gui && ($(targetname1).length || $(targetname2).length)) {
-            if (enabled) {
+        if (gui && self.find(targetname).length) {
+            if (enabled || feedback) {
                 gui.enable(symbol)
-            } else if (!feedback) {
-                gui.disable(symbol)
             } else {
-                gui.addressPort(symbol)
+                gui.disable(symbol)
+            }
+            if (forceAddress) {
+              gui.addressPort(symbol, feedback, momentaryMode)
             }
 
         } else {
             var cb = function () {
                 delete self.data('callbacksToArrive')[callbackId]
-                $(document).unbindArrive(targetname1, cb)
-                $(document).unbindArrive(targetname2, cb)
+                self.unbindArrive(targetname, cb)
 
                 var gui = self.pedalboard('getGui', instance)
-                if (enabled) {
+                if (enabled || feedback) {
                     gui.enable(symbol)
-                } else if (!feedback) {
-                    gui.disable(symbol)
                 } else {
-                    gui.addressPort(symbol)
-                 }
+                    gui.disable(symbol)
+                }
+
+                if (forceAddress) {
+                  gui.addressPort(symbol, feedback, momentaryMode)
+                }
             }
 
-            self.pedalboard('addUniqueCallbackToArrive', cb, targetname1, callbackId)
-            self.pedalboard('addUniqueCallbackToArrive', cb, targetname2, callbackId)
+            self.pedalboard('addUniqueCallbackToArrive', cb, targetname, callbackId)
         }
     },
 
     setPortWidgetsValue: function (instance, symbol, value) {
         var self = $(this)
-        var targetname1 = '.mod-pedal [mod-port="'+instance+'/'+symbol+'"]'
-        var targetname2 = '.mod-pedal-settings [mod-port="'+instance+'/'+symbol+'"]'
-        var callbackId  = instance+'/'+symbol+":value"
+        var targetname = '.mod-pedal[mod-instance="'+instance+'"]'
+        var callbackId = instance+'/'+symbol+":value"
         var gui = self.pedalboard('getGui', instance)
 
-        if (gui && ($(targetname1).length || $(targetname2).length)) {
+        if (gui && self.find(targetname).length) {
             gui.setPortWidgetsValue(symbol, value, null, true)
 
         } else {
             var cb = function () {
                 delete self.data('callbacksToArrive')[callbackId]
-                $(document).unbindArrive(targetname1, cb)
-                $(document).unbindArrive(targetname2, cb)
+                self.unbindArrive(targetname, cb)
 
                 var gui = self.pedalboard('getGui', instance)
                 gui.setPortWidgetsValue(symbol, value, null, true)
             }
 
-            self.pedalboard('addUniqueCallbackToArrive', cb, targetname1, callbackId)
-            self.pedalboard('addUniqueCallbackToArrive', cb, targetname2, callbackId)
+            self.pedalboard('addUniqueCallbackToArrive', cb, targetname, callbackId)
         }
     },
 
@@ -1519,10 +1675,55 @@ JqueryClass('pedalboard', {
 
             var cb = function () {
                 delete self.data('callbacksToArrive')[callbackId]
-                $(document).unbindArrive(targetname, cb)
+                self.unbindArrive(targetname, cb)
 
                 var gui = self.pedalboard('getGui', instance)
                 gui.setOutputPortValue(symbol, value)
+            }
+
+            self.pedalboard('addUniqueCallbackToArrive', cb, targetname, callbackId)
+        }
+    },
+
+    setReadableParameterValue: function (instance, uri, valuetype, valuedata) {
+        var self = $(this)
+        var gui = self.pedalboard('getGui', instance)
+
+        if (gui) {
+            gui.setReadableParameterValue(uri, valuetype, valuedata)
+
+        } else {
+            var targetname = '.mod-pedal[mod-instance="'+instance+'"]'
+            var callbackId = instance+'@'+uri+'@value'
+
+            var cb = function () {
+                delete self.data('callbacksToArrive')[callbackId]
+                self.unbindArrive(targetname, cb)
+
+                var gui = self.pedalboard('getGui', instance)
+                gui.setReadableParameterValue(uri, valuetype, valuedata)
+            }
+
+            self.pedalboard('addUniqueCallbackToArrive', cb, targetname, callbackId)
+        }
+    },
+
+    setWritableParameterValue: function (instance, uri, valuetype, valuedata) {
+        var self = $(this)
+        var targetname = '.mod-pedal[mod-instance="'+instance+'"]'
+        var callbackId = instance+'@'+uri+'@value'
+        var gui = self.pedalboard('getGui', instance)
+
+        if (gui && self.find(targetname).length) {
+            gui.setWritableParameterValue(uri, valuetype, valuedata, null, true)
+
+        } else {
+            var cb = function () {
+                delete self.data('callbacksToArrive')[callbackId]
+                self.unbindArrive(targetname, cb)
+
+                var gui = self.pedalboard('getGui', instance)
+                gui.setWritableParameterValue(uri, valuetype, valuedata, null, true)
             }
 
             self.pedalboard('addUniqueCallbackToArrive', cb, targetname, callbackId)
@@ -1542,7 +1743,7 @@ JqueryClass('pedalboard', {
 
             var cb = function () {
                 delete self.data('callbacksToArrive')[callbackId]
-                $(document).unbindArrive(targetname, cb)
+                self.unbindArrive(targetname, cb)
 
                 var gui = self.pedalboard('getGui', instance)
                 gui.selectPreset(value)
@@ -1553,15 +1754,16 @@ JqueryClass('pedalboard', {
     },
 
     addUniqueCallbackToArrive: function (cb, targetname, callbackId) {
-        var callbacks = $(this).data('callbacksToArrive'),
+        var self = $(this);
+        var callbacks = self.data('callbacksToArrive'),
             currentCallback = callbacks[callbackId];
 
         if (currentCallback) {
-            $(document).unbindArrive(targetname, currentCallback)
+            self.unbindArrive(targetname, currentCallback)
         }
 
         callbacks[callbackId] = cb
-        $(document).arrive(targetname, cb)
+        self.arrive(targetname, cb)
     },
 
     // Redraw all connections from or to a plugin
@@ -1582,10 +1784,17 @@ JqueryClass('pedalboard', {
 
     // Removes a plugin from pedalboard. (from the system?)
     // Calls application removal function with proper removal callback
-    removePlugin: function (instance) {
+    removePlugin: function (instance, ports) {
         var self = $(this)
         var pluginRemove = self.data('pluginRemove')
-        pluginRemove(instance, function () {})
+        pluginRemove(instance, function () {
+          // Remove plugin's cv output ports from harware manager
+          if (ports && ports.cv && ports.cv.output) {
+            for (var i = 0; i < ports.cv.output.length; i++) {
+              self.data('hardwareManager').removeCvOutputPort('/cv' + instance + '/' + ports.cv.output[i].symbol)
+            }
+          }
+        })
     },
 
     removeItemFromCanvas: function (instance) {
@@ -1605,8 +1814,12 @@ JqueryClass('pedalboard', {
             self.data('hardwareManager').removeInstance(instance)
 
             var plugin = plugins[instance]
+            // plugin might have failed to register
+            if (plugin && plugin.data) {
+                var pluginGui = plugin.data('gui')
+                pluginGui && pluginGui.triggerJS({ type: 'end' })
+            }
             if (plugin && plugin.length) {
-                // plugin might have failed to register
                 plugin.remove()
             }
 
@@ -1717,14 +1930,23 @@ JqueryClass('pedalboard', {
         self.data('hardwareManager').reset()
 
         var connMgr = self.data('connectionManager')
+
+        connMgr.iterate(function(jack) {
+            self.pedalboard('destroyJack', jack);
+        })
+
         connMgr.reset()
 
         var plugins = self.data('plugins')
         for (var instance in plugins) {
             var plugin = plugins[instance]
 
+            // plugin might have failed to register
+            if (plugin && plugin.data) {
+                var pluginGui = plugin.data('gui')
+                pluginGui && pluginGui.triggerJS({ type: 'end' })
+            }
             if (plugin && plugin.length) {
-                // plugin might have failed to register
                 plugin.remove()
             }
         }
@@ -1754,6 +1976,7 @@ JqueryClass('pedalboard', {
 
         element.droppable({
             accept: '[mod-role=output-jack]',
+            tolerance: 'custom',
             drop: function (event, ui) {
                 var overCount = self.data('overCount');
                 self.data('overCount', 0);
@@ -1829,8 +2052,11 @@ JqueryClass('pedalboard', {
 
         self.pedalboard('spawnJack', element)
 
-        element.click(function () {
-            self.pedalboard('startConnection', element)
+        element.click(function (e) {
+            // Do not start connection if cv addressing checkbox or text input clicked
+            if (!$(e.target).is('input') && !$(e.target).hasClass('checkmark') && !$(e.target).hasClass('checkbox-container')) {
+              self.pedalboard('startConnection', element)
+            }
         })
     },
 
@@ -1858,6 +2084,7 @@ JqueryClass('pedalboard', {
         // The cable is composed by three lines with different style: one for the cable,
         // one for the background shadow and one for the reflecting light.
         var canvas = $('<div>');
+        canvas.addClass('ignore-arrive');
 
         if (output.attr("class").search("mod-audio-") >= 0)
             canvas.addClass("mod-audio");
@@ -1865,6 +2092,103 @@ JqueryClass('pedalboard', {
             canvas.addClass("mod-midi");
         else if (output.attr("class").search("mod-cv-") >= 0)
             canvas.addClass("mod-cv");
+
+        // Add checkbox + text inputs next to output cv ports for addressings
+        if (output.attr('mod-role') === 'output-cv-port' && output.find('.output-cv-checkbox').length === 0) {
+          var port = output.attr("mod-port");
+          var portSymbol = output.attr("mod-port-symbol");
+          var cvPort = '/cv' + port;
+          var addedPort = self.data('hardwareManager').cvOutputPorts.find(function (port) {
+            return port.uri === cvPort;
+          });
+
+          var cvCheckboxInput = $('<div>');
+          cvCheckboxInput.addClass('ignore-arrive');
+
+          // Append checkbox
+          var checkbox = $('<input type="checkbox">');
+          var checkboxContainer = $('<span class="checkbox-container"></span>');
+          checkbox.appendTo(checkboxContainer);
+          $('<span class="checkmark" />').appendTo(checkboxContainer);
+          checkboxContainer.appendTo(cvCheckboxInput);
+
+          // Append text input
+          var textInput = $('<input type="text" />');
+          textInput.appendTo(cvCheckboxInput);
+
+          cvCheckboxInput.addClass('output-cv-checkbox');
+          cvCheckboxInput.appendTo(output);
+          if (!self.data('cvAddressing')) {
+            cvCheckboxInput.hide()
+          }
+
+          // Disable inputs for hardware cv ports
+          var defaultText = output.attr("title")
+          if (
+            portSymbol === "/graph/cv_exp_pedal" ||
+            portSymbol === "/graph/cv_capture_1" ||
+            portSymbol === "/graph/cv_capture_2"
+          ) {
+            checkbox.prop('disabled', true);
+            checkbox.prop('checked', true);
+            textInput.prop('disabled', true);
+          } else {
+            // Add default displayed name to plugins CV ports
+            var instance = port
+              .split("/graph/")[1]
+              .split("/")[0]
+              .replace(/^\w/, function(chr) {
+                return chr.toUpperCase();
+              });
+            defaultText = instance + " " + defaultText
+            if (addedPort) {
+              defaultText = addedPort.name;
+              checkbox.prop('checked', true);
+            } else {
+              textInput.hide();
+            }
+          }
+          textInput.val(defaultText);
+
+          checkbox.change(function () {
+            var name = textInput.val();
+            if ($(this).prop('checked')) {
+              // Register new addressable cv port
+              self.data('addCVAddressingPluginPort')(cvPort, name, function (resp) {
+                if (resp && resp.ok) {
+                  self.data('hardwareManager').addCvOutputPort(cvPort, name, resp.operational_mode);
+                  // Show and highlight text input
+                  textInput.show();
+                  textInput.select();
+                }
+              });
+            } else {
+              // Unregister cv port
+              self.data('removeCVAddressingPluginPort')(cvPort, function (resp) {
+                if (resp) {
+                  self.data('hardwareManager').removeCvOutputPort(cvPort);
+                  // Hide text input again
+                  textInput.hide();
+                }
+              });
+            }
+          })
+
+          textInput.change(function () {
+            var name = $(this).val();
+            self.data('addCVAddressingPluginPort')(cvPort, name, function (resp) {
+              if (resp && resp.ok) {
+                self.data('hardwareManager').addCvOutputPort(cvPort, name, resp.operational_mode);
+              }
+            });
+          });
+
+          textInput.keydown(function (e) {
+            if (e.keyCode === 13) {
+              $(this).blur();
+            }
+          });
+        }
 
         canvas.css({
             width: '100%',
@@ -1923,13 +2247,13 @@ JqueryClass('pedalboard', {
                 var scale = self.data('scale')
                 ui.position.top /= scale
                 ui.position.left /= scale
+                jack.css({ marginTop: 0 })
                 self.pedalboard('drawJack', jack, true)
             },
             stop: function () {
                 self.pedalboard('preventDrag', false)
 
                 self.pedalboard('highlightInputs', false)
-
                 jack.removeClass('jack-connecting')
                 output.removeClass('output-connecting')
                 canvas.removeClass('cable-connecting')
@@ -1940,6 +2264,12 @@ JqueryClass('pedalboard', {
                         left: 'auto',
                         marginTop: 'auto',
                     })
+
+                    // if jack output previous sibling has a margin-bottom,
+                    // adjust jack top position in accordance
+                    if (jack.data('origin') && jack.data('origin').prev() && jack.data('origin').prev().css('margin-bottom')) {
+                      jack.css('top', parseInt(jack.css('top')) - parseInt(jack.data('origin').prev().css('margin-bottom')))
+                    }
                 }
                 self.pedalboard('drawJack', jack)
             }
@@ -1971,7 +2301,6 @@ JqueryClass('pedalboard', {
     // Force parameter will force drawing when jack is disconnected
     drawJack: function (jack, force) {
         var self = $(this)
-
         // We used settimeout so that drawing will occur after all events are processed. This avoids some bad
         // user experience
         setTimeout(function () {
@@ -1997,7 +2326,15 @@ JqueryClass('pedalboard', {
             var xi = source.offset().left / scale - self.offset().left / scale + source.width()
             var yi = source.offset().top / scale - self.offset().top / scale + source.height() / 2
             var xo = jack.offset().left / scale - self.offset().left / scale
-            var yo = jack.offset().top / scale - self.offset().top / scale + jack.height() / 2
+            var jackOffsetTop = jack.offset().top
+
+            // Adjust jack offset top position
+            // that is sometimes biased by jack destination previous sibling margin bottom
+            if (!force && parseInt(jack.css('top')) === 0 && parseInt(jack.css('bottom')) === 0) {
+              jackOffsetTop = jack.offset().top - jack.position().top
+            }
+            var yo = jackOffsetTop / scale - self.offset().top / scale + jack.height() / 2
+
             //if (source.hasClass("mod-audio-output"))
                 //self.pedalboard('drawBezier', jack.data('canvas'), xi+12, yi, xo, yo, '')
             //else
@@ -2023,7 +2360,7 @@ JqueryClass('pedalboard', {
         // It gives us a pretty good result
         var deltaX = xo - xi - 50
         if (deltaX < 0) {
-            deltaX = 8.5 * (deltaX / 6) ^ 0.8
+            deltaX = 8.5 * (deltaX / 6) // ^ 0.8
         } else {
             deltaX /= 1.5
         }
@@ -2055,6 +2392,7 @@ JqueryClass('pedalboard', {
             return
         var jack = output.find('[mod-role=output-jack]')
         var canvas = $('<div>')
+        canvas.addClass('ignore-arrive')
         canvas.css({
             width: '100%',
             height: '100%',
@@ -2082,6 +2420,9 @@ JqueryClass('pedalboard', {
             self.pedalboard('finishConnection')
         })
         var moveHandler = function (e) {
+            if ($(e.target).is('input')) { // cv addressing input
+              return
+            }
             var scale = self.data('scale')
                 // In iPad a tap will first trigger a mousemove event and, if no modifications are made, a click
                 // event will be triggered. So, to capture a click we must schedule all actions in mousemove handler
@@ -2093,6 +2434,7 @@ JqueryClass('pedalboard', {
                 var yi = output.offset().top / scale - self.offset().top / scale + output.height() / 2
                 var xo = (e.pageX - self.offset().left) / scale
                 var yo = (e.pageY - self.offset().top) / scale
+
                 self.pedalboard('drawBezier', canvas, xi, yi, xo, yo, 'connecting-')
             }, 0)
         }
@@ -2133,11 +2475,18 @@ JqueryClass('pedalboard', {
                 jack.data('canvas').addClass('cable-connected')
                 jack.data('connected', true)
                 input.addClass('input-connected')
+
                 jack.css({
                     top: 'auto',
                     left: 'auto',
                     marginTop: 'auto',
                 })
+
+                // if jack input previous sibling has a margin-bottom,
+                // adjust jack top position in accordance
+                if (jack.data('destination') && jack.data('destination').prev() && jack.data('destination').prev().css('margin-bottom')) {
+                  jack.css('top', parseInt(jack.css('top')) - parseInt(jack.data('destination').prev().css('margin-bottom')))
+                }
             // If output is already connected to this input through another jack, abort connection
             } else {
                 self.pedalboard('disconnect', jack)
@@ -2246,6 +2595,12 @@ JqueryClass('pedalboard', {
                 left: 'auto',
                 marginTop: 'auto',
             })
+
+            // if jack output previous sibling has a margin-bottom,
+            // adjust jack top position in accordance
+            if (jack.data('origin') && jack.data('origin').prev() && jack.data('origin').prev().css('margin-bottom')) {
+              jack.css('top', parseInt(jack.css('top')) - parseInt(jack.data('origin').prev().css('margin-bottom')))
+            }
         }
 
         jack.data('connected', false)
@@ -2285,6 +2640,13 @@ JqueryClass('pedalboard', {
                 left: 'auto',
                 marginTop: 'auto',
             })
+
+            // if jack input previous sibling has a margin-bottom,
+            // adjust jack top position in accordance
+            if (jack.position().top !== 0 && jack.data('destination') && jack.data('destination').prev() && jack.data('destination').prev().css('margin-bottom')) {
+              jack.css('top', parseInt(jack.css('top')) - parseInt(jack.data('destination').prev().css('margin-bottom')))
+            }
+
             jack.draggable(count <= 1 ? 'enable' : 'disable')
             self.pedalboard('drawJack', jack)
         });
@@ -2299,10 +2661,10 @@ JqueryClass('pedalboard', {
         var jacks = input.find('[mod-role=output-jack]')
         if (jacks.length < 2 || input.data('expanded'))
             return
-        var wrapper = $('<div class="mod-pedal-input-wrapper">')
-        //var arrow = $('<div class="mod-pedal-input-arrow">').appendTo(wrapper)
+        var wrapper = $('<div class="mod-pedal-input-wrapper ignore-arrive">')
+        //var arrow = $('<div class="mod-pedal-input-arrow ignore-arrive">').appendTo(wrapper)
         wrapper.appendTo(input)
-        wrapper.css('top', (input.height() - wrapper.height()) / 2)
+
         //arrow.css('top', wrapper.height() / 2 - 12)
         var jack
         var h = 0;
@@ -2312,13 +2674,15 @@ JqueryClass('pedalboard', {
             w = jack.width();
             jack.css({
                 position: 'absolute',
-                marginTop: -wrapper.height() / 2 + h / 2 + h * i,
+                marginTop: (-jacks.length * h) / 2 + h / 2 + h * i,
             })
             h = jack.height();
             self.pedalboard('drawJack', jack)
             jack.draggable('enable')
         }
+
         wrapper.innerHeight(jacks.length * h);
+        wrapper.css('top', (input.height() - wrapper.height()) / 2)
         wrapper.css("width", w);
         wrapper.click(function () {
             self.pedalboard('colapseInput', input)
@@ -2346,6 +2710,15 @@ JqueryClass('pedalboard', {
         self.data('expandedInput', null)
         input.removeClass('expanded')
         self.pedalboard('packJacks', input)
+    },
+
+    setPluginPosition: function(instance, x, y) {
+        var self = $(this)
+        var plugins = self.data('plugins');
+        var plugin = plugins[instance];
+        plugin.css({ top: y, left: x })
+        self.pedalboard('fitToWindow')
+        self.pedalboard('drawPluginJacks', plugin)
     }
 })
 

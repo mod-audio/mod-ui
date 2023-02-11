@@ -1,6 +1,6 @@
 #pedalboards-library {
   background: #2c2c2c;
-  bottom: 46px;
+  bottom: 45px;
   left: 0;
   overflow-x: hidden;
   overflow-y: auto;
@@ -24,6 +24,23 @@
       margin-right: 5px;
       .form-control {
         width: 200px !important;
+      }
+      .input-clean {
+        line-height: 20px;
+        margin-right: 12px !important;
+      }
+    }
+    .view-modes {
+      float: right;
+      margin-right: 12px;
+      cursor: pointer;
+
+      .view-mode {
+        font-size: 130%;
+
+        &.selected {
+          color: #fff;
+        }
       }
     }
   }
@@ -61,6 +78,7 @@
     overflow: auto;
     background: #111 url(../img/watermark.png) 100% 100% no-repeat;
     padding-top: 1%;
+
     .pedalboard {
       color: #fff;
       float: left;
@@ -74,6 +92,7 @@
       background-size: auto 100%;
       transition: all 0.33s;
       cursor: pointer;
+
       &:hover {
         .info {
           background-color: @brand-primary;
@@ -128,6 +147,9 @@
         position: relative;
         height: 32px;
         left: 5px;
+        width: calc(~'100% - 32px');
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
       .description {
         display: block;
@@ -162,6 +184,15 @@
         &.duplicate {
           margin: 0 6px;
         }
+      }
+    }
+
+    &.list-selected {
+      .pedalboard {
+        // width: 98%;
+      }
+      .img {
+        display: none;
       }
     }
   }

@@ -32,6 +32,10 @@ function NetworkStatus(options) {
     this.timedOutPhase = 0
 
     this.ping = function () {
+        if (pb_loading) {
+            setTimeout(self.ping, frequency)
+            return
+        }
         var start = Date.now()
         $.ajax({
             url: '/ping',
