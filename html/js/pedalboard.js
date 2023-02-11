@@ -23,7 +23,7 @@ JqueryClass('pedalboard', {
             // The scale is the transform scale() css property that the pedalboard has
             baseScale: 0.5,
             // maxScale is the maximum zoom.
-            maxScale: 1,
+            maxScale: 1.2,
             // wherever to skip zoom animations
             skipAnimations: false,
 
@@ -720,42 +720,39 @@ JqueryClass('pedalboard', {
 
     // Moves the viewable area of the pedalboard
     drag: function (start) {
-        var self = $(this)
-
+        const self = $(this)
         self.trigger('dragStart')
+        const scale = self.data('scale')
 
-        var scale = self.data('scale')
-
-        // pure side effects - update the event if touch
-        function patchTouchEvent(e) {
-            if (e.type.indexOf('touch') == 0) {
-                var touch = e.originalEvent.touches[0]
-                e.pageX = touch.pageX
-                e.pageY = touch.pageY
+        function shape(e) {
+            if (!e.type.startsWith('touch')) return { pageX: e.pageX, pageY: e.pageY, pageD: 0.0001 }
+            var touches = e.originalEvent.touches
+            if (touches.length == 1) return { pageX: touches[0].pageX, pageY: touches[0].pageY, pageD: 0.0001 } 
+            const [ x0, x1, y0, y1 ] = [ touches[0].pageX, touches[1].pageX, touches[0].pageY, touches[1].pageY ]
+            return {
+                pageX: Math.round(x0+(x1-x0)*0.50),
+                pageY: Math.round(y0+(y1-y0)*0.50),
+                pageD: Math.hypot(x0 - x1, y0 - y1)
             }
-            return e
         }
 
-        start = patchTouchEvent(start)
+        start = shape(start)
+        const canvasX = (start.pageX - self.offset().left) / scale
+        const canvasY = (start.pageY - self.offset().top) / scale
 
-        var canvasX = (start.pageX - self.offset().left) / scale
-        var canvasY = (start.pageY - self.offset().top) / scale
-        var screenX = start.pageX - self.parent().offset().left
-        var screenY = start.pageY - self.parent().offset().top
-
-        var moveHandler = function (e) {
-            if (self.data('preventDrag'))
-                return
-
-            e = patchTouchEvent(e)
-
-            self.pedalboard('zoom', scale, canvasX, canvasY,
-                screenX + e.pageX - start.pageX,
-                screenY + e.pageY - start.pageY,
-                0)
+        const moveHandler = function (e) {
+            if (self.data('preventDrag')) return
+            e = shape(e)
+            var newScale = scale * e.pageD / start.pageD
+            newScale = Math.min(self.data('maxScale'), newScale)
+            newScale = Math.max(self.data('minScale'), newScale)
+            console.log( 'drag', scale, canvasX, canvasY, 
+                             e.pageX - self.parent().offset().left, e.pageY - self.parent().offset().top, 0 )
+            self.pedalboard( 'zoom', newScale, canvasX, canvasY, 
+                             e.pageX - self.parent().offset().left, e.pageY - self.parent().offset().top, 0 )
         }
 
-        var upHandler = function (e) {
+        const upHandler = function (e) {
             $(document).unbind('mouseup touchend', upHandler)
             $(document).unbind('mousemove touchmove', moveHandler)
         }
