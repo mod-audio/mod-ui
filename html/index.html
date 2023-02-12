@@ -824,15 +824,19 @@ $('document').ready(function() {
             </header>
             <div class="pedalboards clearfix">
                 <div class="clearfix">
+                    {% if factory_pedalboards %}
                     <span class="separator-title">User Pedalboards</span>
                     <div class="separator separator-user"></div>
+                    {% end %}
                     <div class="js-pedalboards js-user-pedalboards"></div>
                 </div>
+                {% if factory_pedalboards %}
                 <div class="clearfix">
                     <span class="separator-title">Factory Pedalboards</span>
                     <div class="separator separator-factory"></div>
                     <div class="js-pedalboards js-factory-pedalboards"></div>
                 </div>
+                {% end %}
             </div>
         </div>
     </div>
@@ -858,6 +862,7 @@ $('document').ready(function() {
             </div>
             <div id="bank-pedalboards" class="grid-selected"></div>
             <div id="bank-init" class="grid-selected" style="color:#ccc;margin-left:30px;">
+                {% if factory_pedalboards %}
                 <h2>
                     This page is dedicated to user banks.<br>
                     Factory banks are not displayed in this area.
@@ -866,6 +871,12 @@ $('document').ready(function() {
                     To start using banks click on "Add Bank" on the left side,
                     give it a name and then drag and drop pedalboards from the right side.
                 </p>
+                {% else %}
+                <h4>
+                    To start using banks click on "Add Bank" on the left side,
+                    give it a name and then drag and drop pedalboards from the right side.
+                </h4>
+                {% end %}
             </div>
         </div>
         <!-- END BANK-PEDALBOARDS -->
@@ -886,15 +897,19 @@ $('document').ready(function() {
             <!-- BANK-PEDALBOARDS-RESULT -->
             <div id="bank-pedalboards-result">
                 <div class="clearfix">
+                    {% if factory_pedalboards %}
                     <span class="separator-title">User Pedalboards</span>
                     <div class="separator separator-user"></div>
+                    {% end %}
                     <div class="js-canvas js-user-pedalboards"></div>
                 </div>
+                {% if factory_pedalboards %}
                 <div class="clearfix">
                     <span class="separator-title">Factory Pedalboards</span>
                     <div class="separator separator-factory"></div>
                     <div class="js-canvas js-factory-pedalboards"></div>
                 </div>
+                {% end %}
             </div>
             <!-- END BANK-PEDALBOARDS-RESULT -->
 

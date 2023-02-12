@@ -1751,6 +1751,7 @@ class TemplateHandler(TimelessRequestHandler):
             'version': self.get_argument('v'),
             'bin_compat': hwdesc.get('bin-compat', "Unknown"),
             'codec_truebypass': 'true' if hwdesc.get('codec_truebypass', False) else 'false',
+            'factory_pedalboards': hwdesc.get('factory_pedalboards', False),
             'platform': hwdesc.get('platform', "Unknown"),
             'addressing_pages': int(hwdesc.get('addressing_pages', 0)),
             'lv2_plugin_dir': LV2_PLUGIN_DIR,
