@@ -43,6 +43,7 @@ scp ${SSH_OPTIONS} html/js/lib/slick/*min.js     ${TARGET}:/usr/share/mod/html/j
 scp ${SSH_OPTIONS} html/js/lib/slick/fonts/*.*   ${TARGET}:/usr/share/mod/html/js/lib/slick/fonts/
 scp ${SSH_OPTIONS} html/js/utils/*.js            ${TARGET}:/usr/share/mod/html/js/utils/
 scp ${SSH_OPTIONS} html/img/*.png                ${TARGET}:/usr/share/mod/html/img/
+scp ${SSH_OPTIONS} html/img/*.svg                ${TARGET}:/usr/share/mod/html/img/
 scp ${SSH_OPTIONS} mod/*.py                      ${TARGET}:/usr/lib/python3.4/site-packages/mod/
 scp ${SSH_OPTIONS} mod/communication/*.py        ${TARGET}:/usr/lib/python3.4/site-packages/mod/communication/
 scp ${SSH_OPTIONS} modtools/*.py                 ${TARGET}:/usr/lib/python3.4/site-packages/modtools/
