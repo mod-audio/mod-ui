@@ -73,7 +73,7 @@ JqueryClass('pedalboard', {
             // The scale is the transform scale() css property that the pedalboard has
             baseScale: 0.5,
             // maxScale is the maximum zoom.
-            maxScale: 1.2,
+            maxScale: 1,
             // wherever to skip zoom animations
             skipAnimations: false,
 
