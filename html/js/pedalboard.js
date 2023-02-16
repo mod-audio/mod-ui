@@ -811,15 +811,15 @@ JqueryClass('pedalboard', {
 
     // Moves the viewable area of the pedalboard
     drag: function (start) {
-        const self = $(this)
+        var self = $(this)
         self.trigger('dragStart')
-        const scale = self.data('scale')
+        var scale = self.data('scale')
 
         function shape(e) {
             if (!e.type.startsWith('touch')) return { pageX: e.pageX, pageY: e.pageY, pageD: 0.0001 }
             var touches = e.originalEvent.touches
             if (touches.length == 1) return { pageX: touches[0].pageX, pageY: touches[0].pageY, pageD: 0.0001 } 
-            const [ x0, x1, y0, y1 ] = [ touches[0].pageX, touches[1].pageX, touches[0].pageY, touches[1].pageY ]
+            var [ x0, x1, y0, y1 ] = [ touches[0].pageX, touches[1].pageX, touches[0].pageY, touches[1].pageY ]
             return {
                 pageX: Math.round(x0+(x1-x0)*0.50),
                 pageY: Math.round(y0+(y1-y0)*0.50),
@@ -828,10 +828,10 @@ JqueryClass('pedalboard', {
         }
 
         start = shape(start)
-        const canvasX = (start.pageX - self.offset().left) / scale
-        const canvasY = (start.pageY - self.offset().top) / scale
+        var canvasX = (start.pageX - self.offset().left) / scale
+        var canvasY = (start.pageY - self.offset().top) / scale
 
-        const moveHandler = function (e) {
+        var moveHandler = function (e) {
             if (self.data('preventDrag')) return
             e = shape(e)
             var newScale = scale * e.pageD / start.pageD
@@ -841,7 +841,7 @@ JqueryClass('pedalboard', {
                              e.pageX - self.parent().offset().left, e.pageY - self.parent().offset().top, 0 )
         }
 
-        const upHandler = function (e) {
+        var upHandler = function (e) {
             $(document).unbind('mouseup touchend', upHandler)
             $(document).unbind('mousemove touchmove', moveHandler)
         }
