@@ -345,10 +345,12 @@ class Host(object):
             self.supports_factory_banks = True
             self.pedalboard_index_offset = 0
             self.userbanks_offset = 2
+            self.first_user_bank = 1
         else:
             self.supports_factory_banks = False
             self.pedalboard_index_offset = 1
             self.userbanks_offset = 1
+            self.first_user_bank = 0
 
         self.web_connected = False
         self.web_data_ready_counter = 0
@@ -359,7 +361,7 @@ class Host(object):
         self.userbanks = None
         self.factorybanks = None
 
-        self.bank_id = 0
+        self.bank_id = self.first_user_bank
         self.connections = []
         self.audioportsIn = []
         self.audioportsOut = []
@@ -1105,7 +1107,7 @@ class Host(object):
             self.load(pedalboard)
 
         else:
-            self.bank_id = 0
+            self.bank_id = self.first_user_bank
 
             if os.path.exists(DEFAULT_PEDALBOARD):
                 self.load(DEFAULT_PEDALBOARD, True)
@@ -2262,7 +2264,7 @@ class Host(object):
             os.makedirs(PEDALBOARD_TMP_DIR)
             callback(ok)
 
-        self.bank_id = bank_id if bank_id is not None else 0
+        self.bank_id = bank_id if bank_id is not None else self.first_user_bank
         self.connections = []
         self.addressings.clear()
         self.mapper.clear()
@@ -3412,7 +3414,7 @@ class Host(object):
         try:
             pb = get_pedalboard_info(bundlepath)
         except:
-            self.bank_id = 0
+            self.bank_id = self.first_user_bank
             try:
                 bundlepath = DEFAULT_PEDALBOARD
                 isDefault = True
@@ -5262,7 +5264,7 @@ _:b%i
 
         # if bank-to-remove is the current one, reset to "All User Pedalboards"
         if self.bank_id == bank_id:
-            self.bank_id = self.userbanks_offset - 1
+            self.bank_id = self.first_user_bank
             # find current pedalboard within "All User Pedalboards"
             pb_path = self.pedalboard_path or DEFAULT_PEDALBOARD
             for pbi in range(len(self.alluserpedalboards)):
