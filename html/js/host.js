@@ -31,14 +31,14 @@ $('document').ready(function() {
 
     function triggerDelayedReadyResponse (triggerNew) {
         if (dataReadyTimeout) {
-            clearTimeout(triggerNew)
+            clearTimeout(dataReadyTimeout)
             triggerNew = true
         }
         if (triggerNew) {
             dataReadyTimeout = setTimeout(function() {
                 dataReadyTimeout = null
                 ws.send("data_ready " + dataReadyCounter)
-            }, 30)
+            }, 50)
         }
     }
 

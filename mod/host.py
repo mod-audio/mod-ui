@@ -341,10 +341,16 @@ class Host(object):
         self.current_tuner_port = 2 if self.swapped_audio_channels else 1
         self.current_tuner_mute = self.prefs.get("tuner-mutes-outputs", False, bool)
 
-        # TODO use 1 if duo or duox
-        self.supports_factory_banks = True
-        self.pedalboard_index_offset = 0
-        self.userbanks_offset = 2
+        if self.descriptor.get('factory_pedalboards', False):
+            self.supports_factory_banks = True
+            self.pedalboard_index_offset = 0
+            self.userbanks_offset = 2
+            self.first_user_bank = 1
+        else:
+            self.supports_factory_banks = False
+            self.pedalboard_index_offset = 1
+            self.userbanks_offset = 1
+            self.first_user_bank = 0
 
         self.web_connected = False
         self.web_data_ready_counter = 0
@@ -355,7 +361,7 @@ class Host(object):
         self.userbanks = None
         self.factorybanks = None
 
-        self.bank_id = 0
+        self.bank_id = self.first_user_bank
         self.connections = []
         self.audioportsIn = []
         self.audioportsOut = []
@@ -1109,7 +1115,7 @@ class Host(object):
             self.load(pedalboard)
 
         else:
-            self.bank_id = 0
+            self.bank_id = self.first_user_bank
 
             if os.path.exists(DEFAULT_PEDALBOARD):
                 self.load(DEFAULT_PEDALBOARD, True)
@@ -1472,14 +1478,21 @@ class Host(object):
         startIndex = max(startIndex, 0)
         endIndex = min(startIndex + 9, numPedals)
 
-        initial_state_data = '%d %d %d %d %d %d' % (
-            numPedals, startIndex, endIndex, bank_id, bankflags, pedalboard_index
-        )
-        for i in range(startIndex, endIndex):
-            initial_state_data += ' %d %d %s' % (i + self.pedalboard_index_offset,
-                pedalflags|(FLAG_NAVIGATION_TRIAL_PLUGINS if pedalboards[i].get('hasTrialPlugins', False) else 0),
-                normalize_for_hw(pedalboards[i]['title'])
+        if self.supports_factory_banks:
+            initial_state_data = '%d %d %d %d %d %d' % (
+                numPedals, startIndex, endIndex, bank_id, bankflags, pedalboard_index
             )
+            for i in range(startIndex, endIndex):
+                initial_state_data += ' %d %d %s' % (i,
+                    pedalflags|(FLAG_NAVIGATION_TRIAL_PLUGINS if pedalboards[i].get('hasTrialPlugins', False) else 0),
+                    normalize_for_hw(pedalboards[i]['title'])
+                )
+        else:
+            initial_state_data = '%d %d %d %d %d' % (
+                numPedals, startIndex, endIndex, bank_id, pedalboard_index
+            )
+            for i in range(startIndex, endIndex):
+                initial_state_data += ' %s %d' % (normalize_for_hw(pedalboards[i]['title']), i + self.pedalboard_index_offset)
 
         def cb_migi_pb_prgch(_):
             midi_pb_prgch = self.profile.get_midi_prgch_channel("pedalboard")
@@ -2259,7 +2272,7 @@ class Host(object):
             os.makedirs(PEDALBOARD_TMP_DIR)
             callback(ok)
 
-        self.bank_id = bank_id if bank_id is not None else 0
+        self.bank_id = bank_id if bank_id is not None else self.first_user_bank
         self.connections = []
         self.addressings.clear()
         self.mapper.clear()
@@ -3409,7 +3422,7 @@ class Host(object):
         try:
             pb = get_pedalboard_info(bundlepath)
         except:
-            self.bank_id = 0
+            self.bank_id = self.first_user_bank
             try:
                 bundlepath = DEFAULT_PEDALBOARD
                 isDefault = True
@@ -5095,14 +5108,11 @@ _:b%i
 
         else:
             for bank_id in range(startIndex, endIndex):
-                flags = 0
                 if bank_id == 0:
                     title = "All Pedalboards"
-                    flags = FLAG_NAVIGATION_READ_ONLY
                 else:
-                    title = self.factorybanks[bank_id - numUserBanks - 1]['title']
-                    flags = FLAG_NAVIGATION_FACTORY|FLAG_NAVIGATION_READ_ONLY
-                banksData += ' %d %d %s' % (bank_id, flags, normalize_for_hw(title))
+                    title = self.userbanks[bank_id - 1]['title']
+                banksData += ' %s %d' % (normalize_for_hw(title), bank_id)
 
         callback(True, banksData)
 
@@ -5177,11 +5187,16 @@ _:b%i
         endIndex = min(startIndex+9, numPedals)
         pedalboardsData = '%d %d %d' % (numPedals, startIndex, endIndex)
 
-        for i in range(startIndex, endIndex):
-            pedalboardFlags = flags | (FLAG_NAVIGATION_TRIAL_PLUGINS if pedalboards[i].get('hasTrialPlugins', False) else 0)
-            pedalboardsData += ' %d %d %s' % (i + self.pedalboard_index_offset,
-                                              pedalboardFlags,
-                                              normalize_for_hw(pedalboards[i]['title']))
+        if self.supports_factory_banks:
+            for i in range(startIndex, endIndex):
+                pedalboardFlags = flags | (FLAG_NAVIGATION_TRIAL_PLUGINS if pedalboards[i].get('hasTrialPlugins', False) else 0)
+                pedalboardsData += ' %d %d %s' % (i + self.pedalboard_index_offset,
+                                                  pedalboardFlags,
+                                                  normalize_for_hw(pedalboards[i]['title']))
+        else:
+            for i in range(startIndex, endIndex):
+                pedalboardsData += ' %s %d' % (normalize_for_hw(pedalboards[i]['title']),
+                                               i + self.pedalboard_index_offset)
 
         callback(True, pedalboardsData)
 
@@ -5257,7 +5272,7 @@ _:b%i
 
         # if bank-to-remove is the current one, reset to "All User Pedalboards"
         if self.bank_id == bank_id:
-            self.bank_id = self.userbanks_offset - 1
+            self.bank_id = self.first_user_bank
             # find current pedalboard within "All User Pedalboards"
             pb_path = self.pedalboard_path or DEFAULT_PEDALBOARD
             for pbi in range(len(self.alluserpedalboards)):
@@ -5564,8 +5579,6 @@ _:b%i
             callback(False)
             return
 
-        pedalboard_index -= self.pedalboard_index_offset
-
         if pedalboard_index < 0:
             logging.error("Trying to load pedalboard using out of bounds pedalboard id %d", pedalboard_index)
             callback(False)
@@ -5622,7 +5635,7 @@ _:b%i
             # Check if there's a pending pedalboard to be loaded
             if next_pedalboard != next_pb_to_load:
                 self.hmi_load_bank_pedalboard(next_pedalboard[0],
-                                              next_pedalboard[1] + self.pedalboard_index_offset,
+                                              next_pedalboard[1],
                                               self.load_different_callback,
                                               from_hmi)
 
