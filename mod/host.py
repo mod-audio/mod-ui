@@ -1752,7 +1752,7 @@ class Host(object):
                     while self.next_hmi_pedalboard_loading:
                         yield gen.sleep(0.25)
                     try:
-                        yield gen.Task(self.hmi_load_bank_pedalboard, bank_id, program + self.pedalboard_index_offset, from_hmi=False)
+                        yield gen.Task(self.hmi_load_bank_pedalboard, bank_id, program, from_hmi=False)
                     except Exception as e:
                         logging.exception(e)
 
