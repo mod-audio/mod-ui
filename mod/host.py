@@ -4500,9 +4500,7 @@ _:b%i
 
     def set_sync_mode(self, mode, sendHMI, sendWeb, setProfile, callback):
         if setProfile:
-            if not self.profile.set_sync_mode(mode):
-                callback(False)
-                return
+            self.profile.set_sync_mode(mode)
 
         def host_callback(ok):
             if not ok:
