@@ -314,7 +314,7 @@ function Desktop(elements) {
                     allpedals[pedal.bundle] = pedal
                     self.pedalboardIndexer.add({
                         id: pedal.bundle,
-                        data: [pedal.bundle, pedal.title].join(" ")
+                        data: pedal.title
                     })
                 }
                 self.pedalboardIndexerData = allpedals
