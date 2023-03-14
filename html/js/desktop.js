@@ -126,7 +126,7 @@ function Desktop(elements) {
             cache: false
         })
     };
-    this.getPedalboardHref = function(uri) {
+    this.getPedalboardHref = function(uri, unstable) {
         if (!this.pedalboardStatsSuccess) {
             return null;
         }
@@ -135,6 +135,9 @@ function Desktop(elements) {
             return null;
         }
         var encodedUri = encodeURIComponent(uri);
+        if (unstable) {
+            encodedUri += '&unstable=true';
+        }
         return PEDALBOARDS_URL + '/?plugin_uri=' + encodedUri;
     };
 

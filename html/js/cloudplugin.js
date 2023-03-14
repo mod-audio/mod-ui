@@ -947,7 +947,7 @@ JqueryClass('cloudPluginBox', {
                 label : plugin.label,
                 ports : plugin.ports,
                 plugin_href: PLUGINS_URL + '/' + btoa(plugin.uri),
-                pedalboard_href: desktop.getPedalboardHref(plugin.uri),
+                pedalboard_href: desktop.getPedalboardHref(plugin.uri, plugin.stable === false),
                 build_env_uppercase: (plugin.buildEnvironment || "LOCAL").toUpperCase(),
                 show_build_env: plugin.buildEnvironment !== "prod",
             };
