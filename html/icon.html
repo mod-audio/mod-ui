@@ -38,7 +38,7 @@
                   url: '/effect/get',
                   data: { uri: uri },
                   success: function(effect) {
-                      icongui = new GUI(effect)
+                      icongui = new GUI(effect, {bypassed: false})
                       icongui.render(null, function(icon, settings) {
                           icon.draggable('disable')
                           $('#pedalboard-dashboard').append(icon)
@@ -72,6 +72,10 @@
     }
     #wrapper {
         overflow: hidden;
+    }
+    #pedalboard {
+        top: 100px !important;
+        left: 100px !important;
     }
     #pedalboard-dashboard {
         top: 0px;
