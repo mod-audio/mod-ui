@@ -1283,7 +1283,7 @@ class PedalboardSave(JsonRequestHandler):
         title = self.get_argument('title')
         asNew = bool(int(self.get_argument('asNew')))
 
-        def saved_cb(ok):
+        def saved_cb(ok, bundlepath, newTitle):
             self.write({
                 'ok'        : bundlepath is not None,
                 'bundlepath': bundlepath,

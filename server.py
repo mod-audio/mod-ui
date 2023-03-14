@@ -19,7 +19,7 @@ def create_dummy_credentials():
             fh.write(uid)
     if not os.path.isfile(os.environ['MOD_DEVICE_KEY']):
         try:
-            from Crypto.PublicKey import RSA
+            from Cryptodome.PublicKey import RSA
             key = RSA.generate(2048)
             with open(os.environ['MOD_DEVICE_KEY'], 'wb') as fh:
                 fh.write(key.exportKey('PEM'))
