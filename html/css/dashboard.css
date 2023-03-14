@@ -1358,8 +1358,13 @@ svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1001
     color: white !important;
 }
 
-@media only screen and (max-width: 1280px) {
+@media only screen and (max-width: 1468px) {
     #plugins-library .count {
         display: none;
+    }
+}
+@media only screen and (max-width: 1140px) {
+    #effect-tab-Favorites {
+        display: none !important;
     }
 }
