@@ -893,6 +893,10 @@ body > .mod-settings.mod-window-visible {
 }
 
 /* FIXME put it in the right place */
+.mod-pedal.replaceable-drop {
+    opacity: 0.25;
+}
+
 #pedalboards-library .js-pedalboards {
     padding: 8px 0;
 }

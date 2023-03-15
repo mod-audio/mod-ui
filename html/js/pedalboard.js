@@ -233,6 +233,9 @@ JqueryClass('pedalboard', {
         // widgets on the arrive list
         self.data('callbacksToArrive', {})
 
+        // replacement plugin, used for recreating connections
+        self.data('replacementPlugin', null)
+
         // Pedalboard itself will get big dimensions and will have it's scale and position changed dinamically
         // often. So, let's wrap it inside an element with same original dimensions and positioning, with overflow
         // hidden, so that the visible part of the pedalboard is always occupying the area that was initially determined
@@ -717,6 +720,7 @@ JqueryClass('pedalboard', {
                                        pluginData.microVersion,
                                        pluginData.minorVersion,
                                        pluginData.release].join('_');
+                console.log(pluginData.buildEnvironment)
                 $.ajax({
                     url: '/effect/get',
                     data: {
@@ -1503,6 +1507,74 @@ JqueryClass('pedalboard', {
                 $('body').bind('mouseup', upHandler)
             })
 
+            icon.droppable({
+                accept: '[mod-role=available-plugin]',
+//                 tolerance: 'custom',
+//                 greedy: true,
+                drop: function (event, ui) {
+                    // icon.removeClass('replaceable-drop')
+
+                    var instance = event.target.getAttribute('mod-instance')
+                    var connMgr = self.data('connectionManager')
+                    var replacement = {
+                        'instance': instance,
+                        'audio': [],
+                        'midi': [],
+                    }
+
+                    connMgr.iterateInstance(instance, function (jack) {
+                        var input   = jack.data('destination')
+                        var inport  = input.attr('mod-port')
+                        var output  = jack.data('origin')
+                        var outport = output.attr('mod-port')
+                        console.log("iterateInstance1", inport)
+                        var type
+                        if (input.hasClass('mod-audio-input')) {
+                            type = 'audio'
+                        } else if (input.hasClass('mod-midi-input')) {
+                            type = 'midi'
+                        } else {
+                            return
+                        }
+                        console.log("iterateInstance2", type)
+                        if (startsWith(inport, instance+'/')) {
+                            var symbol = inport.slice(instance.length+1)
+                            console.log(symbol, pluginData.ports[type]['input'])
+                            for (var i = 0; i < pluginData.ports[type]['input'].length; k++) {
+                                if (pluginData.ports[type]['input'][i].symbol == symbol) {
+                                    inport = i
+                                    break;
+                                }
+                            }
+                        }
+                        if (startsWith(outport, instance+'/')) {
+                            var symbol = outport.slice(instance.length+1)
+                            console.log(symbol, pluginData.ports[type]['output'])
+                            for (var i = 0; i < pluginData.ports[type]['output'].length; k++) {
+                                if (pluginData.ports[type]['output'][i].symbol == symbol) {
+                                    outport = i
+                                    break;
+                                }
+                            }
+                        }
+                        replacement[type].push([inport, outport])
+                    })
+
+                    console.log(replacement)
+
+                    self.data('replacementPlugin', replacement)
+                    self.pedalboard('removePlugin', instance, pluginData.ports)
+                },
+                over: function (event, ui) {
+                    console.log("over", event)
+                    icon.addClass('replaceable-drop')
+                },
+                out: function (event, ui) {
+                    console.log("out", event)
+                    icon.removeClass('replaceable-drop')
+                },
+            })
+
             var actions = $('<div>').addClass('ignore-arrive').addClass('mod-actions').appendTo(icon)
             if (pluginData.hasExternalUI) {
                 $('<div>').addClass('mod-external-ui').click(function () {
@@ -1557,6 +1629,58 @@ JqueryClass('pedalboard', {
             if (renderCallback)
                 renderCallback()
         })
+
+        var replacementPlugin = self.data('replacementPlugin')
+        self.data('replacementPlugin', null)
+
+        if (replacementPlugin) {
+            for (var i in replacementPlugin.audio) {
+                var ports = replacementPlugin.audio[i]
+                console.log(ports)
+                var inport, outport
+                if (typeof(ports[0]) === 'number') {
+                    inport = instance+'/'+pluginData.ports['audio']['input'][ports[0]].symbol
+                    if (inport === undefined) {
+                        continue
+                    }
+                } else {
+                    inport = replacementPlugin.audio[i][0]
+                }
+                if (typeof(ports[1]) === 'number') {
+                    outport = instance+'/'+pluginData.ports['audio']['output'][ports[1]].symbol
+                    if (outport === undefined) {
+                        continue
+                    }
+                } else {
+                    outport = replacementPlugin.audio[i][1]
+                }
+
+                self.data('portConnect')(outport, inport, function() {})
+            }
+            for (var i in replacementPlugin.midi) {
+                var ports = replacementPlugin.midi[i]
+                console.log(ports)
+                var inport, outport
+                if (typeof(ports[0]) === 'number') {
+                    inport = instance+'/'+pluginData.ports['midi']['input'][ports[0]].symbol
+                    if (inport === undefined) {
+                        continue
+                    }
+                } else {
+                    inport = replacementPlugin.midi[i][0]
+                }
+                if (typeof(ports[1]) === 'number') {
+                    outport = instance+'/'+pluginData.ports['midi']['output'][ports[1]].symbol
+                    if (outport === undefined) {
+                        continue
+                    }
+                } else {
+                    outport = replacementPlugin.midi[i][1]
+                }
+
+                self.data('portConnect')(outport, inport, function() {})
+            }
+        }
     },
 
     getLabel: function (instance) {
