@@ -1634,9 +1634,20 @@ JqueryClass('pedalboard', {
         self.data('replacementPlugin', null)
 
         if (replacementPlugin) {
+            var hasConnectionsErrors = 0,
+                connectionsDone = 0,
+                connectionsToDo = replacementPlugin.audio.length + replacementPlugin.midi.length;
+
+            function finalizeConnection(ok) {
+                hasConnectionsErrors |= !ok;
+
+                if (++connectionsDone == connectionsToDo && hasConnectionsErrors) {
+                    new Notification('error', "Failed to automatically reconnect all ports", 5000)
+                }
+            }
+
             for (var i in replacementPlugin.audio) {
                 var ports = replacementPlugin.audio[i]
-                console.log(ports)
                 var inport, outport
                 if (typeof(ports[0]) === 'number') {
                     inport = pluginData.ports['audio']['input'][ports[0]]
@@ -1657,11 +1668,11 @@ JqueryClass('pedalboard', {
                     outport = replacementPlugin.audio[i][1]
                 }
 
-                self.data('portConnect')(outport, inport, function() {})
+                self.data('portConnect')(outport, inport, finalizeConnection)
             }
+
             for (var i in replacementPlugin.midi) {
                 var ports = replacementPlugin.midi[i]
-                console.log(ports)
                 var inport, outport
                 if (typeof(ports[0]) === 'number') {
                     inport = pluginData.ports['midi']['input'][ports[0]]
@@ -1682,7 +1693,7 @@ JqueryClass('pedalboard', {
                     outport = replacementPlugin.midi[i][1]
                 }
 
-                self.data('portConnect')(outport, inport, function() {})
+                self.data('portConnect')(outport, inport, finalizeConnection)
             }
         }
     },
