@@ -1540,7 +1540,7 @@ JqueryClass('pedalboard', {
                         if (startsWith(inport, instance+'/')) {
                             var symbol = inport.slice(instance.length+1)
                             console.log(symbol, pluginData.ports[type]['input'])
-                            for (var i = 0; i < pluginData.ports[type]['input'].length; k++) {
+                            for (var i = 0; i < pluginData.ports[type]['input'].length; i++) {
                                 if (pluginData.ports[type]['input'][i].symbol == symbol) {
                                     inport = i
                                     break;
@@ -1550,7 +1550,7 @@ JqueryClass('pedalboard', {
                         if (startsWith(outport, instance+'/')) {
                             var symbol = outport.slice(instance.length+1)
                             console.log(symbol, pluginData.ports[type]['output'])
-                            for (var i = 0; i < pluginData.ports[type]['output'].length; k++) {
+                            for (var i = 0; i < pluginData.ports[type]['output'].length; i++) {
                                 if (pluginData.ports[type]['output'][i].symbol == symbol) {
                                     outport = i
                                     break;
