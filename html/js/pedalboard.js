@@ -1639,18 +1639,20 @@ JqueryClass('pedalboard', {
                 console.log(ports)
                 var inport, outport
                 if (typeof(ports[0]) === 'number') {
-                    inport = instance+'/'+pluginData.ports['audio']['input'][ports[0]].symbol
+                    inport = pluginData.ports['audio']['input'][ports[0]]
                     if (inport === undefined) {
                         continue
                     }
+                    inport = instance+'/'+inport.symbol
                 } else {
                     inport = replacementPlugin.audio[i][0]
                 }
                 if (typeof(ports[1]) === 'number') {
-                    outport = instance+'/'+pluginData.ports['audio']['output'][ports[1]].symbol
+                    outport = pluginData.ports['audio']['output'][ports[1]]
                     if (outport === undefined) {
                         continue
                     }
+                    outport = instance+'/'+outport.symbol
                 } else {
                     outport = replacementPlugin.audio[i][1]
                 }
@@ -1662,18 +1664,20 @@ JqueryClass('pedalboard', {
                 console.log(ports)
                 var inport, outport
                 if (typeof(ports[0]) === 'number') {
-                    inport = instance+'/'+pluginData.ports['midi']['input'][ports[0]].symbol
+                    inport = pluginData.ports['midi']['input'][ports[0]]
                     if (inport === undefined) {
                         continue
                     }
+                    inport = instance+'/'+inport.symbol
                 } else {
                     inport = replacementPlugin.midi[i][0]
                 }
                 if (typeof(ports[1]) === 'number') {
-                    outport = instance+'/'+pluginData.ports['midi']['output'][ports[1]].symbol
+                    outport = pluginData.ports['midi']['output'][ports[1]]
                     if (outport === undefined) {
                         continue
                     }
+                    outport = instance+'/'+outport.symbol
                 } else {
                     outport = replacementPlugin.midi[i][1]
                 }
