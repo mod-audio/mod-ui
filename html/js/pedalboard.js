@@ -16,54 +16,82 @@
  */
 
 
- $.ui.intersect = function(draggable, droppable, toleranceMode) {
+$.ui.intersect = function(draggable, droppable, toleranceMode) {
+    if (!droppable.offset) {
+        return false;
+    }
 
- 	if (!droppable.offset) {
- 		return false;
- 	}
+    var draggableLeft, draggableTop,
+        x1 = (draggable.positionAbs || draggable.position.absolute).left,
+        y1 = (draggable.positionAbs || draggable.position.absolute).top,
+        x2 = x1 + draggable.helperProportions.width,
+        y2 = y1 + draggable.helperProportions.height,
+        l = droppable.offset.left,
+        t = droppable.offset.top,
+        r = l + droppable.proportions.width,
+        b = t + droppable.proportions.height;
 
- 	var draggableLeft, draggableTop,
- 		x1 = (draggable.positionAbs || draggable.position.absolute).left,
- 		y1 = (draggable.positionAbs || draggable.position.absolute).top,
- 		x2 = x1 + draggable.helperProportions.width,
- 		y2 = y1 + draggable.helperProportions.height,
- 		l = droppable.offset.left,
- 		t = droppable.offset.top,
- 		r = l + droppable.proportions.width,
- 		b = t + droppable.proportions.height;
+    switch (toleranceMode) {
+    case "custom":
+        return (l < x1 + (draggable.helperProportions.width / 2) && // Right Half
+                x2 - (draggable.helperProportions.width / 2) < r && // Left Half
+                t < y1 + (draggable.helperProportions.height / 2.5) && // Bottom Half
+                y2 - (draggable.helperProportions.height / 2.5) < b ); // Top Half
+    case "custom-replace":
+        {
+            var scale = draggable.helper.data('scale');
+            if (!scale) {
+                return false;
+            }
 
- 	switch (toleranceMode) {
-   case "custom":
- 			return (l < x1 + (draggable.helperProportions.width / 2) && // Right Half
- 				x2 - (draggable.helperProportions.width / 2) < r && // Left Half
-        t < y1 + (draggable.helperProportions.height / 2.5) && // Bottom Half
-        y2 - (draggable.helperProportions.height / 2.5) < b ); // Top Half
- 		case "fit":
- 			return (l <= x1 && x2 <= r && t <= y1 && y2 <= b);
- 		case "intersect":
- 			return (l < x1 + (draggable.helperProportions.width / 2) && // Right Half
- 				x2 - (draggable.helperProportions.width / 2) < r && // Left Half
- 				t < y1 + (draggable.helperProportions.height / 2) && // Bottom Half
- 				y2 - (draggable.helperProportions.height / 2) < b ); // Top Half
- 		case "pointer":
- 			draggableLeft = ((draggable.positionAbs || draggable.position.absolute).left + (draggable.clickOffset || draggable.offset.click).left);
- 			draggableTop = ((draggable.positionAbs || draggable.position.absolute).top + (draggable.clickOffset || draggable.offset.click).top);
- 			return isOverAxis( draggableTop, t, droppable.proportions().height ) && isOverAxis( draggableLeft, l, droppable.proportions().width );
- 		case "touch":
- 			return (
- 				(y1 >= t && y1 <= b) ||	// Top edge touching
- 				(y2 >= t && y2 <= b) ||	// Bottom edge touching
- 				(y1 < t && y2 > b)		// Surrounded vertically
- 			) && (
- 				(x1 >= l && x1 <= r) ||	// Left edge touching
- 				(x2 >= l && x2 <= r) ||	// Right edge touching
- 				(x1 < l && x2 > r)		// Surrounded horizontally
- 			);
- 		default:
- 			return false;
- 		}
+            x1 = draggable.helper.offset().left;
+            y1 = draggable.helper.offset().top;
+            x2 = x1 + draggable.helper.children().width() * scale;
+            y2 = y1 + draggable.helper.children().height() * scale;
+            r = l + droppable.proportions.width * scale;
+            b = t + droppable.proportions.height * scale;
 
- };
+            /* helper code for display drag and drop areas
+            $('#dropable-area').css({ left: l, width: r - l, top: t, height: b - t, })
+            $('#draggable-area').css({ left: x1, top: y1, width: x2 - x1, height: y2 - y1, })
+            */
+
+            // touch
+            return (
+                (y1 >= t && y1 <= b) ||	// Top edge touching
+                (y2 >= t && y2 <= b) ||	// Bottom edge touching
+                (y1 < t && y2 > b)		// Surrounded vertically
+            ) && (
+                (x1 >= l && x1 <= r) ||	// Left edge touching
+                (x2 >= l && x2 <= r) ||	// Right edge touching
+                (x1 < l && x2 > r)		// Surrounded horizontally
+            );
+        }
+    case "fit":
+        return (l <= x1 && x2 <= r && t <= y1 && y2 <= b);
+    case "intersect":
+        return (l < x1 + (draggable.helperProportions.width / 2) && // Right Half
+            x2 - (draggable.helperProportions.width / 2) < r && // Left Half
+            t < y1 + (draggable.helperProportions.height / 2) && // Bottom Half
+            y2 - (draggable.helperProportions.height / 2) < b ); // Top Half
+    case "pointer":
+        draggableLeft = ((draggable.positionAbs || draggable.position.absolute).left + (draggable.clickOffset || draggable.offset.click).left);
+        draggableTop = ((draggable.positionAbs || draggable.position.absolute).top + (draggable.clickOffset || draggable.offset.click).top);
+        return isOverAxis( draggableTop, t, droppable.proportions().height ) && isOverAxis( draggableLeft, l, droppable.proportions().width );
+    case "touch":
+        return (
+            (y1 >= t && y1 <= b) ||	// Top edge touching
+            (y2 >= t && y2 <= b) ||	// Bottom edge touching
+            (y1 < t && y2 > b)		// Surrounded vertically
+        ) && (
+            (x1 >= l && x1 <= r) ||	// Left edge touching
+            (x2 >= l && x2 <= r) ||	// Right edge touching
+            (x1 < l && x2 > r)		// Surrounded horizontally
+        );
+    default:
+        return false;
+    }
+};
 
 JqueryClass('pedalboard', {
     init: function (options) {
@@ -232,6 +260,9 @@ JqueryClass('pedalboard', {
 
         // widgets on the arrive list
         self.data('callbacksToArrive', {})
+
+        // replacement plugin, used for recreating connections
+        self.data('replacementPlugin', null)
 
         // Pedalboard itself will get big dimensions and will have it's scale and position changed dinamically
         // often. So, let's wrap it inside an element with same original dimensions and positioning, with overflow
@@ -691,9 +722,12 @@ JqueryClass('pedalboard', {
                     waiter.stopPlugin(instance, false)
                 },
                 function () {
+                    self.data('replacementPlugin', null)
                     waiter.stopPlugin(instance, false)
                 })
         })
+
+        element.attr('mod-io-type', pluginData.iotype)
 
         var options = {
             defaultIconTemplate: DEFAULT_ICON_TEMPLATE,
@@ -717,6 +751,11 @@ JqueryClass('pedalboard', {
                                        pluginData.microVersion,
                                        pluginData.minorVersion,
                                        pluginData.release].join('_');
+                console.log(pluginData.buildEnvironment)
+
+                dummy.data('overIcons', [])
+                dummy.data('scale', self.data('scale'))
+
                 $.ajax({
                     url: '/effect/get',
                     data: {
@@ -746,6 +785,7 @@ JqueryClass('pedalboard', {
                                     msTransform: trans,
                                     transform: trans,
                                 })
+                                dummy.data('scale', scale);
                             }
                             children.resize(function () {
                                 icon.width(children.width());
@@ -1503,6 +1543,95 @@ JqueryClass('pedalboard', {
                 $('body').bind('mouseup', upHandler)
             })
 
+            icon.attr('mod-io-type', pluginData.iotype)
+
+            icon.droppable({
+                accept: '[mod-role=available-plugin][mod-io-type="'+pluginData.iotype+'"]',
+                tolerance: 'custom-replace',
+                activeClass: 'possible-replaceable-drop',
+                drop: function (event, ui) {
+                    // icon.removeClass('replaceable-drop')
+                    var overIcons = ui.helper.data('overIcons');
+                    if (overIcons.length === 0 || overIcons[overIcons.length-1] != icon) {
+                        return;
+                    }
+                    ui.helper.data('overIcons', []);
+
+                    var instance = event.target.getAttribute('mod-instance')
+                    var connMgr = self.data('connectionManager')
+                    var replacement = {
+                        'instance': instance,
+                        'audio': [],
+                        'midi': [],
+                    }
+
+                    connMgr.iterateInstance(instance, function (jack) {
+                        var input   = jack.data('destination')
+                        var inport  = input.attr('mod-port')
+                        var output  = jack.data('origin')
+                        var outport = output.attr('mod-port')
+                        var type
+                        if (input.hasClass('mod-audio-input')) {
+                            type = 'audio'
+                        } else if (input.hasClass('mod-midi-input')) {
+                            type = 'midi'
+                        } else {
+                            return
+                        }
+                        if (startsWith(inport, instance+'/')) {
+                            var symbol = inport.slice(instance.length+1)
+                            console.log(symbol, pluginData.ports[type]['input'])
+                            for (var i = 0; i < pluginData.ports[type]['input'].length; i++) {
+                                if (pluginData.ports[type]['input'][i].symbol == symbol) {
+                                    inport = i
+                                    break;
+                                }
+                            }
+                        }
+                        if (startsWith(outport, instance+'/')) {
+                            var symbol = outport.slice(instance.length+1)
+                            console.log(symbol, pluginData.ports[type]['output'])
+                            for (var i = 0; i < pluginData.ports[type]['output'].length; i++) {
+                                if (pluginData.ports[type]['output'][i].symbol == symbol) {
+                                    outport = i
+                                    break;
+                                }
+                            }
+                        }
+                        replacement[type].push([inport, outport])
+                    })
+
+                    console.log(replacement)
+
+                    self.data('replacementPlugin', replacement)
+                    self.pedalboard('removePlugin', instance, pluginData.ports)
+                },
+                over: function (event, ui) {
+                    var overIcons = ui.helper.data('overIcons');
+                    if (overIcons.length !== 0) {
+                        var oldIcon = overIcons[overIcons.length-1]
+                        oldIcon.removeClass('replaceable-drop')
+                        oldIcon.find('[mod-role="drag-handle"]').removeClass('replaceable-drop')
+                    }
+                    icon.addClass('replaceable-drop')
+                    icon.find('[mod-role="drag-handle"]').addClass('replaceable-drop')
+                    overIcons.push(icon)
+                },
+                out: function (event, ui) {
+                    var overIcons = ui.helper.data('overIcons');
+                    remove_from_array(overIcons, icon)
+                    if (icon.hasClass('replaceable-drop')) {
+                        icon.removeClass('replaceable-drop')
+                        icon.find('[mod-role="drag-handle"]').removeClass('replaceable-drop')
+                        if (overIcons.length !== 0) {
+                            var oldIcon = overIcons[overIcons.length-1]
+                            oldIcon.addClass('replaceable-drop')
+                            oldIcon.find('[mod-role="drag-handle"]').removeClass('replaceable-drop')
+                        }
+                    }
+                },
+            })
+
             var actions = $('<div>').addClass('ignore-arrive').addClass('mod-actions').appendTo(icon)
             if (pluginData.hasExternalUI) {
                 $('<div>').addClass('mod-external-ui').click(function () {
@@ -1557,6 +1686,73 @@ JqueryClass('pedalboard', {
             if (renderCallback)
                 renderCallback()
         })
+
+        var replacementPlugin = self.data('replacementPlugin')
+        self.data('replacementPlugin', null)
+
+        if (replacementPlugin) {
+            var hasConnectionsErrors = 0,
+                connectionsDone = 0,
+                connectionsToDo = replacementPlugin.audio.length + replacementPlugin.midi.length;
+
+            function finalizeConnection(ok) {
+                hasConnectionsErrors |= !ok;
+
+                if (++connectionsDone == connectionsToDo && hasConnectionsErrors) {
+                    new Notification('error', "Failed to automatically reconnect all ports", 5000)
+                }
+            }
+
+            for (var i in replacementPlugin.audio) {
+                var ports = replacementPlugin.audio[i]
+                var inport, outport
+                if (typeof(ports[0]) === 'number') {
+                    inport = pluginData.ports['audio']['input'][ports[0]]
+                    if (inport === undefined) {
+                        continue
+                    }
+                    inport = instance+'/'+inport.symbol
+                } else {
+                    inport = replacementPlugin.audio[i][0]
+                }
+                if (typeof(ports[1]) === 'number') {
+                    outport = pluginData.ports['audio']['output'][ports[1]]
+                    if (outport === undefined) {
+                        continue
+                    }
+                    outport = instance+'/'+outport.symbol
+                } else {
+                    outport = replacementPlugin.audio[i][1]
+                }
+
+                self.data('portConnect')(outport, inport, finalizeConnection)
+            }
+
+            for (var i in replacementPlugin.midi) {
+                var ports = replacementPlugin.midi[i]
+                var inport, outport
+                if (typeof(ports[0]) === 'number') {
+                    inport = pluginData.ports['midi']['input'][ports[0]]
+                    if (inport === undefined) {
+                        continue
+                    }
+                    inport = instance+'/'+inport.symbol
+                } else {
+                    inport = replacementPlugin.midi[i][0]
+                }
+                if (typeof(ports[1]) === 'number') {
+                    outport = pluginData.ports['midi']['output'][ports[1]]
+                    if (outport === undefined) {
+                        continue
+                    }
+                    outport = instance+'/'+outport.symbol
+                } else {
+                    outport = replacementPlugin.midi[i][1]
+                }
+
+                self.data('portConnect')(outport, inport, finalizeConnection)
+            }
+        }
     },
 
     getLabel: function (instance) {

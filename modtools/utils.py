@@ -156,6 +156,13 @@ kPluginLicenseNonCommercial = 0
 kPluginLicenseTrial = -1
 kPluginLicensePaid = 1
 
+# PluginIOType
+kPluginIONull = 0
+kPluginIOAudioMono = 1
+kPluginIOAudioStereo = 2
+kPluginIOInstrument = 3
+kPluginIOMIDI = 4
+
 # PedalboardInfoType
 kPedalboardInfoUserOnly = 0
 kPedalboardInfoFactoryOnly = 1
@@ -318,6 +325,7 @@ class PluginInfo(Structure):
         ("release", c_int),
         ("builder", c_int),
         ("licensed", c_int),
+        ("iotype", c_int),
         ("hasExternalUI", c_bool),
         ("version", c_char_p),
         ("stability", c_char_p),
@@ -350,6 +358,7 @@ class PluginInfo_Mini(Structure):
         ("release", c_int),
         ("builder", c_int),
         ("licensed", c_int),
+        ("iotype", c_int),
         ("gui", PluginGUI_Mini),
     ]
 
