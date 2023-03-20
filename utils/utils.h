@@ -34,6 +34,14 @@ typedef enum {
 } PluginLicenseType;
 
 typedef enum {
+    kPluginIONull = 0,
+    kPluginIOAudioMono = 1,
+    kPluginIOAudioStereo = 2,
+    kPluginIOInstrument = 3,
+    kPluginIOMIDI = 4,
+} PluginIOType;
+
+typedef enum {
     kPedalboardInfoUserOnly = 0,
     kPedalboardInfoFactoryOnly = 1,
     kPedalboardInfoBoth = 2,
@@ -179,6 +187,7 @@ typedef struct {
     int release;
     int builder;
     int licensed; // PluginLicenseType
+    int iotype; // PluginIOType
     bool hasExternalUI;
     const char* version;
     const char* stability;
@@ -208,6 +217,7 @@ typedef struct {
     int release;
     int builder;
     int licensed; // PluginLicenseType
+    int iotype; // PluginIOType
     PluginGUI_Mini gui;
 } PluginInfo_Mini;
 

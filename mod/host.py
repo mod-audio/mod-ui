@@ -3968,7 +3968,7 @@ class Host(object):
 
         def state_saved_cb(ok):
             os.sync()
-            callback(True)
+            callback(True, bundlepath, newTitle)
 
         # ask host to save any needed extra state
         self.send_notmodified("state_save {}".format(bundlepath), state_saved_cb, datatype='boolean')
@@ -5382,7 +5382,11 @@ _:b%i
             callback(-2)
             return
 
-        bundlepath, _ = self.save(title, True, callback)
+        def rcallback(ok, bundlepath, newTitle):
+            callback(ok)
+            return
+
+        bundlepath, _ = self.save(title, True, rcallback)
         print("hmi_pedalboard_save_as", title, "->", bundlepath)
 
         pedalboard = {

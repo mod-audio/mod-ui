@@ -893,6 +893,24 @@ body > .mod-settings.mod-window-visible {
 }
 
 /* FIXME put it in the right place */
+.mod-pedal.replaceable-drop {
+    opacity: 0.5;
+    filter: blur(2px);
+}
+.mod-pedal.possible-replaceable-drop {
+    /*opacity: 0.75;*/
+}
+.mod-pedal.possible-replaceable-drop .mod-drag-handle {
+    background: url("/img/switch.svg") no-repeat center center;
+    background-color: #fff;
+    background-color: rgba(255,255,255,0.5);
+    background-size: contain;
+    border-radius: 20px;
+    margin: -20px;
+    opacity: 1 !important;
+    z-index: 99999 !important;
+}
+
 #pedalboards-library .js-pedalboards {
     padding: 8px 0;
 }

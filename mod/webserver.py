@@ -42,7 +42,7 @@ from mod.settings import (APP, LOG, DEV_API,
                           PLUGINS_HTTP_ADDRESS, PEDALBOARDS_HTTP_ADDRESS, CONTROLCHAIN_HTTP_ADDRESS,
                           USER_BANKS_JSON_FILE,
                           LV2_PLUGIN_DIR, LV2_PEDALBOARDS_DIR, IMAGE_VERSION,
-                          UPDATE_CC_FIRMWARE_FILE, UPDATE_MOD_OS_FILE, USING_256_FRAMES_FILE,
+                          UPDATE_CC_FIRMWARE_FILE, UPDATE_MOD_OS_FILE, UPDATE_MOD_OS_HERLPER_FILE, USING_256_FRAMES_FILE,
                           DEFAULT_ICON_TEMPLATE, DEFAULT_SETTINGS_TEMPLATE, DEFAULT_ICON_IMAGE,
                           DEFAULT_PEDALBOARD, DEFAULT_SNAPSHOT_NAME, DATA_DIR, KEYS_PATH, USER_FILES_DIR,
                           FAVORITES_JSON_FILE, PREFERENCES_JSON_FILE, USER_ID_JSON_FILE,
@@ -700,6 +700,9 @@ class UpdateBegin(JsonRequestHandler):
             self.write(False)
             return
 
+        with open(UPDATE_MOD_OS_HERLPER_FILE, 'wb') as fh:
+            fh.write(b"")
+
         IOLoop.instance().add_callback(start_restore)
         self.write(True)
 
@@ -1312,7 +1315,7 @@ class PedalboardSave(JsonRequestHandler):
         title = self.get_argument('title')
         asNew = bool(int(self.get_argument('asNew')))
 
-        def saved_cb(ok):
+        def saved_cb(ok, bundlepath, newTitle):
             self.write({
                 'ok'        : bundlepath is not None,
                 'bundlepath': bundlepath,
