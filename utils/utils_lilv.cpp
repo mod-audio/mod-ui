@@ -130,19 +130,11 @@ static size_t HOMElen = strlen(HOME);
 // configuration
 static const bool kAllowRegularCV = getenv("MOD_UI_ALLOW_REGULAR_CV") != nullptr;
 
-#define PluginInfo_Mini_Init {                   \
-    false,                                       \
-    nullptr, nullptr, nullptr, nullptr, nullptr, \
-    nullptr, nullptr, 0, 0, 0, 0, 0,             \
-    { nullptr, nullptr, nullptr },               \
-    false                                        \
-}
-
 #define PluginInfo_Init {                            \
     false,                                           \
     nullptr, nullptr,                                \
     nullptr, nullptr, nullptr, nullptr, nullptr,     \
-    nullptr, nullptr, 0, 0, 0, 0, 0, false,          \
+    nullptr, nullptr, 0, 0, 0, 0, 0, 0, false,       \
     nullptr, nullptr,                                \
     { nullptr, nullptr, nullptr },                   \
     nullptr,                                         \
@@ -224,6 +216,25 @@ inline std::string sha1(const char* const cstring)
     return std::string(hashdec);
 }
 
+template<class PInfo>
+inline void fill_iotype(PInfo* const info,
+                        const uint countAudioInput,
+                        const uint countAudioOutput,
+                        const uint countMidiInput,
+                        const uint countMidiOutput)
+{
+    if (countMidiInput >= 1 && countAudioOutput >= 1 && countAudioInput == 0)
+        info->iotype = kPluginIOInstrument;
+    else if (countAudioOutput >= 2 && countAudioInput >= 2)
+        info->iotype = kPluginIOAudioStereo;
+    else if (countAudioOutput == 1 && countAudioInput == 1)
+        info->iotype = kPluginIOAudioMono;
+    else if (countMidiInput >= 1 && countMidiOutput >= 1)
+        info->iotype = kPluginIOMIDI;
+    else
+        info->iotype = kPluginIONull;
+}
+
 // --------------------------------------------------------------------------------------------------------
 
 #define LILV_NS_INGEN    "http://drobilla.net/ns/ingen#"
@@ -233,199 +244,171 @@ inline std::string sha1(const char* const cstring)
 
 #define MOD__CVPort LILV_NS_MOD "CVPort"
 
-struct NamespaceDefinitions_Mini {
-    LilvNode* const rdf_type;
-    LilvNode* const rdfs_comment;
-    LilvNode* const lv2core_microVersion;
-    LilvNode* const lv2core_minorVersion;
-    LilvNode* const mod_brand;
-    LilvNode* const mod_label;
-    LilvNode* const mod_release;
-    LilvNode* const mod_builder;
-    LilvNode* const mod_buildEnvironment;
-    LilvNode* const modlicense_interface;
-    LilvNode* const modgui_gui;
-    LilvNode* const modgui_resourcesDirectory;
-    LilvNode* const modgui_screenshot;
-    LilvNode* const modgui_thumbnail;
-
-    NamespaceDefinitions_Mini(LilvWorld* const w)
-        : rdf_type                 (lilv_new_uri(w, LILV_NS_RDF    "type"              )),
-          rdfs_comment             (lilv_new_uri(w, LILV_NS_RDFS   "comment"           )),
-          lv2core_microVersion     (lilv_new_uri(w, LILV_NS_LV2    "microVersion"      )),
-          lv2core_minorVersion     (lilv_new_uri(w, LILV_NS_LV2    "minorVersion"      )),
-          mod_brand                (lilv_new_uri(w, LILV_NS_MOD    "brand"             )),
-          mod_label                (lilv_new_uri(w, LILV_NS_MOD    "label"             )),
-          mod_release              (lilv_new_uri(w, LILV_NS_MOD    "releaseNumber"     )),
-          mod_builder              (lilv_new_uri(w, LILV_NS_MOD    "builderVersion"    )),
-          mod_buildEnvironment     (lilv_new_uri(w, LILV_NS_MOD    "buildEnvironment"  )),
-          modlicense_interface     (lilv_new_uri(w, MOD_LICENSE__interface             )),
-          modgui_gui               (lilv_new_uri(w, LILV_NS_MODGUI "gui"               )),
-          modgui_resourcesDirectory(lilv_new_uri(w, LILV_NS_MODGUI "resourcesDirectory")),
-          modgui_screenshot        (lilv_new_uri(w, LILV_NS_MODGUI "screenshot"        )),
-          modgui_thumbnail         (lilv_new_uri(w, LILV_NS_MODGUI "thumbnail"         )) {}
-
-    ~NamespaceDefinitions_Mini()
-    {
-        lilv_node_free(rdf_type);
-        lilv_node_free(rdfs_comment);
-        lilv_node_free(lv2core_microVersion);
-        lilv_node_free(lv2core_minorVersion);
-        lilv_node_free(mod_brand);
-        lilv_node_free(mod_label);
-        lilv_node_free(mod_release);
-        lilv_node_free(mod_builder);
-        lilv_node_free(mod_buildEnvironment);
-        lilv_node_free(modlicense_interface);
-        lilv_node_free(modgui_gui);
-        lilv_node_free(modgui_resourcesDirectory);
-        lilv_node_free(modgui_screenshot);
-        lilv_node_free(modgui_thumbnail);
-    }
-};
-
 struct NamespaceDefinitions {
-    LilvNode* const doap_license;
-    LilvNode* const doap_maintainer;
-    LilvNode* const foaf_homepage;
-    LilvNode* const rdf_type;
-    LilvNode* const rdfs_comment;
-    LilvNode* const rdfs_label;
-    LilvNode* const rdfs_range;
-    LilvNode* const lv2core_designation;
-    LilvNode* const lv2core_index;
-    LilvNode* const lv2core_microVersion;
-    LilvNode* const lv2core_minorVersion;
-    LilvNode* const lv2core_name;
-    LilvNode* const lv2core_project;
-    LilvNode* const lv2core_portProperty;
-    LilvNode* const lv2core_shortName;
-    LilvNode* const lv2core_symbol;
-    LilvNode* const lv2core_default;
-    LilvNode* const lv2core_minimum;
-    LilvNode* const lv2core_maximum;
-    LilvNode* const lv2core_extensionData;
-    LilvNode* const mod_brand;
-    LilvNode* const mod_label;
-    LilvNode* const mod_default;
-    LilvNode* const mod_default_custom;
-    LilvNode* const mod_minimum;
-    LilvNode* const mod_maximum;
-    LilvNode* const mod_rangeSteps;
-    LilvNode* const mod_release;
-    LilvNode* const mod_builder;
-    LilvNode* const mod_buildEnvironment;
-    LilvNode* const mod_fileTypes;
-    LilvNode* const mod_supportedExtensions;
-    LilvNode* const mod_rawMIDIClockAccess;
-    LilvNode* const modlicense_interface;
-    LilvNode* const modgui_gui;
-    LilvNode* const modgui_resourcesDirectory;
-    LilvNode* const modgui_iconTemplate;
-    LilvNode* const modgui_settingsTemplate;
-    LilvNode* const modgui_javascript;
-    LilvNode* const modgui_stylesheet;
-    LilvNode* const modgui_screenshot;
-    LilvNode* const modgui_thumbnail;
-    LilvNode* const modgui_discussionURL;
-    LilvNode* const modgui_documentation;
-    LilvNode* const modgui_brand;
-    LilvNode* const modgui_label;
-    LilvNode* const modgui_model;
-    LilvNode* const modgui_panel;
-    LilvNode* const modgui_color;
-    LilvNode* const modgui_knob;
-    LilvNode* const modgui_port;
-    LilvNode* const modgui_monitoredOutputs;
-    LilvNode* const atom_bufferType;
-    LilvNode* const atom_Sequence;
-    LilvNode* const midi_MidiEvent;
-    LilvNode* const pprops_rangeSteps;
-    LilvNode* const patch_readable;
-    LilvNode* const patch_writable;
-    LilvNode* const pset_Preset;
-    LilvNode* const state_state;
-    LilvNode* const units_render;
-    LilvNode* const units_symbol;
-    LilvNode* const units_unit;
+    LilvNode* doap_license;
+    LilvNode* doap_maintainer;
+    LilvNode* foaf_homepage;
+    LilvNode* rdf_type;
+    LilvNode* rdfs_comment;
+    LilvNode* rdfs_label;
+    LilvNode* rdfs_range;
+    LilvNode* lv2core_designation;
+    LilvNode* lv2core_index;
+    LilvNode* lv2core_microVersion;
+    LilvNode* lv2core_minorVersion;
+    LilvNode* lv2core_name;
+    LilvNode* lv2core_project;
+    LilvNode* lv2core_portProperty;
+    LilvNode* lv2core_shortName;
+    LilvNode* lv2core_symbol;
+    LilvNode* lv2core_default;
+    LilvNode* lv2core_minimum;
+    LilvNode* lv2core_maximum;
+    LilvNode* lv2core_extensionData;
+    LilvNode* mod_brand;
+    LilvNode* mod_label;
+    LilvNode* mod_default;
+    LilvNode* mod_default_custom;
+    LilvNode* mod_minimum;
+    LilvNode* mod_maximum;
+    LilvNode* mod_rangeSteps;
+    LilvNode* mod_release;
+    LilvNode* mod_builder;
+    LilvNode* mod_buildEnvironment;
+    LilvNode* mod_fileTypes;
+    LilvNode* mod_supportedExtensions;
+    LilvNode* mod_rawMIDIClockAccess;
+    LilvNode* modlicense_interface;
+    LilvNode* modgui_gui;
+    LilvNode* modgui_resourcesDirectory;
+    LilvNode* modgui_iconTemplate;
+    LilvNode* modgui_settingsTemplate;
+    LilvNode* modgui_javascript;
+    LilvNode* modgui_stylesheet;
+    LilvNode* modgui_screenshot;
+    LilvNode* modgui_thumbnail;
+    LilvNode* modgui_discussionURL;
+    LilvNode* modgui_documentation;
+    LilvNode* modgui_brand;
+    LilvNode* modgui_label;
+    LilvNode* modgui_model;
+    LilvNode* modgui_panel;
+    LilvNode* modgui_color;
+    LilvNode* modgui_knob;
+    LilvNode* modgui_port;
+    LilvNode* modgui_monitoredOutputs;
+    LilvNode* atom_bufferType;
+    LilvNode* atom_Sequence;
+    LilvNode* midi_MidiEvent;
+    LilvNode* pprops_rangeSteps;
+    LilvNode* patch_readable;
+    LilvNode* patch_writable;
+    LilvNode* pset_Preset;
+    LilvNode* state_state;
+    LilvNode* units_render;
+    LilvNode* units_symbol;
+    LilvNode* units_unit;
+    bool initialized;
 
     NamespaceDefinitions(LilvWorld* const w)
-        : doap_license             (lilv_new_uri(w, LILV_NS_DOAP   "license"           )),
-          doap_maintainer          (lilv_new_uri(w, LILV_NS_DOAP   "maintainer"        )),
-          foaf_homepage            (lilv_new_uri(w, LILV_NS_FOAF   "homepage"          )),
-          rdf_type                 (lilv_new_uri(w, LILV_NS_RDF    "type"              )),
-          rdfs_comment             (lilv_new_uri(w, LILV_NS_RDFS   "comment"           )),
-          rdfs_label               (lilv_new_uri(w, LILV_NS_RDFS   "label"             )),
-          rdfs_range               (lilv_new_uri(w, LILV_NS_RDFS   "range"             )),
-          lv2core_designation      (lilv_new_uri(w, LILV_NS_LV2    "designation"       )),
-          lv2core_index            (lilv_new_uri(w, LILV_NS_LV2    "index"             )),
-          lv2core_microVersion     (lilv_new_uri(w, LILV_NS_LV2    "microVersion"      )),
-          lv2core_minorVersion     (lilv_new_uri(w, LILV_NS_LV2    "minorVersion"      )),
-          lv2core_name             (lilv_new_uri(w, LILV_NS_LV2    "name"              )),
-          lv2core_project          (lilv_new_uri(w, LILV_NS_LV2    "project"           )),
-          lv2core_portProperty     (lilv_new_uri(w, LILV_NS_LV2    "portProperty"      )),
-          lv2core_shortName        (lilv_new_uri(w, LILV_NS_LV2    "shortName"         )),
-          lv2core_symbol           (lilv_new_uri(w, LILV_NS_LV2    "symbol"            )),
-          lv2core_default          (lilv_new_uri(w, LILV_NS_LV2    "default"           )),
-          lv2core_minimum          (lilv_new_uri(w, LILV_NS_LV2    "minimum"           )),
-          lv2core_maximum          (lilv_new_uri(w, LILV_NS_LV2    "maximum"           )),
-          lv2core_extensionData    (lilv_new_uri(w, LILV_NS_LV2    "extensionData"     )),
-          mod_brand                (lilv_new_uri(w, LILV_NS_MOD    "brand"             )),
-          mod_label                (lilv_new_uri(w, LILV_NS_MOD    "label"             )),
-          mod_default              (lilv_new_uri(w, LILV_NS_MOD    "default"           )),
-#if defined(_MOD_DEVICE_DUO)
-          mod_default_custom       (lilv_new_uri(w, LILV_NS_MOD    "default_duo"       )),
-#elif defined(_MOD_DEVICE_DUOX)
-          mod_default_custom       (lilv_new_uri(w, LILV_NS_MOD    "default_duox"      )),
-#elif defined(_MOD_DEVICE_DWARF)
-          mod_default_custom       (lilv_new_uri(w, LILV_NS_MOD    "default_dwarf"     )),
-#elif defined(_MOD_DEVICE_X86_64)
-          mod_default_custom       (lilv_new_uri(w, LILV_NS_MOD    "default_x64"       )),
-#else
-          mod_default_custom       (nullptr),
-#endif
-          mod_minimum              (lilv_new_uri(w, LILV_NS_MOD    "minimum"           )),
-          mod_maximum              (lilv_new_uri(w, LILV_NS_MOD    "maximum"           )),
-          mod_rangeSteps           (lilv_new_uri(w, LILV_NS_MOD    "rangeSteps"        )),
-          mod_release              (lilv_new_uri(w, LILV_NS_MOD    "releaseNumber"     )),
-          mod_builder              (lilv_new_uri(w, LILV_NS_MOD    "builderVersion"    )),
-          mod_buildEnvironment     (lilv_new_uri(w, LILV_NS_MOD    "buildEnvironment"  )),
-          mod_fileTypes            (lilv_new_uri(w, LILV_NS_MOD    "fileTypes"         )),
-          mod_supportedExtensions  (lilv_new_uri(w, LILV_NS_MOD    "supportedExtensions")),
-          mod_rawMIDIClockAccess   (lilv_new_uri(w, LILV_NS_MOD    "rawMIDIClockAccess")),
-          modlicense_interface     (lilv_new_uri(w, MOD_LICENSE__interface             )),
-          modgui_gui               (lilv_new_uri(w, LILV_NS_MODGUI "gui"               )),
-          modgui_resourcesDirectory(lilv_new_uri(w, LILV_NS_MODGUI "resourcesDirectory")),
-          modgui_iconTemplate      (lilv_new_uri(w, LILV_NS_MODGUI "iconTemplate"      )),
-          modgui_settingsTemplate  (lilv_new_uri(w, LILV_NS_MODGUI "settingsTemplate"  )),
-          modgui_javascript        (lilv_new_uri(w, LILV_NS_MODGUI "javascript"        )),
-          modgui_stylesheet        (lilv_new_uri(w, LILV_NS_MODGUI "stylesheet"        )),
-          modgui_screenshot        (lilv_new_uri(w, LILV_NS_MODGUI "screenshot"        )),
-          modgui_thumbnail         (lilv_new_uri(w, LILV_NS_MODGUI "thumbnail"         )),
-          modgui_discussionURL     (lilv_new_uri(w, LILV_NS_MODGUI "discussionURL"     )),
-          modgui_documentation     (lilv_new_uri(w, LILV_NS_MODGUI "documentation"     )),
-          modgui_brand             (lilv_new_uri(w, LILV_NS_MODGUI "brand"             )),
-          modgui_label             (lilv_new_uri(w, LILV_NS_MODGUI "label"             )),
-          modgui_model             (lilv_new_uri(w, LILV_NS_MODGUI "model"             )),
-          modgui_panel             (lilv_new_uri(w, LILV_NS_MODGUI "panel"             )),
-          modgui_color             (lilv_new_uri(w, LILV_NS_MODGUI "color"             )),
-          modgui_knob              (lilv_new_uri(w, LILV_NS_MODGUI "knob"              )),
-          modgui_port              (lilv_new_uri(w, LILV_NS_MODGUI "port"              )),
-          modgui_monitoredOutputs  (lilv_new_uri(w, LILV_NS_MODGUI "monitoredOutputs"  )),
-          atom_bufferType          (lilv_new_uri(w, LV2_ATOM__bufferType               )),
-          atom_Sequence            (lilv_new_uri(w, LV2_ATOM__Sequence                 )),
-          midi_MidiEvent           (lilv_new_uri(w, LV2_MIDI__MidiEvent                )),
-          pprops_rangeSteps        (lilv_new_uri(w, LV2_PORT_PROPS__rangeSteps         )),
-          patch_readable           (lilv_new_uri(w, LV2_PATCH__readable                )),
-          patch_writable           (lilv_new_uri(w, LV2_PATCH__writable                )),
-          pset_Preset              (lilv_new_uri(w, LV2_PRESETS__Preset                )),
-          state_state              (lilv_new_uri(w, LV2_STATE__state                   )),
-          units_render             (lilv_new_uri(w, LV2_UNITS__render                  )),
-          units_symbol             (lilv_new_uri(w, LV2_UNITS__symbol                  )),
-          units_unit               (lilv_new_uri(w, LV2_UNITS__unit                    )) {}
+    {
+        initialized = false;
+        init(w);
+    }
 
     ~NamespaceDefinitions()
     {
+        cleanup();
+        initialized = false;
+    }
+
+    void init(LilvWorld* const w)
+    {
+        if (initialized)
+            return;
+        initialized = true;
+
+        doap_license             = lilv_new_uri(w, LILV_NS_DOAP "license");
+        doap_maintainer          = lilv_new_uri(w, LILV_NS_DOAP "maintainer");
+        foaf_homepage            = lilv_new_uri(w, LILV_NS_FOAF "homepage");
+        rdf_type                 = lilv_new_uri(w, LILV_NS_RDF "type");
+        rdfs_comment             = lilv_new_uri(w, LILV_NS_RDFS "comment");
+        rdfs_label               = lilv_new_uri(w, LILV_NS_RDFS "label");
+        rdfs_range               = lilv_new_uri(w, LILV_NS_RDFS "range");
+        lv2core_designation      = lilv_new_uri(w, LILV_NS_LV2 "designation");
+        lv2core_index            = lilv_new_uri(w, LILV_NS_LV2 "index");
+        lv2core_microVersion     = lilv_new_uri(w, LILV_NS_LV2 "microVersion");
+        lv2core_minorVersion     = lilv_new_uri(w, LILV_NS_LV2 "minorVersion");
+        lv2core_name             = lilv_new_uri(w, LILV_NS_LV2 "name");
+        lv2core_project          = lilv_new_uri(w, LILV_NS_LV2 "project");
+        lv2core_portProperty     = lilv_new_uri(w, LILV_NS_LV2 "portProperty");
+        lv2core_shortName        = lilv_new_uri(w, LILV_NS_LV2 "shortName");
+        lv2core_symbol           = lilv_new_uri(w, LILV_NS_LV2 "symbol");
+        lv2core_default          = lilv_new_uri(w, LILV_NS_LV2 "default");
+        lv2core_minimum          = lilv_new_uri(w, LILV_NS_LV2 "minimum");
+        lv2core_maximum          = lilv_new_uri(w, LILV_NS_LV2 "maximum");
+        lv2core_extensionData    = lilv_new_uri(w, LILV_NS_LV2 "extensionData");
+        mod_brand                = lilv_new_uri(w, LILV_NS_MOD "brand");
+        mod_label                = lilv_new_uri(w, LILV_NS_MOD "label");
+        mod_default              = lilv_new_uri(w, LILV_NS_MOD "default");
+#if defined(_MOD_DEVICE_DUO)
+        mod_default_custom       = lilv_new_uri(w, LILV_NS_MOD "default_duo");
+#elif defined(_MOD_DEVICE_DUOX)
+        mod_default_custom       = lilv_new_uri(w, LILV_NS_MOD "default_duox");
+#elif defined(_MOD_DEVICE_DWARF)
+        mod_default_custom       = lilv_new_uri(w, LILV_NS_MOD "default_dwarf");
+#elif defined(_MOD_DEVICE_X86_64)
+        mod_default_custom       = lilv_new_uri(w, LILV_NS_MOD "default_x64");
+#else
+        mod_default_custom       = nullptr;
+#endif
+        mod_minimum              = lilv_new_uri(w, LILV_NS_MOD "minimum");
+        mod_maximum              = lilv_new_uri(w, LILV_NS_MOD "maximum");
+        mod_rangeSteps           = lilv_new_uri(w, LILV_NS_MOD "rangeSteps");
+        mod_release              = lilv_new_uri(w, LILV_NS_MOD "releaseNumber");
+        mod_builder              = lilv_new_uri(w, LILV_NS_MOD "builderVersion");
+        mod_buildEnvironment     = lilv_new_uri(w, LILV_NS_MOD "buildEnvironment");
+        mod_fileTypes            = lilv_new_uri(w, LILV_NS_MOD "fileTypes");
+        mod_supportedExtensions  = lilv_new_uri(w, LILV_NS_MOD "supportedExtensions");
+        mod_rawMIDIClockAccess   = lilv_new_uri(w, LILV_NS_MOD "rawMIDIClockAccess");
+        modlicense_interface     = lilv_new_uri(w, MOD_LICENSE__interface);
+        modgui_gui               = lilv_new_uri(w, LILV_NS_MODGUI "gui");
+        modgui_resourcesDirectory= lilv_new_uri(w, LILV_NS_MODGUI "resourcesDirectory");
+        modgui_iconTemplate      = lilv_new_uri(w, LILV_NS_MODGUI "iconTemplate");
+        modgui_settingsTemplate  = lilv_new_uri(w, LILV_NS_MODGUI "settingsTemplate");
+        modgui_javascript        = lilv_new_uri(w, LILV_NS_MODGUI "javascript");
+        modgui_stylesheet        = lilv_new_uri(w, LILV_NS_MODGUI "stylesheet");
+        modgui_screenshot        = lilv_new_uri(w, LILV_NS_MODGUI "screenshot");
+        modgui_thumbnail         = lilv_new_uri(w, LILV_NS_MODGUI "thumbnail");
+        modgui_discussionURL     = lilv_new_uri(w, LILV_NS_MODGUI "discussionURL");
+        modgui_documentation     = lilv_new_uri(w, LILV_NS_MODGUI "documentation");
+        modgui_brand             = lilv_new_uri(w, LILV_NS_MODGUI "brand");
+        modgui_label             = lilv_new_uri(w, LILV_NS_MODGUI "label");
+        modgui_model             = lilv_new_uri(w, LILV_NS_MODGUI "model");
+        modgui_panel             = lilv_new_uri(w, LILV_NS_MODGUI "panel");
+        modgui_color             = lilv_new_uri(w, LILV_NS_MODGUI "color");
+        modgui_knob              = lilv_new_uri(w, LILV_NS_MODGUI "knob");
+        modgui_port              = lilv_new_uri(w, LILV_NS_MODGUI "port");
+        modgui_monitoredOutputs  = lilv_new_uri(w, LILV_NS_MODGUI "monitoredOutputs");
+        atom_bufferType          = lilv_new_uri(w, LV2_ATOM__bufferType);
+        atom_Sequence            = lilv_new_uri(w, LV2_ATOM__Sequence);
+        midi_MidiEvent           = lilv_new_uri(w, LV2_MIDI__MidiEvent);
+        pprops_rangeSteps        = lilv_new_uri(w, LV2_PORT_PROPS__rangeSteps);
+        patch_readable           = lilv_new_uri(w, LV2_PATCH__readable);
+        patch_writable           = lilv_new_uri(w, LV2_PATCH__writable);
+        pset_Preset              = lilv_new_uri(w, LV2_PRESETS__Preset);
+        state_state              = lilv_new_uri(w, LV2_STATE__state);
+        units_render             = lilv_new_uri(w, LV2_UNITS__render);
+        units_symbol             = lilv_new_uri(w, LV2_UNITS__symbol);
+        units_unit               = lilv_new_uri(w, LV2_UNITS__unit);
+    }
+
+    void cleanup()
+    {
+        if (!initialized)
+            return;
+        initialized = false;
+
         lilv_node_free(doap_license);
         lilv_node_free(doap_maintainer);
         lilv_node_free(foaf_homepage);
@@ -489,6 +472,12 @@ struct NamespaceDefinitions {
         lilv_node_free(units_render);
         lilv_node_free(units_symbol);
         lilv_node_free(units_unit);
+    }
+
+    static NamespaceDefinitions& getStaticInstance(LilvWorld* const w)
+    {
+        static NamespaceDefinitions ns(w);
+        return ns;
     }
 };
 
@@ -1398,7 +1387,7 @@ static const char* _get_lv2_pedalboards_path()
 
 const PluginInfo_Mini* _get_plugin_info_mini(LilvWorld* const w,
                                              const LilvPlugin* const p,
-                                             const NamespaceDefinitions_Mini& ns)
+                                             const NamespaceDefinitions& ns)
 {
     // --------------------------------------------------------------------------------------------------------
     // uri
@@ -1656,6 +1645,80 @@ const PluginInfo_Mini* _get_plugin_info_mini(LilvWorld* const w,
     else
     {
         info->licensed = kPluginLicenseNonCommercial;
+    }
+
+    // --------------------------------------------------------------------------------------------------------
+    // iotype
+
+    if (const uint32_t count = lilv_plugin_get_num_ports(p))
+    {
+        uint32_t countAudioInput=0, countAudioOutput=0;
+        uint32_t countMidiInput=0, countMidiOutput=0;
+
+        for (uint32_t i=0; i<count; ++i)
+        {
+            const LilvPort* const port = lilv_plugin_get_port_by_index(p, i);
+
+            PortDirection direction = kPortDirectionNull;
+            PortType type = kPortTypeNull;
+
+            if (LilvNodes* const nodes = lilv_port_get_value(p, port, ns.rdf_type))
+            {
+                LILV_FOREACH(nodes, it, nodes)
+                {
+                    const LilvNode* const node2 = lilv_nodes_get(nodes, it);
+                    const char* const nodestr = lilv_node_as_string(node2);
+
+                    if (nodestr == nullptr)
+                        continue;
+
+                    else if (strcmp(nodestr, LV2_CORE__InputPort) == 0)
+                        direction = kPortDirectionInput;
+                    else if (strcmp(nodestr, LV2_CORE__OutputPort) == 0)
+                        direction = kPortDirectionOutput;
+                    else if (strcmp(nodestr, LV2_CORE__AudioPort) == 0)
+                        type = kPortTypeAudio;
+                    else if (strcmp(nodestr, LV2_ATOM__AtomPort) == 0 && lilv_port_supports_event(p, port, ns.midi_MidiEvent))
+                    {
+                        if (LilvNodes* const nodes2 = lilv_port_get_value(p, port, ns.atom_bufferType))
+                        {
+                            if (lilv_node_equals(lilv_nodes_get_first(nodes2), ns.atom_Sequence))
+                                if (! lilv_port_has_property(p, port, ns.mod_rawMIDIClockAccess))
+                                    type = kPortTypeMIDI;
+                            lilv_nodes_free(nodes2);
+                        }
+                    }
+                }
+                lilv_nodes_free(nodes);
+            }
+
+            if (direction == kPortDirectionNull || type == kPortTypeNull)
+                continue;
+
+            switch (type)
+            {
+            case kPortTypeAudio:
+                if (direction == kPortDirectionOutput)
+                    ++countAudioOutput;
+                else
+                    ++countAudioInput;
+                break;
+            case kPortTypeMIDI:
+                if (direction == kPortDirectionOutput)
+                    ++countMidiOutput;
+                else
+                    ++countMidiInput;
+                break;
+            default:
+                break;
+            }
+        }
+
+        fill_iotype(info, countAudioInput, countAudioOutput, countMidiInput, countMidiOutput);
+    }
+    else
+    {
+        info->iotype = kPluginIONull;
     }
 
     // --------------------------------------------------------------------------------------------------------
@@ -2934,6 +2997,13 @@ const PluginInfo& _get_plugin_info(LilvWorld* const w,
                 break;
             }
         }
+
+        // also iotype
+        fill_iotype(&info, countAudioInput, countAudioOutput, countMidiInput, countMidiOutput);
+    }
+    else
+    {
+        info.iotype = kPluginIONull;
     }
 
     // --------------------------------------------------------------------------------------------------------
@@ -3137,7 +3207,7 @@ static const PedalboardInfo_Mini* _get_pedalboard_info_mini(LilvWorld* const w,
     if (LilvNodes* const blocks = lilv_plugin_get_value(p, ingenblocknode))
     {
         LilvWorld* const w2 = W;
-        const NamespaceDefinitions_Mini ns(w2);
+        const NamespaceDefinitions& ns(NamespaceDefinitions::getStaticInstance(w2));
 
         LILV_FOREACH(nodes, itblocks, blocks)
         {
@@ -3680,6 +3750,7 @@ void init(void)
     lilv_world_free(W);
     W = lilv_world_new();
     lilv_world_load_all(W);
+    NamespaceDefinitions::getStaticInstance(W).init(W);
     _refresh();
 }
 
@@ -3734,6 +3805,7 @@ void cleanup(void)
     PLUGNFO_Mini.clear();
     PLUGNFO.clear();
 
+    NamespaceDefinitions::getStaticInstance(W).cleanup();
     lilv_world_free(W);
     W = nullptr;
 
@@ -4134,7 +4206,7 @@ const PluginInfo_Mini* const* get_all_plugins(void)
 
     LilvWorld* const w = W;
 
-    const NamespaceDefinitions_Mini ns(w);
+    const NamespaceDefinitions& ns(NamespaceDefinitions::getStaticInstance(w));
 
     int curIndex = 0;
     LILV_FOREACH(plugins, itpls, PLUGINS)
@@ -4190,7 +4262,7 @@ const PluginInfo* get_plugin_info(const char* const uri_)
 
     if (p != nullptr)
     {
-        const NamespaceDefinitions ns(w);
+        const NamespaceDefinitions& ns(NamespaceDefinitions::getStaticInstance(w));
         const PluginInfo& pInfo(_get_plugin_info(w, p, ns));
 
         PLUGNFO[uri] = pInfo;
@@ -4239,7 +4311,7 @@ const PluginGUI* get_plugin_gui(const char* uri_)
 
     if (p != nullptr)
     {
-        const NamespaceDefinitions ns(w);
+        const NamespaceDefinitions& ns(NamespaceDefinitions::getStaticInstance(w));
         const PluginInfo& pInfo(_get_plugin_info(w, p, ns));
 
         PLUGNFO[uri] = pInfo;
@@ -4266,7 +4338,7 @@ const PluginGUI_Mini* get_plugin_gui_mini(const char* uri_)
 
     LilvWorld* const w = W;
 
-    const NamespaceDefinitions_Mini ns(w);
+    const NamespaceDefinitions& ns(NamespaceDefinitions::getStaticInstance(w));
 
     // look for it
     LILV_FOREACH(plugins, itpls, PLUGINS)
@@ -4324,7 +4396,7 @@ const PluginPort* get_plugin_control_inputs(const char* const uri_)
             continue;
 
         // found the plugin
-        const NamespaceDefinitions ns(w);
+        const NamespaceDefinitions& ns(NamespaceDefinitions::getStaticInstance(w));
         const PluginInfo& pInfo = _get_plugin_info(w, p, ns);
 
         PLUGNFO[uri] = pInfo;
@@ -4376,7 +4448,7 @@ const PluginInfo_Essentials* get_plugin_info_essentials(const char* const uri_)
             continue;
 
         // found the plugin
-        const NamespaceDefinitions ns(w);
+        const NamespaceDefinitions& ns(NamespaceDefinitions::getStaticInstance(w));
         const PluginInfo& pInfo = _get_plugin_info(w, p, ns);
 
         PLUGNFO[uri] = pInfo;

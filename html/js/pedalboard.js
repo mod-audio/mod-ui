@@ -727,8 +727,7 @@ JqueryClass('pedalboard', {
                 })
         })
 
-        var iotype = '2-2';
-        element.attr('mod-io-type',iotype)
+        element.attr('mod-io-type', pluginData.iotype)
 
         var options = {
             defaultIconTemplate: DEFAULT_ICON_TEMPLATE,
@@ -1544,11 +1543,10 @@ JqueryClass('pedalboard', {
                 $('body').bind('mouseup', upHandler)
             })
 
-            var iotype = ''+pluginData.ports.audio.input.length+'-'+pluginData.ports.audio.output.length;
-            icon.attr('mod-io-type',iotype)
+            icon.attr('mod-io-type', pluginData.iotype)
 
             icon.droppable({
-                accept: '[mod-role=available-plugin][mod-io-type="'+iotype+'"]',
+                accept: '[mod-role=available-plugin][mod-io-type="'+pluginData.iotype+'"]',
                 tolerance: 'custom-replace',
                 activeClass: 'possible-replaceable-drop',
                 drop: function (event, ui) {
