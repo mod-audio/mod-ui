@@ -56,7 +56,7 @@ def check_environment():
                               DEFAULT_PEDALBOARD, DEFAULT_PEDALBOARD_COPY,
                               DATA_DIR, DOWNLOAD_TMP_DIR, PEDALBOARD_TMP_DIR,
                               KEYS_PATH, USER_BANKS_JSON_FILE, FAVORITES_JSON_FILE,
-                              UPDATE_CC_FIRMWARE_FILE, UPDATE_MOD_OS_FILE,
+                              UPDATE_CC_FIRMWARE_FILE, UPDATE_MOD_OS_FILE, UPDATE_MOD_OS_HERLPER_FILE,
                               CAPTURE_PATH, PLAYBACK_PATH)
 
     # create temp dirs
@@ -104,6 +104,10 @@ def check_environment():
     # remove previous update file
     if os.path.exists(UPDATE_MOD_OS_FILE) and not os.path.exists("/root/check-upgrade-system"):
         os.remove(UPDATE_MOD_OS_FILE)
+        os.sync()
+
+    if os.path.exists(UPDATE_MOD_OS_HERLPER_FILE):
+        os.remove(UPDATE_MOD_OS_HERLPER_FILE)
         os.sync()
 
     return True
