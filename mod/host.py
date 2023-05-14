@@ -1498,7 +1498,7 @@ class Host(object):
             for i in range(startIndex, endIndex):
                 initial_state_data += ' %s %d' % (normalize_for_hw(pedalboards[i]['title']), i + self.pedalboard_index_offset)
 
-        def cb_migi_pb_prgch(_):
+        def cb_midi_pb_prgch(_):
             midi_pb_prgch = self.profile.get_midi_prgch_channel("pedalboard")
             if midi_pb_prgch >= 1 and midi_pb_prgch <= 16:
                 self.send_notmodified("monitor_midi_program %d 1" % (midi_pb_prgch-1),
@@ -1507,19 +1507,19 @@ class Host(object):
                 callback(True)
 
         def cb_footswitches(_):
-            self.setNavigateWithFootswitches(True, cb_migi_pb_prgch)
+            self.setNavigateWithFootswitches(True, cb_midi_pb_prgch)
 
         def cb_set_initial_state(_):
-            cb = cb_footswitches if self.isBankFootswitchNavigationOn() else cb_migi_pb_prgch
+            cb = cb_footswitches if self.isBankFootswitchNavigationOn() else cb_midi_pb_prgch
             self.hmi.initial_state(initial_state_data, cb)
 
         if self.hmi.initialized:
             if self.descriptor.get("hmi_bank_navigation", False):
                 self.setNavigateWithFootswitches(False, cb_set_initial_state)
             else:
-                self.hmi.initial_state(initial_state_data, cb_migi_pb_prgch)
+                self.hmi.initial_state(initial_state_data, cb_midi_pb_prgch)
         else:
-            cb_migi_pb_prgch(True)
+            cb_midi_pb_prgch(True)
 
     def start_session(self, callback):
         midi_pb_prgch, midi_ss_prgch = self.profile.get_midi_prgch_channels()
@@ -1567,6 +1567,10 @@ class Host(object):
             self.send_output_data_ready(None, None)
 
         if not self.hmi.initialized:
+            # typically initialize_hmi takes care of this but without HMI we need to do it manually
+            midi_pb_prgch, midi_ss_prgch = self.profile.get_midi_prgch_channels()
+            if midi_pb_prgch >= 1 and midi_pb_prgch <= 16:
+                self.send_notmodified("monitor_midi_program %d 1" % (midi_pb_prgch-1))
             callback(True)
             return
         if not self.hmi.connected:
