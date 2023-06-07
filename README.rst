@@ -74,7 +74,7 @@ You will not get any audio, but you will be able to load plugins, make connectio
 And now you are ready to start the webserver::
 
     $ export MOD_DEV_ENVIRONMENT=0
-    $ export MOD_USER_FILES_DIR=~/modUserData
+    $ export MOD_USER_FILES_DIR=¨/mod-workdir/user-data
     $ python3 ./server.py
 
 Setting the environment variables is needed when developing on a PC.
