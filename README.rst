@@ -12,47 +12,47 @@ It will work in x86, other Linux distributions and Mac, but you might need to ad
 
 The following packages will be required::
 
-    sudo apt-get install virtualenv python3-pip python3-dev git build-essential libasound2-dev libjack-jackd2-dev liblilv-dev libjpeg-dev zlib1g-dev
+    $ sudo apt-get install virtualenv python3-pip python3-dev git build-essential libasound2-dev libjack-jackd2-dev liblilv-dev libjpeg-dev zlib1g-dev
 
 NOTE: libjack-jackd2-dev can be replaced by libjack-dev if you are using JACK1; libjpeg-dev is needed for python-pillow, at least on my system.
 
 Start by cloning the repository::
 
-    git clone git://github.com/moddevices/mod-ui
-    cd mod-ui
+    $ git clone https://github.com/moddevices/mod-ui.git
+    $ cd mod-ui
 
 Create a python virtualenv::
 
-    virtualenv modui-env
-    source modui-env/bin/activate
+    $ virtualenv modui-env
+    $ source modui-env/bin/activate
 
 Install python requirements::
 
-    pip3 install -r requirements.txt
+    $ pip3 install -r requirements.txt
 
 Compile libmod_utils::
 
-    make -C utils
+    $ make -C utils
 
 User files
 ----------
 
 Create directories to store your files::
 
-    mkdir ¨/modUserData
-    mkdir ¨/modUserData/Audio\ Loops
-    mkdir ¨/modUserData/Audio\ Recordings
-    mkdir ¨/modUserData/Audio\ Samples
-    mkdir ¨/modUserData/Audio\ Tracks
-    mkdir ¨/modUserData/Speaker\ Cabinets\ IRs
-    mkdir ¨/modUserData/Hydrogen\ Drumkits
-    mkdir ¨/modUserData/Reverb\ IRs
-    mkdir ¨/modUserData/MIDI\ Clips
-    mkdir ¨/modUserData/MIDI\ Songs
-    mkdir ¨/modUserData/SF2\ Instruments
-    mkdir ¨/modUserData/SFZ\ Instruments
-    mkdir ¨/modUserData/Aida\ DSP\ Models
-    mkdir ¨/modUserData/NAM\ Models
+    $ mkdir ¨/mod-workdir/user-data
+    $ mkdir ¨/mod-workdir/user-data/Audio\ Loops
+    $ mkdir ¨/mod-workdir/user-data/Audio\ Recordings
+    $ mkdir ¨/mod-workdir/user-data/Audio\ Samples
+    $ mkdir ¨/mod-workdir/user-data/Audio\ Tracks
+    $ mkdir ¨/mod-workdir/user-data/Speaker\ Cabinets\ IRs
+    $ mkdir ¨/mod-workdir/user-data/Hydrogen\ Drumkits
+    $ mkdir ¨/mod-workdir/user-data/Reverb\ IRs
+    $ mkdir ¨/mod-workdir/user-data/MIDI\ Clips
+    $ mkdir ¨/mod-workdir/user-data/MIDI\ Songs
+    $ mkdir ¨/mod-workdir/user-data/SF2\ Instruments
+    $ mkdir ¨/mod-workdir/user-data/SFZ\ Instruments
+    $ mkdir ¨/mod-workdir/user-data/Aida\ DSP\ Models
+    $ mkdir ¨/mod-workdir/user-data/NAM\ Models
 
 Run
 ---
@@ -60,22 +60,22 @@ Run
 Before running the server, you need to activate your virtualenv
 (if you have just done that during installation, you can skip this step, but you'll need to do this again when you open a new shell)::
 
-    source modui-env/bin/activate
+    $ source modui-env/bin/activate
 
 mod-ui depends on mod-host and the JACK server running in order to make sound. So after you have JACK setup and running, in another terminal do::
 
-    mod-host -n -p 5555 -f 5556
+    $ mod-host -n -p 5555 -f 5556
 
 If you do not have mod-host, you can tell mod-ui to fake the connection to the audio backend.
 You will not get any audio, but you will be able to load plugins, make connections, save pedalboards and all that. For this, run::
 
-    export MOD_DEV_HOST=1
+    $ export MOD_DEV_HOST=1
 
 And now you are ready to start the webserver::
 
-    export MOD_DEV_ENVIRONMENT=0
-    export MOD_USER_FILES_DIR=~/modUserData
-    python3 ./server.py
+    $ export MOD_DEV_ENVIRONMENT=0
+    $ export MOD_USER_FILES_DIR=~/modUserData
+    $ python3 ./server.py
 
 Setting the environment variables is needed when developing on a PC.
 Open your browser and point to http://localhost:8888/.
