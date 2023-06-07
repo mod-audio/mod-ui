@@ -34,6 +34,26 @@ Compile libmod_utils::
 
     $ make -C utils
 
+User files
+----------
+
+Create directories to store your files
+
+    $ mkdir ¨/modUserData
+    $ mkdir ¨/modUserData/Audio\ Loops
+    $ mkdir ¨/modUserData/Audio\ Recordings
+    $ mkdir ¨/modUserData/Audio\ Samples
+    $ mkdir ¨/modUserData/Audio\ Tracks
+    $ mkdir ¨/modUserData/Speaker\ Cabinets\ IRs
+    $ mkdir ¨/modUserData/Hydrogen\ Drumkits
+    $ mkdir ¨/modUserData/Reverb\ IRs
+    $ mkdir ¨/modUserData/MIDI\ Clips
+    $ mkdir ¨/modUserData/MIDI\ Songs
+    $ mkdir ¨/modUserData/SF2\ Instruments
+    $ mkdir ¨/modUserData/SFZ\ Instruments
+    $ mkdir ¨/modUserData/Aida\ DSP\ Models
+    $ mkdir ¨/modUserData/NAM\ Models
+
 Run
 ---
 
@@ -54,6 +74,7 @@ You will not get any audio, but you will be able to load plugins, make connectio
 And now you are ready to start the webserver::
 
     $ export MOD_DEV_ENVIRONMENT=0
+    $ export MOD_USER_FILES_DIR=~/modUserData
     $ python3 ./server.py
 
 Setting the environment variables is needed when developing on a PC.
