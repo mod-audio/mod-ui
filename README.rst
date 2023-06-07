@@ -39,20 +39,20 @@ User files
 
 Create directories to store your files::
 
-    $ mkdir ¨/mod-workdir/user-data
-    $ mkdir ¨/mod-workdir/user-data/Audio\ Loops
-    $ mkdir ¨/mod-workdir/user-data/Audio\ Recordings
-    $ mkdir ¨/mod-workdir/user-data/Audio\ Samples
-    $ mkdir ¨/mod-workdir/user-data/Audio\ Tracks
-    $ mkdir ¨/mod-workdir/user-data/Speaker\ Cabinets\ IRs
-    $ mkdir ¨/mod-workdir/user-data/Hydrogen\ Drumkits
-    $ mkdir ¨/mod-workdir/user-data/Reverb\ IRs
-    $ mkdir ¨/mod-workdir/user-data/MIDI\ Clips
-    $ mkdir ¨/mod-workdir/user-data/MIDI\ Songs
-    $ mkdir ¨/mod-workdir/user-data/SF2\ Instruments
-    $ mkdir ¨/mod-workdir/user-data/SFZ\ Instruments
-    $ mkdir ¨/mod-workdir/user-data/Aida\ DSP\ Models
-    $ mkdir ¨/mod-workdir/user-data/NAM\ Models
+    $ mkdir "$HOME/mod-workdir/user-data"
+    $ mkdir "$HOME/mod-workdir/user-data/Audio Loops"
+    $ mkdir "$HOME/mod-workdir/user-data/Audio Recordings"
+    $ mkdir "$HOME/mod-workdir/user-data/Audio Samples"
+    $ mkdir "$HOME/mod-workdir/user-data/Audio Tracks"
+    $ mkdir "$HOME/mod-workdir/user-data/Speaker Cabinets IRs"
+    $ mkdir "$HOME/mod-workdir/user-data/Hydrogen Drumkits"
+    $ mkdir "$HOME/mod-workdir/user-data/Reverb IRs"
+    $ mkdir "$HOME/mod-workdir/user-data/MIDI Clips"
+    $ mkdir "$HOME/mod-workdir/user-data/MIDI Songs"
+    $ mkdir "$HOME/mod-workdir/user-data/SF2 Instruments"
+    $ mkdir "$HOME/mod-workdir/user-data/SFZ Instruments"
+    $ mkdir "$HOME/mod-workdir/user-data/Aida DSP Models"
+    $ mkdir "$HOME/mod-workdir/user-data/NAM Models"
 
 Run
 ---
