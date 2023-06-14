@@ -38,8 +38,6 @@ typedef struct sha1nfo {
 	uint32_t state[HASH_LENGTH/4];
 	uint32_t byteCount;
 	uint8_t bufferOffset;
-	uint8_t keyBuffer[BLOCK_LENGTH];
-	uint8_t innerHash[HASH_LENGTH];
 } sha1nfo;
 
 /* public API - prototypes */
