@@ -20,7 +20,7 @@ var RECORDING = 1
 var PLAYING = 2
 
 var RECORD_COUNTDOWN = 3
-var RECORD_LENGTH = 60
+var RECORD_LENGTH = 60 * 3
 
 JqueryClass('shareBox', {
     init: function (options) {
@@ -186,7 +186,7 @@ JqueryClass('shareBox', {
         if (secs == 0)
             return self.shareBox('recordStop')
         self.shareBox('showStep', 3)
-        self.find('#record-stop').text(secs)
+        self.find('#record-stop').text(sprintf('%d:%02d', Math.floor(secs/60), secs%60))
         var timeout = setTimeout(function () {
             self.shareBox('recordStopCountdown', secs - 1)
         }, 1000)
