@@ -34,26 +34,6 @@ Compile libmod_utils::
 
     $ make -C utils
 
-User files
-----------
-
-Create directories to store your files::
-
-    $ mkdir "$HOME/mod-workdir/user-data"
-    $ mkdir "$HOME/mod-workdir/user-data/Audio Loops"
-    $ mkdir "$HOME/mod-workdir/user-data/Audio Recordings"
-    $ mkdir "$HOME/mod-workdir/user-data/Audio Samples"
-    $ mkdir "$HOME/mod-workdir/user-data/Audio Tracks"
-    $ mkdir "$HOME/mod-workdir/user-data/Speaker Cabinets IRs"
-    $ mkdir "$HOME/mod-workdir/user-data/Hydrogen Drumkits"
-    $ mkdir "$HOME/mod-workdir/user-data/Reverb IRs"
-    $ mkdir "$HOME/mod-workdir/user-data/MIDI Clips"
-    $ mkdir "$HOME/mod-workdir/user-data/MIDI Songs"
-    $ mkdir "$HOME/mod-workdir/user-data/SF2 Instruments"
-    $ mkdir "$HOME/mod-workdir/user-data/SFZ Instruments"
-    $ mkdir "$HOME/mod-workdir/user-data/Aida DSP Models"
-    $ mkdir "$HOME/mod-workdir/user-data/NAM Models"
-
 Run
 ---
 
@@ -71,10 +51,13 @@ You will not get any audio, but you will be able to load plugins, make connectio
 
     $ export MOD_DEV_HOST=1
 
+If you want a different directory for the user files for impulse responses, neural network models and so on (the default is /data/user-files)::
+
+    $ export MOD_USER_FILES_DIR=~/mod-workdir/user-data
+
 And now you are ready to start the webserver::
 
     $ export MOD_DEV_ENVIRONMENT=0
-    $ export MOD_USER_FILES_DIR=¨/mod-workdir/user-data
     $ python3 ./server.py
 
 Setting the environment variables is needed when developing on a PC.
