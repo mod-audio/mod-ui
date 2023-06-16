@@ -12,10 +12,13 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 import argparse
 import base64
 import json
 import os
+import shutil
+import sys
 
 from enum import Enum
 from PIL import Image
@@ -84,6 +87,10 @@ def detect_first_column(uri, img, scan, num_ports, rtol=False):
         return [(455, 89) if rtol else (20, 89)]
     if uri == 'http://VeJaPlugins.com/plugins/Release/Rambler':
         return [(625, 216) if rtol else (8, 216)]
+    if uri == 'https://falktx.com/plugins/portal#sink':
+        return [(204, 183), (0, 0), (204, 264)]
+    if uri == 'https://falktx.com/plugins/portal#source':
+        return [(207, 183), (0, 0), (207, 264)]
 
     was_transparent = True
     found = False
@@ -458,6 +465,12 @@ def take_screenshot(bundle_path, html_dir, cache_dir, size):
     # create image
     img = Image.new('RGBA', (width, height), (0, 0, 0, 0))
 
+    # draw plugins
+    for p in plugins:
+        img.paste(p['img'], (rint(p['x']), rint(p['y'])), p['img'])
+
+    del plugins
+
     # draw device connectors
     for d in device_capture:
         img.paste(d['img'], anchor(d['img'].size, d['x'], d['y'], Anchor.LEFT_CENTER))
@@ -523,13 +536,8 @@ def take_screenshot(bundle_path, html_dir, cache_dir, size):
     del cv_output_connected
     del connectors
 
-    # draw plugins
-    for p in plugins:
-        img.paste(p['img'], (rint(p['x']), rint(p['y'])), p['img'])
-
     default_screenshot.close()
     del default_screenshot
-    del plugins
 
     img.save(os.path.join(bundle_path, 'screenshot.png'), compress_level=3)
     resize_image(img)
@@ -543,7 +551,13 @@ def main():
 
     # take screenshot bundle_path, html_dir, cache_dir
     def _take_screenshot(args):
-        take_screenshot(args.pedalboard_path, args.html_path, args.cache_path, args.size)
+        try:
+            take_screenshot(args.pedalboard_path, args.html_path, args.cache_path, args.size)
+        except:
+            print("caught exception, retrying without cache...", file=sys.stderr, flush=True)
+            # if we get exceptions thrown during screenshot generation, try invalidating cache
+            shutil.rmtree(args.cache_path)
+            take_screenshot(args.pedalboard_path, args.html_path, args.cache_path, args.size)
 
     subparser = subparsers.add_parser('take_screenshot', help='Take a screenshot of a given pedalboard')
     subparser.add_argument('pedalboard_path', help='Path to pedalboard bundle folder')
