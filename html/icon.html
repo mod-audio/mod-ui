@@ -38,9 +38,10 @@
                   url: '/effect/get',
                   data: { uri: uri },
                   success: function(effect) {
-                      icongui = new GUI(effect, {bypassed: false})
+                      icongui = new GUI(effect, {})
                       icongui.render(null, function(icon, settings) {
                           icon.draggable('disable')
+                          icongui.setPortValue(':bypass', 0)
                           $('#pedalboard-dashboard').append(icon)
                       })
                   },
