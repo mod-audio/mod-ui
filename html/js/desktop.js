@@ -876,7 +876,7 @@ function Desktop(elements) {
                             self.pedalboard.data('wait').stop()
                         }
                     })
-                })
+                }, true)
             },
             error: function (resp) {
                   new Bug("Couldn't get pedalboard info, error:<br/>" + resp.statusText)
@@ -1778,8 +1778,8 @@ Desktop.prototype.makeFileManagerBox = function (el, trigger) {
     })
 }
 
-Desktop.prototype.reset = function (callback) {
-    if (this.pedalboardModified && !confirm("There are unsaved modifications that will be lost. Are you sure?")) {
+Desktop.prototype.reset = function (callback, skipConfirmDialog) {
+    if (this.pedalboardModified && !skipConfirmDialog && !confirm("There are unsaved modifications that will be lost. Are you sure?")) {
         return
     }
 
