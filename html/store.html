@@ -44,12 +44,16 @@
 <script type="text/javascript" src="js/lib/slick/slick.min.js"></script>
 
 <script type="text/javascript">
-var desktop         = null;
+var desktop = null;
+var TEMPLATES = {};
+var NOTIFICATIONS_ENABLED = true;
+
+// config
 var BIN_COMPAT      = 'aarch64-a53'; // duox
-var PEDALBOARDS_URL = 'https://pedalboards.moddevices.com';
-var PLUGINS_URL     = 'https://pedalboards.moddevices.com/plugins';
-var SITEURL         = 'https://api.moddevices.com/v2';
-var VERSION         = '1.11.0';
+var PEDALBOARDS_URL = 'https://pedalboards.mod.audio';
+var PLUGINS_URL     = 'https://pedalboards.mod.audio/plugins';
+var SITEURL         = 'https://api.mod.audio/v2';
+var VERSION         = '1.13.0';
 
 function JqueryClass() {
     var name = arguments[0];
@@ -120,9 +124,22 @@ function Desktop(elements) {
     this.cloudPluginBox = makeCloudPluginBox(elements.cloudPluginBox,
                                              elements.cloudPluginBoxTrigger);
 
+    this.fetchShopProducts = function() {
+        return new Promise(function(resolve) {
+            resolve([])
+        })
+    }
+
     // init
     this.resetPedalboardStats();
-    this.cloudPluginBox.cloudPluginBox('search');
+    this.cloudPluginBox.cloudPluginBox('search', function(plugins) {
+        self.cloudPluginBox.cloudPluginBox('showPlugins', plugins, true)
+
+        var uri = window.location.hash.replace(/^#/, '')
+        if (uri) {
+            self.cloudPluginBox.cloudPluginBox('showPluginInfo', uri);
+        }
+    });
 }
 
 function makeCloudPluginBox (el, trigger) {
@@ -167,6 +184,16 @@ $('document').ready(function() {
     #cloud-plugins-library .filter,
     #cloud-plugins-library .cloud-plugins {
         bottom: 5px;
+    }
+    #cloud-plugins-library .licensed::before {
+        content: "COMMERCIAL" !important;
+    }
+    .alert {
+        position: absolute;
+        top: 25px;
+        right: 25px;
+        width: 300px;
+        z-index: 2;
     }
 </style>
 

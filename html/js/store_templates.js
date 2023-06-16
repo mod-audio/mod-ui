@@ -2,8 +2,7 @@ var TEMPLATES = {
     'cloudplugin': '\
 <div class="cloud-plugin plugin-container available-plugin js-available-effect" mod-role="cloud-plugin" mod-uri="\{\{uri\}\}">\
     <div class="cloud-plugin-border">\
-        <figure class="thumb" style="background-image: url(\'\{\{thumbnail_href\}\}\');">\
-        </figure>\
+        <figure class="thumb">  <img src="\{\{thumbnail_href\}\}"></figure>\
         <div class="description">\
             <span class="title">\{\{label\}\}</span>\
             <span class="author">\{\{brand\}\}</span>\
@@ -12,13 +11,10 @@ var TEMPLATES = {
         </div>\
         <div class="status-container">\
             \{\{#price\}\}\
-            <span class="price-container">\
-            <span class="price">\{\{price\}\}</span>\
-            </span>\
+            <span class="price-container"><span class="price">\{\{price\}\}</span></span>\
             \{\{/price\}\}\
             \{\{#licensed\}\}\
-            <span class="price-container">\
-            </span>\
+            <span class="price-container"><span class="licensed"></span></span>\
             \{\{/licensed\}\}\
         </div>\
     </div>\
@@ -158,4 +154,10 @@ var TEMPLATES = {
     </div>\
   </div>\
 </div>',
+    'notification': '\
+<section class="notifications notifications-{{type}} alert alert-{{type}}">\
+    <button type="button" class="js-close close">&times;</button>\
+    <div class="explanation js-message">{{{message}}}</div>\
+    <div class="progressbar js-progressbar"></div>\
+</section>'
 };
