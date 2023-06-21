@@ -79,6 +79,16 @@ $('document').ready(function() {
             return
         }
 
+        if (cmd == "param_set") {
+            data         = data.split(" ",3)
+            var instance = data[0]
+            var symbol   = data[1]
+            var value    = parseFloat(data[2])
+
+            desktop.pedalboard.pedalboard("setPortWidgetsValue", instance, symbol, value);
+            return
+        }
+
         triggerDelayedReadyResponse(false)
 
         if (cmd == "stats") {
@@ -124,16 +134,6 @@ $('document').ready(function() {
                                                  parseInt(cpufreq)/1000000,
                                                  parseInt(cputemp)/1000))
             }
-            return
-        }
-
-        if (cmd == "param_set") {
-            data         = data.split(" ",3)
-            var instance = data[0]
-            var symbol   = data[1]
-            var value    = parseFloat(data[2])
-
-            desktop.pedalboard.pedalboard("setPortWidgetsValue", instance, symbol, value);
             return
         }
 
