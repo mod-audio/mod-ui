@@ -1575,7 +1575,7 @@ class Host(object):
 
     def process_read_message(self, msg):
         msg = msg[:-1].decode("utf-8", errors="ignore")
-        if LOG >= 2 or (LOG and msg[:msg.find(' ')] not in ("data_finis","output_set")):
+        if LOG >= 2 or (LOG and msg[:msg.find(' ')] not in ("data_finish","output_set")):
             logging.debug("[host] received <- %s", repr(msg))
 
         self.process_read_message_body(msg)
