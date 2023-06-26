@@ -799,9 +799,10 @@ svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1001
 	margin: 0 !important;
 }
 
-#share-window  #record-rec {
-	border-radius: 50% !important;
+#share-window #record-rec {
+    border-radius: 50% !important;
     padding: 0 !important;
+    width: 75px;
 }
 #record-rec u {
     border-radius: 50%;
@@ -820,7 +821,7 @@ svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1001
 	padding-top: 15px;
 	margin: 15px auto;
 	display: block;
-	width: 75px;
+	width: 150px;
 	height: 75px;
 }
 #share-window  .btn-large {

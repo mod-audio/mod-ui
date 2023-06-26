@@ -13,8 +13,8 @@ class Recorder(object):
         if self.recording:
             self.stop(False)
         self.tstamp = time.time()
-        cmd = ['jack_capture', '-f', 'ogg', '-V', '-dc', '-d', '65', '--port', 'mod-monitor:out_1',
-                                                                     '--port', 'mod-monitor:out_2', CAPTURE_PATH]
+        cmd = ['jack_capture', '-f', 'ogg', '-V', '-dc', '-d', '180', '--port', 'mod-monitor:out_1',
+                                                                      '--port', 'mod-monitor:out_2', CAPTURE_PATH]
         if DEVICE_KEY: # if using a real MOD, setup niceness
             cmd = ["/usr/bin/nice", "-n", "+1"] + cmd
         self.proc = subprocess.Popen(cmd)

@@ -1027,3 +1027,8 @@ body > .mod-settings.mod-window-visible {
 /*#bank-library #bank-pedalboards .pedalboard > img {
     width: 100%;
 }*/
+
+.plugin-description h1::selection,
+.plugin-description p::selection {
+    background: #4f2157
+}

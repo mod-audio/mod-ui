@@ -353,6 +353,10 @@ JqueryClass('cloudPluginBox', {
                     cplugin.status = 'blocked'
                 }
 
+                if (self.data('fake') && cplugin.mod_license === 'paid_perpetual') {
+                    cplugin.licensed = true;
+                }
+
                 if (!cplugin.screenshot_available && !cplugin.thumbnail_available) {
                     if (!cplugin.screenshot_href && !cplugin.thumbnail_href) {
                         cplugin.screenshot_href = "/resources/pedals/default-screenshot.png"
@@ -974,6 +978,11 @@ JqueryClass('cloudPluginBox', {
         var self = $(this)
 
         var plugin = self.data('pluginsData')[uri]
+        if (!plugin) {
+            if (self.data('fake'))
+                new Notification('error', "Requested plugin is not available")
+            return
+        }
 
         var cloudChecked = false
         var localChecked = false
