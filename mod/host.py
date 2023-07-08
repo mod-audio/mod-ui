@@ -1583,7 +1583,8 @@ class Host(object):
 
     def process_read_message(self, msg):
         msg = msg[:-1].decode("utf-8", errors="ignore")
-        if LOG >= 2 or (LOG and msg[:msg.find(' ')] not in ("data_finish","output_set")):
+        # NOTE: "data_finis" is intentional
+        if LOG >= 2 or (LOG and msg[:msg.find(' ')] not in ("data_finis","output_set")):
             logging.debug("[host] received <- %s", repr(msg))
 
         self.process_read_message_body(msg)
@@ -6303,14 +6304,29 @@ _:b%i
 
     @gen.coroutine
     def set_tuner_value(self, value):
-        if value == 0.0:
+        if value <= 24 or value >= 999:
+            try:
+                yield gen.Task(self.hmi.tuner, 0, "?", 0)
+            except Exception as e:
+                logging.exception(e)
             return
 
-        freq, note, cents = find_freqnotecents(value)
+        try:
+            freq, note, cents = find_freqnotecents(value)
+        except Exception as e:
+            logging.exception(e)
+            return
+
         try:
             yield gen.Task(self.hmi.tuner, freq, note, cents)
         except Exception as e:
             logging.exception(e)
+
+        if not self.web_connected:
+            try:
+                yield gen.Task(self.send_output_data_ready, None)
+            except Exception as e:
+                logging.exception(e)
 
     def hmi_menu_item_change(self, item, value, callback):
         # check if this is a valid item
