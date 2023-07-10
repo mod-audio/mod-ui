@@ -530,8 +530,8 @@ $('document').ready(function() {
     if (PREFERENCES['dev-mode'] == "on") {
         $("#prefs-ui-developer-mode").prop("checked", true)
     }
-    if (PREFERENCES['show-labs-plugins'] == "true") {
-        $("#prefs-ui-labs-plugins").prop("checked", true)
+    if (PREFERENCES['show-unstable-plugins'] == "true") {
+        $("#prefs-ui-unstable-plugins").prop("checked", true)
     }
     if (! HMI_EEPROM) {
         $("#prefs-delete-hmi-settings_br").hide()
@@ -698,8 +698,8 @@ $('document').ready(function() {
         config_set("dev-mode", $(this).prop("checked") ? "on" : "off")
     })
 
-    $("#prefs-ui-labs-plugins").click(function () {
-        config_set("show-labs-plugins", bool2str($(this).prop("checked")))
+    $("#prefs-ui-unstable-plugins").click(function () {
+        config_set("show-unstable-plugins", bool2str($(this).prop("checked")))
     })
 
     // ----------------------------------------------------------------------------------------------------------------
@@ -1097,14 +1097,14 @@ $('document').ready(function() {
                         Show a few more options on the Web Interface, useful for developers.
                     </p>
                     <label>
-                        <input type="checkbox" autocomplete="off" id="prefs-ui-labs-plugins">
-                            Show MOD Labs plugins in the store
+                        <input type="checkbox" autocomplete="off" id="prefs-ui-unstable-plugins">
+                            Show beta plugins in the Store
                         </input>
                     </label>
                     <p>
-                        Show option to access "MOD Labs" plugins in the Plugin Store.<br/>
-                        Please note that MOD Labs plugins are community maintained, can be unstable and can cause crashes.
-                        If you share a pedalboard containing MOD Labs plugins, it will only be available to users that explicitly accept pedalboards using MOD Labs plugins.
+                        Show option to list 'beta' plugins in the Plugin Store.<br/>
+                        Note that beta plugins can be unstable and cause crashes.
+                        If you share a pedalboard containing beta plugins, it will only be available to users that explicitly accept pedalboards with beta plugins.<br/>
                         Just remember: things can break!
                     </p>
                 </form>

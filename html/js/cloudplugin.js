@@ -35,16 +35,15 @@ JqueryClass('cloudPluginBox', {
             removePluginBundles: function (bundles, callback) {
                 callback({})
             },
-            installPluginURI: function (uri, usingLabs, callback) {
+            installPluginURI: function (uri, callback) {
                 callback({}, "")
             },
-            upgradePluginURI: function (uri, usingLabs, callback) {
+            upgradePluginURI: function (uri, callback) {
                 callback({}, "")
             },
             info: null,
             fake: false,
             isMainWindow: true,
-            usingLabs: false,
             windowName: "Plugin Store",
             pluginsData: {},
         }, options)
@@ -61,8 +60,6 @@ JqueryClass('cloudPluginBox', {
 
         self.data('category', null)
         self.cloudPluginBox('setCategory', "All")
-
-        self.data('usingLabs', self.find('input:radio[name=plugins-source]:checked').val() === 'labs')
 
         var lastKeyTimeout = null
         searchbox.keydown(function (e) {
@@ -118,9 +115,11 @@ JqueryClass('cloudPluginBox', {
             self.find('input:checkbox[name=installed]').prop('checked', false)
             self.cloudPluginBox('search')
         })
+        self.find('input:checkbox[name=unstable]').click(function (e) {
+            self.cloudPluginBox('search')
+        })
 
         self.find('input:radio[name=plugins-source]').click(function (e) {
-            self.data('usingLabs', self.find('input:radio[name=plugins-source]:checked').val() === 'labs')
             self.cloudPluginBox('toggleFeaturedPlugins')
             self.cloudPluginBox('search')
         })
@@ -152,7 +151,12 @@ JqueryClass('cloudPluginBox', {
             $('#cloud_install_all').addClass("disabled").css({color:'#444'})
             $('#cloud_update_all').addClass("disabled").css({color:'#444'})
 
-            self.cloudPluginBox('search')
+            var unstablecb = self.find('input:checkbox[name=unstable]')
+            if (!unstablecb.is(':checked')) {
+                self.cloudPluginBox('search')
+            } else {
+                unstablecb.click()
+            }
 
             return false
         }
@@ -210,11 +214,10 @@ JqueryClass('cloudPluginBox', {
     toggleFeaturedPlugins: function () {
       var self  = $(this)
       var featuredPlugins = self.find('.featured-plugins')
-      var usingLabs = self.data('usingLabs')
       var queryText = self.data('searchbox').val()
       var category = self.data('category')
 
-      if (queryText === '' && category === 'All' && !usingLabs) {
+      if (queryText === '' && category === 'All') {
         if (featuredPlugins.is(':hidden')) {
           featuredPlugins.show()
         }
@@ -233,22 +236,20 @@ JqueryClass('cloudPluginBox', {
             bin_compat: BIN_COMPAT,
         }
 
-        if (self.data('fake')) {
+        if (self.find('input:checkbox[name=unstable]:checked').length == 0 || self.data('fake')) {
             query.stable = true
         }
 
         // hide/show featured plugins if searching/not searching
-        var usingLabs = self.data('usingLabs')
-
         self.cloudPluginBox('toggleFeaturedPlugins')
 
         if (self.find('input:checkbox[name=installed]:checked').length)
-            return self.cloudPluginBox('searchInstalled', usingLabs, query, customRenderCallback)
+            return self.cloudPluginBox('searchInstalled', query, customRenderCallback)
 
         if (self.find('input:checkbox[name=non-installed]:checked').length)
-            return self.cloudPluginBox('searchAll', usingLabs, false, query, customRenderCallback)
+            return self.cloudPluginBox('searchAll', false, query, customRenderCallback)
 
-        return self.cloudPluginBox('searchAll', usingLabs, true, query, customRenderCallback)
+        return self.cloudPluginBox('searchAll', true, query, customRenderCallback)
     },
 
     synchronizePluginData: function (plugin) {
@@ -274,7 +275,7 @@ JqueryClass('cloudPluginBox', {
     },
 
     // search cloud and local plugins, prefer cloud
-    searchAll: function (usingLabs, showInstalled, query, customRenderCallback) {
+    searchAll: function (showInstalled, query, customRenderCallback) {
         var self = $(this)
         var results = {}
         var cplugin, lplugin,
@@ -423,7 +424,7 @@ JqueryClass('cloudPluginBox', {
         var cloudResults
         $.ajax({
             method: 'GET',
-            url: (usingLabs ? CLOUD_LABS_URL : SITEURL) + "/lv2/plugins",
+            url: SITEURL + "/lv2/plugins",
             data: query,
             success: function (plugins) {
                 cloudReached = true
@@ -433,30 +434,23 @@ JqueryClass('cloudPluginBox', {
                 cloudResults = []
             },
             complete: function () {
-                if (usingLabs) {
-                    results.cloud = cloudResults
-                    results.featured = []
-                    $('.featured-plugins').hide()
-                    renderResults()
-                } else {
-                    $.ajax({
-                        method: 'GET',
-                        url: SITEURL + "/lv2/plugins/featured",
-                        success: function (featured) {
-                            results.featured = featured
-                        },
-                        error: function () {
-                            results.featured = []
-                            $('.featured-plugins').hide()
-                        },
-                        complete: function () {
-                            results.cloud = cloudResults;
-                            renderResults()
-                        },
-                        cache: false,
-                        dataType: 'json'
-                    })
-                }
+                $.ajax({
+                    method: 'GET',
+                    url: SITEURL + "/lv2/plugins/featured",
+                    success: function (featured) {
+                        results.featured = featured
+                    },
+                    error: function () {
+                        results.featured = []
+                        $('.featured-plugins').hide()
+                    },
+                    complete: function () {
+                        results.cloud = cloudResults;
+                        renderResults()
+                    },
+                    cache: false,
+                    dataType: 'json'
+                })
             },
             cache: false,
             dataType: 'json'
@@ -515,7 +509,7 @@ JqueryClass('cloudPluginBox', {
     },
 
     // search cloud and local plugins, show installed only
-    searchInstalled: function (usingLabs, query, customRenderCallback) {
+    searchInstalled: function (query, customRenderCallback) {
         var self = $(this)
         var results = {}
         var cplugin, lplugin,
@@ -534,6 +528,7 @@ JqueryClass('cloudPluginBox', {
                 }
 
                 if (cplugin) {
+                    lplugin.stable        = cplugin.stable
                     lplugin.latestVersion = [cplugin.builder_version || 0, cplugin.minorVersion, cplugin.microVersion, cplugin.release_number]
 
                     if (compareVersions(lplugin.installedVersion, lplugin.latestVersion) >= 0) {
@@ -590,7 +585,7 @@ JqueryClass('cloudPluginBox', {
         // cloud search
         $.ajax({
             method: 'GET',
-            url: (usingLabs ? CLOUD_LABS_URL : SITEURL) + "/lv2/plugins",
+            url: SITEURL + "/lv2/plugins",
             data: query,
             success: function (plugins) {
                 // index by uri, needed later to check its latest version
@@ -816,6 +811,7 @@ JqueryClass('cloudPluginBox', {
             licensed: plugin.licensed,
             featured: plugin.featured,
             coming: plugin.coming,
+            unstable: plugin.stable === false,
             build_env: plugin.buildEnvironment,
         }
 
@@ -892,10 +888,9 @@ JqueryClass('cloudPluginBox', {
                     self.cloudPluginBox('search')
                 }
             }
-            var usingLabs = self.data('usingLabs')
 
             for (var i in bundle_ids) {
-                desktop.installationQueue.installUsingBundle(bundle_ids[i], usingLabs, finished)
+                desktop.installationQueue.installUsingBundle(bundle_ids[i], finished)
             }
         })
     },
@@ -1045,7 +1040,8 @@ JqueryClass('cloudPluginBox', {
                 demo  : !!plugin.demo,
                 licensed: plugin.licensed,
                 coming: plugin.coming,
-                build_env_uppercase: (plugin.buildEnvironment || "LOCAL").toUpperCase(),
+                build_env_uppercase: plugin.buildEnvironment ? plugin.buildEnvironment.toUpperCase()
+                                                             : (plugin.stable === false ? "BETA" : "LOCAL"),
                 show_build_env: plugin.buildEnvironment !== "prod",
             };
 
@@ -1096,7 +1092,7 @@ JqueryClass('cloudPluginBox', {
                 info.find('.js-installed-version').hide()
                 info.find('.js-install').show().click(function () {
                     // Install plugin
-                    self.data('installPluginURI')(plugin.uri, self.data('usingLabs'), function (resp, bundlename) {
+                    self.data('installPluginURI')(plugin.uri, function (resp, bundlename) {
                         self.cloudPluginBox('postInstallAction', resp.installed, resp.removed, bundlename)
                         info.window('close')
                     })
@@ -1107,7 +1103,7 @@ JqueryClass('cloudPluginBox', {
                 canUpgrade = true
                 info.find('.js-upgrade').show().click(function () {
                     // Upgrade plugin
-                    self.data('upgradePluginURI')(plugin.uri, self.data('usingLabs'), function (resp, bundlename) {
+                    self.data('upgradePluginURI')(plugin.uri, function (resp, bundlename) {
                         self.cloudPluginBox('postInstallAction', resp.installed, resp.removed, bundlename)
                         info.window('close')
                     })
@@ -1171,7 +1167,7 @@ JqueryClass('cloudPluginBox', {
 
         // always get cloud plugin info
         $.ajax({
-            url: (self.data('usingLabs') ? CLOUD_LABS_URL : SITEURL) + "/lv2/plugins",
+            url: SITEURL + "/lv2/plugins",
             data: {
                 uri: plugin.uri,
                 image_version: VERSION,

@@ -62,10 +62,8 @@
     {% autoescape None %}
     var TEMPLATES = {}
     SITEURL = '{{cloud_url}}'
-    CLOUD_LABS_URL = '{{cloud_labs_url}}'
     PLUGINS_URL      = '{{plugins_url}}'
     PEDALBOARDS_URL  = '{{pedalboards_url}}'
-    PEDALBOARDS_LABS_URL  = '{{pedalboards_labs_url}}'
     CONTROLCHAIN_URL = '{{controlchain_url}}'
     LV2_PLUGIN_DIR   = '{{lv2_plugin_dir}}'
     VERSION          = '{{version}}'
@@ -199,8 +197,8 @@ $('document').ready(function() {
     if (PREFERENCES['plugins-folded'] == "true") {
         desktop.effectBox.effectBox('toggle')
     }
-    if (PREFERENCES['show-labs-plugins'] == "true") {
-        $("#cloud-plugins-source").parent().show()
+    if (PREFERENCES['show-unstable-plugins'] == "true") {
+        $("#cloud-plugins-unstable").parent().show()
     }
     desktop.pedalboardBox.pedalboardBox('initViewMode', PREFERENCES['pb-view-mode'])
 
@@ -391,7 +389,7 @@ $('document').ready(function() {
             <div class="box">
                 <h1 class="pull-left">SHARE</h1><span class="js-cancel close">&times;</span>
                 <div class="unstable-warning mod-hidden">
-                  <b>Warning:</b> This pedalboard contains MOD Labs plugins and won't be available to most users
+                  <b>Warning:</b> This pedalboard contains beta plugins and won't be available to most users
                 </div>
                 <form>
                     <div class="clearfix"></div>
@@ -745,15 +743,8 @@ $('document').ready(function() {
                     <label for="cloud-plugins-non-installed">Non-Installed only</label>
                 </div>
                 <div class="control-group mod-hidden">
-                    <div class="switch" id="cloud-plugins-source">
-                      <input type="radio" id="cloud-radio-official" name="plugins-source" value="official" checked="checked">
-                      <label for="official">Official</label>
-                      <input type="radio" id="cloud-radio-labs" name="plugins-source" value="labs">
-                      <label for="labs">Labs</label>
-                      <span class="toggle-outside">
-                        <span class="toggle-inside"></span>
-                      </span>
-                    </div>
+                    <input type="checkbox" name="unstable" id="cloud-plugins-unstable" />
+                    <label for="cloud-plugins-unstable">Show beta plugins</label>
                 </div>
                 <ul class="categories list list-unstyled">
                     <li id="cloud-plugin-tab-All">All</li>
