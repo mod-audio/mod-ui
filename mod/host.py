@@ -77,6 +77,7 @@ from mod.mod_protocol import (
     CMD_TUNER_ON,
     CMD_TUNER_OFF,
     CMD_TUNER_INPUT,
+    CMD_TUNER_REF_FREQ,
     CMD_PROFILE_LOAD,
     CMD_PROFILE_STORE,
     CMD_NEXT_PAGE,
@@ -524,6 +525,7 @@ class Host(object):
         Protocol.register_cmd_callback('ALL', CMD_TUNER_ON, self.hmi_tuner_on)
         Protocol.register_cmd_callback('ALL', CMD_TUNER_OFF, self.hmi_tuner_off)
         Protocol.register_cmd_callback('ALL', CMD_TUNER_INPUT, self.hmi_tuner_input)
+        Protocol.register_cmd_callback('ALL', CMD_TUNER_REF_FREQ, self.hmi_tuner_ref_freq)
 
         Protocol.register_cmd_callback('ALL', CMD_MENU_ITEM_CHANGE, self.hmi_menu_item_change)
 
@@ -6301,6 +6303,11 @@ _:b%i
 
         self.current_tuner_port = input_port
         callback(True)
+
+    def hmi_tuner_ref_freq(self, freq, callback):
+        logging.debug("hmi tuner ref freq")
+
+        self.send_notmodified("param_set %d REFFREQ %d" % (TUNER_INSTANCE_ID, freq), callback)
 
     @gen.coroutine
     def set_tuner_value(self, value):
