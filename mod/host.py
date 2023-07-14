@@ -341,6 +341,7 @@ class Host(object):
         self.swapped_audio_channels = self.descriptor.get('swapped_audio_channels', False)
         self.current_tuner_port = 2 if self.swapped_audio_channels else 1
         self.current_tuner_mute = self.prefs.get("tuner-mutes-outputs", False, bool)
+        self.tuner_ref_freq = 440
 
         if self.descriptor.get('factory_pedalboards', False):
             self.supports_factory_banks = True
@@ -6307,6 +6308,7 @@ _:b%i
     def hmi_tuner_ref_freq(self, freq, callback):
         logging.debug("hmi tuner ref freq")
 
+        self.tuner_ref_freq = freq
         self.send_notmodified("param_set %d REFFREQ %d" % (TUNER_INSTANCE_ID, freq), callback)
 
     @gen.coroutine
@@ -6319,7 +6321,7 @@ _:b%i
             return
 
         try:
-            freq, note, cents = find_freqnotecents(value)
+            freq, note, cents = find_freqnotecents(value, self.tuner_ref_freq)
         except Exception as e:
             logging.exception(e)
             return
@@ -6329,11 +6331,10 @@ _:b%i
         except Exception as e:
             logging.exception(e)
 
-        if not self.web_connected:
-            try:
-                yield gen.Task(self.send_output_data_ready, None)
-            except Exception as e:
-                logging.exception(e)
+        try:
+            yield gen.Task(self.send_output_data_ready, None)
+        except Exception as e:
+            logging.exception(e)
 
     def hmi_menu_item_change(self, item, value, callback):
         # check if this is a valid item
