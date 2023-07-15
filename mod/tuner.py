@@ -28,4 +28,4 @@ def find_freqnotecents(f, rf):
     octave = (n + 8) // len(NOTES)
     scale = (nf - n) / 4;
     cents = (scale * 10000) / 25;
-    return f, "%s%d" % (note, octave), cents * 16
+    return f, "%s%d" % (note, octave), cents * 100
