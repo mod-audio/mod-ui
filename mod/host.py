@@ -341,7 +341,7 @@ class Host(object):
         self.swapped_audio_channels = self.descriptor.get('swapped_audio_channels', False)
         self.tuner_resolution = self.descriptor.get('tuner_resolution', 16)
 
-        self.current_tuner_port = 2 if self.swapped_audio_channels else 1
+        self.current_tuner_port = self.prefs.get("tuner-input-port", 1, int)
         self.current_tuner_mute = self.prefs.get("tuner-mutes-outputs", False, bool)
         self.current_tuner_ref_freq = self.prefs.get("tuner-reference-frequency", 440, int)
 
@@ -686,6 +686,12 @@ class Host(object):
             disconnect_jack_ports(ports[0], ports[1])
 
         return removed_conns
+
+    def hw_tuner_input_port(self, port):
+        if self.swapped_audio_channels:
+            return 2 if port == 1 else 1
+        else:
+            return 2 if port == 2 else 1
 
     # -----------------------------------------------------------------------------------------------------------------
     # Addressing callbacks
@@ -1304,13 +1310,7 @@ class Host(object):
             msgs.append((self.hmi.set_snapshot_name, [self.current_pedalboard_snapshot_id, ssname]))
 
         if self.descriptor.get('hmi_set_tuner_input', False):
-            port = self.current_tuner_port
-            if self.swapped_audio_channels:
-                if port == 1:
-                    port = 2
-                else:
-                    port = 1
-            msgs.append((self.hmi.set_tuner_input, [port]))
+            msgs.append((self.hmi.set_tuner_input, [self.current_tuner_port]))
 
         if self.descriptor.get('hmi_set_tuner_ref_freq', False):
             msgs.append((self.hmi.set_tuner_ref_freq, [self.current_tuner_ref_freq]))
@@ -6269,7 +6269,8 @@ _:b%i
             callback(False)
 
         def monitor_added(ok):
-            if not ok or not connect_jack_ports("system:capture_%d" % self.current_tuner_port,
+            port = self.hw_tuner_input_port(self.current_tuner_port)
+            if not ok or not connect_jack_ports("system:capture_%d" % port,
                                                 "effect_%d:%s" % (TUNER_INSTANCE_ID, TUNER_INPUT_PORT)):
                 self.send_notmodified("remove %d" % TUNER_INSTANCE_ID, operation_failed)
                 return
@@ -6300,24 +6301,25 @@ _:b%i
     def hmi_tuner_input(self, input_port, callback):
         logging.debug("hmi tuner input")
 
-        if input_port not in (1, 2):
+        if input_port not in (1,2):
             callback(False)
             return
 
-        if self.swapped_audio_channels:
-            if input_port == 1:
-                input_port = 2
-            else:
-                input_port = 1
-
-        disconnect_jack_ports("system:capture_%s" % self.current_tuner_port,
-                              "effect_%d:%s" % (TUNER_INSTANCE_ID, TUNER_INPUT_PORT))
-
-        connect_jack_ports("system:capture_%s" % input_port,
-                           "effect_%d:%s" % (TUNER_INSTANCE_ID, TUNER_INPUT_PORT))
+        hw_old_port = self.hw_tuner_input_port(self.current_tuner_port)
+        hw_new_port = self.hw_tuner_input_port(input_port)
 
         self.current_tuner_port = input_port
+
+        disconnect_jack_ports("system:capture_%s" % hw_old_port,
+                              "effect_%d:%s" % (TUNER_INSTANCE_ID, TUNER_INPUT_PORT))
+
+        connect_jack_ports("system:capture_%s" % hw_new_port,
+                           "effect_%d:%s" % (TUNER_INSTANCE_ID, TUNER_INPUT_PORT))
+
         callback(True)
+
+        if self.descriptor.get('tuner_input_save', False):
+            self.prefs.setAndSave("tuner-input-port", input_port, False)
 
     def hmi_tuner_ref_freq(self, freq, callback):
         logging.debug("hmi tuner ref freq")
