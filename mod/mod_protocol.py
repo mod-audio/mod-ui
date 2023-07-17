@@ -44,6 +44,7 @@ CMD_ARGS = {
         'tn': [],
         'tf': [],
         'ti': [int],
+        'tr': [int],
         'restore': [],
         'screenshot': [int,str],
         'r': [int,],
@@ -154,6 +155,7 @@ CMD_TUNER                         = 'ts'
 CMD_TUNER_ON                      = 'tn'
 CMD_TUNER_OFF                     = 'tf'
 CMD_TUNER_INPUT                   = 'ti'
+CMD_TUNER_REF_FREQ                = 'tr'
 CMD_RESTORE                       = 'restore'
 CMD_SCREENSHOT                    = 'screenshot'
 CMD_RESPONSE                      = 'r'
@@ -352,6 +354,8 @@ def cmd_to_str(cmd):
         return "CMD_TUNER_OFF"
     if cmd == "ti":
         return "CMD_TUNER_INPUT"
+    if cmd == "tr":
+        return "CMD_TUNER_REF_FREQ"
     if cmd == "restore":
         return "CMD_RESTORE"
     if cmd == "screenshot":

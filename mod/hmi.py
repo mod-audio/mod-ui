@@ -36,6 +36,8 @@ from mod.mod_protocol import (
     CMD_PEDALBOARD_NAME_SET,
     CMD_SNAPSHOT_NAME_SET,
     CMD_TUNER,
+    CMD_TUNER_INPUT,
+    CMD_TUNER_REF_FREQ,
     CMD_MENU_ITEM_CHANGE,
     CMD_RESET_EEPROM,
     CMD_DUO_CONTROL_INDEX_SET,
@@ -542,3 +544,9 @@ class HMI(object):
 
     def set_snapshot_name(self, index, name, callback):
         self.send('{} {} {}'.format(CMD_SNAPSHOT_NAME_SET, index, normalize_for_hw(name)), callback)
+
+    def set_tuner_input(self, port, callback, datatype='int'):
+        self.send('{} {}'.format(CMD_TUNER_INPUT, port), callback, datatype)
+
+    def set_tuner_ref_freq(self, freq, callback, datatype='int'):
+        self.send('{} {}'.format(CMD_TUNER_REF_FREQ, freq), callback, datatype)

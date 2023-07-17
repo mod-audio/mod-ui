@@ -15,19 +15,17 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from functools import reduce as freduce
+from math import log2 as log2f
 
-NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
+NOTES = ['A', 'A#', 'B', 'C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#']
 
-_freqs4 = [261.63, 277.18, 293.66, 311.13, 329.63, 349.23, 369.99, 392.0, 415.3, 440.0, 466.16, 493.88]
-FREQS = freduce(lambda l1, l2: l1+l2, ([ freq/2**i for freq in _freqs4 ] for i in range(4, -4, -1)))
-
-def find_freqnotecents(f):
-    freq = min(FREQS, key=lambda i: abs(i-f))
-    idx = FREQS.index(freq)
-    octave = int(idx / 12)
-    note = NOTES[FREQS.index(freq/2**octave)]
-    d = 1 if f >= freq else -1
-    next_f = FREQS[idx+d]
-    cents =  int(100 * (f - freq) / (next_f - freq)) * d
-    return freq, "%s%d" % (note, octave), cents
+def find_freqnotecents(f, rf, res):
+    ratio = log2f(f/rf)
+    nf = 12 * ratio + 49
+    n = round(nf)
+    idx = (n - 1) % len(NOTES)
+    note = NOTES[idx]
+    octave = (n + 8) // len(NOTES)
+    scale = (nf - n) / 4;
+    cents = (scale * 10000) / 25;
+    return f, "%s%d" % (note, octave), cents * res

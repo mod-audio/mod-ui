@@ -54,13 +54,23 @@ class UserPreferences(object):
 
         return value
 
-    def setAndSave(self, key, value):
+    def setAndSave(self, key, value, atomicSave = True):
         self.prefs[key] = value
-        self.save()
+        if atomicSave:
+            self.saveAtomic()
+        else:
+            self.saveAsync()
 
-    def save(self):
+    def saveAtomic(self):
         with TextFileFlusher(PREFERENCES_JSON_FILE) as fh:
             json.dump(self.prefs, fh, indent=4)
+
+    def saveAsync(self):
+        try:
+            with open(PREFERENCES_JSON_FILE, 'w') as fh:
+                json.dump(self.prefs, fh, indent=4)
+        except OSError:
+            pass
 
 class Session(object):
     def __init__(self):
