@@ -339,9 +339,11 @@ class Host(object):
         self.profile = Profile(self.profile_apply, self.descriptor)
 
         self.swapped_audio_channels = self.descriptor.get('swapped_audio_channels', False)
+        self.tuner_resolution = self.descriptor.get('tuner_resolution', 16)
+
         self.current_tuner_port = 2 if self.swapped_audio_channels else 1
         self.current_tuner_mute = self.prefs.get("tuner-mutes-outputs", False, bool)
-        self.tuner_ref_freq = 440
+        self.current_tuner_ref_freq = self.prefs.get("tuner-reference-frequency", 440, int)
 
         if self.descriptor.get('factory_pedalboards', False):
             self.supports_factory_banks = True
@@ -1292,6 +1294,18 @@ class Host(object):
         if self.descriptor.get('hmi_set_ss_name', False):
             ssname = self.snapshot_name() or DEFAULT_SNAPSHOT_NAME
             msgs.append((self.hmi.set_snapshot_name, [self.current_pedalboard_snapshot_id, ssname]))
+
+        if self.descriptor.get('hmi_set_tuner_input', False):
+            port = self.current_tuner_port
+            if self.swapped_audio_channels:
+                if port == 1:
+                    port = 2
+                else:
+                    port = 1
+            msgs.append((self.hmi.set_tuner_input, [port]))
+
+        if self.descriptor.get('hmi_set_tuner_ref_freq', False):
+            msgs.append((self.hmi.set_tuner_ref_freq, [self.current_tuner_ref_freq]))
 
         if self.descriptor.get('addressing_pages', 0):
             pages = self.addressings.get_available_pages()
@@ -6309,8 +6323,9 @@ _:b%i
     def hmi_tuner_ref_freq(self, freq, callback):
         logging.debug("hmi tuner ref freq")
 
-        self.tuner_ref_freq = freq
+        self.current_tuner_ref_freq = freq
         self.send_notmodified("param_set %d REFFREQ %d" % (TUNER_INSTANCE_ID, freq), callback)
+        self.prefs.setAndSave("tuner-reference-frequency", freq, False)
 
     @gen.coroutine
     def set_tuner_value(self, value):
@@ -6322,7 +6337,7 @@ _:b%i
             return
 
         try:
-            freq, note, cents = find_freqnotecents(value, self.tuner_ref_freq)
+            freq, note, cents = find_freqnotecents(value, self.current_tuner_ref_freq, self.tuner_resolution)
         except Exception as e:
             logging.exception(e)
             return
@@ -6331,6 +6346,7 @@ _:b%i
             yield gen.Task(self.hmi.tuner, freq, note, cents)
         except Exception as e:
             logging.exception(e)
+            return
 
         try:
             yield gen.Task(self.send_output_data_ready, None)
@@ -6416,7 +6432,7 @@ _:b%i
             self.unmute()
 
         self.current_tuner_mute = mute
-        self.prefs.setAndSave("tuner-mutes-outputs", bool(mute))
+        self.prefs.setAndSave("tuner-mutes-outputs", bool(mute), False)
         callback(True)
 
     def hmi_menu_set_quick_bypass_mode(self, mode, callback):

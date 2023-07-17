@@ -19,7 +19,7 @@ from math import log2 as log2f
 
 NOTES = ['A', 'A#', 'B', 'C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#']
 
-def find_freqnotecents(f, rf):
+def find_freqnotecents(f, rf, res):
     ratio = log2f(f/rf)
     nf = 12 * ratio + 49
     n = round(nf)
@@ -28,4 +28,4 @@ def find_freqnotecents(f, rf):
     octave = (n + 8) // len(NOTES)
     scale = (nf - n) / 4;
     cents = (scale * 10000) / 25;
-    return f, "%s%d" % (note, octave), cents * 100
+    return f, "%s%d" % (note, octave), cents * res
