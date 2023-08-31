@@ -2954,6 +2954,15 @@ class Host(object):
             self.add_bundle(presetbundle, add_bundle_callback)
 
         def start(_):
+            # remove old preset ttl files, without removing the whole dir
+            if olduri.startswith("file:///"):
+                oldpath = olduri[7:]
+                if os.path.exists(oldpath):
+                    os.remove(oldpath)
+                    oldpath = os.path.join(os.path.dirname(oldpath), "manifest.ttl")
+                    if os.path.exists(oldpath):
+                        os.remove(oldpath)
+
             rescan_plugin_presets(plugin_uri)
             pluginData['preset'] = ""
             self.send_notmodified("preset_save %d \"%s\" %s %s.ttl" % (instance_id,
