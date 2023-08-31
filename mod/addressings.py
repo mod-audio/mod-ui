@@ -381,7 +381,11 @@ class Addressings(object):
                 momentary = int(addr.get('momentary', 0))
                 operational_mode = addr.get('operational_mode', '=')
 
-                curvalue = self._task_get_port_value(instance_id, portsymbol)
+                try:
+                    curvalue = self._task_get_port_value(instance_id, portsymbol)
+                except KeyError:
+                    continue
+
                 group = addr.get('group', None)
                 addrdata = self.add(instance_id, plugin_uri, portsymbol, actuator_uri,
                                     addr['label'], addr['minimum'], addr['maximum'], addr['steps'], curvalue,
@@ -538,7 +542,11 @@ class Addressings(object):
                     print("NOTE: An incompatible addressing has been skipped, port:", instance, portsymbol)
                     continue
 
-                curvalue = self._task_get_port_value(instance_id, portsymbol)
+                try:
+                    curvalue = self._task_get_port_value(instance_id, portsymbol)
+                except KeyError:
+                    continue
+
                 addrdata = self.add(instance_id, plugin_uri, portsymbol, actuator_uri,
                                     addr['label'], addr['minimum'], addr['maximum'], addr['steps'], curvalue)
 
@@ -1305,8 +1313,13 @@ class Addressings(object):
                 if newValue is not None:
                     addressing_data['value'] = newValue
                 else:
-                    addressing_data['value'] = self._task_get_port_value(addressing_data['instance_id'],
-                                                                         addressing_data['port'])
+                    try:
+                        addressing_data['value'] = self._task_get_port_value(addressing_data['instance_id'],
+                                                                             addressing_data['port'])
+                    except KeyError:
+                        if callback is not None:
+                            callback(False)
+                        return
 
                 if addressing_data.get('tempo', False):
                     dividers = self._task_get_tempo_divider(addressing_data['instance_id'],
@@ -1336,11 +1349,15 @@ class Addressings(object):
 
             # reload value
             addressing = addressings_addrs[addressings_idx]
-            if newValue is not None:
-                addressing['value'] = addressing_data['value'] = newValue
-            else:
-                addressing['value'] = addressing_data['value'] = self._task_get_port_value(addressing['instance_id'],
-                                                                                           addressing['port'])
+            if newValue is None:
+                try:
+                    newValue = self._task_get_port_value(addressing['instance_id'], addressing['port'])
+                except KeyError:
+                    if callback is not None:
+                        callback(False)
+                    return
+
+            addressing['value'] = addressing_data['value'] = newValue
 
             if addressing_data.get('tempo', False):
                 dividers = self._task_get_tempo_divider(addressing['instance_id'], addressing['port'])
