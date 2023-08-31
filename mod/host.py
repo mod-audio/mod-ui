@@ -2945,6 +2945,7 @@ class Host(object):
 
         def host_callback(ok):
             if not ok:
+                shutil.rmtree(presetbundle)
                 os.sync()
                 callback({
                     'ok': False,
@@ -2953,7 +2954,6 @@ class Host(object):
             self.add_bundle(presetbundle, add_bundle_callback)
 
         def start(_):
-            shutil.rmtree(presetbundle)
             rescan_plugin_presets(plugin_uri)
             pluginData['preset'] = ""
             self.send_notmodified("preset_save %d \"%s\" %s %s.ttl" % (instance_id,
