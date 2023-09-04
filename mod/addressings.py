@@ -387,7 +387,11 @@ class Addressings(object):
                 momentary = int(addr.get('momentary', 0))
                 operational_mode = addr.get('operational_mode', '=')
 
-                curvalue = self._task_get_port_value(instance_id, portsymbol)
+                try:
+                    curvalue = self._task_get_port_value(instance_id, portsymbol)
+                except KeyError:
+                    continue
+
                 group = addr.get('group', None)
                 addrdata = self.add(instance_id, plugin_uri, portsymbol, actuator_uri,
                                     addr['label'], addr['minimum'], addr['maximum'], addr['steps'], curvalue,
@@ -544,7 +548,11 @@ class Addressings(object):
                     print("NOTE: An incompatible addressing has been skipped, port:", instance, portsymbol)
                     continue
 
-                curvalue = self._task_get_port_value(instance_id, portsymbol)
+                try:
+                    curvalue = self._task_get_port_value(instance_id, portsymbol)
+                except KeyError:
+                    continue
+
                 addrdata = self.add(instance_id, plugin_uri, portsymbol, actuator_uri,
                                     addr['label'], addr['minimum'], addr['maximum'], addr['steps'], curvalue)
 
@@ -564,8 +572,11 @@ class Addressings(object):
         for uri, addrs in self.hmi_addressings.items():
             addrs2 = []
             for addr in addrs['addrs']:
+                instance = instances.get(addr['instance_id'], None)
+                if instance is None:
+                    continue
                 addrs2.append({
-                    'instance': instances[addr['instance_id']],
+                    'instance': instance,
                     'port'    : addr['port'],
                     'label'   : addr['label'],
                     'minimum' : addr['minimum'],
@@ -585,8 +596,11 @@ class Addressings(object):
         for uri, addrs in self.cc_addressings.items():
             addrs2 = []
             for addr in addrs:
+                instance = instances.get(addr['instance_id'], None)
+                if instance is None:
+                    continue
                 addrs2.append({
-                    'instance': instances[addr['instance_id']],
+                    'instance': instance,
                     'port'    : addr['port'],
                     'label'   : addr['label'],
                     'minimum' : addr['minimum'],
@@ -601,8 +615,11 @@ class Addressings(object):
         for uri, addrs in self.virtual_addressings.items():
             addrs2 = []
             for addr in addrs:
+                instance = instances.get(addr['instance_id'], None)
+                if instance is None:
+                    continue
                 addrs2.append({
-                    'instance': instances[addr['instance_id']],
+                    'instance': instance,
                     'port'    : addr['port'],
                     'label'   : addr['label'],
                     'minimum' : addr['minimum'],
@@ -619,8 +636,11 @@ class Addressings(object):
             if self.is_hw_cv_port(uri):
                 addrs2 = []
                 for addr in addrs:
+                    instance = instances.get(addr['instance_id'], None)
+                    if instance is None:
+                        continue
                     addrs2.append({
-                        'instance'        : instances[addr['instance_id']],
+                        'instance'        : instance,
                         'port'            : addr['port'],
                         'label'           : addr['label'],
                         'minimum'         : addr['minimum'],
@@ -631,8 +651,11 @@ class Addressings(object):
             else: # plugin cv ports, different structure to save name as well
                 addrs2 = { 'name': addrs['name'], 'addrs': [] }
                 for addr in addrs['addrs']:
+                    instance = instances.get(addr['instance_id'], None)
+                    if instance is None:
+                        continue
                     addrs2['addrs'].append({
-                        'instance'        : instances[addr['instance_id']],
+                        'instance'        : instance,
                         'port'            : addr['port'],
                         'label'           : addr['label'],
                         'minimum'         : addr['minimum'],
@@ -671,7 +694,10 @@ class Addressings(object):
                         group_mappings.append({'uri': group, 'page': addr.get('page')})
                         send_hw_map = False # Register harware group mapping only once
                 if addr.get('group') is None or send_hw_map:
-                    args = (instances[addr['instance_id']],
+                    instance = instances.get(addr['instance_id'], None)
+                    if instance is None:
+                        continue
+                    args = (instance,
                             addr['port'],
                             addr_uri,
                             addr['minimum'],
@@ -690,9 +716,12 @@ class Addressings(object):
         # Virtual addressings (/bpm)
         for uri, addrs in self.virtual_addressings.items():
             for addr in addrs:
+                instance = instances.get(addr['instance_id'], None)
+                if instance is None:
+                    continue
                 dividers = "{0}".format(addr.get('dividers', "null")).replace(" ", "").replace("None", "null")
                 page = "{0}".format(addr.get('page', "null")).replace("None", "null")
-                args = (instances[addr['instance_id']],
+                args = (instance,
                         addr['port'],
                         uri,
                         addr['minimum'],
@@ -708,7 +737,10 @@ class Addressings(object):
         for uri, addrs in self.cc_addressings.items():
             feedback = int(self.cc_metadata[uri]['feedback'])
             for addr in addrs:
-                args = (instances[addr['instance_id']],
+                instance = instances.get(addr['instance_id'], None)
+                if instance is None:
+                    continue
+                args = (instance,
                         addr['port'],
                         uri,
                         addr['minimum'],
@@ -723,7 +755,10 @@ class Addressings(object):
         # MIDI
         for uri, addrs in self.midi_addressings.items():
             for addr in addrs:
-                msg_callback("midi_map %s %s %i %i %f %f" % (instances[addr['instance_id']],
+                instance = instances.get(addr['instance_id'], None)
+                if instance is None:
+                    continue
+                msg_callback("midi_map %s %s %i %i %f %f" % (instance,
                                                              addr['port'],
                                                              addr['midichannel'],
                                                              addr['midicontrol'],
@@ -735,13 +770,16 @@ class Addressings(object):
             if not self.is_hw_cv_port(uri):
                 addrs = addrs['addrs']
             for addr in addrs:
-                msg_callback("cv_map %s %s %s %f %f %s %s 0" % (instances[addr['instance_id']],
-                                                                           addr['port'],
-                                                                           uri,
-                                                                           addr['minimum'],
-                                                                           addr['maximum'],
-                                                                           addr['label'].replace(" ","_"),
-                                                                           addr.get('operational_mode')))
+                instance = instances.get(addr['instance_id'], None)
+                if instance is None:
+                    continue
+                msg_callback("cv_map %s %s %s %f %f %s %s 0" % (instance,
+                                                                addr['port'],
+                                                                uri,
+                                                                addr['minimum'],
+                                                                addr['maximum'],
+                                                                addr['label'].replace(" ","_"),
+                                                                addr.get('operational_mode')))
 
     # -----------------------------------------------------------------------------------------------------------------
 
@@ -1281,8 +1319,13 @@ class Addressings(object):
                 if newValue is not None:
                     addressing_data['value'] = newValue
                 else:
-                    addressing_data['value'] = self._task_get_port_value(addressing_data['instance_id'],
-                                                                         addressing_data['port'])
+                    try:
+                        addressing_data['value'] = self._task_get_port_value(addressing_data['instance_id'],
+                                                                             addressing_data['port'])
+                    except KeyError:
+                        if callback is not None:
+                            callback(False)
+                        return
 
                 if addressing_data.get('tempo', False):
                     dividers = self._task_get_tempo_divider(addressing_data['instance_id'],
@@ -1312,11 +1355,15 @@ class Addressings(object):
 
             # reload value
             addressing = addressings_addrs[addressings_idx]
-            if newValue is not None:
-                addressing['value'] = addressing_data['value'] = newValue
-            else:
-                addressing['value'] = addressing_data['value'] = self._task_get_port_value(addressing['instance_id'],
-                                                                                           addressing['port'])
+            if newValue is None:
+                try:
+                    newValue = self._task_get_port_value(addressing['instance_id'], addressing['port'])
+                except KeyError:
+                    if callback is not None:
+                        callback(False)
+                    return
+
+            addressing['value'] = addressing_data['value'] = newValue
 
             if addressing_data.get('tempo', False):
                 dividers = self._task_get_tempo_divider(addressing['instance_id'], addressing['port'])

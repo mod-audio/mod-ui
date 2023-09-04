@@ -780,6 +780,18 @@ class EffectRefresh(JsonRequestHandler):
         self.write(True)
 
 class SDKEffectInstaller(EffectInstaller):
+    def set_default_headers(self):
+        if 'Origin' not in self.request.headers.keys():
+            return
+        origin = self.request.headers['Origin']
+        match  = re.match(r'^(\w+)://([^/]*)/?', origin)
+        if match is None:
+            return
+        protocol, domain = match.groups()
+        if protocol != "http" and not domain.endswith(":9000") and not domain.endswith(".mod.audio"):
+            return
+        self.set_header("Access-Control-Allow-Origin", origin)
+
     @web.asynchronous
     @gen.engine
     def post(self):
@@ -805,7 +817,7 @@ class SDKEffectUpdater(JsonRequestHandler):
         if match is None:
             return
         protocol, domain = match.groups()
-        if protocol != "http" or not domain.endswith(":9000"):
+        if protocol != "http" and not domain.endswith(":9000") and not domain.endswith(".mod.audio"):
             return
         self.set_header("Access-Control-Allow-Origin", origin)
 
@@ -1124,7 +1136,7 @@ class EffectPresetDelete(JsonRequestHandler):
             logging.exception(e)
         self.write(ok)
 
-class RemoteWebSocket(websocket.WebSocketHandler):
+class RemotePedalboardWebSocket(websocket.WebSocketHandler):
     def check_origin(self, origin):
         match = re.match(r'^(\w+)://([^/]*)/?', origin)
         if match is None:
@@ -1144,6 +1156,41 @@ class RemoteWebSocket(websocket.WebSocketHandler):
         SESSION.websockets[0].write_message("load-pb-remote " + pedalboard_id)
         self.write_message("true")
         self.close()
+
+class RemotePluginWebSocket(websocket.WebSocketHandler):
+    def check_origin(self, origin):
+        match = re.match(r'^(\w+)://([^/]*)/?', origin)
+        if match is None:
+            return False
+        protocol, domain = match.groups()
+        if protocol not in ("http", "https"):
+            return False
+        if domain != "mod.audio" and not domain.endswith(".mod.audio"):
+            return False
+        return True
+
+    @gen.coroutine
+    def on_message(self, package):
+        if not package:
+            hwdesc = get_hardware_descriptor()
+            self.write_message(json.dumps({
+                'bin-compat': hwdesc.get('bin-compat', "Unknown"),
+                'platform': hwdesc.get('platform', "Unknown"),
+                'version': IMAGE_VERSION,
+            }))
+            return
+
+        filename = os.path.join(DOWNLOAD_TMP_DIR, "remote.tar.gz")
+
+        with open(filename, 'wb') as fh:
+            fh.write(b64decode(package))
+
+        resp = yield gen.Task(install_package, filename)
+
+        if resp['ok']:
+            SESSION.msg_callback("rescan " + b64encode(json.dumps(resp).encode("utf-8")).decode("utf-8"))
+
+        self.write_message(json.dumps(resp))
 
 class ServerWebSocket(websocket.WebSocketHandler):
     @gen.coroutine
@@ -2355,7 +2402,8 @@ application = web.Application(
             (r"/js/templates.js$", BulkTemplateLoader),
 
             (r"/websocket/?$", ServerWebSocket),
-            (r"/rpbsocket/?$", RemoteWebSocket),
+            (r"/rpbsocket/?$", RemotePedalboardWebSocket),
+            (r"/rplsocket/?$", RemotePluginWebSocket),
 
             (r"/(.*)", TimelessStaticFileHandler, {"path": HTML_DIR}),
         ],
