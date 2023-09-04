@@ -42,7 +42,7 @@ $('document').ready(function() {
         }
     }
 
-    ws.onclose = function (evt) {
+    ws.onclose = function () {
         desktop && desktop.blockUI()
     }
 
