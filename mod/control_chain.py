@@ -255,13 +255,12 @@ class ControlChainDeviceListener(object):
             if supports_chain_id:
                 # use supplied device id
                 dev_unique_id = dev['chain_id']
+                dev_uri += "#%d" % dev_unique_id
 
                 if dev_uri not in self.hw_counter:
                     self.hw_counter[dev_uri] = 1
                 else:
                     self.hw_counter[dev_uri] += 1
-
-                dev_uri += "#%d" % dev_unique_id
 
             elif supports_feedback:
                 # use connected hw counter as id
