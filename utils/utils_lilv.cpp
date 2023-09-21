@@ -79,6 +79,10 @@ void unsetenv(const char* const key)
 {
     SetEnvironmentVariableA(key, nullptr);
 }
+#else
+# include <pwd.h>
+# include <sys/types.h>
+# include <unistd.h>
 #endif
 
 #ifdef _WIN32

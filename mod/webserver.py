@@ -1798,7 +1798,7 @@ class TemplateHandler(TimelessRequestHandler):
             'platform': hwdesc.get('platform', "Unknown"),
             'addressing_pages': int(hwdesc.get('addressing_pages', 0)),
             'lv2_plugin_dir': json.dumps(LV2_PLUGIN_DIR),
-            'bundlepath': SESSION.host.pedalboard_path,
+            'bundlepath': json.dumps(SESSION.host.pedalboard_path),
             'title':  squeeze(pbname.replace("'", "\\'")),
             'size': json.dumps(SESSION.host.pedalboard_size),
             'fulltitle':  xhtml_escape(fullpbname),
