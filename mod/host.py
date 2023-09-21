@@ -21,14 +21,19 @@ from datetime import timedelta
 from random import randint
 from tornado import gen, iostream
 from tornado.ioloop import IOLoop, PeriodicCallback
-from PIL import Image
 import os, json, socket, time, logging
 import shutil
+
+# only used for HMI screenshots, optional
+try:
+    from PIL import Image
+except ImportError:
+    pass
 
 from mod import (
     TextFileFlusher,
     get_hardware_descriptor, get_nearest_valid_scalepoint_value, get_unique_name,
-    read_file_contents, safe_json_load, normalize_for_hw, symbolify
+    read_file_contents, safe_json_load, normalize_for_hw, os_sync, symbolify
 )
 from mod.addressings import Addressings
 from mod.bank import (
@@ -2898,7 +2903,7 @@ class Host(object):
         def add_bundle_callback(ok):
             preseturi = "file://%s.ttl" % os.path.join(presetbundle, symbolname)
             pluginData['preset'] = preseturi
-            os.sync()
+            os_sync()
             callback({
                 'ok'    : True,
                 'bundle': presetbundle,
@@ -2907,7 +2912,7 @@ class Host(object):
 
         def host_callback(ok):
             if not ok:
-                os.sync()
+                os_sync()
                 callback({
                     'ok': False,
                 })
@@ -2936,7 +2941,7 @@ class Host(object):
         def add_bundle_callback(ok):
             preseturi = "file://%s.ttl" % os.path.join(presetbundle, symbolname)
             pluginData['preset'] = preseturi
-            os.sync()
+            os_sync()
             callback({
                 'ok'    : True,
                 'bundle': presetbundle,
@@ -2946,7 +2951,7 @@ class Host(object):
         def host_callback(ok):
             if not ok:
                 shutil.rmtree(presetbundle)
-                os.sync()
+                os_sync()
                 callback({
                     'ok': False,
                 })
@@ -3677,7 +3682,7 @@ class Host(object):
             else:
                 save_last_bank_and_pedalboard(0, "")
 
-            os.sync()
+            os_sync()
 
         return self.pedalboard_name
 
@@ -3981,7 +3986,7 @@ class Host(object):
         save_last_bank_and_pedalboard(0, bundlepath)
 
         def state_saved_cb(ok):
-            os.sync()
+            os_sync()
             callback(True, bundlepath, newTitle)
 
         # ask host to save any needed extra state
@@ -6151,7 +6156,7 @@ _:b%i
             return
 
         def host_callback(ok):
-            os.sync()
+            os_sync()
             callback(True)
 
         logging.debug("hmi save current pedalboard")

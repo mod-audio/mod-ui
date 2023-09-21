@@ -54,8 +54,13 @@ from mod.mod_protocol import (
 from mod.settings import LOG
 
 import logging
-import serial
 import time
+
+try:
+    import serial
+    haveSerial = True
+except ImportError:
+    haveSerial = False
 
 class SerialIOStream(BaseIOStream):
     def __init__(self, sp):
@@ -110,6 +115,10 @@ class HMI(object):
 
     # this can be overriden by subclasses to avoid any connection in DEV mode
     def init(self, callback):
+        if not haveSerial:
+            print("ERROR: This system has no python serial support")
+            return
+
         ioloop = IOLoop.instance()
         try:
             sp = None

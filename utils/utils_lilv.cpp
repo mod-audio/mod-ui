@@ -44,7 +44,48 @@
 # include <sched.h>
 #endif
 
-#define OS_SEP '/'
+#ifdef _WIN32
+# include <io.h>
+# include <shlobj.h>
+# include <windows.h>
+
+typedef unsigned int uint;
+
+char* realpath(const char* const name, char* const resolved)
+{
+    if (name == nullptr)
+        return nullptr;
+
+    if (_access(name, 4) != 0)
+        return nullptr;
+
+    char* retname = nullptr;
+
+    if ((retname = resolved) == nullptr)
+        retname = static_cast<char*>(malloc(PATH_MAX + 2));
+
+    if (retname == nullptr)
+        return nullptr;
+
+    return _fullpath(retname, name, PATH_MAX);
+}
+
+void setenv(const char* const key, const char* const value, int)
+{
+    SetEnvironmentVariableA(key, value);
+}
+
+void unsetenv(const char* const key)
+{
+    SetEnvironmentVariableA(key, nullptr);
+}
+#endif
+
+#ifdef _WIN32
+# define OS_SEP '\\'
+#else
+# define OS_SEP '/'
+#endif
 
 #define MOD_LICENSE__interface "http://moddevices.com/ns/ext/license#interface"
 
@@ -110,7 +151,28 @@ static const size_t FACTORY_PEDALBOARDS_DIRlen = (FACTORY_PEDALBOARDS_DIR != NUL
                                                : 0;
 
 // some other cached values
-static const char* const HOME = getenv("HOME");
+static const char* getHOME()
+{
+#ifdef _WIN32
+    WCHAR wpath[MAX_PATH + 256];
+
+    if (SHGetSpecialFolderPathW(nullptr, wpath, CSIDL_MYDOCUMENTS, FALSE))
+    {
+        static CHAR apath[MAX_PATH + 256];
+
+        if (WideCharToMultiByte(CP_UTF8, 0, wpath, -1, apath, MAX_PATH + 256, nullptr, nullptr))
+            return apath;
+    }
+#else
+    if (const char* const home = getenv("HOME"))
+        return home;
+    if (struct passwd* const pwd = getpwuid(getuid()))
+        return pwd->pw_dir;
+#endif
+    return "";
+}
+
+static const char* const HOME = getHOME();
 static size_t HOMElen = strlen(HOME);
 
 // configuration
