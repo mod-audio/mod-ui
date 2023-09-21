@@ -51,7 +51,7 @@
 
 typedef unsigned int uint;
 
-char* realpath(const char* const name, char* const resolved)
+static char* realpath(const char* const name, char* const resolved)
 {
     if (name == nullptr)
         return nullptr;
