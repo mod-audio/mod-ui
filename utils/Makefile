@@ -27,6 +27,18 @@ ALSA_CFLAGS = $(shell pkg-config --cflags alsa)
 ALSA_LIBS   = $(shell pkg-config --libs alsa)
 endif
 
+JACK_CFLAGS = $(shell pkg-config --cflags jack)
+ifeq ($(MACOS),true)
+JACK_LIBS   = $(shell pkg-config --libs-only-L jack) -Wl,-Bdynamic -ljack -Wl,-Bstatic
+else ifeq ($(WINDOWS),true)
+JACK_LIBS   = $(shell pkg-config --libs-only-L jack) -Wl,-Bdynamic -ljack64 -Wl,-Bstatic
+else
+JACK_LIBS   = $(shell pkg-config --libs jack)
+endif
+
+LILV_CFLAGS = $(shell pkg-config --cflags lilv-0)
+LILV_LIBS   = $(shell pkg-config --libs lilv-0)
+
 all: build
 
 build: libmod_utils.so
@@ -35,22 +47,22 @@ clean:
 	rm -f *.so *.o sha1/*.o
 
 libmod_utils.so: utils_jack.cpp.o utils_lilv.cpp.o sha1/sha1.c.o
-	$(CXX) $^ $(LDFLAGS) -shared $(shell pkg-config --libs jack lilv-0) $(ALSA_LIBS) -o $@
+	$(CXX) $^ $(LDFLAGS) $(ALSA_LIBS) $(JACK_LIBS) $(LILV_LIBS) -shared -o $@
 
 sha1/sha1.c.o: sha1/sha1.c
 	$(CC) $< $(CFLAGS) -c -o $@
 
 utils_jack.cpp.o: utils_jack.cpp utils.h
-	$(CXX) $< $(CXXFLAGS) $(shell pkg-config --cflags jack) $(ALSA_CFLAGS) -c -o $@
+	$(CXX) $< $(CXXFLAGS) $(ALSA_CFLAGS) $(JACK_CFLAGS) -c -o $@
 
 utils_lilv.cpp.o: utils_lilv.cpp sha1/sha1.h utils.h
-	$(CXX) $< $(CXXFLAGS) $(shell pkg-config --cflags lilv-0) -c -o $@
+	$(CXX) $< $(CXXFLAGS) $(LILV_CFLAGS) -c -o $@
 
 test.cpp.o: test.cpp utils.h
 	$(CXX) $< $(CXXFLAGS) -c -o $@
 
 test: utils_jack.cpp.o utils_lilv.cpp.o test.cpp.o sha1/sha1.c.o
-	$(CXX) $^ $(LDFLAGS) $(shell pkg-config --libs jack lilv-0) $(ALSA_LIBS) -o $@
+	$(CXX) $^ $(LDFLAGS) $(ALSA_LIBS) $(JACK_LIBS) $(LILV_LIBS) -o $@
 
 test-run: test
 	valgrind --leak-check=full --show-leak-kinds=all --partial-loads-ok=yes ./test
