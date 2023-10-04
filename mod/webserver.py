@@ -2461,7 +2461,7 @@ def prepare(isModApp = False):
         signal(SIGUSR2, signal_recv)
         set_process_name("mod-ui")
 
-    application.listen(DEVICE_WEBSERVER_PORT, address="0.0.0.0")
+    application.listen(DEVICE_WEBSERVER_PORT, address=("localhost" if APP else "0.0.0.0"))
 
     def checkhost():
         if SESSION.host.readsock is None or SESSION.host.writesock is None:

@@ -718,7 +718,11 @@ function Desktop(elements) {
         $('#mod-bank').hide()
         $('#mod-file-manager').hide()
         $('#mod-settings').hide()
+        $('#mod-devices').hide()
+        $('#mod-status').hide()
+        $('#mod-ram').hide()
         $('#pedalboards-library').find('a').hide()
+        $('#pedal-presets-window').find('.js-assign-all').hide()
     }
 
     this.effectBox = self.makeEffectBox(elements.effectBox,

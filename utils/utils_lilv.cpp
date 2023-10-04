@@ -70,12 +70,12 @@ static char* realpath(const char* const name, char* const resolved)
     return _fullpath(retname, name, PATH_MAX);
 }
 
-void setenv(const char* const key, const char* const value, int)
+static void setenv(const char* const key, const char* const value, int)
 {
     SetEnvironmentVariableA(key, value);
 }
 
-void unsetenv(const char* const key)
+static void unsetenv(const char* const key)
 {
     SetEnvironmentVariableA(key, nullptr);
 }
@@ -1423,14 +1423,19 @@ static const char* _get_lv2_pedalboards_path()
         else
             path = "~/.pedalboards";
 
+       #ifdef _WIN32
+        path += ";";
+       #else
+        path += ":";
+       #endif
+
         if (FACTORY_PEDALBOARDS_DIR != nullptr)
         {
-            path += ":";
             path += FACTORY_PEDALBOARDS_DIR;
         }
         else
         {
-            path += ":/usr/share/mod/pedalboards";
+            path += "/usr/share/mod/pedalboards";
         }
     }
 
@@ -4662,7 +4667,6 @@ const PedalboardInfo_Mini* const* get_all_pedalboards(const int ptype)
 
 const char* const* get_broken_pedalboards(void)
 {
-    return nullptr;
     // Custom path for pedalboards
     char* const oldlv2path = getenv_strdup_or_null("LV2_PATH");
     setenv("LV2_PATH", _get_lv2_pedalboards_path(), 1);

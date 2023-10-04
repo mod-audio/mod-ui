@@ -162,10 +162,6 @@ $('document').ready(function() {
         $('#mod-bypassRight').hide()
     }
 
-    if ({{using_app}}) {
-        desktop.setupApp()
-    }
-
     if ({{using_mod}}) {
         desktop.authenticateDevice(function (ok) {
             if (ok) {
@@ -201,6 +197,10 @@ $('document').ready(function() {
         $("#cloud-plugins-source").parent().show()
     }
     desktop.pedalboardBox.pedalboardBox('initViewMode', PREFERENCES['pb-view-mode'])
+
+    if ({{using_app}}) {
+        desktop.setupApp()
+    }
 
     // start code for ajax loading bar
 

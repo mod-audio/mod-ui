@@ -129,8 +129,8 @@ from mod.protocol import (
     Protocol, ProtocolError, process_resp,
 )
 from mod.settings import (
-    APP, LOG, DEFAULT_PEDALBOARD,
-    DATA_DIR, LV2_PEDALBOARDS_DIR, LV2_FACTORY_PEDALBOARDS_DIR, USER_FILES_DIR,
+    LOG, DEFAULT_PEDALBOARD, DEVICE_HOST_PORT,
+    DATA_DIR, LV2_PEDALBOARDS_DIR, LV2_PLUGIN_DIR, LV2_FACTORY_PEDALBOARDS_DIR, USER_FILES_DIR,
     PEDALBOARD_INSTANCE, PEDALBOARD_INSTANCE_ID, PEDALBOARD_URI, PEDALBOARD_TMP_DIR,
     TUNER_URI, TUNER_INSTANCE_ID, TUNER_INPUT_PORT, TUNER_MONITOR_PORT, HMI_TIMEOUT, MODEL_TYPE,
     UNTITLED_PEDALBOARD_NAME, DEFAULT_SNAPSHOT_NAME,
@@ -315,7 +315,7 @@ class Host(object):
         self.prefs = prefs
         self.msg_callback = msg_callback
 
-        self.addr = ("localhost", 5555)
+        self.addr = ("localhost", DEVICE_HOST_PORT)
         self.readsock = None
         self.writesock = None
         self.crashed = False
@@ -537,8 +537,7 @@ class Host(object):
 
         Protocol.register_cmd_callback('DWARF', CMD_DWARF_CONTROL_SUBPAGE, self.hmi_parameter_load_subpage)
 
-        if not APP:
-            IOLoop.instance().add_callback(self.init_host)
+        IOLoop.instance().add_callback(self.init_host)
 
     def __del__(self):
         self.msg_callback("stop")
@@ -2888,14 +2887,15 @@ class Host(object):
         pluginData   = self.plugins[instance_id]
         plugin_uri   = pluginData['uri']
         symbolname   = symbolify(name)[:32]
-        presetbundle = os.path.expanduser("~/.lv2/%s-%s.lv2") % (instance.replace("/graph/","",1), symbolname)
+        presetbundle = os.path.expanduser("%s/%s-%s.lv2") % (LV2_PLUGIN_DIR, instance.replace("/graph/","",1), symbolname)
 
         if os.path.exists(presetbundle):
             # if presetbundle already exists, generate a new random bundle path
             while True:
-                presetbundle = os.path.expanduser("~/.lv2/%s-%s-%i.lv2" % (instance.replace("/graph/","",1),
-                                                                           symbolname,
-                                                                           randint(1,99999)))
+                presetbundle = os.path.expanduser("%s/%s-%s-%i.lv2" % (LV2_PLUGIN_DIR,
+                                                                       instance.replace("/graph/","",1),
+                                                                       symbolname,
+                                                                       randint(1,99999)))
                 if os.path.exists(presetbundle):
                     continue
                 break
