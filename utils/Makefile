@@ -2,6 +2,16 @@
 CC  ?= gcc
 CXX ?= g++
 
+TARGET_MACHINE := $(shell $(CC) -dumpmachine)
+
+ifneq (,$(findstring apple,$(TARGET_MACHINE)))
+MACOS = true
+else ifneq (,$(findstring mingw,$(TARGET_MACHINE)))
+WINDOWS = true
+else ifneq (,$(findstring wasm,$(TARGET_MACHINE)))
+WASM = true
+endif
+
 CFLAGS += -Wall -Wextra -std=c99 -fPIC
 CXXFLAGS += -Wall -Wextra -Wshadow -std=gnu++0x -fPIC
 ifeq ($(DEBUG),1)
@@ -10,10 +20,10 @@ CXXFLAGS += -g -O0 -DDEBUG
 else
 CFLAGS += -O3 -DNDEBUG
 CXXFLAGS += -O3 -DNDEBUG
-ifneq (,$(findstring apple,$(shell $(CC) -dumpmachine)))
-LDFLAGS += -Wl,-dead_strip -Wl,-dead_strip_dylibs -Wl,-x
+ifeq ($(MACOS),true)
+LDFLAGS += -Wl,-dead_strip,-dead_strip_dylibs,-x
 else
-LDFLAGS += -Wl,-O1 -Wl,--no-undefined -Wl,--strip-all
+LDFLAGS += -Wl,-O1,--no-undefined,--strip-all
 endif
 endif
 
