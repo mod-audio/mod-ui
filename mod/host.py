@@ -21,7 +21,7 @@ from datetime import timedelta
 from random import randint
 from tornado import gen, iostream
 from tornado.ioloop import IOLoop, PeriodicCallback
-import os, json, socket, time, logging
+import os, json, socket, time, logging, sys
 import shutil
 
 # only used for HMI screenshots, optional
@@ -4063,17 +4063,19 @@ class Host(object):
         midiportsOut  = []
         midiportAlias = {}
 
-        for port_symbol, port_alias, _ in self.midiports:
-            if ";" in port_symbol:
-                inp, outp = port_symbol.split(";",1)
-                midiportsIn.append(inp)
-                midiportsOut.append(outp)
-                title_in, title_out = port_alias.split(";",1)
-                midiportAlias[inp]  = title_in
-                midiportAlias[outp] = title_out
-            else:
-                midiportsIn.append(port_symbol)
-                midiportAlias[port_symbol] = port_alias
+        # TODO support for other kinds of aliases
+        if sys.platform != "win32":
+            for port_symbol, port_alias, _ in self.midiports:
+                if ";" in port_symbol:
+                    inp, outp = port_symbol.split(";",1)
+                    midiportsIn.append(inp)
+                    midiportsOut.append(outp)
+                    title_in, title_out = port_alias.split(";",1)
+                    midiportAlias[inp]  = title_in
+                    midiportAlias[outp] = title_out
+                else:
+                    midiportsIn.append(port_symbol)
+                    midiportAlias[port_symbol] = port_alias
 
         # Arcs (connections)
         arcs = ""

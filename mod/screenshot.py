@@ -24,6 +24,8 @@ def generate_screenshot(bundle_path, callback):
 
     # running packaged through cxfreeze
     if os.path.isfile(sys.argv[0]):
+        # TODO this does not work yet
+        return
         cmd = [os.path.join(cwd, 'mod-screenshot'), 'take_screenshot', bundle_path, HTML_DIR, CACHE_DIR]
         if sys.platform == 'win32':
             cmd[0] += ".exe"
