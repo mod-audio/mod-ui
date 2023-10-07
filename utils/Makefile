@@ -39,7 +39,7 @@ endif
 
 JACK_CFLAGS = $(shell pkg-config --cflags jack)
 ifeq ($(MACOS),true)
-JACK_LIBS   = $(shell pkg-config --libs-only-L jack) -Wl,-Bdynamic -ljack -Wl,-Bstatic
+JACK_LIBS   = $(shell pkg-config --libs-only-L jack) -ljack
 else ifeq ($(WINDOWS),true)
 JACK_LIBS   = $(shell pkg-config --libs-only-L jack) -Wl,-Bdynamic -ljack64 -Wl,-Bstatic
 else
