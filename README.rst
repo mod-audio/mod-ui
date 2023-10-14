@@ -58,3 +58,31 @@ And now you are ready to start the webserver::
 
 Setting the environment variables is needed when developing on a PC.
 Open your browser and point to http://localhost:8888/.
+
+Development
+-----------
+
+The source code is organized with the following structure
+
+* ``html``: Frontend source code
+* ``mod``: Backend source code
+  * ``controller/``: Tornado related source code
+    * ``rest/``: REST classes
+    * ``websocket/``: web-socket classes
+    * ``dto/``: Utility model representation
+    * ``handler/``: Common tornado handlers
+    * ``file_receiver/``: Common tornado file receivers
+  * ``model/``: Model abstraction (snapshot, pedalboard, bank)
+  * ``service/``: High level layer for ``mod-host`` usage
+  * ``util/``: Common utility source code
+  * ``settings.py``: Application parameters
+  * ``host.py``: ``mod-host`` interface for communication with application
+  * ``webserver.py``: Web-server initialization
+* ``modtools``:
+* ``test``: Python unit tests
+* ``utils``: C++ utility code
+
+
+Some IDEs can improve the code completion if you install mod-ui as an local packaged on virtualenv::
+
+    $ python3 setup.py develop

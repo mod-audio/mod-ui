@@ -10,16 +10,25 @@ import shutil
 import subprocess
 import sys
 import time
-
 from base64 import b64decode, b64encode
 from datetime import timedelta
 from random import randint
-from tornado import gen, iostream, web, websocket
+
+from tornado import gen, web, websocket
 from tornado.escape import squeeze, url_escape, xhtml_escape
 from tornado.ioloop import IOLoop
 from tornado.template import Loader
-from tornado.util import unicode_type
-from uuid import uuid4
+
+from mod.controller.file_receiver.multi_part_file_receiver import MultiPartFileReceiver
+from mod.controller.file_receiver.simple_file_receiver import SimpleFileReceiver
+from mod.controller.handler.cached_json_request_handler import CachedJsonRequestHandler
+from mod.controller.handler.json_request_handler import JsonRequestHandler
+from mod.controller.handler.remote_request_handler import RemoteRequestHandler
+from mod.controller.handler.timeless_request_handler import TimelessRequestHandler
+from mod.controller.handler.timeless_static_file_handler import TimelessStaticFileHandler
+from mod.controller.rest.snapshot import SnapshotSave, SnapshotRemove, SnapshotList, SnapshotName, SnapshotSaveAs, \
+    SnapshotRename
+from mod.util.origin_utils import OriginUtils
 
 try:
     from signal import signal, SIGUSR1, SIGUSR2
@@ -36,13 +45,12 @@ from mod.settings import (APP, LOG, DEV_API,
                           LV2_PLUGIN_DIR, LV2_PEDALBOARDS_DIR, IMAGE_VERSION,
                           UPDATE_CC_FIRMWARE_FILE, UPDATE_MOD_OS_FILE, UPDATE_MOD_OS_HERLPER_FILE, USING_256_FRAMES_FILE,
                           DEFAULT_ICON_TEMPLATE, DEFAULT_SETTINGS_TEMPLATE, DEFAULT_ICON_IMAGE,
-                          DEFAULT_PEDALBOARD, DEFAULT_SNAPSHOT_NAME, DATA_DIR, KEYS_PATH, USER_FILES_DIR,
+                          DEFAULT_PEDALBOARD, DATA_DIR, KEYS_PATH, USER_FILES_DIR,
                           FAVORITES_JSON_FILE, PREFERENCES_JSON_FILE, USER_ID_JSON_FILE,
                           DEV_HOST, UNTITLED_PEDALBOARD_NAME, MODEL_CPU, MODEL_TYPE, PEDALBOARDS_LABS_HTTP_ADDRESS)
 
 from mod import (
-    TextFileFlusher, WINDOWS,
-    check_environment, jsoncall, safe_json_load,
+    TextFileFlusher, check_environment, jsoncall, safe_json_load,
     get_hardware_descriptor, get_unique_name, os_sync, symbolify,
 )
 from mod.bank import list_banks, save_banks, remove_pedalboard_from_banks
@@ -206,165 +214,6 @@ def _reset_get_all_pedalboards_cache_with_refresh_2():
 def reset_get_all_pedalboards_cache_with_refresh(ptype):
     reset_get_all_pedalboards_cache(ptype)
     IOLoop.instance().add_callback(_reset_get_all_pedalboards_cache_with_refresh_2)
-
-class TimelessRequestHandler(web.RequestHandler):
-    def compute_etag(self):
-        return None
-
-    def set_default_headers(self):
-        self._headers.pop("Date")
-
-    def should_return_304(self):
-        return False
-
-class TimelessStaticFileHandler(web.StaticFileHandler):
-    def compute_etag(self):
-        return None
-
-    def set_default_headers(self):
-        self._headers.pop("Date")
-        self.set_header("Cache-Control", "public, max-age=31536000")
-        self.set_header("Expires", "Mon, 31 Dec 2035 12:00:00 gmt")
-
-    def should_return_304(self):
-        return False
-
-    def get_cache_time(self, path, modified, mime_type):
-        return 0
-
-    def get_modified_time(self):
-        return None
-
-class JsonRequestHandler(TimelessRequestHandler):
-    def write(self, data):
-        # FIXME: something is sending strings out, need to investigate what later..
-        # it's likely something using write(json.dumps(...))
-        # we want to prevent that as it causes issues under Mac OS
-
-        if isinstance(data, (bytes, unicode_type, dict)):
-            TimelessRequestHandler.write(self, data)
-            self.finish()
-            return
-
-        elif data is True:
-            data = "true"
-            self.set_header("Content-Type", "application/json; charset=UTF-8")
-
-        elif data is False:
-            data = "false"
-            self.set_header("Content-Type", "application/json; charset=UTF-8")
-
-        # TESTING for data types, remove this later
-        #elif not isinstance(data, list):
-            #print("=== TESTING: Got new data type for RequestHandler.write():", type(data), "msg:", data)
-            #data = json.dumps(data)
-            #self.set_header('Content-type', 'application/json')
-
-        else:
-            data = json.dumps(data)
-            self.set_header("Content-Type", "application/json; charset=UTF-8")
-
-        TimelessRequestHandler.write(self, data)
-        self.finish()
-
-class CachedJsonRequestHandler(JsonRequestHandler):
-    def set_default_headers(self):
-        JsonRequestHandler.set_default_headers(self)
-        self.set_header("Cache-Control", "public, max-age=31536000")
-        self.set_header("Expires", "Mon, 31 Dec 2035 12:00:00 gmt")
-
-class RemoteRequestHandler(JsonRequestHandler):
-    def set_default_headers(self):
-        if 'Origin' not in self.request.headers.keys():
-            return
-        origin = self.request.headers['Origin']
-        match  = re.match(r'^(\w+)://([^/]*)/?', origin)
-        if match is None:
-            return
-        protocol, domain = match.groups()
-        if protocol not in ("http", "https"):
-            return
-        if domain not in ("mod.audio", "moddevices.com") and not domain.endswith(".mod.audio") and not domain.endswith(".moddevices.com"):
-            return
-        self.set_header("Access-Control-Allow-Origin", origin)
-
-class SimpleFileReceiver(JsonRequestHandler):
-    @property
-    def destination_dir(self):
-        raise NotImplementedError
-
-    @classmethod
-    def urls(cls, path):
-        return [
-            (r"/%s/$" % path, cls),
-        ]
-
-    @web.asynchronous
-    @gen.engine
-    def post(self, sessionid=None, chunk_number=None):
-        # self.result can be set by subclass in process_file,
-        # so that answer will be returned to browser
-        self.result = None
-        basename = str(uuid4())
-        if not os.path.exists(self.destination_dir):
-            os.mkdir(self.destination_dir)
-        with open(os.path.join(self.destination_dir, basename), 'wb') as fh:
-            fh.write(self.request.body)
-        yield gen.Task(self.process_file, basename)
-        self.write({
-            'ok'    : True,
-            'result': self.result
-        })
-
-    def process_file(self, basename, callback=lambda:None):
-        """to be overriden"""
-
-@web.stream_request_body
-class MultiPartFileReceiver(JsonRequestHandler):
-    @property
-    def destination_dir(self):
-        raise NotImplementedError
-
-    @classmethod
-    def urls(cls, path):
-        return [
-            (r"/%s/$" % path, cls),
-        ]
-
-    def prepare(self):
-        self.basename = "/tmp/" + str(uuid4())
-        if not os.path.exists(self.destination_dir):
-            os.mkdir(self.destination_dir)
-        self.filehandle = open(os.path.join(self.destination_dir, self.basename), 'wb')
-        self.filehandle.write(b'')
-
-        if 'expected_size' in self.request.arguments:
-            self.request.connection.set_max_body_size(int(self.get_argument('expected_size')))
-        else:
-            self.request.connection.set_max_body_size(200*1024*1024)
-
-        if 'body_timeout' in self.request.arguments:
-            self.request.connection.set_body_timeout(float(self.get_argument('body_timeout')))
-
-    def data_received(self, data):
-        self.filehandle.write(data)
-
-    @web.asynchronous
-    @gen.engine
-    def post(self):
-        # self.result can be set by subclass in process_file,
-        # so that answer will be returned to browser
-        self.result = None
-        self.filehandle.flush()
-        self.filehandle.close()
-        yield gen.Task(self.process_file, self.basename)
-        self.write({
-            'ok'    : True,
-            'result': self.result
-        })
-
-    def process_file(self, basename, callback=lambda:None):
-        """to be overriden"""
 
 class SystemInfo(JsonRequestHandler):
     def get(self):
@@ -1115,15 +964,7 @@ class EffectPresetDelete(JsonRequestHandler):
 
 class RemotePedalboardWebSocket(websocket.WebSocketHandler):
     def check_origin(self, origin):
-        match = re.match(r'^(\w+)://([^/]*)/?', origin)
-        if match is None:
-            return False
-        protocol, domain = match.groups()
-        if protocol not in ("http", "https"):
-            return False
-        if domain not in ("mod.audio", "moddevices.com") and not domain.endswith(".mod.audio") and not domain.endswith(".moddevices.com"):
-            return False
-        return True
+        return OriginUtils.is_valid(origin)
 
     def on_message(self, pedalboard_id):
         if len(SESSION.websockets) == 0:
@@ -1136,15 +977,7 @@ class RemotePedalboardWebSocket(websocket.WebSocketHandler):
 
 class RemotePluginWebSocket(websocket.WebSocketHandler):
     def check_origin(self, origin):
-        match = re.match(r'^(\w+)://([^/]*)/?', origin)
-        if match is None:
-            return False
-        protocol, domain = match.groups()
-        if protocol not in ("http", "https"):
-            return False
-        if domain != "mod.audio" and not domain.endswith(".mod.audio"):
-            return False
-        return True
+        return OriginUtils.is_valid(origin)
 
     @gen.coroutine
     def on_message(self, package):
@@ -1593,66 +1426,6 @@ class PedalboardTransportSetSyncMode(JsonRequestHandler):
         ok = yield gen.Task(SESSION.web_set_sync_mode, transport_sync)
         self.write(ok)
 
-class SnapshotSave(JsonRequestHandler):
-    def post(self):
-        ok = SESSION.host.snapshot_save()
-        self.write(ok)
-
-class SnapshotSaveAs(JsonRequestHandler):
-    @web.asynchronous
-    @gen.engine
-    def get(self):
-        title = self.get_argument('title')
-        idx   = SESSION.host.snapshot_saveas(title)
-        title = SESSION.host.snapshot_name(idx)
-
-        yield gen.Task(SESSION.host.hmi_report_ss_name_if_current, idx)
-
-        self.write({
-            'ok': idx is not None,
-            'id': idx,
-            'title': title,
-        })
-
-class SnapshotRename(JsonRequestHandler):
-    @web.asynchronous
-    @gen.engine
-    def get(self):
-        idx   = int(self.get_argument('id'))
-        title = self.get_argument('title')
-        ok    = SESSION.host.snapshot_rename(idx, title)
-
-        if ok:
-            title = SESSION.host.snapshot_name(idx)
-
-        yield gen.Task(SESSION.host.hmi_report_ss_name_if_current, idx)
-
-        self.write({
-            'ok': ok,
-            'title': title,
-        })
-
-class SnapshotRemove(JsonRequestHandler):
-    def get(self):
-        idx = int(self.get_argument('id'))
-        ok  = SESSION.host.snapshot_remove(idx)
-        self.write(ok)
-
-class SnapshotList(JsonRequestHandler):
-    def get(self):
-        snapshots = SESSION.host.pedalboard_snapshots
-        snapshots = dict((i, snapshots[i]['name']) for i in range(len(snapshots)) if snapshots[i] is not None)
-        self.write(snapshots)
-
-class SnapshotName(JsonRequestHandler):
-    def get(self):
-        idx  = int(self.get_argument('id'))
-        name = SESSION.host.snapshot_name(idx) or DEFAULT_SNAPSHOT_NAME
-        self.write({
-            'ok'  : bool(name),
-            'name': name
-        })
-
 class SnapshotLoad(JsonRequestHandler):
     @web.asynchronous
     @gen.engine
@@ -1899,7 +1672,7 @@ class Ping(JsonRequestHandler):
     @web.asynchronous
     @gen.engine
     def get(self):
-        start = end = time.time()
+        start = time.time()
 
         try:
             online = yield gen.with_timeout(timedelta(seconds=5),
