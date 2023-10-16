@@ -27,6 +27,10 @@ LDFLAGS += -Wl,-O1,--no-undefined,--strip-all
 endif
 endif
 
+ifeq ($(MODAPP),1)
+CXXFLAGS += -DMODAPP
+endif
+
 ifeq ($(shell pkg-config --atleast-version=0.22.0 lilv-0 && echo true), true)
 CXXFLAGS += -DHAVE_NEW_LILV
 endif
