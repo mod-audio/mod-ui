@@ -37,3 +37,7 @@ utils/test
 *node_modules/
 .idea
 *.egg-info
+# Coverage
+.coverage
+coverage.xml
+htmlcov/

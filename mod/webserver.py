@@ -10,16 +10,19 @@ import shutil
 import subprocess
 import sys
 import time
-
 from base64 import b64decode, b64encode
 from datetime import timedelta
 from random import randint
-from tornado import gen, iostream, web, websocket
+from uuid import uuid4
+
+from tornado import gen, web, websocket
 from tornado.escape import squeeze, url_escape, xhtml_escape
 from tornado.ioloop import IOLoop
 from tornado.template import Loader
-from tornado.util import unicode_type
-from uuid import uuid4
+
+from mod.controller.handler.json_request_handler import JsonRequestHandler
+from mod.controller.handler.timeless_request_handler import TimelessRequestHandler
+from mod.controller.rest.snapshot import SnapshotName
 
 try:
     from signal import signal, SIGUSR1, SIGUSR2
@@ -36,13 +39,12 @@ from mod.settings import (APP, LOG, DEV_API,
                           LV2_PLUGIN_DIR, LV2_PEDALBOARDS_DIR, IMAGE_VERSION,
                           UPDATE_CC_FIRMWARE_FILE, UPDATE_MOD_OS_FILE, UPDATE_MOD_OS_HERLPER_FILE, USING_256_FRAMES_FILE,
                           DEFAULT_ICON_TEMPLATE, DEFAULT_SETTINGS_TEMPLATE, DEFAULT_ICON_IMAGE,
-                          DEFAULT_PEDALBOARD, DEFAULT_SNAPSHOT_NAME, DATA_DIR, KEYS_PATH, USER_FILES_DIR,
+                          DEFAULT_PEDALBOARD, DATA_DIR, KEYS_PATH, USER_FILES_DIR,
                           FAVORITES_JSON_FILE, PREFERENCES_JSON_FILE, USER_ID_JSON_FILE,
                           DEV_HOST, UNTITLED_PEDALBOARD_NAME, MODEL_CPU, MODEL_TYPE, PEDALBOARDS_LABS_HTTP_ADDRESS)
 
 from mod import (
-    TextFileFlusher, WINDOWS,
-    check_environment, jsoncall, safe_json_load,
+    TextFileFlusher, check_environment, jsoncall, safe_json_load,
     get_hardware_descriptor, get_unique_name, os_sync, symbolify,
 )
 from mod.bank import list_banks, save_banks, remove_pedalboard_from_banks
@@ -207,15 +209,6 @@ def reset_get_all_pedalboards_cache_with_refresh(ptype):
     reset_get_all_pedalboards_cache(ptype)
     IOLoop.instance().add_callback(_reset_get_all_pedalboards_cache_with_refresh_2)
 
-class TimelessRequestHandler(web.RequestHandler):
-    def compute_etag(self):
-        return None
-
-    def set_default_headers(self):
-        self._headers.pop("Date")
-
-    def should_return_304(self):
-        return False
 
 class TimelessStaticFileHandler(web.StaticFileHandler):
     def compute_etag(self):
@@ -235,37 +228,6 @@ class TimelessStaticFileHandler(web.StaticFileHandler):
     def get_modified_time(self):
         return None
 
-class JsonRequestHandler(TimelessRequestHandler):
-    def write(self, data):
-        # FIXME: something is sending strings out, need to investigate what later..
-        # it's likely something using write(json.dumps(...))
-        # we want to prevent that as it causes issues under Mac OS
-
-        if isinstance(data, (bytes, unicode_type, dict)):
-            TimelessRequestHandler.write(self, data)
-            self.finish()
-            return
-
-        elif data is True:
-            data = "true"
-            self.set_header("Content-Type", "application/json; charset=UTF-8")
-
-        elif data is False:
-            data = "false"
-            self.set_header("Content-Type", "application/json; charset=UTF-8")
-
-        # TESTING for data types, remove this later
-        #elif not isinstance(data, list):
-            #print("=== TESTING: Got new data type for RequestHandler.write():", type(data), "msg:", data)
-            #data = json.dumps(data)
-            #self.set_header('Content-type', 'application/json')
-
-        else:
-            data = json.dumps(data)
-            self.set_header("Content-Type", "application/json; charset=UTF-8")
-
-        TimelessRequestHandler.write(self, data)
-        self.finish()
 
 class CachedJsonRequestHandler(JsonRequestHandler):
     def set_default_headers(self):
@@ -1643,15 +1605,6 @@ class SnapshotList(JsonRequestHandler):
         snapshots = SESSION.host.pedalboard_snapshots
         snapshots = dict((i, snapshots[i]['name']) for i in range(len(snapshots)) if snapshots[i] is not None)
         self.write(snapshots)
-
-class SnapshotName(JsonRequestHandler):
-    def get(self):
-        idx  = int(self.get_argument('id'))
-        name = SESSION.host.snapshot_name(idx) or DEFAULT_SNAPSHOT_NAME
-        self.write({
-            'ok'  : bool(name),
-            'name': name
-        })
 
 class SnapshotLoad(JsonRequestHandler):
     @web.asynchronous

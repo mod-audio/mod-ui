@@ -4,6 +4,7 @@ on: [push]
 
 jobs:
   notification:
+    if: github.repository == 'moddevices/mod-ui'
     runs-on: ubuntu-latest
     name: IRC notification
     steps:
