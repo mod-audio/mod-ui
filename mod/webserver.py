@@ -22,7 +22,7 @@ from tornado.template import Loader
 
 from mod.controller.handler.json_request_handler import JsonRequestHandler
 from mod.controller.handler.timeless_request_handler import TimelessRequestHandler
-from mod.controller.rest.snapshot import SnapshotName, SnapshotList, SnapshotSave, SnapshotSaveAs
+from mod.controller.rest.snapshot import SnapshotName, SnapshotList, SnapshotSave, SnapshotSaveAs, SnapshotRemove
 
 try:
     from signal import signal, SIGUSR1, SIGUSR2
@@ -1573,12 +1573,6 @@ class SnapshotRename(JsonRequestHandler):
             'ok': ok,
             'title': title,
         })
-
-class SnapshotRemove(JsonRequestHandler):
-    def get(self):
-        idx = int(self.get_argument('id'))
-        ok  = SESSION.host.snapshot_remove(idx)
-        self.write(ok)
 
 class SnapshotLoad(JsonRequestHandler):
     @web.asynchronous

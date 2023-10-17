@@ -69,6 +69,7 @@ class SnapshotSave(JsonRequestHandler):
         ok = SESSION.host.snapshot_save()
         self.write(ok)
 
+
 class SnapshotSaveAs(JsonRequestHandler):
 
     # TODO: Replace GET /snapshot/saveas
@@ -99,3 +100,19 @@ class SnapshotSaveAs(JsonRequestHandler):
             'id': idx,
             'title': title,
         })
+
+
+class SnapshotRemove(JsonRequestHandler):
+
+    # TODO: Replace GET /snapshot/remove?id=<snapshot id>
+    #            to DELETE /pedalboards/<pedalboard id>/snapshots/<snapshot id>
+    def get(self):
+        """
+        Remove the snapshot of identifier ``id`` of the loaded pedalboard
+
+        :return: `true` if it was successfully deleted
+        """
+        idx = int(self.get_argument('id'))
+        ok = SESSION.host.snapshot_remove(idx)
+
+        self.write(ok)
