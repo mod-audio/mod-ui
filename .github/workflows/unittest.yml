@@ -46,7 +46,7 @@ jobs:
           fail_below_min: true
           format: markdown
           hide_branch_rate: false
-          hide_complexity: false
+          hide_complexity: true
           indicators: true
           output: both
           thresholds: '15 30'
