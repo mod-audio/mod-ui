@@ -52,3 +52,17 @@ class SnapshotList(JsonRequestHandler):
         snapshots = SESSION.host.pedalboard_snapshots
         snapshots = dict((i, snapshots[i]['name']) for i in range(len(snapshots)) if snapshots[i] is not None)
         self.write(snapshots)
+
+
+class SnapshotSave(JsonRequestHandler):
+
+    # TODO: Replace POST /snapshot/save
+    #            to POST /pedalboards/current/snapshots/current
+    def post(self):
+        """
+        Update the current snapshot status
+
+        :return: `true` if it was successfully updated
+        """
+        ok = SESSION.host.snapshot_save()
+        self.write(ok)

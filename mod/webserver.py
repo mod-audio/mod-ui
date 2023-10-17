@@ -22,7 +22,7 @@ from tornado.template import Loader
 
 from mod.controller.handler.json_request_handler import JsonRequestHandler
 from mod.controller.handler.timeless_request_handler import TimelessRequestHandler
-from mod.controller.rest.snapshot import SnapshotName, SnapshotList
+from mod.controller.rest.snapshot import SnapshotName, SnapshotList, SnapshotSave
 
 try:
     from signal import signal, SIGUSR1, SIGUSR2
@@ -1553,11 +1553,6 @@ class PedalboardTransportSetSyncMode(JsonRequestHandler):
             self.write(False)
             return
         ok = yield gen.Task(SESSION.web_set_sync_mode, transport_sync)
-        self.write(ok)
-
-class SnapshotSave(JsonRequestHandler):
-    def post(self):
-        ok = SESSION.host.snapshot_save()
         self.write(ok)
 
 class SnapshotSaveAs(JsonRequestHandler):

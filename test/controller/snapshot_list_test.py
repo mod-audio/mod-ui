@@ -7,7 +7,6 @@ from uuid import uuid4
 
 from tornado.testing import AsyncHTTPTestCase
 
-from mod.settings import DEFAULT_SNAPSHOT_NAME
 from mod.webserver import application
 
 
