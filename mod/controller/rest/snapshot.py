@@ -89,8 +89,8 @@ class SnapshotSaveAs(JsonRequestHandler):
 
         :return: `true` if it was successfully deleted
         """
-        title = self.get_argument('title')
-        idx   = SESSION.host.snapshot_saveas(title)
+        title = self.get_argument('title')  # TODO rename to name (standardization)
+        idx = SESSION.host.snapshot_saveas(title)
         title = SESSION.host.snapshot_name(idx)
 
         yield gen.Task(SESSION.host.hmi_report_ss_name_if_current, idx)
@@ -98,7 +98,7 @@ class SnapshotSaveAs(JsonRequestHandler):
         self.write({
             'ok': idx is not None,  # FIXME: Always true
             'id': idx,
-            'title': title,
+            'title': title,  # TODO rename to name (standardization)
         })
 
 
@@ -116,3 +116,37 @@ class SnapshotRemove(JsonRequestHandler):
         ok = SESSION.host.snapshot_remove(idx)
 
         self.write(ok)
+
+
+class SnapshotRename(JsonRequestHandler):
+
+    # TODO: Replace GET /snapshot/rename?id=<snapshot id>&?name=<snapshot name>
+    #            to PATCH /pedalboards/<pedalboard id>/snapshots/<snapshot id>
+    @web.asynchronous
+    @gen.engine
+    def get(self):
+        """
+        Rename the snapshot of ``ìd`` identifier with the suggested ``title``.
+
+        .. code-block:: json
+
+            {
+                "ok": true,
+                "title": "Snapshot name"
+            }
+
+        :return: new snapshot name
+        """
+        idx = int(self.get_argument('id'))
+        title = self.get_argument('title')  # TODO rename to name (standardization)
+        ok = SESSION.host.snapshot_rename(idx, title)
+
+        if ok:
+            title = SESSION.host.snapshot_name(idx)
+
+        yield gen.Task(SESSION.host.hmi_report_ss_name_if_current, idx)
+
+        self.write({
+            'ok': ok,
+            'title': title,  # TODO rename to name (standardization)
+        })
