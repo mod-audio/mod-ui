@@ -22,7 +22,7 @@ from tornado.template import Loader
 
 from mod.controller.handler.json_request_handler import JsonRequestHandler
 from mod.controller.handler.timeless_request_handler import TimelessRequestHandler
-from mod.controller.rest.snapshot import SnapshotName
+from mod.controller.rest.snapshot import SnapshotName, SnapshotList
 
 try:
     from signal import signal, SIGUSR1, SIGUSR2
@@ -1599,12 +1599,6 @@ class SnapshotRemove(JsonRequestHandler):
         idx = int(self.get_argument('id'))
         ok  = SESSION.host.snapshot_remove(idx)
         self.write(ok)
-
-class SnapshotList(JsonRequestHandler):
-    def get(self):
-        snapshots = SESSION.host.pedalboard_snapshots
-        snapshots = dict((i, snapshots[i]['name']) for i in range(len(snapshots)) if snapshots[i] is not None)
-        self.write(snapshots)
 
 class SnapshotLoad(JsonRequestHandler):
     @web.asynchronous

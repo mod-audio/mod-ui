@@ -8,7 +8,6 @@ from mod.settings import DEFAULT_SNAPSHOT_NAME
 
 class SnapshotName(JsonRequestHandler):
 
-
     # TODO: Replace GET /snapshot/name
     #            to GET /pedalboards/<pedalboard id>/snapshots/
     def get(self):
@@ -31,3 +30,25 @@ class SnapshotName(JsonRequestHandler):
             'ok': bool(name),   # FIXME: Always true
             'name': name
         })
+
+
+class SnapshotList(JsonRequestHandler):
+
+    # TODO: Replace GET /snapshot/list
+    #            to GET /pedalboards/<pedalboard id>/snapshots/
+    def get(self):
+        """
+        Get snapshots name of the loaded pedalboard
+
+        .. code-block:: json
+
+            {
+                0: "First snapshot",
+                1: "Second snapshot"
+            }
+
+        :return: names of the current pedalboard snapshots
+        """
+        snapshots = SESSION.host.pedalboard_snapshots
+        snapshots = dict((i, snapshots[i]['name']) for i in range(len(snapshots)) if snapshots[i] is not None)
+        self.write(snapshots)
