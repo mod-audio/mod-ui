@@ -9,7 +9,7 @@ package-lock.json
 *.tar.xz
 mod-env/
 .env/
-host/
+/host/
 *.crf
 *.axf
 *.hex
