@@ -23,7 +23,7 @@ from tornado.template import Loader
 from mod.controller.handler.json_request_handler import JsonRequestHandler
 from mod.controller.handler.timeless_request_handler import TimelessRequestHandler
 from mod.controller.rest.snapshot import SnapshotName, SnapshotList, SnapshotSave, SnapshotSaveAs, SnapshotRemove, \
-    SnapshotRename
+    SnapshotRename, SnapshotLoad
 
 try:
     from signal import signal, SIGUSR1, SIGUSR2
@@ -1557,14 +1557,6 @@ class PedalboardTransportSetSyncMode(JsonRequestHandler):
         self.write(ok)
 
 
-class SnapshotLoad(JsonRequestHandler):
-    @web.asynchronous
-    @gen.engine
-    def get(self):
-        idx = int(self.get_argument('id'))
-        abort_catcher = SESSION.host.abort_previous_loading_progress("web SnapshotLoad")
-        ok = yield gen.Task(SESSION.host.snapshot_load_gen_helper, idx, False, abort_catcher)
-        self.write(ok)
 
 class DashboardClean(JsonRequestHandler):
     @web.asynchronous

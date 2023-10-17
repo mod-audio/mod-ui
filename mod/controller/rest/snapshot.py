@@ -120,7 +120,7 @@ class SnapshotRemove(JsonRequestHandler):
 
 class SnapshotRename(JsonRequestHandler):
 
-    # TODO: Replace GET /snapshot/rename?id=<snapshot id>&?name=<snapshot name>
+    # TODO: Replace GET /snapshot/rename?id=<snapshot id>&?title=<snapshot name>
     #            to PATCH /pedalboards/<pedalboard id>/snapshots/<snapshot id>
     @web.asynchronous
     @gen.engine
@@ -150,3 +150,21 @@ class SnapshotRename(JsonRequestHandler):
             'ok': ok,
             'title': title,  # TODO rename to name (standardization)
         })
+
+
+class SnapshotLoad(JsonRequestHandler):
+
+    # TODO: Replace GET /snapshot/load?id=<snapshot id>
+    #            to POST /pedalboards/current/snapshots/<snapshot id>/load
+    @web.asynchronous
+    @gen.engine
+    def get(self):
+        """
+        Loads the snapshot of ``ìd`` identifier.
+
+        :return: Was snapshot loaded?
+        """
+        idx = int(self.get_argument('id'))
+        abort_catcher = SESSION.host.abort_previous_loading_progress("web SnapshotLoad")
+        ok = yield gen.Task(SESSION.host.snapshot_load_gen_helper, idx, False, abort_catcher)
+        self.write(ok)
