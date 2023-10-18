@@ -3003,8 +3003,15 @@ class Host(object):
         return get_unique_name(name, names) or name
 
     def snapshot_make(self, name):
+        """
+        Create a snapshot based on current pedalboard
+
+        :param name: snapshot name
+        :return: snapshot created
+        """
         self.pedalboard_modified = True
 
+        # TODO Create Snapshot model class
         snapshot = {
             "name": name,
             "data": {},
