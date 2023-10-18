@@ -3088,6 +3088,7 @@ class Host(object):
     def snapshot_load_gen_helper(self, idx, from_hmi, abort_catcher, callback):
         self.snapshot_load(idx, from_hmi, abort_catcher, callback)
 
+    # FIXME: Rename callback argument (https://stackoverflow.com/a/57121126)
     @gen.coroutine
     def snapshot_load(self, idx, from_hmi, abort_catcher, callback):
         if idx in (self.HMI_SNAPSHOTS_1, self.HMI_SNAPSHOTS_2, self.HMI_SNAPSHOTS_3):

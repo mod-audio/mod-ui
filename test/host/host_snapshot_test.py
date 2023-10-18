@@ -5,6 +5,9 @@
 import unittest
 from uuid import uuid4
 
+from tornado.gen import Task
+from tornado.testing import AsyncTestCase, gen_test
+
 from mod.development import FakeHost, FakeHMI
 from mod.protocol import Protocol
 from mod.session import UserPreferences
@@ -16,13 +19,13 @@ def create_host():
     Protocol.COMMANDS_USED = []
 
     callback_hmi = lambda: None
-    callback_host = lambda: None
+    message_callback = lambda text: print(text)
 
     hmi = FakeHMI(callback_hmi)
-    return FakeHost(hmi, UserPreferences(), callback_host)
+    return FakeHost(hmi, UserPreferences(), message_callback)
 
 
-class HostSnapshotTestCase(unittest.TestCase):
+class HostSnapshotTestCase(AsyncTestCase):
     # OK
     # host.snapshot_name()
     # host.snapshot_rename()
@@ -223,23 +226,42 @@ class HostSnapshotTestCase(unittest.TestCase):
         # FIXME
         pass
 
+    @gen_test
     def test_snapshot_load_invalid_index(self):
         host = create_host()
 
-        expected_true = lambda it: self.assertTrue(it)
-        expected_false = lambda it: self.assertFalse(it)
+        invalid_indexes = (-1, 1000)
+        for index in invalid_indexes:
+            loaded = yield Task(host.snapshot_load_gen_helper, index, False, {})
+            self.assertFalse(loaded, msg="index sent: " + str(index))
 
-        # FIXME
-        host.snapshot_load(-1, from_hmi=False, abort_catcher={}, callback=expected_false)
-        host.snapshot_load(1000, from_hmi=False, abort_catcher={}, callback=expected_false)
-
+    @gen_test
     def test_snapshot_load_idx_in_hmi_snapshot(self):
+        # FIXME
         host = create_host()
-        # TODO
 
+    @gen_test
     def test_snapshot_load_abort_catcher_is_true(self):
         host = create_host()
-        # TODO
+
+        host.snapshot_saveas("first")
+        host.snapshot_saveas("second")
+
+        abort_catcher = {'abort': True}
+
+        loaded = yield Task(host.snapshot_load_gen_helper, 0, False, abort_catcher)
+        self.assertFalse(loaded)
+
+    @gen_test
+    def test_snapshot_load(self):
+        # FIXME - Add plugins
+        host = create_host()
+
+        host.snapshot_saveas("first")
+        host.snapshot_saveas("second")
+
+        loaded = yield Task(host.snapshot_load_gen_helper, 0, False, {})
+        self.assertTrue(loaded)
 
     def test_snapshot_remove_invalid_index(self):
         host = create_host()
@@ -288,6 +310,23 @@ class HostSnapshotTestCase(unittest.TestCase):
 
         self.assertTrue(host.snapshot_remove(0))
         self.assertTrue(host.pedalboard_modified)
+
+    def test_snapshot_remove_current_snapshot(self):
+        host = create_host()
+
+        self.assertEqual(0, host.snapshot_saveas("test"))
+        self.assertEqual(0, host.current_pedalboard_snapshot_id)
+
+        self.assertEqual(1, host.snapshot_saveas("test 2"))
+        self.assertEqual(1, host.current_pedalboard_snapshot_id)
+
+        self.assertEqual(2, len(host.pedalboard_snapshots))
+        host.pedalboard_modified = False
+
+        # Current snapshot is the hast one
+        self.assertTrue(host.snapshot_remove(1))
+        self.assertTrue(host.pedalboard_modified)
+        self.assertEqual(-1, host.current_pedalboard_snapshot_id)
 
     def test_snapshot_clear(self):
         host = create_host()
