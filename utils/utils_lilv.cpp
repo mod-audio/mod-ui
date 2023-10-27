@@ -5053,6 +5053,26 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
                 if (strstr(headstr, bundlepath) != nullptr)
                     memmove(headstr, headstr+(bundlepathsize+1), strlen(headstr)-bundlepathsize);
 
+               #ifdef _WIN32
+                for (uint32_t i=0; tailstr[i] != '\0'; ++i)
+                {
+                    if (tailstr[i] == '\\')
+                    {
+                        tailstr[i] = '/';
+                        break;
+                    }
+                }
+
+                for (uint32_t i=0; headstr[i] != '\0'; ++i)
+                {
+                    if (headstr[i] == '\\')
+                    {
+                        headstr[i] = '/';
+                        break;
+                    }
+                }
+               #endif
+
                 conns[count++] = {
                     true,
                     tailstr,
