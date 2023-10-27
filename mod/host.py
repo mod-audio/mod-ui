@@ -2923,7 +2923,7 @@ class Host(object):
 
         self.send_notmodified("preset_save %d \"%s\" \"%s\" %s.ttl" % (instance_id,
                                                                    name.replace('"','\\"'),
-                                                                   presetbundle,
+                                                                   presetbundle.replace('"','\\"'),
                                                                    symbolname), host_callback, datatype='boolean')
 
     def preset_save_replace(self, instance, olduri, presetbundle, name, callback):
@@ -2973,7 +2973,7 @@ class Host(object):
             pluginData['preset'] = ""
             self.send_notmodified("preset_save %d \"%s\" \"%s\" %s.ttl" % (instance_id,
                                                                        name.replace('"','\\"'),
-                                                                       presetbundle,
+                                                                       presetbundle.replace('"','\\"'),
                                                                        symbolname), host_callback, datatype='boolean')
 
         self.remove_bundle(presetbundle, False, olduri, start)
