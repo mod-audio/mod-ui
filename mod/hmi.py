@@ -115,12 +115,13 @@ class HMI(object):
 
     # this can be overriden by subclasses to avoid any connection in DEV mode
     def init(self, callback):
+        ioloop = IOLoop.instance()
+
         if not haveSerial:
             print("ERROR: This system has no python serial support")
-            callback()
+            ioloop.call_later(1, callback)
             return
 
-        ioloop = IOLoop.instance()
         try:
             sp = None
             # pylint: disable=unexpected-keyword-arg
