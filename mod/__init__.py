@@ -236,4 +236,8 @@ class TextFileFlusher(object):
         self.filehandle.flush()
         os.fsync(self.filehandle)
         self.filehandle.close()
+
+        if WINDOWS and os.path.exists(self.filename):
+            os.remove(self.filename)
+
         os.rename(self.filename+".tmp", self.filename)
