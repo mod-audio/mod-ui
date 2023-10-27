@@ -12,6 +12,12 @@ else ifneq (,$(findstring wasm,$(TARGET_MACHINE)))
 WASM = true
 endif
 
+ifeq ($(WINDOWS),true)
+LIB_EXT = .dll
+else
+LIB_EXT = .so
+endif
+
 CFLAGS += -Wall -Wextra -std=c99 -fPIC
 CXXFLAGS += -Wall -Wextra -Wshadow -std=gnu++0x -fPIC
 ifeq ($(DEBUG),1)
@@ -53,12 +59,12 @@ LILV_LIBS   = $(shell pkg-config --libs lilv-0)
 
 all: build
 
-build: libmod_utils.so
+build: libmod_utils$(LIB_EXT)
 
 clean:
-	rm -f *.so *.o sha1/*.o
+	rm -f *.dll *.dylib *.so *.o sha1/*.o
 
-libmod_utils.so: utils_jack.cpp.o utils_lilv.cpp.o sha1/sha1.c.o
+libmod_utils$(LIB_EXT): utils_jack.cpp.o utils_lilv.cpp.o sha1/sha1.c.o
 	$(CXX) $^ $(LDFLAGS) $(ALSA_LIBS) $(JACK_LIBS) $(LILV_LIBS) -shared -o $@
 
 sha1/sha1.c.o: sha1/sha1.c

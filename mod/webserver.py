@@ -72,6 +72,9 @@ class GlobalWebServerState(object):
 gState = GlobalWebServerState()
 gState.favorites = []
 
+def mod_squeeze(text):
+    return squeeze(text.replace("\\", "\\\\").replace("'", "\\'"))
+
 @gen.coroutine
 def install_bundles_in_tmp_dir(callback):
     error     = ""
@@ -1766,10 +1769,10 @@ class TemplateHandler(TimelessRequestHandler):
         user_id = safe_json_load(USER_ID_JSON_FILE, dict)
 
         with open(DEFAULT_ICON_TEMPLATE, 'r') as fh:
-            default_icon_template = squeeze(fh.read().replace("'", "\\'"))
+            default_icon_template = mod_squeeze(fh.read())
 
         with open(DEFAULT_SETTINGS_TEMPLATE, 'r') as fh:
-            default_settings_template = squeeze(fh.read().replace("'", "\\'"))
+            default_settings_template = mod_squeeze(fh.read())
 
         pbname = SESSION.host.pedalboard_name
         prname = SESSION.host.snapshot_name()
@@ -1783,7 +1786,7 @@ class TemplateHandler(TimelessRequestHandler):
         context = {
             'default_icon_template': default_icon_template,
             'default_settings_template': default_settings_template,
-            'default_pedalboard': json.dumps(DEFAULT_PEDALBOARD),
+            'default_pedalboard': mod_squeeze(DEFAULT_PEDALBOARD),
             'cloud_url': CLOUD_HTTP_ADDRESS,
             'cloud_labs_url': CLOUD_LABS_HTTP_ADDRESS,
             'plugins_url': PLUGINS_HTTP_ADDRESS,
@@ -1797,17 +1800,17 @@ class TemplateHandler(TimelessRequestHandler):
             'factory_pedalboards': hwdesc.get('factory_pedalboards', False),
             'platform': hwdesc.get('platform', "Unknown"),
             'addressing_pages': int(hwdesc.get('addressing_pages', 0)),
-            'lv2_plugin_dir': json.dumps(LV2_PLUGIN_DIR),
-            'bundlepath': json.dumps(SESSION.host.pedalboard_path),
-            'title':  squeeze(pbname.replace("'", "\\'")),
+            'lv2_plugin_dir': mod_squeeze(LV2_PLUGIN_DIR),
+            'bundlepath': mod_squeeze(SESSION.host.pedalboard_path),
+            'title':  mod_squeeze(pbname),
             'size': json.dumps(SESSION.host.pedalboard_size),
             'fulltitle':  xhtml_escape(fullpbname),
             'titleblend': '' if SESSION.host.pedalboard_name else 'blend',
             'dev_api_class': 'dev_api' if DEV_API else '',
             'using_app': 'true' if APP else 'false',
             'using_mod': 'true' if DEVICE_KEY or DEV_HOST else 'false',
-            'user_name': squeeze(user_id.get("name", "").replace("'", "\\'")),
-            'user_email': squeeze(user_id.get("email", "").replace("'", "\\'")),
+            'user_name': mod_squeeze(user_id.get("name", "")),
+            'user_email': mod_squeeze(user_id.get("email", "")),
             'favorites': json.dumps(gState.favorites),
             'preferences': json.dumps(SESSION.prefs.prefs),
             'bufferSize': get_jack_buffer_size(),
@@ -1819,10 +1822,10 @@ class TemplateHandler(TimelessRequestHandler):
         bundlepath = self.get_argument('bundlepath')
 
         with open(DEFAULT_ICON_TEMPLATE, 'r') as fh:
-            default_icon_template = squeeze(fh.read().replace("'", "\\'"))
+            default_icon_template = mod_squeeze(fh.read())
 
         with open(DEFAULT_SETTINGS_TEMPLATE, 'r') as fh:
-            default_settings_template = squeeze(fh.read().replace("'", "\\'"))
+            default_settings_template = mod_squeeze(fh.read())
 
         try:
             pedalboard = get_pedalboard_info(bundlepath)
@@ -1884,7 +1887,7 @@ class BulkTemplateLoader(TimelessRequestHandler):
                 contents = fh.read()
             self.write("TEMPLATES['%s'] = '%s';\n\n"
                        % (template[:-5],
-                          squeeze(contents.replace("'", "\\'"))
+                          mod_squeeze(contents)
                           )
                        )
         self.finish()

@@ -105,8 +105,23 @@ LilvNode* lilv_new_file_uri2(LilvWorld* world, const char*, const char* path)
     return ret;
 }
 #define lilv_free(x) free(x)
-#define lilv_file_uri_parse(x,y) lilv_file_uri_parse2(x,y)
 #define lilv_new_file_uri(x,y,z) lilv_new_file_uri2(x,y,z)
+#else
+char* lilv_file_uri_parse2(const char* uri, char** hostname)
+{
+    if (char* const parsed = lilv_file_uri_parse(uri, hostname))
+    {
+       #ifdef _WIN32
+        char* convertslashes = parsed;
+        do {
+            if (*convertslashes == '/')
+                *convertslashes = '\\';
+        } while (*(++convertslashes) != '\0');
+       #endif
+        return parsed;
+    }
+    return nullptr;
+}
 #endif
 
 #ifndef LV2_CORE__Parameter
@@ -701,7 +716,7 @@ static const char* _get_safe_bundlepath(const char* const bundle, size_t& bundle
 // proper lilv_file_uri_parse function that returns absolute paths
 static char* lilv_file_abspath(const char* const path)
 {
-    if (char* const lilvpath = lilv_file_uri_parse(path, nullptr))
+    if (char* const lilvpath = lilv_file_uri_parse2(path, nullptr))
     {
         char* const ret = realpath(lilvpath, nullptr);
         lilv_free(lilvpath);
@@ -729,7 +744,7 @@ static void _fill_bundles_for_plugin(std::list<std::string>& bundles, const Lilv
             if (! lilv_node_is_uri(bundlenode))
                 continue;
 
-            lilvparsed = lilv_file_uri_parse(lilv_node_as_uri(bundlenode), nullptr);
+            lilvparsed = lilv_file_uri_parse2(lilv_node_as_uri(bundlenode), nullptr);
             if (lilvparsed == nullptr)
                 continue;
 
@@ -764,7 +779,7 @@ static void _fill_bundles_for_plugin(std::list<std::string>& bundles, const Lilv
             if (! lilv_node_is_uri(presetnode))
                 continue;
 
-            lilvparsed = lilv_file_uri_parse(lilv_node_as_uri(presetnode), nullptr);
+            lilvparsed = lilv_file_uri_parse2(lilv_node_as_uri(presetnode), nullptr);
             if (lilvparsed == nullptr)
                 continue;
 
@@ -1186,7 +1201,7 @@ static void _place_preset_info(LilvWorld* const w,
             // check if URI is a local file, to see if it's a user preset
             if (strncmp(preseturi, "file://", 7) == 0)
             {
-                if (char* const lilvparsed = lilv_file_uri_parse(preseturi, nullptr))
+                if (char* const lilvparsed = lilv_file_uri_parse2(preseturi, nullptr))
                 {
                     if (const char* bundlepath = dirname(lilvparsed))
                     {
@@ -1955,7 +1970,7 @@ const PluginInfo& _get_plugin_info(LilvWorld* const w,
     memset(&info, 0, sizeof(PluginInfo));
 
     const char* const bundleuri = lilv_node_as_uri(lilv_plugin_get_bundle_uri(p));
-    const char* const bundle    = lilv_file_uri_parse(bundleuri, nullptr);
+    const char* const bundle    = lilv_file_uri_parse2(bundleuri, nullptr);
 
     const size_t bundleurilen = strlen(bundleuri);
 
@@ -4084,7 +4099,7 @@ const char* const* remove_bundle_from_lilv_world(const char* const bundle, const
             char* bundleparsed;
             char* tmp;
 
-            tmp = lilv_file_uri_parse(lilv_node_as_uri(bundlenode), nullptr);
+            tmp = lilv_file_uri_parse2(lilv_node_as_uri(bundlenode), nullptr);
             if (tmp == nullptr)
                 continue;
 
@@ -4869,7 +4884,7 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
                 if (LilvNode* const proto = lilv_world_get(w, block, lv2_prototype, nullptr))
                 {
                     const char* const uri = lilv_node_as_uri(proto);
-                    char* full_instance = lilv_file_uri_parse(lilv_node_as_string(block), nullptr);
+                    char* full_instance = lilv_file_uri_parse2(lilv_node_as_string(block), nullptr);
                     char* instance;
 
                     if (strstr(full_instance, bundlepath) != nullptr)
@@ -4945,7 +4960,7 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
                                   lilv_node_free(bind);
                               }
 
-                              char* portsymbol = lilv_file_uri_parse(lilv_node_as_string(portnode), nullptr);
+                              char* portsymbol = lilv_file_uri_parse2(lilv_node_as_string(portnode), nullptr);
 
                               if (strstr(portsymbol, full_instance) != nullptr)
                                   memmove(portsymbol, portsymbol+(full_instance_size+1), strlen(portsymbol)-full_instance_size);
@@ -5029,8 +5044,8 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
                     continue;
                 }
 
-                char* tailstr = lilv_file_uri_parse(lilv_node_as_string(tail), nullptr);
-                char* headstr = lilv_file_uri_parse(lilv_node_as_string(head), nullptr);
+                char* tailstr = lilv_file_uri_parse2(lilv_node_as_string(tail), nullptr);
+                char* headstr = lilv_file_uri_parse2(lilv_node_as_string(head), nullptr);
 
                 if (strstr(tailstr, bundlepath) != nullptr)
                     memmove(tailstr, tailstr+(bundlepathsize+1), strlen(tailstr)-bundlepathsize);
@@ -5069,7 +5084,7 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
         {
             const LilvNode* const hwport = lilv_nodes_get(hwports, ithwp);
 
-            char* portsym = lilv_file_uri_parse(lilv_node_as_uri(hwport), nullptr);
+            char* portsym = lilv_file_uri_parse2(lilv_node_as_uri(hwport), nullptr);
 
             if (portsym == nullptr)
                 continue;
@@ -5579,7 +5594,7 @@ const PedalboardPluginValues* get_pedalboard_plugin_values(const char* bundle)
     LILV_FOREACH(nodes, itblocks, blocks)
     {
         const LilvNode* const block = lilv_nodes_get(blocks, itblocks);
-        char* full_instance = lilv_file_uri_parse(lilv_node_as_string(block), nullptr);
+        char* full_instance = lilv_file_uri_parse2(lilv_node_as_string(block), nullptr);
         char* instance;
 
         if (strstr(full_instance, bundlepath) != nullptr)
@@ -5611,7 +5626,7 @@ const PedalboardPluginValues* get_pedalboard_plugin_values(const char* bundle)
                   if (portvalue == nullptr)
                       continue;
 
-                  char* portsymbol = lilv_file_uri_parse(lilv_node_as_string(portnode), nullptr);
+                  char* portsymbol = lilv_file_uri_parse2(lilv_node_as_string(portnode), nullptr);
 
                   if (strstr(portsymbol, full_instance) != nullptr)
                       memmove(portsymbol, portsymbol+(full_instance_size+1), strlen(portsymbol)-full_instance_size);
