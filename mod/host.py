@@ -6729,9 +6729,12 @@ _:b%i
         # Extra MIDI Outs
         ports = get_jack_hardware_ports(False, True)
         for port in ports:
-            if not port.startswith(("system:midi_", "nooice")):
+            if port.startswith("system_midi:"):
+                alias = port[12:].replace(" (in)","")
+            elif not port.startswith(("system:midi_", "nooice")):
                 continue
-            alias = get_jack_port_alias(port)
+            else:
+                alias = get_jack_port_alias(port)
             if not alias:
                 continue
             title = midi_port_alias_to_name(alias, True)
@@ -6740,9 +6743,12 @@ _:b%i
         # Extra MIDI Ins
         ports = get_jack_hardware_ports(False, False)
         for port in ports:
-            if not port.startswith(("system:midi_", "nooice")):
+            if port.startswith("system_midi:"):
+                alias = port[12:].replace(" (out)","")
+            elif not port.startswith(("system:midi_", "nooice")):
                 continue
-            alias = get_jack_port_alias(port)
+            else:
+                alias = get_jack_port_alias(port)
             if not alias:
                 continue
             title = midi_port_alias_to_name(alias, True)
