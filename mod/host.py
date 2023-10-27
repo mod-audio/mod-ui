@@ -21,6 +21,7 @@ from datetime import timedelta
 from random import randint
 from tornado import gen, iostream
 from tornado.ioloop import IOLoop, PeriodicCallback
+from urllib.parse import quote, unquote
 import os, json, socket, time, logging, sys
 import shutil
 
@@ -233,7 +234,7 @@ def get_all_good_and_bad_pedalboards(ptype):
             'broken': False,
             'factory': False,
             'hasTrialPlugins': False,
-            'uri': "file://" + DEFAULT_PEDALBOARD,
+            'uri': "file://" + quote(DEFAULT_PEDALBOARD),
             'bundle': DEFAULT_PEDALBOARD,
             'title': UNTITLED_PEDALBOARD_NAME,
             'version': 0,
@@ -2139,7 +2140,7 @@ class Host(object):
 
         # load plugin state if relevant
         if crashed and self.pedalboard_path:
-            self.send_notmodified("state_load {}".format(self.pedalboard_path))
+            self.send_notmodified("state_load \"{}\"".format(self.pedalboard_path))
 
         # now load plugin parameters and addressings
         for instance_id, pluginData in self.plugins.items():
@@ -2901,7 +2902,7 @@ class Host(object):
                 break
 
         def add_bundle_callback(ok):
-            preseturi = "file://%s.ttl" % os.path.join(presetbundle, symbolname)
+            preseturi = "file://%s.ttl" % quote(os.path.join(presetbundle, symbolname))
             pluginData['preset'] = preseturi
             os_sync()
             callback({
@@ -2920,7 +2921,7 @@ class Host(object):
             rescan_plugin_presets(plugin_uri)
             self.add_bundle(presetbundle, add_bundle_callback)
 
-        self.send_notmodified("preset_save %d \"%s\" %s %s.ttl" % (instance_id,
+        self.send_notmodified("preset_save %d \"%s\" \"%s\" %s.ttl" % (instance_id,
                                                                    name.replace('"','\\"'),
                                                                    presetbundle,
                                                                    symbolname), host_callback, datatype='boolean')
@@ -2939,7 +2940,7 @@ class Host(object):
         symbolname   = symbolify(name)[:32]
 
         def add_bundle_callback(ok):
-            preseturi = "file://%s.ttl" % os.path.join(presetbundle, symbolname)
+            preseturi = "file://%s.ttl" % quote(os.path.join(presetbundle, symbolname))
             pluginData['preset'] = preseturi
             os_sync()
             callback({
@@ -2961,7 +2962,7 @@ class Host(object):
         def start(_):
             # remove old preset ttl files, without removing the whole dir
             if olduri.startswith("file:///"):
-                oldpath = olduri[7:]
+                oldpath = unquote(olduri[7:])
                 if os.path.exists(oldpath):
                     os.remove(oldpath)
                     oldpath = os.path.join(os.path.dirname(oldpath), "manifest.ttl")
@@ -2970,7 +2971,7 @@ class Host(object):
 
             rescan_plugin_presets(plugin_uri)
             pluginData['preset'] = ""
-            self.send_notmodified("preset_save %d \"%s\" %s %s.ttl" % (instance_id,
+            self.send_notmodified("preset_save %d \"%s\" \"%s\" %s.ttl" % (instance_id,
                                                                        name.replace('"','\\"'),
                                                                        presetbundle,
                                                                        symbolname), host_callback, datatype='boolean')
@@ -3648,7 +3649,7 @@ class Host(object):
 
         if bundlepath:
             self.load_pb_snapshots(bundlepath)
-            self.send_notmodified("state_load {}".format(bundlepath))
+            self.send_notmodified("state_load \"{}\"".format(bundlepath))
             self.addressings.load(bundlepath, instances, skippedPortAddressings, abort_catcher)
 
         if abort_catcher is not None and abort_catcher.get('abort', False):
@@ -3990,7 +3991,7 @@ class Host(object):
             callback(True, bundlepath, newTitle)
 
         # ask host to save any needed extra state
-        self.send_notmodified("state_save {}".format(bundlepath), state_saved_cb, datatype='boolean')
+        self.send_notmodified("state_save \"{}\"".format(bundlepath), state_saved_cb, datatype='boolean')
 
         return bundlepath, newTitle
 
@@ -5414,7 +5415,7 @@ _:b%i
             'broken': False,
             'factory': False,
             'hasTrialPlugins': False,
-            'uri': "file://" + bundlepath,
+            'uri': "file://" + quote(bundlepath),
             'bundle': bundlepath,
             'title': title,
             'version': 0,
@@ -6171,7 +6172,7 @@ _:b%i
 
         self.save_state_snapshots(self.pedalboard_path)
         self.save_state_mainfile(self.pedalboard_path, self.pedalboard_name, titlesym)
-        self.send_notmodified("state_save {}".format(self.pedalboard_path), host_callback)
+        self.send_notmodified("state_save \"{}\"".format(self.pedalboard_path), host_callback)
 
     def hmi_reset_current_pedalboard(self, callback):
         logging.debug("hmi reset current pedalboard")
