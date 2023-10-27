@@ -117,6 +117,7 @@ class HMI(object):
     def init(self, callback):
         if not haveSerial:
             print("ERROR: This system has no python serial support")
+            callback()
             return
 
         ioloop = IOLoop.instance()

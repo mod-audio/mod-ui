@@ -65,7 +65,7 @@
     PEDALBOARDS_URL  = '{{pedalboards_url}}'
     PEDALBOARDS_LABS_URL  = '{{pedalboards_labs_url}}'
     CONTROLCHAIN_URL = '{{controlchain_url}}'
-    LV2_PLUGIN_DIR   = '{{lv2_plugin_dir}}'
+    LV2_PLUGIN_DIR   = JSON.parse('{{lv2_plugin_dir}}')
     VERSION          = '{{version}}'
     BIN_COMPAT       = '{{bin_compat}}'
     PLATFORM         = '{{platform}}'
@@ -74,7 +74,7 @@
     var HARDWARE_PROFILE = JSON.parse(atob('{{hardware_profile}}'))
     var DEFAULT_ICON_TEMPLATE = '{{default_icon_template}}'
     var DEFAULT_SETTINGS_TEMPLATE = '{{default_settings_template}}'
-    var DEFAULT_PEDALBOARD = '{{default_pedalboard}}'
+    var DEFAULT_PEDALBOARD = JSON.parse('{{default_pedalboard}}')
     var FAVORITES = {{favorites}}
     var PREFERENCES = {{preferences}}
     var ADDRESSING_PAGES = {{addressing_pages}}
@@ -152,7 +152,7 @@ $('document').ready(function() {
 
     if ('{{bundlepath}}' && '{{title}}') {
         desktop.title = '{{title}}'
-        desktop.pedalboardBundle   = '{{bundlepath}}'
+        desktop.pedalboardBundle   = JSON.parse('{{bundlepath}}')
         desktop.pedalboardEmpty    = false
         desktop.pedalboardModified = true
     }
