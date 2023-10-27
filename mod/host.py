@@ -3430,7 +3430,7 @@ class Host(object):
             print("NOTE: Requested '%s' target port doesn't exist, assume disconnected" % port_to)
             return host_callback(True)
 
-        host_callback(disconnect_jack_ports(port_from_2, port_to_2))
+        self.send_modified("disconnect %s %s" % (port_from_2, port_to_2), host_callback, datatype='boolean')
 
     # -----------------------------------------------------------------------------------------------------------------
     # Host stuff - load & save

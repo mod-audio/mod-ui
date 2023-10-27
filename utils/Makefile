@@ -29,16 +29,14 @@ endif
 
 ifeq ($(MODAPP),1)
 CXXFLAGS += -DMODAPP
+else ifeq ($(shell pkg-config --exists alsa && echo true), true)
+CXXFLAGS += -DHAVE_ALSA
+ALSA_CFLAGS = $(shell pkg-config --cflags alsa)
+ALSA_LIBS   = $(shell pkg-config --libs alsa)
 endif
 
 ifeq ($(shell pkg-config --atleast-version=0.22.0 lilv-0 && echo true), true)
 CXXFLAGS += -DHAVE_NEW_LILV
-endif
-
-ifeq ($(shell pkg-config --exists alsa && echo true), true)
-CXXFLAGS += -DHAVE_ALSA
-ALSA_CFLAGS = $(shell pkg-config --cflags alsa)
-ALSA_LIBS   = $(shell pkg-config --libs alsa)
 endif
 
 JACK_CFLAGS = $(shell pkg-config --cflags jack)
