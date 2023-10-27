@@ -1061,7 +1061,7 @@ class Host(object):
 
         def retry():
             if (self.hmi.initialized and self.profile_applied) or self._attemptNumber >= 20:
-                logging.info("[host] HMI initialized FINAL", self._attemptNumber, self.hmi.initialized)
+                logging.info("[host] HMI initialized FINAL %d %d", self._attemptNumber, self.hmi.initialized)
                 del self._attemptNumber
                 if HMI_TIMEOUT > 0:
                     self.ping_hmi_start()
@@ -1069,7 +1069,7 @@ class Host(object):
             else:
                 self._attemptNumber += 1
                 IOLoop.instance().call_later(0.25, retry)
-                logging.info("[host] HMI initialized waiting", self._attemptNumber)
+                logging.info("[host] HMI initialized waiting %d", self._attemptNumber)
 
         self._attemptNumber = 0
         retry()
