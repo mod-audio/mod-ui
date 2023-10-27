@@ -731,7 +731,7 @@ class Host(object):
                     optdataLen = len(optdata)
 
                     if numBytesFree-optdataLen-2 < 0:
-                        print("WARNING: Preventing sending too many options to addressing (stopped at %i)" % currentNum)
+                        logging.warning("[host] Preventing sending too many options to addressing (stopped at %i)", currentNum)
                         if rvalue >= currentNum:
                             rvalue = 0.0
                         rmaximum = currentNum
@@ -789,7 +789,7 @@ class Host(object):
                                                                 ), callback, datatype='boolean')
             return
 
-        print("ERROR: Invalid addressing requested for", actuator)
+        logging.error("[host] Invalid addressing requested for %s", actuator)
         callback(False)
         return
 
@@ -819,7 +819,7 @@ class Host(object):
                 callback(True)
             return
 
-        print("ERROR: Invalid unaddressing requested")
+        logging.error("[host] Invalid unaddressing requested")
         callback(False)
         return
 
@@ -951,7 +951,7 @@ class Host(object):
         if self.hmi.initialized:
             self.hmi.set_available_pages(pages, callback)
             return
-        print("WARNING: Trying to send available pages, HMI not initialized")
+        logging.warning("[host] Trying to send available pages, HMI not initialized")
         callback(False)
 
     def addr_task_get_plugin_cv_port_op_mode(self, actuator_uri):
@@ -1055,13 +1055,13 @@ class Host(object):
 
     def wait_hmi_initialized(self, callback):
         if (self.hmi.initialized and self.profile_applied) or self.hmi.isFake():
-            print("HMI initialized right away")
+            logging.info("[host] HMI initialized right away")
             callback(True)
             return
 
         def retry():
             if (self.hmi.initialized and self.profile_applied) or self._attemptNumber >= 20:
-                print("HMI initialized FINAL", self._attemptNumber, self.hmi.initialized)
+                logging.info("[host] HMI initialized FINAL", self._attemptNumber, self.hmi.initialized)
                 del self._attemptNumber
                 if HMI_TIMEOUT > 0:
                     self.ping_hmi_start()
@@ -1069,7 +1069,7 @@ class Host(object):
             else:
                 self._attemptNumber += 1
                 IOLoop.instance().call_later(0.25, retry)
-                print("HMI initialized waiting", self._attemptNumber)
+                logging.info("[host] HMI initialized waiting", self._attemptNumber)
 
         self._attemptNumber = 0
         retry()
@@ -1649,7 +1649,6 @@ class Host(object):
                     pluginData['bypassed'] = bool(value)
 
                 elif portsymbol == ":presets":
-                    print("presets changed by backend", value)
                     abort_catcher = self.abort_previous_loading_progress("process_read_message_body")
                     value = int(value)
                     if value < 0 or value >= len(pluginData['mapPresets']):
@@ -2227,7 +2226,7 @@ class Host(object):
 
     def add_bundle(self, bundlepath, callback):
         if is_bundle_loaded(bundlepath):
-            print("NOTE: Skipped add_bundle, already in world")
+            logging.info("[host] NOTE: Skipped add_bundle, already in world")
             callback((False, "Bundle already loaded"))
             return
 
@@ -2239,7 +2238,7 @@ class Host(object):
 
     def remove_bundle(self, bundlepath, isPluginBundle, resource, callback):
         if not is_bundle_loaded(bundlepath):
-            print("NOTE: Skipped remove_bundle, not in world")
+            logging.info("[host] NOTE: Skipped remove_bundle, not in world")
             callback((False, "Bundle not loaded"))
             return
 
@@ -2313,7 +2312,7 @@ class Host(object):
         plugin_data = self.plugins.get(instance_id, None)
 
         if plugin_data is None:
-            print("ERROR: Trying to set param for non-existing plugin instance %i: '%s'" % (instance_id, instance))
+            logging.error("[host] Trying to set param for non-existing plugin instance %i: '%s'", instance_id, instance)
             if callback is not None:
                 callback(False)
             return
@@ -2704,7 +2703,7 @@ class Host(object):
         pluginData  = self.plugins[instance_id]
 
         if symbol in pluginData['designations']:
-            print("ERROR: Trying to modify a specially designated port '%s', stop!" % symbol)
+            logging.error("[host] Trying to modify a specially designated port '%s', stop!", symbol)
             if callback is not None:
                 callback(False)
             return
@@ -2812,15 +2811,15 @@ class Host(object):
             callback(False)
             return
         if self.pedalboard_path != current_pedal:
-            print("WARNING: Pedalboard changed during preset_load request")
+            logging.warning("[host] Pedalboard changed during preset_load request")
             callback(False)
             return
         if pluginData['nextPreset'] != uri:
-            print("WARNING: Preset changed during preset_load request")
+            logging.warning("[host] Preset changed during preset_load request")
             callback(False)
             return
         if abort_catcher.get('abort', False):
-            print("WARNING: Abort triggered during preset_load request, caller:", abort_catcher['caller'])
+            logging.warning("[host] Abort triggered during preset_load request, caller: %s", abort_catcher['caller'])
             callback(False)
             return
 
@@ -2835,15 +2834,15 @@ class Host(object):
             callback(False)
             return
         if self.pedalboard_path != current_pedal:
-            print("WARNING: Pedalboard changed during preset_show request")
+            logging.warning("[host] Pedalboard changed during preset_show request")
             callback(False)
             return
         if pluginData['nextPreset'] != uri:
-            print("WARNING: Preset changed during preset_load request")
+            logging.warning("[host] Preset changed during preset_load request")
             callback(False)
             return
         if abort_catcher.get('abort', False):
-            print("WARNING: Abort triggered during preset_load request, caller:", abort_catcher['caller'])
+            logging.warning("[host] Abort triggered during preset_load request, caller: %s", abort_catcher['caller'])
             callback(False)
             return
 
@@ -2858,10 +2857,10 @@ class Host(object):
 
             minimum, maximum = pluginData['ranges'][symbol]
             if value < minimum:
-                print("ERROR: preset_load with value below minimum: symbol '%s', value %f" % (symbol, value))
+                logging.error("[host] preset_load with value below minimum: symbol '%s', value %f", symbol, value)
                 value = minimum
             elif value > maximum:
-                print("ERROR: preset_load with value above maximum: symbol '%s', value %f" % (symbol, value))
+                logging.error("[host] preset_load with value above maximum: symbol '%s', value %f", symbol, value)
                 value = maximum
 
             pluginData['ports'][symbol] = value
@@ -3090,7 +3089,7 @@ class Host(object):
             is_hmi_snapshot = True
 
             if snapshot is None:
-                print("ERROR: Asked to load an invalid HMI preset, number", idx)
+                logging.error("[host] Asked to load an invalid HMI preset, number %d", idx)
                 callback(False)
                 return
 
@@ -3103,7 +3102,7 @@ class Host(object):
             is_hmi_snapshot = False
 
             if snapshot is None:
-                print("ERROR: Asked to load an invalid pedalboard snapshot, number", idx)
+                logging.error("[host] Asked to load an invalid pedalboard snapshot, number %d", idx)
                 callback(False)
                 return
 
@@ -3115,7 +3114,7 @@ class Host(object):
 
         for instance, data in snapshot['data'].items():
             if abort_catcher.get('abort', False):
-                print("WARNING: Abort triggered during snapshot_load request, caller:", abort_catcher['caller'])
+                logging.warning("[host] Abort triggered during snapshot_load request, caller: %s", abort_catcher['caller'])
                 callback(False)
                 return
 
@@ -3256,7 +3255,7 @@ class Host(object):
     @gen.coroutine
     def page_load(self, idx, abort_catcher, callback):
         if not self.addressings.addressing_pages:
-            print("ERROR: hmi next page not supported")
+            logging.error("[host] hmi next page not supported")
             callback(False)
             return
 
@@ -3274,7 +3273,7 @@ class Host(object):
 
         for uri, addressings in self.addressings.hmi_addressings.items():
             if abort_catcher.get('abort', False):
-                print("WARNING: Abort triggered during page_load request, caller:", abort_catcher['caller'])
+                logging.warning("[host] Abort triggered during page_load request, caller: %s", abort_catcher['caller'])
                 callback(False)
                 return
 
@@ -3382,7 +3381,7 @@ class Host(object):
 
     def connect(self, port_from, port_to, callback):
         if (port_from, port_to) in self.connections:
-            print("NOTE: Requested connection already exists")
+            logging.info("[host] NOTE: Requested connection already exists")
             callback(True)
             return
 
@@ -3392,7 +3391,7 @@ class Host(object):
                 self.connections.append((port_from, port_to))
                 self.msg_callback("connect %s %s" % (port_from, port_to))
             else:
-                print("ERROR: backend failed to connect ports: '%s' => '%s'" % (port_from, port_to))
+                logging.error("[host] backend failed to connect ports: '%s' => '%s'", port_from, port_to)
 
         self.send_modified("connect %s %s" % (self._fix_host_connection_port(port_from),
                                               self._fix_host_connection_port(port_to)),
@@ -3405,14 +3404,14 @@ class Host(object):
             self.msg_callback("disconnect %s %s" % (port_from, port_to))
 
             if not ok:
-                print("ERROR: disconnect '%s' => '%s' failed" % (port_from, port_to))
+                logging.error("[host] disconnect '%s' => '%s' failed", port_from, port_to)
 
             self.pedalboard_modified = True
 
             try:
                 self.connections.remove((port_from, port_to))
             except:
-                print("NOTE: Requested '%s' => '%s' connection doesn't exist" % (port_from, port_to))
+                logging.info("[host] NOTE: Requested '%s' => '%s' connection doesn't exist", port_from, port_to)
 
         if len(self.connections) == 0:
             return host_callback(False)
@@ -3421,13 +3420,13 @@ class Host(object):
         try:
             port_from_2 = self._fix_host_connection_port(port_from)
         except:
-            print("NOTE: Requested '%s' source port doesn't exist, assume disconnected" % port_from)
+            logging.info("[host] NOTE: Requested '%s' source port doesn't exist, assume disconnected", port_from)
             return host_callback(True)
 
         try:
             port_to_2 = self._fix_host_connection_port(port_to)
         except:
-            print("NOTE: Requested '%s' target port doesn't exist, assume disconnected" % port_to)
+            logging.info("[host] NOTE: Requested '%s' target port doesn't exist, assume disconnected", port_to)
             return host_callback(True)
 
         self.send_modified("disconnect %s %s" % (port_from_2, port_to_2), host_callback, datatype='boolean')
@@ -3626,7 +3625,7 @@ class Host(object):
             self.set_transport_rolling(self.transport_rolling, False, True, False, False)
 
         if abort_catcher is not None and abort_catcher.get('abort', False):
-            print("WARNING: Abort triggered during PB load request 1, caller:", abort_catcher['caller'])
+            logging.warning("[host] Abort triggered during PB load request 1, caller: %s", abort_catcher['caller'])
             return
 
         self.send_notmodified("transport %i %f %f" % (self.transport_rolling,
@@ -3653,7 +3652,7 @@ class Host(object):
             self.addressings.load(bundlepath, instances, skippedPortAddressings, abort_catcher)
 
         if abort_catcher is not None and abort_catcher.get('abort', False):
-            print("WARNING: Abort triggered during PB load request 2, caller:", abort_catcher['caller'])
+            logging.warning("[host] Abort triggered during PB load request 2, caller: %s", abort_catcher['caller'])
             return
 
         self.addressings.registerMappings(self.msg_callback, rinstances)
@@ -3805,7 +3804,7 @@ class Host(object):
 
             # make sure preset is valid
             if p['preset'] and not is_plugin_preset_valid(p['uri'], p['preset']):
-                print("WARNING: preset '%s' was not valid" % p['preset'])
+                logging.warning("[host] preset '%s' was not valid" % p['preset'])
                 p['preset'] = ""
 
             self.plugins[instance_id] = pluginData = {
@@ -4566,7 +4565,7 @@ _:b%i
     @gen.coroutine
     def set_link_enabled(self):
         if self.plugins[PEDALBOARD_INSTANCE_ID]['addressings'].get(":bpm", None) is not None:
-            print("ERROR: link enabled while BPM is still addressed")
+            logging.warning("[host] link enabled while BPM is still addressed")
 
         self.send_notmodified("transport_sync link")
 
@@ -4582,7 +4581,7 @@ _:b%i
     @gen.coroutine
     def set_midi_clock_slave_enabled(self):
         if self.plugins[PEDALBOARD_INSTANCE_ID]['addressings'].get(":bpm", None) is not None:
-            print("ERROR: MIDI Clock Slave enabled while BPM is still addressed")
+            logging.warning("[host] MIDI Clock Slave enabled while BPM is still addressed")
 
         self.send_notmodified("transport_sync midi")
 
@@ -4786,7 +4785,7 @@ _:b%i
             subpage = None
 
         if pluginData is None:
-            print("ERROR: Trying to address non-existing plugin instance %i: '%s'" % (instance_id, instance))
+            logging.warning("[host] Trying to address non-existing plugin instance %i: '%s'", instance_id, instance)
             callback(False)
             return
 
@@ -4890,7 +4889,7 @@ _:b%i
         is_hmi_actuator = self.addressings.is_hmi_actuator(actuator_uri)
 
         if is_hmi_actuator and not self.hmi.initialized:
-            print("WARNING: Cannot address to HMI at this point")
+            logging.warning("[host] Cannot address to HMI at this point")
             callback(False)
             return
 
@@ -5282,7 +5281,7 @@ _:b%i
 
     def hmi_bank_delete(self, bank_id, callback):
         if bank_id < self.userbanks_offset or bank_id - self.userbanks_offset >= len(self.userbanks):
-            print("ERROR: Trying to remove invalid bank id %i" % (bank_id))
+            logging.error("[host] Trying to remove invalid bank id %i", bank_id)
             callback(False, -1)
             return
 
@@ -5300,7 +5299,7 @@ _:b%i
                     pb_resp = pbi
                     break
             else:
-                print("ERROR: Failed to find new pedalboard id to give from All")
+                logging.error("[host] Failed to find new pedalboard id to give from All")
 
         # if current bank is after or same as bank-to-remove, shift back by 1
         elif self.bank_id >= bank_id:
@@ -5312,11 +5311,11 @@ _:b%i
 
     def hmi_bank_add_pedalboards_or_banks(self, dst_bank_id, src_bank_id, pedalboards_or_banks, callback):
         if dst_bank_id < self.userbanks_offset or dst_bank_id - self.userbanks_offset >= len(self.userbanks):
-            print("ERROR: Trying to add to invalid bank id %i" % (dst_bank_id))
+            logging.error("[host] Trying to add to invalid bank id %i", dst_bank_id)
             callback(False)
             return
         if not pedalboards_or_banks:
-            print("ERROR: There are no banks/pedalboards to add, stop")
+            logging.error("[host] There are no banks/pedalboards to add, stop")
             callback(False)
             return
 
@@ -5332,13 +5331,11 @@ _:b%i
             try:
                 bank_id = int(bank_id_str)
             except ValueError:
-                print("ERROR: bank with id %s is invalid, cannot convert to integer" % bank_id_str)
+                logging.error("[host] bank with id %s is invalid, cannot convert to integer", bank_id_str)
                 continue
             if bank_id < self.userbanks_offset or bank_id - self.userbanks_offset >= len(self.userbanks):
-                print("ERROR: Trying to add out of bounds bank id %i" % bank_id)
+                logging.error("[host] Trying to add out of bounds bank id %i", bank_id)
                 continue
-            # TODO remove this print after we verify that all works
-            print("DEBUG: added bank", self.userbanks[bank_id - self.userbanks_offset]['title'])
             dst_pedalboards += self.userbanks[bank_id - self.userbanks_offset]['pedalboards']
 
         save_banks(self.userbanks)
@@ -5348,7 +5345,7 @@ _:b%i
         first_valid_bank = 1 if self.supports_factory_banks else 0
 
         if src_bank_id < first_valid_bank or src_bank_id - self.userbanks_offset >= len(self.userbanks):
-            print("ERROR: Trying to add pedalboard from invalid bank id %i" % (src_bank_id))
+            logging.error("[host] Trying to add pedalboard from invalid bank id %i", src_bank_id)
             callback(False)
             return
 
@@ -5363,13 +5360,11 @@ _:b%i
             try:
                 pedalboard_index = int(pedalboard_index_str)
             except ValueError:
-                print("ERROR: pedalboard with id %s is invalid, cannot convert to integer" % pedalboard_index_str)
+                logging.error("[host] pedalboard with id %s is invalid, cannot convert to integer", pedalboard_index_str)
                 continue
             if pedalboard_index < 0 or pedalboard_index >= len(src_pedalboards):
-                print("ERROR: Trying to add out of bounds pedalboard id %i" % pedalboard_index)
+                logging.error("[host] Trying to add out of bounds pedalboard id %i", pedalboard_index)
                 continue
-            # TODO remove this print after we verify that all works
-            print("DEBUG: added pedalboard", src_pedalboards[pedalboard_index]['title'])
             dst_pedalboards.append(src_pedalboards[pedalboard_index])
 
         save_banks(self.userbanks)
@@ -5377,7 +5372,7 @@ _:b%i
 
     def hmi_bank_reorder_pedalboards(self, bank_id, src, dst, callback):
         if bank_id < self.userbanks_offset or bank_id - self.userbanks_offset >= len(self.userbanks):
-            print("ERROR: Trying to reorder pedalboards in invalid bank id %i" % (bank_id))
+            logging.error("[host] Trying to reorder pedalboards in invalid bank id %i", bank_id)
             callback(False)
             return
 
@@ -5409,7 +5404,6 @@ _:b%i
             return
 
         bundlepath, _ = self.save(title, True, rcallback)
-        print("hmi_pedalboard_save_as", title, "->", bundlepath)
 
         pedalboard = {
             'broken': False,
@@ -5428,14 +5422,14 @@ _:b%i
 
     def hmi_pedalboard_remove_from_bank(self, bank_id, pedalboard_index, callback):
         if bank_id < self.userbanks_offset or bank_id - self.userbanks_offset >= len(self.userbanks):
-            print("ERROR: Trying to remove pedalboard using out of bounds bank id %i" % (bank_id))
+            logging.error("[host] Trying to remove pedalboard using out of bounds bank id %i", bank_id)
             callback(False, -1)
             return
 
         pedalboards = self.userbanks[bank_id - self.userbanks_offset]['pedalboards']
 
         if pedalboard_index < 0 or pedalboard_index >= len(pedalboards):
-            print("ERROR: Trying to remove pedalboard using out of bounds pedalboard id %i" % (pedalboard_index))
+            logging.error("[host] Trying to remove pedalboard using out of bounds pedalboard id %i", pedalboard_index)
             callback(False, -1)
             return
 
@@ -5449,7 +5443,7 @@ _:b%i
                 pb_resp = pbi
                 break
         else:
-            print("ERROR: Failed to find removed pedalboard id to give from All")
+            logging.error("[host] Failed to find removed pedalboard id to give from All")
             pb_resp = -1
 
         callback(True, pb_resp)
@@ -5566,15 +5560,17 @@ _:b%i
     # -----------------------------------------------------------------------------------------------------------------
 
     def bank_config_enabled_callback(self, _):
-        print("NOTE: bank config done")
+        logging.info("[host] bank config done")
 
     def load_different_callback(self, ok):
         if self.next_hmi_pedalboard_to_load is None:
             return
         if ok:
-            print("NOTE: Delayed loading of %i:%i has started" % self.next_hmi_pedalboard_to_load)
+            logging.info("[host] Delayed loading of %i:%i has started",
+                         self.next_hmi_pedalboard_to_load[0], self.next_hmi_pedalboard_to_load[1])
         else:
-            print("ERROR: Delayed loading of %i:%i failed!" % self.next_hmi_pedalboard_to_load)
+            logging.error("[host] Delayed loading of %i:%i failed!",
+                         self.next_hmi_pedalboard_to_load[0], self.next_hmi_pedalboard_to_load[1])
 
     def hmi_load_bank_pedalboard(self, bank_id, pedalboard_index, callback, from_hmi=True):
         logging.debug("hmi load bank pedalboard")
@@ -5709,7 +5705,7 @@ _:b%i
         logging.debug("hmi load pedalboard snapshot")
 
         if snapshot_id < 0 or snapshot_id >= len(self.pedalboard_snapshots):
-            print("ERROR: Trying to load pedalboard using out of bounds pedalboard id %i" % (snapshot_id))
+            logging.error("[host] Trying to load pedalboard using out of bounds pedalboard id %i", snapshot_id)
             callback(False)
             return
 
@@ -5779,7 +5775,7 @@ _:b%i
         try:
             instance = self.mapper.get_instance(instance_id)
         except KeyError:
-            print("WARNING: hmi_or_cc_parameter_set requested for non-existing plugin")
+            logging.warning("[host] hmi_or_cc_parameter_set requested for non-existing plugin")
             callback(False)
             return
 
@@ -5857,14 +5853,14 @@ _:b%i
                     callback(False)
                     logging.exception(e)
             else:
-                print("ERROR: Trying to set value for the wrong pedalboard port:", portsymbol)
+                logging.error("[host] Trying to set value for the wrong pedalboard port: %s", portsymbol)
                 callback(False)
                 return
 
         else:
             oldvalue = pluginData['ports'].get(portsymbol, None)
             if oldvalue is None:
-                print("WARNING: hmi_or_cc_parameter_set requested for non-existing port", portsymbol)
+                logging.warning("[host] hmi_or_cc_parameter_set requested for non-existing port %s", portsymbol)
                 callback(False)
                 return
 
@@ -6192,7 +6188,7 @@ _:b%i
 
         for p in pb_values:
             if abort_catcher.get('abort', False):
-                print("WARNING: Abort triggered during reset_current_pedalboard request, caller:", abort_catcher['caller'])
+                logging.warning("[host] Abort triggered during reset_current_pedalboard request, caller: %s", abort_catcher['caller'])
                 callback(False)
                 return
 
