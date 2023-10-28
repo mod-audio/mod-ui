@@ -75,10 +75,10 @@ DEFAULT_ICON_IMAGE = {
 }
 
 # Cloud API addresses
-CLOUD_HTTP_ADDRESS = os.environ.pop('MOD_CLOUD_HTTP_ADDRESS', "https://api-dev.mod.audio/v2")
+CLOUD_HTTP_ADDRESS = os.environ.pop('MOD_CLOUD_HTTP_ADDRESS', "https://api.mod.audio/v2")
 CLOUD_LABS_HTTP_ADDRESS = os.environ.pop('MOD_CLOUD_LABS_HTTP_ADDRESS', "https://api-labs.mod.audio/v2")
 PLUGINS_HTTP_ADDRESS = os.environ.pop('MOD_PLUGINS_HTTP_ADDRESS', "https://pedalboards.mod.audio/plugins")
-PEDALBOARDS_HTTP_ADDRESS = os.environ.pop('MOD_PEDALBOARDS_HTTP_ADDRESS', "https://pedalboards-dev.mod.audio")
+PEDALBOARDS_HTTP_ADDRESS = os.environ.pop('MOD_PEDALBOARDS_HTTP_ADDRESS', "https://pedalboards.mod.audio")
 PEDALBOARDS_LABS_HTTP_ADDRESS = os.environ.pop('MOD_PEDALBOARDS_LABS_HTTP_ADDRESS', "https://pedalboards-labs.mod.audio")
 CONTROLCHAIN_HTTP_ADDRESS = os.environ.pop('MOD_CONTROLCHAIN_HTTP_ADDRESS',
                                            "https://download.mod.audio/releases/cc-firmware/v3")
