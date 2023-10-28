@@ -187,9 +187,6 @@ $('document').ready(function() {
         $('#mod-status').show().statusTooltip('updatePosition')
     }
 
-    if (PREFERENCES['dev-mode'] == "on") {
-        enable_dev_mode(true)
-    }
     if (PREFERENCES['plugins-folded'] == "true") {
         desktop.effectBox.effectBox('toggle')
     }
@@ -200,6 +197,10 @@ $('document').ready(function() {
 
     if ({{using_app}}) {
         desktop.setupApp()
+    } else {
+        if (PREFERENCES['dev-mode'] == "on") {
+            enable_dev_mode(true)
+        }
     }
 
     // start code for ajax loading bar
