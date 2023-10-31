@@ -162,10 +162,6 @@ $('document').ready(function() {
         $('#mod-bypassRight').hide()
     }
 
-    if ({{using_app}}) {
-        desktop.setupApp()
-    }
-
     if ({{using_mod}}) {
         desktop.authenticateDevice(function (ok) {
             if (ok) {
@@ -191,9 +187,6 @@ $('document').ready(function() {
         $('#mod-status').show().statusTooltip('updatePosition')
     }
 
-    if (PREFERENCES['dev-mode'] == "on") {
-        enable_dev_mode(true)
-    }
     if (PREFERENCES['plugins-folded'] == "true") {
         desktop.effectBox.effectBox('toggle')
     }
@@ -201,6 +194,14 @@ $('document').ready(function() {
         $("#cloud-plugins-unstable").parent().show()
     }
     desktop.pedalboardBox.pedalboardBox('initViewMode', PREFERENCES['pb-view-mode'])
+
+    if ({{using_app}}) {
+        desktop.setupApp()
+    } else {
+        if (PREFERENCES['dev-mode'] == "on") {
+            enable_dev_mode(true)
+        }
+    }
 
     // start code for ajax loading bar
 

@@ -2660,7 +2660,7 @@ JqueryClass('customSelectPath', baseWidget, {
                 if (!self.data('enabled')) {
                     return self.customSelectPath('prevent', e)
                 }
-                var value = opt.attr('mod-parameter-value')
+                var value = opt.attr('mod-parameter-value').replace(/\\/g,'\\\\')
                 self.customSelectPath('setValue', value, false)
             })
         })

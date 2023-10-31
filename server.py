@@ -29,7 +29,16 @@ def create_dummy_credentials():
         except Exception as ex:
             print('Can\'t create a device key: {0}'.format(ex))
 
-ROOT = os.path.dirname(os.path.realpath(__file__))
+if os.path.isfile(sys.argv[0]):
+    # running through cx-freeze, do an early import of everything we need
+    import json
+    import uuid
+    from tornado import gen, iostream, web, websocket
+    ROOT = os.path.dirname(sys.argv[0])
+else:
+    ROOT = os.path.dirname(os.path.realpath(__file__))
+    sys.path = [ os.path.dirname(os.path.realpath(__file__)) ] + sys.path
+
 DATA_DIR = os.environ.get("MOD_DATA_DIR", os.path.join(ROOT, 'data'))
 
 os.makedirs(DATA_DIR, exist_ok=True)
@@ -50,8 +59,6 @@ create_dummy_credentials()
 
 if not os.path.isfile(os.environ['MOD_API_KEY']):
     print('WARN: Missing file {0} with the public API KEY'.format(os.environ['MOD_API_KEY']))
-
-sys.path = [ os.path.dirname(os.path.realpath(__file__)) ] + sys.path
 
 from mod import webserver
 

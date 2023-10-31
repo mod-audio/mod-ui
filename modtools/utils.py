@@ -5,6 +5,7 @@
 import os
 from ctypes import *
 from mod import get_unique_name
+from sys import platform
 
 # ------------------------------------------------------------------------------------------------------------
 # Convert a ctypes c_char_p into a python string
@@ -144,13 +145,21 @@ def unionToDict(struct):
 
 # ------------------------------------------------------------------------------------------------------------
 
-tryPath1 = os.path.join(os.path.dirname(__file__), "libmod_utils.so")
-tryPath2 = os.path.join(os.path.dirname(__file__), "..", "utils", "libmod_utils.so")
+if platform == 'win32':
+    ext = "dll"
+else:
+    ext = "so"
+
+tryPath1 = os.path.join(os.path.dirname(__file__), "libmod_utils." + ext)
+tryPath2 = os.path.join(os.path.dirname(__file__), "..", "lib", "libmod_utils." + ext)
+tryPath3 = os.path.join(os.path.dirname(__file__), "..", "utils", "libmod_utils." + ext)
 
 if os.path.exists(tryPath1):
     utils = cdll.LoadLibrary(tryPath1)
-else:
+elif os.path.exists(tryPath2):
     utils = cdll.LoadLibrary(tryPath2)
+else:
+    utils = cdll.LoadLibrary(tryPath3)
 
 # PluginLicenseType
 kPluginLicenseNonCommercial = 0

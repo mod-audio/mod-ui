@@ -199,8 +199,13 @@ bool init_jack(void)
         return true;
     }
 
+#ifdef MODAPP
+    const jack_options_t options = static_cast<jack_options_t>(JackNoStartServer|JackUseExactName|JackServerName);
+    jack_client_t* const client = jack_client_open("mod-ui", options, nullptr, "mod-app");
+#else
     const jack_options_t options = static_cast<jack_options_t>(JackNoStartServer|JackUseExactName);
     jack_client_t* const client = jack_client_open("mod-ui", options, nullptr);
+#endif
 
     if (client == nullptr)
         return false;

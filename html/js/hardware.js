@@ -799,7 +799,7 @@ function HardwareManager(options) {
               btn.addClass('selected')
             }
             // Hide Device tab under mod-app
-            if (jbtn.attr('data-value') === deviceOption && options.isApp()) {
+            if (options.isApp() && (jbtn.attr('data-value') === deviceOption || jbtn.attr('data-value') === ccOption)) {
               jbtn.hide()
             }
             // Hide MIDI tab if not available

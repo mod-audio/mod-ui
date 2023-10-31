@@ -11,7 +11,11 @@ extern "C" {
 #include <stdint.h>
 #endif
 
+#ifdef _WIN32
+#define MOD_API __declspec (dllexport)
+#else
 #define MOD_API __attribute__ ((visibility("default")))
+#endif
 
 typedef enum {
     kPluginLicenseNonCommercial = 0,
