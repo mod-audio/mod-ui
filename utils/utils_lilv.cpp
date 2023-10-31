@@ -4582,6 +4582,10 @@ const PedalboardInfo_Mini* const* get_all_pedalboards(const int ptype)
     if (ptype == kPedalboardInfoFactoryOnly && FACTORYINFO != nullptr)
         return FACTORYINFO;
 
+#ifndef LILV_OPTION_LV2_PATH
+    char* const oldlv2path = getenv_strdup_or_null("LV2_PATH");
+#endif
+
     const char* pedalboard_lv2_path;
     switch (ptype)
     {
@@ -4604,11 +4608,27 @@ const PedalboardInfo_Mini* const* get_all_pedalboards(const int ptype)
 
     LilvWorld* const w = lilv_world_new();
 
+#ifdef LILV_OPTION_LV2_PATH
     LilvNode* const lv2path = lilv_new_string(w, pedalboard_lv2_path);
     lilv_world_set_option(w, LILV_OPTION_LV2_PATH, lv2path);
     lilv_free(lv2path);
+#else
+    setenv("LV2_PATH", pedalboard_lv2_path, 1);
+#endif
 
     lilv_world_load_all(w);
+
+#ifndef LILV_OPTION_LV2_PATH
+    if (oldlv2path != nullptr)
+    {
+        setenv("LV2_PATH", oldlv2path, 1);
+        free(oldlv2path);
+    }
+    else
+    {
+        unsetenv("LV2_PATH");
+    }
+#endif
 
     LilvNode* const versiontypenode = lilv_new_uri(w, LILV_NS_MODPEDAL "version");
     LilvNode* const rdftypenode = lilv_new_uri(w, LILV_NS_RDF "type");
@@ -4665,11 +4685,28 @@ const char* const* get_broken_pedalboards(void)
 {
     LilvWorld* const w = lilv_world_new();
 
+#ifdef LILV_OPTION_LV2_PATH
     LilvNode* const lv2path = lilv_new_string(w, _get_lv2_pedalboards_path());
     lilv_world_set_option(w, LILV_OPTION_LV2_PATH, lv2path);
     lilv_free(lv2path);
+#else
+    char* const oldlv2path = getenv_strdup_or_null("LV2_PATH");
+    setenv("LV2_PATH", _get_lv2_pedalboards_path(), 1);
+#endif
 
     lilv_world_load_all(w);
+
+#ifndef LILV_OPTION_LV2_PATH
+    if (oldlv2path != nullptr)
+    {
+        setenv("LV2_PATH", oldlv2path, 1);
+        free(oldlv2path);
+    }
+    else
+    {
+        unsetenv("LV2_PATH");
+    }
+#endif
 
     LilvNode* const ingenblocknode = lilv_new_uri(w, LILV_NS_INGEN "block");
     LilvNode* const lv2protonode = lilv_new_uri(w, LILV_NS_LV2 "prototype");
@@ -5809,11 +5846,19 @@ const StatePortValue* get_state_port_values(const char* const state)
 
     LilvWorld* const w = W;
 
+   #ifdef _WIN32
     putenv("LILV_STATE_SKIP_PROPERTIES=2");
+   #else
+    setenv("LILV_STATE_SKIP_PROPERTIES", "2", 1);
+   #endif
 
     LilvState* const lstate = lilv_state_new_from_string(w, &uridMap, state);
 
+   #ifdef _WIN32
     putenv("LILV_STATE_SKIP_PROPERTIES=");
+   #else
+    unsetenv("LILV_STATE_SKIP_PROPERTIES");
+   #endif
 
     if (lstate != nullptr)
     {
