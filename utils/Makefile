@@ -35,6 +35,9 @@ endif
 
 ifeq ($(MODAPP),1)
 CXXFLAGS += -DMODAPP
+ifneq ($(MACOS)$(WINDOWS),true)
+LDFLAGS += -Wl,-rpath,'$$ORIGIN/..'
+endif
 else ifeq ($(shell pkg-config --exists alsa && echo true), true)
 CXXFLAGS += -DHAVE_ALSA
 ALSA_CFLAGS = $(shell pkg-config --cflags alsa)
