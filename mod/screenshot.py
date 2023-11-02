@@ -24,11 +24,10 @@ def generate_screenshot(bundle_path, callback):
 
     # running packaged through cxfreeze
     if os.path.isfile(sys.argv[0]):
-        # TODO this does not work yet
-        return
-        cmd = [os.path.join(cwd, 'mod-screenshot'), 'take_screenshot', bundle_path, HTML_DIR, CACHE_DIR]
+        cmd = [os.path.join(cwd, 'mod-pedalboard'), 'take_screenshot', bundle_path, HTML_DIR, CACHE_DIR]
         if sys.platform == 'win32':
             cmd[0] += ".exe"
+        print(' '.join(cmd))
 
     # regular run
     else:
@@ -36,20 +35,21 @@ def generate_screenshot(bundle_path, callback):
         if not DEV_ENVIRONMENT and DEVICE_KEY:  # if using a real MOD, setup niceness
             cmd = ['/usr/bin/nice', '-n', '+34'] + cmd
 
-    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, cwd=cwd)
+    proc = subprocess.Popen(cmd, cwd=cwd)
     loop = IOLoop.instance()
 
-    def proc_callback(fileno, _):
+    def proc_callback():
         if proc.poll() is None:
+            loop.call_later(0.5, proc_callback)
             return
-        loop.remove_handler(fileno)
 
         if not os.path.exists(screenshot) or not os.path.exists(thumbnail):
-            return callback()
+            callback()
+            return
 
         callback(thumbnail)
 
-    loop.add_handler(proc.stdout.fileno(), proc_callback, 16)
+    loop.call_later(0.5, proc_callback)
 
 
 class ScreenshotGenerator(object):
