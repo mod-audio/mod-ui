@@ -559,7 +559,7 @@ def main():
     args = parser.parse_args()
     if hasattr(args, 'func'):
         args.func(args)
-        exit(0)
+        sys.exit(0)
     else:
         parser.print_usage()
 
