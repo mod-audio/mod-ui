@@ -462,7 +462,7 @@ class HMI(object):
         self.send(CMD_PING, callback, 'boolean')
 
     def tuner(self, freq, note, cents, callback):
-        self.send('%s %f %s %f' % (CMD_TUNER, freq, note, cents), callback)
+        self.send('%s %f %s %d' % (CMD_TUNER, freq, note, cents), callback)
 
     #TODO, This message should be handled by mod-system-control once in place
     def expression_overcurrent(self, callback):
