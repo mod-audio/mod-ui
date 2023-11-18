@@ -8,7 +8,7 @@ import sys
 import logging
 
 from tornado.ioloop import IOLoop
-from mod.settings import HTML_DIR, DEV_ENVIRONMENT, DEVICE_KEY, CACHE_DIR
+from mod.settings import HTML_DIR, DEV_ENVIRONMENT, DEVICE_KEY, CACHE_DIR, APP
 
 
 def generate_screenshot(bundle_path, callback):
@@ -24,7 +24,7 @@ def generate_screenshot(bundle_path, callback):
     cwd = os.path.abspath(os.path.join(os.path.dirname(__file__), '../'))
 
     # running packaged through cxfreeze
-    if os.path.isfile(sys.argv[0]):
+    if APP and os.path.isfile(sys.argv[0]):
         cmd = [os.path.join(cwd, 'mod-pedalboard'), 'take_screenshot', bundle_path, HTML_DIR, CACHE_DIR]
         if sys.platform == 'win32':
             cmd[0] += ".exe"
