@@ -25,7 +25,7 @@
 #define ALSA_CONTROL_MASTER_VOLUME "DAC"
 
 #define JACK_EXTERNAL_PREFIX     "mod-external"
-#define JACK_EXTERNAL_PREFIX_LEN 9
+#define JACK_EXTERNAL_PREFIX_LEN 12
 
 // --------------------------------------------------------------------------------------------------------
 
