@@ -24,8 +24,8 @@
 #define ALSA_CONTROL_SPDIF_ENABLE  "SPDIF Enable"
 #define ALSA_CONTROL_MASTER_VOLUME "DAC"
 
-#define JACK_SLAVE_PREFIX     "mod-slave"
-#define JACK_SLAVE_PREFIX_LEN 9
+#define JACK_EXTERNAL_PREFIX     "mod-external"
+#define JACK_EXTERNAL_PREFIX_LEN 9
 
 // --------------------------------------------------------------------------------------------------------
 
@@ -101,7 +101,7 @@ static void JackPortRegistration(jack_port_id_t port_id, int reg, void*)
         if (const char* const port_name = jack_port_name(port))
         {
             if (strncmp(port_name, "system:midi_", 12) != 0 &&
-                strncmp(port_name, JACK_SLAVE_PREFIX ":", JACK_SLAVE_PREFIX_LEN + 1) != 0 &&
+                strncmp(port_name, JACK_EXTERNAL_PREFIX ":", JACK_EXTERNAL_PREFIX_LEN + 1) != 0 &&
                 strncmp(port_name, "nooice", 5) != 0)
                 return;
 

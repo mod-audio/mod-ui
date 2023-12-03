@@ -402,8 +402,8 @@ class Host(object):
         # clients at the end of the chain, all managed by mod-host
         self.jack_hw_capture_prefix = "mod-host:out" if self.descriptor.get('has_noisegate', False) else "system:capture_"
 
-        # used for network-manager
-        self.jack_slave_prefix = "mod-slave"
+        # used for external connections
+        self.jack_external_prefix = "mod-external"
 
         # used for usb gadget, MUST have "c" or "p" after this prefix
         self.jack_usbgadget_prefix = "mod-usbgadget_"
@@ -551,8 +551,8 @@ class Host(object):
         name = charPtrToString(name)
         isOutput = bool(isOutput)
 
-        if name.startswith(self.jack_slave_prefix+":"):
-            name = name.replace(self.jack_slave_prefix+":","")
+        if name.startswith(self.jack_external_prefix+":"):
+            name = name.replace(self.jack_external_prefix+":","")
             if name.startswith("midi_"):
                 ptype = "midi"
             elif name.startswith(CV_PREFIX):
@@ -563,6 +563,12 @@ class Host(object):
             index = 100 + int(name.rsplit("_",1)[-1])
             title = name.title().replace(" ","_")
             self.msg_callback("add_hw_port /graph/%s %s %i %s %i" % (name, ptype, int(isOutput), title, index))
+
+            if ptype == "audio":
+                if isOutput:
+                    self.audioportsOut.append(name)
+                else:
+                    self.audioportsIn.append(name)
             return
 
         if name.startswith(self.jack_usbgadget_prefix):
@@ -642,6 +648,13 @@ class Host(object):
                 break
 
         self.msg_callback("remove_hw_port /graph/%s" % (name.split(":",1)[-1]))
+
+        if name.startswith(self.jack_external_prefix+":"):
+            name = name.replace(self.jack_external_prefix+":","")
+            if name in self.audioportsIn:
+                self.audioportsIn.remove(name)
+            if name in self.audioportsOut:
+                self.audioportsOut.remove(name)
 
     def true_bypass_changed(self, left, right):
         self.msg_callback("truebypass %i %i" % (left, right))
@@ -2086,7 +2099,7 @@ class Host(object):
             ports = get_jack_hardware_ports(False, False)
             for i in range(len(ports)):
                 name = ports[i]
-                if name not in midiports and not name.startswith("%s:midi_" % self.jack_slave_prefix):
+                if name not in midiports and not name.startswith("%s:midi_" % self.jack_external_prefix):
                     continue
                 alias = get_jack_port_alias(name)
 
@@ -2109,7 +2122,7 @@ class Host(object):
             ports = get_jack_hardware_ports(False, True)
             for i in range(len(ports)):
                 name = ports[i]
-                if name not in midiports and not name.startswith("%s:midi_" % self.jack_slave_prefix):
+                if name not in midiports and not name.startswith("%s:midi_" % self.jack_external_prefix):
                     continue
                 alias = get_jack_port_alias(name)
                 if alias:
@@ -3339,11 +3352,11 @@ class Host(object):
                 if num in monitorportnums:
                     return "mod-monitor:in_" + num
 
-            if data[2].startswith(("audio_from_slave_",
-                                   "audio_to_slave_",
-                                   "midi_from_slave_",
-                                   "midi_to_slave_")):
-                return "%s:%s" % (self.jack_slave_prefix, data[2])
+            if data[2].startswith(("audio_from_external_",
+                                   "audio_to_external_",
+                                   "midi_from_external_",
+                                   "midi_to_external_")):
+                return "%s:%s" % (self.jack_external_prefix, data[2])
 
             if data[2].startswith("USB_Audio_Capture_"):
                 return "%s:%s" % (self.jack_usbgadget_prefix+"c", data[2])
