@@ -162,7 +162,7 @@ $('document').ready(function() {
         $('#mod-bypassRight').hide()
     }
 
-    if ({{using_mod}}) {
+    if ({{using_mod}} && !{{using_app}}) {
         desktop.authenticateDevice(function (ok) {
             if (ok) {
                 console.log("MOD authentication succeeded")

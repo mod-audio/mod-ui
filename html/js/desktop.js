@@ -721,6 +721,7 @@ function Desktop(elements) {
         $('#mod-devices').hide()
         $('#mod-status').hide()
         $('#mod-ram').hide()
+        $('#mod-show-midi-port').hide()
         $('#pedalboards-library').find('a').hide()
         $('#pedal-presets-window').find('.js-assign-all').hide()
     }
