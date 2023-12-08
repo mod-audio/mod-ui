@@ -58,7 +58,7 @@ JACK_LIBS   = $(shell pkg-config --libs jack)
 endif
 
 LILV_CFLAGS = $(shell pkg-config --cflags lilv-0) -Wno-parentheses
-LILV_LIBS   = $(shell pkg-config --libs lilv-0)
+LILV_LIBS   = $(shell pkg-config --libs lilv-0) -lm
 
 all: build
 
