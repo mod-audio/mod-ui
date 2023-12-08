@@ -19,6 +19,9 @@ jobs:
           pip3 install pylint
       - name: Run pylint
         run: |
+          export MOD_DEV_HOST=1
+          export MOD_DEV_ENVIRONMENT=0
+          
           virtualenv modui-env
           source modui-env/bin/activate
           pylint -E mod/*.py 

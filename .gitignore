@@ -10,7 +10,7 @@ package-lock.json
 *.tar.xz
 mod-env/
 .env/
-host/
+/host/
 *.crf
 *.axf
 *.hex
@@ -38,3 +38,7 @@ utils/test
 *node_modules/
 .idea
 *.egg-info
+# Coverage
+.coverage
+coverage.xml
+htmlcov/
