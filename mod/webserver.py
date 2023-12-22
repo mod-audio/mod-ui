@@ -1599,6 +1599,7 @@ class PedalboardTransportSetSyncMode(JsonRequestHandler):
 class SnapshotSave(JsonRequestHandler):
     def post(self):
         ok = SESSION.host.snapshot_save()
+        SESSION.host.save_snapshots_to_disk()
         self.write(ok)
 
 class SnapshotSaveAs(JsonRequestHandler):
@@ -1611,6 +1612,7 @@ class SnapshotSaveAs(JsonRequestHandler):
 
         yield gen.Task(SESSION.host.hmi_report_ss_name_if_current, idx)
 
+        SESSION.host.save_snapshots_to_disk()
         self.write({
             'ok': idx is not None,
             'id': idx,
@@ -1630,6 +1632,7 @@ class SnapshotRename(JsonRequestHandler):
 
         yield gen.Task(SESSION.host.hmi_report_ss_name_if_current, idx)
 
+        SESSION.host.save_snapshots_to_disk()
         self.write({
             'ok': ok,
             'title': title,
@@ -1639,6 +1642,7 @@ class SnapshotRemove(JsonRequestHandler):
     def get(self):
         idx = int(self.get_argument('id'))
         ok  = SESSION.host.snapshot_remove(idx)
+        SESSION.host.save_snapshots_to_disk()
         self.write(ok)
 
 class SnapshotList(JsonRequestHandler):

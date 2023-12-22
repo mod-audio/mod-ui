@@ -1032,3 +1032,7 @@ body > .mod-settings.mod-window-visible {
 .plugin-description p::selection {
     background: #4f2157
 }
+
+#pedalboard-info .js-save.unmodified-changes {
+  background-color: #883996;
+}

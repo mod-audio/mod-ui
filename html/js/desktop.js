@@ -140,7 +140,7 @@ function Desktop(elements) {
                 data: JSON.stringify(addressing),
                 success: function (resp) {
                     if (resp) {
-                        self.pedalboardModified = true
+                        self.setPedalboardAsModified(true)
                         callback(true)
                     } else {
                         new Bug("Couldn't address parameter, not allowed")
@@ -467,6 +467,15 @@ function Desktop(elements) {
         })
     }
 
+    this.setPedalboardAsModified = function (modified) {
+        this.pedalboardModified = modified
+        if (modified) {
+            elements.saveButton.addClass('unmodified-changes')
+        } else {
+            elements.saveButton.removeClass('unmodified-changes')
+        }
+    }
+
     elements.devicesIcon.statusTooltip()
     this.ccDeviceManager = new ControlChainDeviceManager({
         devicesIcon: elements.devicesIcon,
@@ -540,7 +549,7 @@ function Desktop(elements) {
               var source = syncMode === "link" ? "Ableton Link" : "MIDI"
               new Notification('info', 'BPM addressing removed, incompatible with ' + source + ' sync mode', 8000)
           }
-          self.pedalboardModified = true
+          self.setPedalboardAsModified(true)
         },
         setSyncMode: function(syncMode, callback) {
           $.ajax({
@@ -583,7 +592,7 @@ function Desktop(elements) {
                             var source = syncMode === "link" ? "Ableton Link" : "MIDI"
                             new Notification('info', 'BPM addressing removed, incompatible with ' + source + ' sync mode', 8000)
                         }
-                        self.pedalboardModified = true
+                        self.setPedalboardAsModified(true)
                         callback(true)
                     } else {
                         new Bug("Couldn't address parameter")
@@ -855,7 +864,7 @@ function Desktop(elements) {
 
                             transfer.reportFinished = function () {
                                 self.pedalboardEmpty = false
-                                self.pedalboardModified = true
+                                self.setPedalboardAsModified(true)
                             }
 
                             transfer.reportError = function (error) {
@@ -987,7 +996,6 @@ function Desktop(elements) {
             url: '/snapshot/save',
             method: 'POST',
             success: function () {
-                self.pedalboardModified = true
                 new Notification('info', 'Pedalboard snapshot saved', 2000)
             },
             error: function () {
@@ -1015,7 +1023,6 @@ function Desktop(elements) {
                     }
                     self.pedalboardPresetId = resp.id
                     self.pedalboardPresetName = resp.title
-                    self.pedalboardModified = true
                     self.titleBox.text((self.title || 'Untitled') + " - " + resp.title)
                     new Notification('info', 'Pedalboard snapshot saved', 2000)
                 },
@@ -1456,13 +1463,13 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
                     self.title = ''
                     self.pedalboardBundle = null
                     self.pedalboardEmpty  = true
-                    self.pedalboardModified = false
                     self.pedalboardPresetId = 0
                     self.pedalboardPresetName = ''
                     self.pedalboardDemoPluginsNotified = false
                     self.titleBox.text('Untitled')
                     self.titleBox.addClass("blend")
                     self.transportControls.resetControlsEnabled()
+                    self.setPedalboardAsModified(false)
 
                     callback(true)
                 },
@@ -1488,7 +1495,7 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
         },
 
         pluginParameterChange: function (port, value) {
-            self.pedalboardModified = true
+            self.setPedalboardAsModified(true)
             ws.send(sprintf("param_set %s %f", port, value))
         },
 
@@ -1497,12 +1504,12 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
         },
 
         pluginPatchSet: function (instance, uri, valuetype, value) {
-            self.pedalboardModified = true
+            self.setPedalboardAsModified(true)
             ws.send(sprintf("patch_set %s %s %s %s", instance, uri, valuetype, value))
         },
 
         pluginMove: function (instance, x, y) {
-            self.pedalboardModified = true
+            self.setPedalboardAsModified(true)
             ws.send(sprintf("plugin_pos %s %f %f", instance, x, y))
         },
 
@@ -1582,7 +1589,7 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
     // Bind events
     el.bind('modified', function () {
         self.pedalboardEmpty = false
-        self.pedalboardModified = true
+        self.setPedalboardAsModified(true)
     })
     /*
     el.bind('dragStart', function () {
@@ -1837,8 +1844,8 @@ Desktop.prototype.loadPedalboard = function (bundlepath, callback) {
                 self.title = resp.name
                 self.pedalboardBundle = bundlepath
                 self.pedalboardEmpty = false
-                self.pedalboardModified = false
                 self.pedalboardDemoPluginsNotified = false
+                self.setPedalboardAsModified(false)
                 self.titleBox.text(resp.name);
                 self.titleBox.removeClass("blend");
 
@@ -1876,7 +1883,7 @@ Desktop.prototype.saveCurrentPedalboard = function (asNew, callback) {
             self.title = title
             self.pedalboardBundle = errorOrPath
             self.pedalboardEmpty = false
-            self.pedalboardModified = false
+            self.setPedalboardAsModified(false)
             self.titleBox.text(title + " - " + self.pedalboardPresetName)
 
             if (self.previousPedalboardList != null) {

@@ -506,9 +506,9 @@ $('document').ready(function() {
                 success: function (resp) {
                     desktop.pedalboard.pedalboard('scheduleAdapt', true)
                     desktop.pedalboardEmpty    = empty && !modified
-                    desktop.pedalboardModified = modified
                     desktop.pedalboardPresetId = snapshotId
                     desktop.pedalboardPresetName = resp.name
+                    desktop.setPedalboardAsModified(modified)
 
                     if (resp.ok) {
                         desktop.titleBox.text((desktop.title || 'Untitled') + " - " + resp.name)

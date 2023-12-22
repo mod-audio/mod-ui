@@ -3270,6 +3270,10 @@ class Host(object):
         # callback must be last action
         callback(True)
 
+    def save_snapshots_to_disk(self):
+        if self.pedalboard_path:
+            self.save_state_snapshots(self.pedalboard_path)
+
     @gen.coroutine
     def page_load(self, idx, abort_catcher, callback):
         if not self.addressings.addressing_pages:
