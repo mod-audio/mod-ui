@@ -186,6 +186,7 @@ static size_t HOMElen = strlen(HOME);
 
 // configuration
 static const bool kAllowRegularCV = getenv("MOD_UI_ALLOW_REGULAR_CV") != nullptr;
+static const bool kOnlyShowPluginsWithMODGUI = getenv("MOD_UI_ONLY_SHOW_PLUGINS_WITH_MODGUI") != nullptr;
 
 #define PluginInfo_Init {                            \
     false,                                           \
@@ -4289,10 +4290,8 @@ const PluginInfo_Mini* const* get_all_plugins(void)
 
         if (const PluginInfo_Mini* const miniInfo = PLUGNFO_Mini[uri])
         {
-#if SHOW_ONLY_PLUGINS_WITH_MODGUI
-            if (miniInfo->gui.resourcesDirectory == nc)
+            if (kOnlyShowPluginsWithMODGUI && miniInfo->gui.resourcesDirectory == nc)
                 continue;
-#endif
             _get_plugs_mini_ret[curIndex++] = PLUGNFO_Mini[uri];
         }
     }
