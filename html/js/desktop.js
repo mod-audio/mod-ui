@@ -931,6 +931,7 @@ function Desktop(elements) {
                         self.waitForScreenshot(false, result.bundlepath, function(){})
                         // all set
                         callback(true, result.bundlepath, result.title)
+                        _paq.push(['trackEvent', 'pedalboard', 'pedalboard-save'])
                     } else {
                         callback(false, "Failed to save")
                     }
@@ -1850,6 +1851,7 @@ Desktop.prototype.loadPedalboard = function (bundlepath, callback) {
                 self.titleBox.removeClass("blend");
 
                 callback(true)
+                _paq.push(['trackEvent', 'pedalboard', 'pedalboard-load']);
             },
             error: function () {
                 new Bug("Couldn't load pedalboard")
