@@ -282,6 +282,9 @@ $('document').ready(function() {
 <script type="text/javascript" src="js/utils/tempo.js?v={{version}}"></script>
 <script type="text/javascript" src="js/utils/plugins.js?v={{version}}"></script>
 
+<!-- For browsers with shields on, avoid breaking on Matomo related code -->
+<script>var _paq = { push: new Function() }</script>
+
 <!-- Matomo Tag Manager -->
 <script>
   var _mtm = window._mtm = window._mtm || [];
