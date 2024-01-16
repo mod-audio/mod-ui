@@ -84,6 +84,8 @@
         console.log = function() {}
     }
 
+    var TERMS_ACCEPTED = true;
+
     /*
     var INFO = {
         "hardware": {},
@@ -96,7 +98,7 @@
     // for mod-app control
     var desktop = null
 
-$('document').ready(function() {
+var startApp = function() {
     desktop = new Desktop({
         titleBox: $('#pedalboard-info h1'),
         pedalboard: $('#pedalboard-dashboard'),
@@ -251,7 +253,12 @@ $('document').ready(function() {
         }
     })();
     */
-})
+};
+if (TERMS_ACCEPTED) {
+  $('document').ready(startApp);
+} else {
+    document.location.href = '/terms.html';
+}
 </script>
 
 <script type="text/javascript" src="js/templates.js?v={{version}}"></script>
