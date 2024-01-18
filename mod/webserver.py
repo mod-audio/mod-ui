@@ -1812,7 +1812,7 @@ class TemplateHandler(TimelessRequestHandler):
             'titleblend': '' if SESSION.host.pedalboard_name else 'blend',
             'dev_api_class': 'dev_api' if DEV_API else '',
             'using_app': 'true' if APP else 'false',
-            'using_mod': 'true' if DEVICE_KEY or DEV_HOST else 'false',
+            'using_mod': 'true' if DEVICE_KEY and hwdesc.get('platform', None) is not None else 'false',
             'user_name': mod_squeeze(user_id.get("name", "")),
             'user_email': mod_squeeze(user_id.get("email", "")),
             'favorites': json.dumps(gState.favorites),

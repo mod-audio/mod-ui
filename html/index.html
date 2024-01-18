@@ -84,7 +84,9 @@
         console.log = function() {}
     }
 
-    var TERMS_ACCEPTED = true;
+    var CLOUD_TERMS_ACCEPTED = PREFERENCES['cloud-terms-accepted'] === "true";
+    var USING_MOD_APP = {{using_app}};
+    var USING_MOD_DEVICE = {{using_mod}} && !{{using_app}};
 
     /*
     var INFO = {
@@ -98,7 +100,7 @@
     // for mod-app control
     var desktop = null
 
-var startApp = function() {
+$('document').ready(function() {
     desktop = new Desktop({
         titleBox: $('#pedalboard-info h1'),
         pedalboard: $('#pedalboard-dashboard'),
@@ -164,16 +166,10 @@ var startApp = function() {
         $('#mod-bypassRight').hide()
     }
 
-    if ({{using_mod}} && !{{using_app}}) {
-        desktop.authenticateDevice(function (ok) {
-            if (ok) {
-                console.log("MOD authentication succeeded")
-                desktop.resetPedalboardStats();
-            } else {
-                console.log("MOD authentication failed")
-                desktop.upgradeWindow.upgradeWindow('setErrored')
-            }
-        })
+    if (USING_MOD_DEVICE) {
+        if (CLOUD_TERMS_ACCEPTED) {
+            desktop.setupDeviceAuthentication()
+        }
     } else {
         desktop.upgradeWindow.upgradeWindow('setErrored')
 
@@ -221,6 +217,36 @@ var startApp = function() {
 
     // end code for ajax loading bar
 
+    // start of terms handling
+
+    var terms = $('#mod-cloud-terms')
+    if (PREFERENCES['cloud-terms-accepted'] !== undefined && (USING_MOD_DEVICE || PREFERENCES['cloud-terms-accepted'] === "true")) {
+        if (CLOUD_TERMS_ACCEPTED) {
+            desktop.setupMatomo()
+            terms.hide()
+            $('#pedalboard-info').find('.js-cloud').show()
+        }
+        terms.hide()
+    } else {
+        terms.find('.js-accept').click(function () {
+            CLOUD_TERMS_ACCEPTED = true
+            desktop.saveConfigValue("cloud-terms-accepted", true)
+            desktop.setupMatomo()
+            if (USING_MOD_DEVICE) {
+                desktop.setupDeviceAuthentication()
+                $('#pedalboard-info').find('.js-cloud').show()
+            }
+            terms.hide()
+        })
+        terms.find('.js-reject').click(function () {
+            desktop.saveConfigValue("cloud-terms-accepted", false)
+            terms.hide()
+        })
+        terms.show()
+    }
+
+    // end of terms handling
+
     /*
     $.ajax({
         url: '/system/info',
@@ -253,12 +279,7 @@ var startApp = function() {
         }
     })();
     */
-};
-if (TERMS_ACCEPTED) {
-  $('document').ready(startApp);
-} else {
-    document.location.href = '/terms.html';
-}
+})
 </script>
 
 <script type="text/javascript" src="js/templates.js?v={{version}}"></script>
@@ -291,17 +312,6 @@ if (TERMS_ACCEPTED) {
 
 <!-- For browsers with shields on, avoid breaking on Matomo related code -->
 <script>var _paq = { push: new Function() }</script>
-
-<!-- Matomo Tag Manager -->
-<script>
-  var _mtm = window._mtm = window._mtm || [];
-  _mtm.push({'mtm.startTime': (new Date().getTime()), 'event': 'mtm.Start'});
-  (function() {
-    var d=document, g=d.createElement('script'), s=d.getElementsByTagName('script')[0];
-    g.async=true; g.src='https://cdn.matomo.cloud/modaudio.matomo.cloud/container_DfEOyKDN.js'; s.parentNode.insertBefore(g,s);
-  })();
-</script>
-<!-- End Matomo Tag Manager -->
 
 </head>
 <!-- END HEAD -->
@@ -353,6 +363,52 @@ if (TERMS_ACCEPTED) {
 <!-- NOTIFICATIONS -->
 <div id="notifications" class="mod-hidden mod-init-hidden"></div>
 <!-- END NOTIFICATIONS -->
+
+{% if using_app == 'true' or using_mod == 'true' %}
+<!-- CLOUD-TERMS-WINDOW -->
+<div id="mod-cloud-terms" class="save-popup mod-hidden">
+    <div class="mod-box">
+        {% if using_app == 'true' %}
+        <h1>Terms of Service for MOD Desktop App</h1>
+        <div>
+            <p>
+                (NOTE: THIS AN EXAMPLE TEXT YET TO BE REVIEWED)<br/>
+                The use of this application...<br/>
+                Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.<br/>
+                Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.<br/>
+            </p>
+            <p>
+                Please review our <a href="#" target="_blank">Terms of Service</a> and <a href="#" target="_blank">Privacy Policy</a> before continuing.<br/>
+            </p>
+        </div>
+        {% else %}
+        <h1 class="pull-left">Terms of Service for MOD online components</h1>
+        <span class="js-reject close">&times;</span>
+        <div class="bottom">
+            <div class="clearfix"></div>
+            <p>
+                (NOTE: THIS AN EXAMPLE TEXT YET TO BE REVIEWED)<br/>
+                Your MOD unit can receive firmware updates over the internet, and also download new plugins and pedalboards.<br/>
+                The use of these online services is under Terms of Service and Privacy Policy in order to comply with different regulatory laws across the globe.<br/>
+            </p>
+            <p>
+                Please review our <a href="#" target="_blank">Terms of Service</a> and <a href="#" target="_blank">Privacy Policy</a> before continuing.<br/>
+                While you can freely use your MOD unit without accepting these terms, you must agree to them in order to enable or perform any online interaction.
+            </p>
+        </div>
+        {% end %}
+        <div class="controls actions">
+            {% if using_app == 'true' %}
+            <button class="js-accept btn btn-success">Agree and Continue</button>
+            {% else %}
+            <button class="js-reject btn btn-danger">Disagree</button>
+            <button class="js-accept btn btn-success">Agree</button>
+            {% end %}
+        </div>
+    </div>
+</div>
+<!-- END CLOUD-TERMS-WINDOW -->
+{% end %}
 
 <!-- WRAPPER -->
 <div id="wrapper" class="mod-init-hidden">
@@ -530,7 +586,7 @@ if (TERMS_ACCEPTED) {
                     <button class="js-reset">New Pedalboard</button>
                     <button class="js-save">Save</button>
                     <button class="js-save-as">Save as</button>
-                    <button class="js-cloud">Share</button>
+                    <button class="js-cloud mod-hidden">Share</button>
                 </div>
             </div>
             <!-- END PEDALBOARD-SETTINGS -->
