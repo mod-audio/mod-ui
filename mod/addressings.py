@@ -668,8 +668,12 @@ class Addressings(object):
         for actuator_uri, addrs in self.cv_addressings.items():
             # pluginData = self._task_get_plugin_data(instance_id)
             if not self.is_hw_cv_port(actuator_uri):
-                operational_mode = self._task_get_plugin_cv_port_op_mode(actuator_uri)
-                msg_callback("add_cv_port %s %s %s" % (actuator_uri, addrs['name'].replace(" ","_"), operational_mode))
+                try:
+                    operational_mode = self._task_get_plugin_cv_port_op_mode(actuator_uri)
+                except KeyError:
+                    pass
+                else:
+                    msg_callback("add_cv_port %s %s %s" % (actuator_uri, addrs['name'].replace(" ","_"), operational_mode))
 
         # HMI
         group_mappings = [] #{} if self.addressing_pages else []
