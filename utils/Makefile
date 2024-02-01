@@ -33,8 +33,8 @@ LDFLAGS += -Wl,-O1,--no-undefined,--strip-all
 endif
 endif
 
-ifeq ($(MODAPP),1)
-CXXFLAGS += -DMODAPP
+ifeq ($(MOD_DESKTOP),1)
+CXXFLAGS += -D_MOD_DESKTOP
 ifneq ($(MACOS)$(WINDOWS),true)
 LDFLAGS += -Wl,-rpath,'$$ORIGIN/..'
 endif
