@@ -242,7 +242,7 @@ inline bool contains(const std::unordered_map<std::string, T>& map, const std::s
     return map.find(value) != map.end();
 }
 
-inline bool ends_with(const std::string& value, const std::string ending)
+inline bool ends_with(const std::string& value, const std::string& ending)
 {
     if (ending.size() > value.size())
         return false;
@@ -267,7 +267,7 @@ inline std::string sha1(const char* const cstring)
 
     uint8_t* const hashenc = sha1_result(&s);
     for (int i=0; i<HASH_LENGTH; i++) {
-        sprintf(hashdec+(i*2), "%02x", hashenc[i]);
+        snprintf(hashdec+(i*2), 3, "%02x", hashenc[i]);
     }
     hashdec[HASH_LENGTH*2] = '\0';
 
@@ -5955,17 +5955,6 @@ const char* file_uri_parse(const char* const fileuri)
     _file_uri_parse_ret = lilv_file_abspath(fileuri);
 
     return _file_uri_parse_ret != nullptr ? _file_uri_parse_ret : nc;
-}
-
-void set_cpu_affinity(const int cpu)
-{
-#ifdef __linux__
-     printf("NOTE: Running pinned to core #%d\n", cpu+1);
-     cpu_set_t cpuset;
-     CPU_ZERO(&cpuset);
-     CPU_SET(cpu, &cpuset);
-     sched_setaffinity(0, sizeof(cpuset), &cpuset);
-#endif
 }
 
 // --------------------------------------------------------------------------------------------------------
