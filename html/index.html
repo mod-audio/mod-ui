@@ -85,8 +85,8 @@
     }
 
     var CLOUD_TERMS_ACCEPTED = PREFERENCES['cloud-terms-accepted'] === "true";
-    var USING_MOD_APP = {{using_app}};
-    var USING_MOD_DEVICE = {{using_mod}} && !{{using_app}};
+    var USING_MOD_DESKTOP = {{using_desktop}};
+    var USING_MOD_DEVICE = {{using_mod}} && !{{using_desktop}};
 
     /*
     var INFO = {
@@ -193,7 +193,7 @@ $('document').ready(function() {
     }
     desktop.pedalboardBox.pedalboardBox('initViewMode', PREFERENCES['pb-view-mode'])
 
-    if ({{using_app}}) {
+    if ({{using_desktop}}) {
         desktop.setupApp()
     } else {
         if (PREFERENCES['dev-mode'] == "on") {
@@ -364,11 +364,11 @@ $('document').ready(function() {
 <div id="notifications" class="mod-hidden mod-init-hidden"></div>
 <!-- END NOTIFICATIONS -->
 
-{% if using_app == 'true' or using_mod == 'true' %}
+{% if using_desktop == 'true' or using_mod == 'true' %}
 <!-- CLOUD-TERMS-WINDOW -->
 <div id="mod-cloud-terms" class="save-popup mod-hidden">
     <div class="mod-box">
-        {% if using_app == 'true' %}
+        {% if using_desktop == 'true' %}
         <h1>Welcome to MOD Desktop!</h1>
         <div>
             <p>
@@ -404,7 +404,7 @@ $('document').ready(function() {
         </div>
         {% end %}
         <div class="controls actions">
-            {% if using_app == 'true' %}
+            {% if using_desktop == 'true' %}
             <button class="js-accept btn btn-success">Agree and Continue</button>
             {% else %}
             <button class="js-reject btn btn-danger">Disagree</button>

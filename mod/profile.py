@@ -14,7 +14,7 @@ except:
 from tornado.ioloop import IOLoop
 
 from mod import TextFileFlusher, safe_json_load
-from mod.settings import APP, DATA_DIR
+from mod.settings import DATA_DIR
 
 def index_to_filepath(index):
     return os.path.join(DATA_DIR, "profile{0}.json".format(index))
