@@ -1977,11 +1977,14 @@ class SwitchCpuFreq(JsonRequestHandler):
         index = freqs.index(cur_freq) + 1
         if index >= len(freqs):
             index = 0
+        next_freq = freqs[index]
+        if cur_freq == next_freq:
+            return self.write(True)
         with open("/sys/devices/system/cpu/online", 'r') as fh:
             num_start, num_end = tuple(int(i) for i in fh.read().strip().split("-"))
         for num in range(num_start, num_end+1):
             with open("/sys/devices/system/cpu/cpu%d/cpufreq/scaling_setspeed" % num, 'w') as fh:
-                fh.write(freqs[index])
+                fh.write(next_freq)
         self.write(True)
 
 class SaveSingleConfigValue(JsonRequestHandler):

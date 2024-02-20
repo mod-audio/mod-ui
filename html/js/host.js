@@ -119,6 +119,10 @@ $('document').ready(function() {
                 $("#mod-cpu-stats").html(sprintf("%.1f GHz / %d &deg;C",
                                                  parseInt(cpufreq)/1000000,
                                                  parseInt(cputemp)/1000))
+            } else if (cpufreq !== "0") {
+                $("#mod-cpu-stats").html(sprintf("%.1f GHz", parseInt(cpufreq)/1000000))
+            } else if (cputemp !== "0") {
+                $("#mod-cpu-stats").html(sprintf("%d &deg;C", parseInt(cputemp)/1000))
             }
             return
         }

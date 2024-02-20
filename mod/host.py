@@ -4774,11 +4774,14 @@ _:b%i
     def get_system_stats_message(self):
         memload = self.get_free_memory_value()
         cpufreq = read_file_contents(self.cpufreqfile, "0")
-        try:
-            cputemp = read_file_contents(self.thermalfile, "0")
-        except OSError:
-            cputemp = "0"
-            self.thermalfile = None
+        cputemp = "0"
+
+        if self.thermalfile is not None:
+            try:
+                cputemp = read_file_contents(self.thermalfile, "0")
+            except OSError:
+                self.thermalfile = None
+
         return "sys_stats %s %s %s" % (memload, cpufreq, cputemp)
 
     def memtimer_callback(self):
