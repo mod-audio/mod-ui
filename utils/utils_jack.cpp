@@ -201,7 +201,10 @@ bool init_jack(void)
 
 #ifdef _MOD_DESKTOP
     const jack_options_t options = static_cast<jack_options_t>(JackNoStartServer|JackUseExactName|JackServerName);
-    jack_client_t* const client = jack_client_open("mod-ui", options, nullptr, "mod-desktop");
+    const char* servername = std::getenv("MOD_DESKTOP_SERVER_NAME");
+    if (servername == nullptr)
+        servername = "mod-desktop";
+    jack_client_t* const client = jack_client_open("mod-ui", options, nullptr, servername);
 #else
     const jack_options_t options = static_cast<jack_options_t>(JackNoStartServer|JackUseExactName);
     jack_client_t* const client = jack_client_open("mod-ui", options, nullptr);
