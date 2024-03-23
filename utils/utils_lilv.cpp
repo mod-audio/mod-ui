@@ -2084,7 +2084,7 @@ const PluginInfo& _get_plugin_info(LilvWorld* const w,
     {
         if (LilvNode* const mntnr = lilv_world_get(w, lilv_nodes_get_first(nodes2), ns.doap_maintainer, nullptr))
         {
-            if (LilvNode* const hmpg = lilv_world_get(w, lilv_nodes_get_first(mntnr), ns.foaf_homepage, nullptr))
+            if (LilvNode* const hmpg = lilv_world_get(w, mntnr, ns.foaf_homepage, nullptr))
             {
                 info.author.homepage = strdup(lilv_node_as_string(hmpg));
                 lilv_node_free(hmpg);
