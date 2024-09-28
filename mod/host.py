@@ -3490,10 +3490,11 @@ class Host(object):
                                             p.split(":",1)[-1]) for p in get_jack_hardware_ports(False, True))
 
         else:
-            mappedOldMidiIns  = {}
-            mappedOldMidiOuts = {}
-            mappedNewMidiIns  = {}
-            mappedNewMidiOuts = {}
+            mappedOldMidiIns   = {}
+            mappedOldMidiOuts  = {}
+            mappedOldMidiOuts2 = {}
+            mappedNewMidiIns   = {}
+            mappedNewMidiOuts  = {}
 
         curmidisymbols = []
         for port_symbol, port_alias, _ in self.midiports:
