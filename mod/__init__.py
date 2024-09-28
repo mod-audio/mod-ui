@@ -68,6 +68,9 @@ def check_environment():
         else:
             os.makedirs(PEDALBOARD_TMP_DIR)
 
+    else:
+        os.makedirs(PEDALBOARD_TMP_DIR)
+
     # remove temp files
     for path in (CAPTURE_PATH, PLAYBACK_PATH, UPDATE_CC_FIRMWARE_FILE):
         if os.path.exists(path):
