@@ -1,0 +1,5 @@
+#!/bin/bash
+
+# This file is used by Dockerfile to ensure source is called from bash and not sh
+
+source modui-env/bin/activate
