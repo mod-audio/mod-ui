@@ -1176,7 +1176,7 @@ class RemotePluginWebSocket(websocket.WebSocketHandler):
         protocol, domain = match.groups()
         if protocol not in ("http", "https"):
             return False
-        if domain != "mod.audio" and not domain.endswith(".mod.audio"):
+        if domain != "localhost:8010" and domain != "mod.audio" and not domain.endswith(".mod.audio"):
             return False
         return True
 
