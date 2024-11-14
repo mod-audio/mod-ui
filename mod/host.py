@@ -6996,7 +6996,7 @@ _:b%i
 
         # skip alsamixer related things on intermediate/boot
         if not isIntermediate:
-            apply_mixer_values(values, self.descriptor.get("platform", None))
+            apply_mixer_values(values)
 
         if self.hmi.initialized:
             try:

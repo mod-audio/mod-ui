@@ -24,12 +24,13 @@ def ensure_data_index_valid(data, fallback):
     if not isinstance(index, int) or index < 1 or index > Profile.NUM_PROFILES:
         data['index'] = fallback
 
-def apply_mixer_values(values, platform):
+def apply_mixer_values(values):
     if not os.path.exists("/usr/bin/mod-amixer"):
         return
-    if os.getenv("MOD_SOUNDCARD", None) is None:
+    soundcard = os.getenv("MOD_SOUNDCARD", None)
+    if soundcard is None:
         return
-    if platform == "duo":
+    if soundcard == "MODDUO":
         os.system("/usr/bin/mod-amixer in 1 dvol %f" % values['input1volume'])
         os.system("/usr/bin/mod-amixer in 2 dvol %f" % values['input2volume'])
         os.system("/usr/bin/mod-amixer out 1 dvol %f" % values['output1volume'])
@@ -38,7 +39,7 @@ def apply_mixer_values(values, platform):
         os.system("/usr/bin/mod-amixer hp byp %s" % Profile.value_to_string('headphoneBypass',
                                                                             values['headphoneBypass']))
         return
-    if platform == "duox":
+    if soundcard == "DUOX":
         os.system("/usr/bin/mod-amixer in 1 xvol %f" % values['input1volume'])
         os.system("/usr/bin/mod-amixer in 2 xvol %f" % values['input2volume'])
         os.system("/usr/bin/mod-amixer out 1 xvol %f" % values['output1volume'])
@@ -48,24 +49,25 @@ def apply_mixer_values(values, platform):
         os.system("/usr/bin/mod-amixer cvexp %s" % Profile.value_to_string('inputMode', values['inputMode']))
         os.system("/usr/bin/mod-amixer exppedal %s" % Profile.value_to_string('expPedalMode', values['expPedalMode']))
         return
-    if platform == "dwarf":
+    if soundcard == "DWARF":
         os.system("/usr/bin/mod-amixer in 1 xvol %f" % values['input1volume'])
         os.system("/usr/bin/mod-amixer in 2 xvol %f" % values['input2volume'])
         os.system("/usr/bin/mod-amixer out 1 xvol %f" % values['output1volume'])
         os.system("/usr/bin/mod-amixer out 2 xvol %f" % values['output2volume'])
         os.system("/usr/bin/mod-amixer hp xvol %f" % values['headphoneVolume'])
         return
-    if platform is None:
-        logging.error("[profile] apply_mixer_values called without platform")
+    if soundcard is None:
+        logging.error("[profile] apply_mixer_values called without soundcard")
     else:
-        logging.error("[profile] apply_mixer_values called with unknown platform %s", platform)
+        logging.error("[profile] apply_mixer_values called with unknown soundcard %s", soundcard)
 
-def fill_in_mixer_values(data, platform):
+def fill_in_mixer_values(data):
     if not os.path.exists("/usr/bin/mod-amixer"):
         return
-    if os.getenv("MOD_SOUNDCARD", None) is None:
+    soundcard = os.getenv("MOD_SOUNDCARD", None)
+    if soundcard is None:
         return
-    if platform == "duo":
+    if soundcard == "MODDUO":
         data['input1volume']    = float(getoutput("/usr/bin/mod-amixer in 1 dvol").strip())
         data['input2volume']    = float(getoutput("/usr/bin/mod-amixer in 2 dvol").strip())
         data['output1volume']   = float(getoutput("/usr/bin/mod-amixer out 1 dvol").strip())
@@ -74,7 +76,7 @@ def fill_in_mixer_values(data, platform):
         data['headphoneBypass'] = Profile.string_to_value('headphoneBypass',
                                                           getoutput("/usr/bin/mod-amixer hp byp").strip())
         return
-    if platform == "duox":
+    if soundcard == "DUOX":
         data['input1volume']    = float(getoutput("/usr/bin/mod-amixer in 1 xvol").strip())
         data['input2volume']    = float(getoutput("/usr/bin/mod-amixer in 2 xvol").strip())
         data['output1volume']   = float(getoutput("/usr/bin/mod-amixer out 1 xvol").strip())
@@ -85,17 +87,17 @@ def fill_in_mixer_values(data, platform):
         data['expPedalMode']    = Profile.string_to_value('expPedalMode',
                                                           getoutput("/usr/bin/mod-amixer exppedal").strip())
         return
-    if platform == "dwarf":
+    if soundcard == "DWARF":
         data['input1volume']    = float(getoutput("/usr/bin/mod-amixer in 1 xvol").strip())
         data['input2volume']    = float(getoutput("/usr/bin/mod-amixer in 2 xvol").strip())
         data['output1volume']   = float(getoutput("/usr/bin/mod-amixer out 1 xvol").strip())
         data['output1volume']   = float(getoutput("/usr/bin/mod-amixer out 2 xvol").strip())
         data['headphoneVolume'] = float(getoutput("/usr/bin/mod-amixer hp xvol").strip())
         return
-    if platform is None:
-        logging.error("[profile] fill_in_mixer_values called without platform")
+    if soundcard is None:
+        logging.error("[profile] fill_in_mixer_values called without soundcard")
     else:
-        logging.error("[profile] fill_in_mixer_values called with unknown platform %s", platform)
+        logging.error("[profile] fill_in_mixer_values called with unknown soundcard %s", soundcard)
 
 # The user profile models environmental context.
 # That is all settings that are related to the physical hookup of the device.
@@ -225,10 +227,9 @@ class Profile(object):
         return ""
 
     def __init__(self, applyFn, hwdescriptor):
-        self.applyFn  = applyFn
-        self.platform = hwdescriptor.get("platform", None)
-        self.changed  = False
-        self.values   = self.DEFAULTS.copy()
+        self.applyFn = applyFn
+        self.changed = False
+        self.values  = self.DEFAULTS.copy()
 
         if os.path.exists(self.INTERMEDIATE_PROFILE_PATH):
             data = safe_json_load(self.INTERMEDIATE_PROFILE_PATH, dict)
@@ -241,7 +242,7 @@ class Profile(object):
             except IOError:
                 pass
 
-        fill_in_mixer_values(self.values, self.platform)
+        fill_in_mixer_values(self.values)
         IOLoop.instance().add_callback(self.apply_first)
 
     # -----------------------------------------------------------------------------------------------------------------
@@ -411,7 +412,7 @@ class Profile(object):
         self.values['index'] = index
 
         # request and store mixer values
-        fill_in_mixer_values(self.values, self.platform)
+        fill_in_mixer_values(self.values)
 
         # save intermediate file first
         with TextFileFlusher(self.INTERMEDIATE_PROFILE_PATH) as fh:
