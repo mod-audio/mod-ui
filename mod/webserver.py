@@ -28,7 +28,7 @@ except ImportError:
     haveSignal = False
 
 from mod.profile import Profile
-from mod.settings import (APP, LOG, DEV_API,
+from mod.settings import (DESKTOP, LOG, DEV_API,
                           HTML_DIR, DOWNLOAD_TMP_DIR, DEVICE_KEY, DEVICE_WEBSERVER_PORT,
                           CLOUD_HTTP_ADDRESS, PLUGINS_HTTP_ADDRESS, PEDALBOARDS_HTTP_ADDRESS, CONTROLCHAIN_HTTP_ADDRESS,
                           USER_BANKS_JSON_FILE,
@@ -1173,7 +1173,7 @@ class RemotePluginWebSocket(websocket.WebSocketHandler):
         protocol, domain = match.groups()
         if protocol not in ("http", "https"):
             return False
-        if domain != "mod.audio" and not domain.endswith(".mod.audio"):
+        if domain != "localhost:8010" and domain != "mod.audio" and not domain.endswith(".mod.audio"):
             return False
         return True
 
@@ -1627,6 +1627,7 @@ class PedalboardTransportSetSyncMode(JsonRequestHandler):
 class SnapshotSave(JsonRequestHandler):
     def post(self):
         ok = SESSION.host.snapshot_save()
+        SESSION.host.save_snapshots_to_disk()
         self.write(ok)
 
 class SnapshotSaveAs(JsonRequestHandler):
@@ -1639,6 +1640,7 @@ class SnapshotSaveAs(JsonRequestHandler):
 
         yield gen.Task(SESSION.host.hmi_report_ss_name_if_current, idx)
 
+        SESSION.host.save_snapshots_to_disk()
         self.write({
             'ok': idx is not None,
             'id': idx,
@@ -1658,6 +1660,7 @@ class SnapshotRename(JsonRequestHandler):
 
         yield gen.Task(SESSION.host.hmi_report_ss_name_if_current, idx)
 
+        SESSION.host.save_snapshots_to_disk()
         self.write({
             'ok': ok,
             'title': title,
@@ -1667,6 +1670,7 @@ class SnapshotRemove(JsonRequestHandler):
     def get(self):
         idx = int(self.get_argument('id'))
         ok  = SESSION.host.snapshot_remove(idx)
+        SESSION.host.save_snapshots_to_disk()
         self.write(ok)
 
 class SnapshotList(JsonRequestHandler):
@@ -1833,8 +1837,8 @@ class TemplateHandler(TimelessRequestHandler):
             'fulltitle':  xhtml_escape(fullpbname),
             'titleblend': '' if SESSION.host.pedalboard_name else 'blend',
             'dev_api_class': 'dev_api' if DEV_API else '',
-            'using_app': 'true' if APP else 'false',
-            'using_mod': 'true' if DEVICE_KEY or DEV_HOST else 'false',
+            'using_desktop': 'true' if DESKTOP else 'false',
+            'using_mod': 'true' if DEVICE_KEY and hwdesc.get('platform', None) is not None else 'false',
             'user_name': mod_squeeze(user_id.get("name", "")),
             'user_email': mod_squeeze(user_id.get("email", "")),
             'favorites': json.dumps(gState.favorites),
@@ -1999,11 +2003,14 @@ class SwitchCpuFreq(JsonRequestHandler):
         index = freqs.index(cur_freq) + 1
         if index >= len(freqs):
             index = 0
+        next_freq = freqs[index]
+        if cur_freq == next_freq:
+            return self.write(True)
         with open("/sys/devices/system/cpu/online", 'r') as fh:
             num_start, num_end = tuple(int(i) for i in fh.read().strip().split("-"))
         for num in range(num_start, num_end+1):
             with open("/sys/devices/system/cpu/cpu%d/cpufreq/scaling_setspeed" % num, 'w') as fh:
-                fh.write(freqs[index])
+                fh.write(next_freq)
         self.write(True)
 
 class SaveSingleConfigValue(JsonRequestHandler):
@@ -2495,7 +2502,7 @@ def prepare(isModApp = False):
         signal(SIGUSR2, signal_recv)
         set_process_name("mod-ui")
 
-    application.listen(DEVICE_WEBSERVER_PORT, address=("localhost" if APP else "0.0.0.0"))
+    application.listen(DEVICE_WEBSERVER_PORT, address=("127.0.0.1" if DESKTOP else "0.0.0.0"))
 
     def checkhost():
         if SESSION.host.readsock is None or SESSION.host.writesock is None:

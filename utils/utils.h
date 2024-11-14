@@ -427,9 +427,6 @@ MOD_API const char* const* list_plugins_in_bundle(const char* bundle);
 // Convert a file URI to a local path string.
 MOD_API const char* file_uri_parse(const char* fileuri);
 
-// helper utilities
-MOD_API void set_cpu_affinity(int cpu);
-
 // jack stuff
 MOD_API bool init_jack(void);
 MOD_API void close_jack(void);

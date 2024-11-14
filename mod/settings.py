@@ -12,7 +12,7 @@ DEV_HOST = bool(int(os.environ.get('MOD_DEV_HOST', DEV_ENVIRONMENT)))
 # If on, use dev cloud API environment
 DEV_API = bool(int(os.environ.get('MOD_DEV_API', False)))
 
-APP = bool(int(os.environ.get('MOD_APP', False)))
+DESKTOP = bool(int(os.environ.get('MOD_DESKTOP', False)))
 LOG = int(os.environ.get('MOD_LOG', 0))
 
 API_KEY = os.environ.pop('MOD_API_KEY', None)

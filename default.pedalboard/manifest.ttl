@@ -4,14 +4,6 @@
 @prefix lv2:   <http://lv2plug.in/ns/lv2core#> .
 @prefix pedal: <http://moddevices.com/ns/modpedal#> .
 
-_:b1
-    ingen:tail <capture_1> ;
-    ingen:head <playback_1> .
-
-_:b2
-    ingen:tail <capture_2> ;
-    ingen:head <playback_2> .
-
 <capture_1>
     lv2:index 0 ;
     lv2:name "Capture 1" ;
@@ -56,8 +48,6 @@ _:b2
     pedal:screenshot <screenshot.png> ;
     pedal:thumbnail <thumbnail.png> ;
     ingen:polyphony 1 ;
-    ingen:arc _:b1 ,
-              _:b2 ;
     lv2:port <capture_1> ,
              <capture_2> ,
              <playback_1> ,

@@ -102,7 +102,7 @@ function SnapshotsManager(options) {
                     options.pedalPresetsWindow.find('.js-assign-all').addClass('disabled')
                 }
 
-                // Replace options value and text so we can a sequential list 0, 1, 2, etc.
+                // Replace options value and text so we get a sequential list 1, 2, 3, etc.
                 var i = 0
                 options.pedalPresetsList.children().each(function(option) {
                   var optionHtml = $(this).html()

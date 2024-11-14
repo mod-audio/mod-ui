@@ -386,6 +386,9 @@ JqueryClass('pedalboard', {
                     width: ui.helper.children().width(),
                     height: ui.helper.children().height()
                 })
+                var uri = unescape(ui.draggable.attr('mod-uri'));
+                var count = self.find('.mod-actions').length;
+                _paq.push(['trackEvent', 'plugin', 'plugin-add', uri, count]);
             }
         })
 

@@ -402,8 +402,8 @@ class Host(object):
         # clients at the end of the chain, all managed by mod-host
         self.jack_hw_capture_prefix = "mod-host:out" if self.descriptor.get('has_noisegate', False) else "system:capture_"
 
-        # used for network-manager
-        self.jack_slave_prefix = "mod-slave"
+        # used for external connections
+        self.jack_external_prefix = "mod-external"
 
         # used for usb gadget, MUST have "c" or "p" after this prefix
         self.jack_usbgadget_prefix = "mod-usbgadget_"
@@ -551,8 +551,8 @@ class Host(object):
         name = charPtrToString(name)
         isOutput = bool(isOutput)
 
-        if name.startswith(self.jack_slave_prefix+":"):
-            name = name.replace(self.jack_slave_prefix+":","")
+        if name.startswith(self.jack_external_prefix+":"):
+            name = name.replace(self.jack_external_prefix+":","")
             if name.startswith("midi_"):
                 ptype = "midi"
             elif name.startswith(CV_PREFIX):
@@ -563,6 +563,12 @@ class Host(object):
             index = 100 + int(name.rsplit("_",1)[-1])
             title = name.title().replace(" ","_")
             self.msg_callback("add_hw_port /graph/%s %s %i %s %i" % (name, ptype, int(isOutput), title, index))
+
+            if ptype == "audio":
+                if isOutput:
+                    self.audioportsOut.append(name)
+                else:
+                    self.audioportsIn.append(name)
             return
 
         if name.startswith(self.jack_usbgadget_prefix):
@@ -642,6 +648,13 @@ class Host(object):
                 break
 
         self.msg_callback("remove_hw_port /graph/%s" % (name.split(":",1)[-1]))
+
+        if name.startswith(self.jack_external_prefix+":"):
+            name = name.replace(self.jack_external_prefix+":","")
+            if name in self.audioportsIn:
+                self.audioportsIn.remove(name)
+            if name in self.audioportsOut:
+                self.audioportsOut.remove(name)
 
     def true_bypass_changed(self, left, right):
         self.msg_callback("truebypass %i %i" % (left, right))
@@ -1503,7 +1516,7 @@ class Host(object):
             for i in range(startIndex, endIndex):
                 initial_state_data += ' %s %d' % (normalize_for_hw(pedalboards[i]['title']), i + self.pedalboard_index_offset)
 
-        def cb_migi_pb_prgch(_):
+        def cb_midi_pb_prgch(_):
             midi_pb_prgch = self.profile.get_midi_prgch_channel("pedalboard")
             if midi_pb_prgch >= 1 and midi_pb_prgch <= 16:
                 self.send_notmodified("monitor_midi_program %d 1" % (midi_pb_prgch-1),
@@ -1512,19 +1525,19 @@ class Host(object):
                 callback(True)
 
         def cb_footswitches(_):
-            self.setNavigateWithFootswitches(True, cb_migi_pb_prgch)
+            self.setNavigateWithFootswitches(True, cb_midi_pb_prgch)
 
         def cb_set_initial_state(_):
-            cb = cb_footswitches if self.isBankFootswitchNavigationOn() else cb_migi_pb_prgch
+            cb = cb_footswitches if self.isBankFootswitchNavigationOn() else cb_midi_pb_prgch
             self.hmi.initial_state(initial_state_data, cb)
 
         if self.hmi.initialized:
             if self.descriptor.get("hmi_bank_navigation", False):
                 self.setNavigateWithFootswitches(False, cb_set_initial_state)
             else:
-                self.hmi.initial_state(initial_state_data, cb_migi_pb_prgch)
+                self.hmi.initial_state(initial_state_data, cb_midi_pb_prgch)
         else:
-            cb_migi_pb_prgch(True)
+            cb_midi_pb_prgch(True)
 
     def start_session(self, callback):
         midi_pb_prgch, midi_ss_prgch = self.profile.get_midi_prgch_channels()
@@ -1572,7 +1585,12 @@ class Host(object):
             self.send_output_data_ready(None, None)
 
         if not self.hmi.initialized:
-            callback(True)
+            # typically initialize_hmi takes care of this but without HMI we need to do it manually
+            midi_pb_prgch, midi_ss_prgch = self.profile.get_midi_prgch_channels()
+            if midi_pb_prgch >= 1 and midi_pb_prgch <= 16:
+                self.send_notmodified("monitor_midi_program %d 1" % (midi_pb_prgch-1), callback)
+            else:
+                callback(True)
             return
         if not self.hmi.connected:
             callback(True)
@@ -2081,7 +2099,7 @@ class Host(object):
             ports = get_jack_hardware_ports(False, False)
             for i in range(len(ports)):
                 name = ports[i]
-                if name not in midiports and not name.startswith("%s:midi_" % self.jack_slave_prefix):
+                if name not in midiports and not name.startswith("%s:midi_" % self.jack_external_prefix):
                     continue
                 alias = get_jack_port_alias(name)
 
@@ -2104,7 +2122,7 @@ class Host(object):
             ports = get_jack_hardware_ports(False, True)
             for i in range(len(ports)):
                 name = ports[i]
-                if name not in midiports and not name.startswith("%s:midi_" % self.jack_slave_prefix):
+                if name not in midiports and not name.startswith("%s:midi_" % self.jack_external_prefix):
                     continue
                 alias = get_jack_port_alias(name)
                 if alias:
@@ -3252,6 +3270,10 @@ class Host(object):
         # callback must be last action
         callback(True)
 
+    def save_snapshots_to_disk(self):
+        if self.pedalboard_path:
+            self.save_state_snapshots(self.pedalboard_path)
+
     @gen.coroutine
     def page_load(self, idx, abort_catcher, callback):
         if not self.addressings.addressing_pages:
@@ -3334,11 +3356,11 @@ class Host(object):
                 if num in monitorportnums:
                     return "mod-monitor:in_" + num
 
-            if data[2].startswith(("audio_from_slave_",
-                                   "audio_to_slave_",
-                                   "midi_from_slave_",
-                                   "midi_to_slave_")):
-                return "%s:%s" % (self.jack_slave_prefix, data[2])
+            if data[2].startswith(("audio_from_external_",
+                                   "audio_to_external_",
+                                   "midi_from_external_",
+                                   "midi_to_external_")):
+                return "%s:%s" % (self.jack_external_prefix, data[2])
 
             if data[2].startswith("USB_Audio_Capture_"):
                 return "%s:%s" % (self.jack_usbgadget_prefix+"c", data[2])
@@ -3490,10 +3512,11 @@ class Host(object):
                                             p.split(":",1)[-1]) for p in get_jack_hardware_ports(False, True))
 
         else:
-            mappedOldMidiIns  = {}
-            mappedOldMidiOuts = {}
-            mappedNewMidiIns  = {}
-            mappedNewMidiOuts = {}
+            mappedOldMidiIns   = {}
+            mappedOldMidiOuts  = {}
+            mappedOldMidiOuts2 = {}
+            mappedNewMidiIns   = {}
+            mappedNewMidiOuts  = {}
 
         curmidisymbols = []
         for port_symbol, port_alias, _ in self.midiports:
@@ -4752,11 +4775,14 @@ _:b%i
     def get_system_stats_message(self):
         memload = self.get_free_memory_value()
         cpufreq = read_file_contents(self.cpufreqfile, "0")
-        try:
-            cputemp = read_file_contents(self.thermalfile, "0")
-        except OSError:
-            cputemp = "0"
-            self.thermalfile = None
+        cputemp = "0"
+
+        if self.thermalfile is not None:
+            try:
+                cputemp = read_file_contents(self.thermalfile, "0")
+            except OSError:
+                self.thermalfile = None
+
         return "sys_stats %s %s %s" % (memload, cpufreq, cputemp)
 
     def memtimer_callback(self):
@@ -6970,7 +6996,7 @@ _:b%i
 
         # skip alsamixer related things on intermediate/boot
         if not isIntermediate:
-            apply_mixer_values(values, self.descriptor.get("platform", None))
+            apply_mixer_values(values)
 
         if self.hmi.initialized:
             try:

@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html>
+
+<!-- HEAD -->
+<head>
+<meta charset="UTF-8">
+<title>MOD</title>
+
+<link rel="apple-touch-icon" sizes="57x57" href="img/favicon/apple-icon-57x57.png">
+<link rel="apple-touch-icon" sizes="60x60" href="img/favicon/apple-icon-60x60.png">
+<link rel="apple-touch-icon" sizes="72x72" href="img/favicon/apple-icon-72x72.png">
+<link rel="apple-touch-icon" sizes="76x76" href="img/favicon/apple-icon-76x76.png">
+<link rel="apple-touch-icon" sizes="114x114" href="img/favicon/apple-icon-114x114.png">
+<link rel="apple-touch-icon" sizes="120x120" href="img/favicon/apple-icon-120x120.png">
+<link rel="apple-touch-icon" sizes="144x144" href="img/favicon/apple-icon-144x144.png">
+<link rel="apple-touch-icon" sizes="152x152" href="img/favicon/apple-icon-152x152.png">
+<link rel="apple-touch-icon" sizes="180x180" href="img/favicon/apple-icon-180x180.png">
+<link rel="icon" type="image/png" sizes="192x192" href="img/favicon/android-icon-192x192.png">
+<link rel="icon" type="image/png" sizes="32x32" href="img/favicon/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="96x96" href="img/favicon/favicon-96x96.png">
+<link rel="icon" type="image/png" sizes="16x16" href="img/favicon/favicon-16x16.png">
+<link rel="manifest" href="img/favicon/manifest.json">
+<meta name="msapplication-TileColor" content="#111111">
+<meta name="msapplication-TileImage" content="img/favicon/ms-icon-144x144.png">
+<meta name="theme-color" content="#111111">
+
+<link rel="stylesheet" type="text/css" href="css/fontello/css/fontello.css?v={{version}}"/>
+<link rel="stylesheet" type="text/css" href="css/main.css?v={{version}}"/>
+<link rel="stylesheet" type="text/css" href="css/dashboard.css?v={{version}}"/>
+<link rel="stylesheet" type="text/css" href="css/fonts.css?v={{version}}"/>
+
+<style type="text/css" media="screen">
+    .terms-page {
+        position: fixed;
+        bottom: 0;
+        margin: 0;
+        padding: 0;
+        height: calc(100% - 44px);
+        overflow-y: auto;
+        background: #2c2c2c !important;
+        color: white;
+    }
+    .terms-page-content {
+        position: relative;
+        left: 200px;
+        right: 200px;
+        padding-bottom: 25px;
+        text-align: left;
+        width: calc(100% - 400px);
+    }
+    .terms-page-content h2::selection,
+    .terms-page-content p::selection {
+        background: #4f2157;
+    }
+    .ee-card {
+        margin: 10px 0px;
+        padding: 25px;
+        width: 600px;
+        min-height: 186px;
+        overflow-wrap: break-word;
+        line-height: 1.5;
+        background-color: #222;
+        color: #e8e6e3;
+        border: 1px solid #454a4d;
+        font-size: 14px;
+    }
+    .ee-card__title {
+        font-size: 1.3em;
+        line-height: 1.3em;
+        font-weight: bold;
+    }
+    .ee-card__title a {
+        color: #e8e6e3;
+    }
+    .ee-card__description {
+        font-size: 1em;
+        line-height: 1.4em;
+        padding-top: 0.5em;
+    }
+    .ee-card__meta {
+        font-size: .8em;
+        font-weight: bold;
+        opacity: .5;
+        padding-top: 0.7em;
+    }
+    .ee-card__meta a {
+        color: #aba499;
+    }
+
+    /* smaller screen setup */
+    @media screen and (width < 1100px) {
+        .terms-page-content {
+            left: 150px;
+            right: 150px;
+            width: calc(100% - 300px);
+        }
+    }
+    @media screen and (width < 900px) {
+        .terms-page-content {
+            left: 100px;
+            right: 100px;
+            width: calc(100% - 200px);
+        }
+        .ee-card {
+            width: 480px;
+        }
+    }
+    @media screen and (width < 600px) {
+        .terms-page-content {
+            left: 25px;
+            right: 25px;
+            width: calc(100% - 50px);
+        }
+        .ee-card {
+            width: 400px;
+        }
+    }
+</style>
+
+</head>
+<!-- END HEAD -->
+
+<!-- BODY -->
+<body class="mod-dark">
+
+<!-- WRAPPER -->
+<div id="wrapper">
+
+    <!-- BANKS|SETTINGS -->
+    <div id="bank-library">
+        <div class="box clearfix">
+            <header>
+                <h1 class="bottom top">MOD Desktop - Privacy Policy</h1>
+            </header>
+        </div>
+
+        <div class="terms-page">
+            <div class="terms-page-content">
+
+                <h2>Introduction</h2>
+                <p>
+                    Thank you for choosing MOD Desktop. Our commitment to your privacy is paramount, and we aim to be transparent about how we handle data related to your use of MOD Desktop.
+                    Protecting your privacy and ensuring you understand our practices is crucial to us.
+                </p>
+
+                <h2>Data Collection and Use</h2>
+                <p>
+                    MOD Desktop is dedicated to enhancing your user experience while respecting your privacy.
+                    To achieve this, we exclusively utilize Matomo analytics for collecting non-personal usage data.
+                    Choosing Matomo is a deliberate decision to ensure we have full control over the collected information, without relying on third-party platforms such as Google, Facebook, or others.
+                    This approach allows us to maintain the highest standards of privacy and data security by keeping this data in-house.
+                </p>
+                <p>
+                    We collect data on the following events to understand usage patterns and improve our service:
+                </p>
+                <ul>
+                    <li><strong>App Open</strong>: Tracks each time the application is opened, helping us gauge application usage frequency.</li>
+                    <li><strong>Plugin Load</strong>: Records the loading of plugins by name to identify popular plugins and inform our development focus.</li>
+                    <li><strong>Pedalboard Save</strong>: Monitors when pedalboards are saved, capturing usage patterns without storing any pedalboard names.</li>
+                    <li><strong>Pedalboard Load</strong>: Tracks the loading of pedalboards, similar to saves, without collecting pedalboard names.</li>
+                </ul>
+                <p>
+                    This collected data is purely for internal use to enhance the MOD Desktop experience and is strictly non-personal.
+                    Our commitment to your privacy means we prioritize the security and integrity of this usage data, ensuring it remains confidential and is used solely for the purposes outlined above.
+                </p>
+
+                <h2>Data Sharing and Disclosure</h2>
+                <p>
+                    We firmly stand by our commitment to not sell, share, or disclose the collected data to any third parties, except as strictly required by law.
+                    Our use of Matomo enables us to uphold this commitment by providing us complete oversight and control over the analytics data, ensuring it is protected from unauthorized access or use.
+                </p>
+
+                <h2>Data Security</h2>
+                <p>
+                    The security of your data is a top priority.
+                    We implement robust security measures to safeguard the non-personal information collected through our analytics.
+                    While we strive for the highest level of security, it’s important to recognize that no method of electronic storage or transmission over the Internet is entirely secure.
+                    We are committed to using commercially acceptable means to protect your data to ensure its security to the best of our ability.
+                </p>
+
+                <h2>Changes to the Privacy Policy</h2>
+                <p>
+                    We reserve the right to modify or update our Privacy Policy at any time.
+                    Such changes will be communicated through our application and/or website, encouraging you to review our Privacy Policy periodically for any updates.
+                </p>
+
+                <h2>Contact information</h2>
+                <p>
+                    Should you have any inquiries or concerns about our Privacy Policy, please do not hesitate to reach out to us through our designated support channels.
+                    We are here to ensure your experience with MOD Desktop is secure, private, and enjoyable.
+                </p>
+                <p><strong>Owner and Data Controller: </strong></p>
+                <ul>
+                    <li>
+                        Gianfranco Ceccolini<br>
+                        MOD Audio UG (haftungsbeschränkt)<br>
+                        Ernst-Augustin-Straße 9<br>12489 Berlin<br>
+                        Germany
+                    </li>
+                    <li><strong>Owner contact email:</strong>&nbsp;gdpr@mod.audio</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

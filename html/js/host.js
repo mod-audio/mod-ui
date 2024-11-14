@@ -119,6 +119,10 @@ $('document').ready(function() {
                 $("#mod-cpu-stats").html(sprintf("%.1f GHz / %d &deg;C",
                                                  parseInt(cpufreq)/1000000,
                                                  parseInt(cputemp)/1000))
+            } else if (cpufreq !== "0") {
+                $("#mod-cpu-stats").html(sprintf("%.1f GHz", parseInt(cpufreq)/1000000))
+            } else if (cputemp !== "0") {
+                $("#mod-cpu-stats").html(sprintf("%d &deg;C", parseInt(cputemp)/1000))
             }
             return
         }
@@ -506,9 +510,9 @@ $('document').ready(function() {
                 success: function (resp) {
                     desktop.pedalboard.pedalboard('scheduleAdapt', true)
                     desktop.pedalboardEmpty    = empty && !modified
-                    desktop.pedalboardModified = modified
                     desktop.pedalboardPresetId = snapshotId
                     desktop.pedalboardPresetName = resp.name
+                    desktop.setPedalboardAsModified(modified)
 
                     if (resp.ok) {
                         desktop.titleBox.text((desktop.title || 'Untitled') + " - " + resp.name)

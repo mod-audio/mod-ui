@@ -1032,3 +1032,23 @@ body > .mod-settings.mod-window-visible {
 .plugin-description p::selection {
     background: #4f2157
 }
+
+#pedalboard-info .js-save.unmodified-changes {
+  background-color: #883996;
+}
+
+#mod-cloud-terms {
+    z-index: 100000;
+}
+#mod-cloud-terms .mod-box {
+    width: 500px;
+    left: 0;
+    right: 0;
+    margin: -150px auto;
+}
+#mod-cloud-terms .actions {
+    text-align: center;
+}
+#mod-cloud-terms .btn {
+    margin: 0px 4px;
+}
