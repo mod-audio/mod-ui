@@ -3014,12 +3014,19 @@ class Host(object):
             if instance_id == PEDALBOARD_INSTANCE_ID:
                 continue
             instance = pluginData['instance'].replace("/graph/","",1)
-            snapshot['data'][instance] = {
-                "bypassed"  : pluginData['bypassed'],
-                "parameters": dict((k,v.copy()) for k,v in pluginData['parameters'].items()),
-                "ports"     : pluginData['ports'].copy(),
-                "preset"    : pluginData['preset'],
-            }
+            #fragfz: cases plugin data not included in Snapshot
+            #1: plugin preset ends with _NotInSS
+            #2: plugin bypassed...
+            #... except preset end with _InSS
+            if pluginData['preset'].endswith("_NotInSS.ttl") or (pluginData['bypassed'] and not pluginData['preset'].endswith("_InSS.ttl")): 
+                continue
+            else:
+                snapshot['data'][instance] = {
+                    "bypassed"  : pluginData['bypassed'],
+                    "parameters": dict((k,v.copy()) for k,v in pluginData['parameters'].items()),
+                    "ports"     : pluginData['ports'].copy(),
+                    "preset"    : pluginData['preset'],
+                }
 
         return snapshot
 
@@ -4037,12 +4044,19 @@ class Host(object):
             for instance_id in snapshot.pop('plugins_added'):
                 pluginData = self.plugins[instance_id]
                 instance   = pluginData['instance'].replace("/graph/","",1)
-                snapshot['data'][instance] = {
-                    "bypassed"  : pluginData['bypassed'],
-                    "parameters": dict((k,v.copy()) for k,v in pluginData['parameters'].items()),
-                    "ports"     : pluginData['ports'].copy(),
-                    "preset"    : pluginData['preset'],
-                }
+                #fragfz: cases plugin data not included in Snapshot
+                #1: plugin preset ends with _NotInSS
+                #2: plugin bypassed...
+                #... except preset end with _InSS
+                if pluginData['preset'].endswith("_NotInSS.ttl") or (pluginData['bypassed'] and not pluginData['preset'].endswith("_InSS.ttl")): 
+                    continue
+                else:
+                    snapshot['data'][instance] = {
+                        "bypassed"  : pluginData['bypassed'],
+                        "parameters": dict((k,v.copy()) for k,v in pluginData['parameters'].items()),
+                        "ports"     : pluginData['ports'].copy(),
+                        "preset"    : pluginData['preset'],
+                    }
 
         data = {
             'current': self.current_pedalboard_snapshot_id,
