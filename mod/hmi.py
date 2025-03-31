@@ -122,13 +122,15 @@ class HMI(object):
             ioloop.call_later(1, callback)
             return
 
+        virtual = self.port.startswith("/dev/ttyHMI")
+
         try:
             sp = None
             # pylint: disable=unexpected-keyword-arg
             try:
-                sp = serial.Serial(self.port, self.baud_rate, timeout=0, write_timeout=0)
+                sp = serial.Serial(self.port, self.baud_rate, rtscts=virtual, dsrdtr=virtual, timeout=0, write_timeout=0)
             except:
-                sp = serial.Serial(self.port, self.baud_rate, timeout=0, writeTimeout=0)
+                sp = serial.Serial(self.port, self.baud_rate, rtscts=virtual, dsrdtr=virtual, timeout=0, writeTimeout=0)
             # pylint: enable=unexpected-keyword-arg
             sp.flushInput()
             sp.flushOutput()
