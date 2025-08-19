@@ -2930,7 +2930,7 @@ const PluginInfo& _get_plugin_info(LilvWorld* const w,
 
             // ----------------------------------------------------------------------------------------------------
             // groups
-            portinfo.groupSymbol = nullptr;
+            portinfo.groupSymbol = nc;
             if (const LilvNode* const symbolnode = lilv_port_get(p, port, ns.port_groups_groupName))
             {
                 const char* groupName = lilv_node_as_string(symbolnode);
