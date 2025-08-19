@@ -107,7 +107,7 @@
             {{^enumeration}}
                 {{^trigger}}
                     {{^toggled}}
-                    <div class="mod-knob" title="{{comment}}">
+                    <div class="mod-knob{{#group}} mod-group{{#groupStart}} mod-group-start{{/groupStart}} mod-group-{{groupIndex}}{{#groupEnd}} mod-group-end{{/groupEnd}}{{/group}}" title="{{comment}}">
                         <span class="mod-knob-title">{{shortName}}</span>
                         <span class="mod-knob-min-value" mod-role="input-control-minimum" mod-port-symbol="{{symbol}}"></span>
                         <span class="mod-knob-max-value" mod-role="input-control-maximum" mod-port-symbol="{{symbol}}"></span>

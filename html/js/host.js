@@ -371,6 +371,60 @@ $('document').ready(function() {
                     success: function (pluginData) {
                         var instancekey = '[mod-instance="' + instance + '"]'
 
+                        // resolve groups
+                        pluginData.ports.control.input.forEach(function (port, index) {
+                            port.group = undefined;
+                            port.groupIndex = undefined;
+
+                            if (pluginData.portGroups && port.groupSymbol) {
+                                port.group = pluginData.portGroups.find(function (group) {
+                                    return group.symbol === port.groupSymbol;
+                                });
+
+                                if (port.group) {
+                                    port.groupStart = false;
+                                    port.groupEnd = false;
+                                    port.groupIndex = pluginData.portGroups.indexOf(port.group);
+                                }
+                            }
+                        });
+
+                        // sort port with groups
+                        pluginData.ports.control.input.sort(function (a, b) {
+                            if (a.groupIndex < b.groupIndex) {
+                                return -1;
+                            } else if (a.groupIndex > b.groupIndex) {
+                                return 1;
+                            } else {
+                                return a.index - b.index;
+                            }
+                        });
+
+                        // add start or end group flags
+                        let prevPort = undefined;
+                        pluginData.ports.control.input.forEach(function (port, index) {
+                            if (port.group)
+                            {
+                                if (prevPort === undefined || prevPort.group === undefined) {
+                                    port.groupStart = true;
+                                } else {
+                                    if (prevPort.groupIndex != port.groupIndex) {
+                                        port.groupStart = true;
+
+                                        if (prevPort.group) {
+                                            prevPort.groupEnd = true;
+                                        }
+                                    }
+                                }
+                            }
+
+                            prevPort = port;
+                        });
+
+                        if (prevPort.group) {
+                            prevPort.groupEnd = true;
+                        }
+
                         if (!$(instancekey).length) {
                             var cb = function () {
                                 desktop.pedalboard.pedalboard('scheduleAdapt', false)
