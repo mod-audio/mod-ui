@@ -185,6 +185,13 @@ class PluginAuthor(Structure):
         ("email", c_char_p),
     ]
 
+class PluginPortGroup(Structure):
+    _fields_ = [
+        ("valid", c_bool),
+        ("symbol", c_char_p),
+        ("name", c_char_p),
+    ]
+
 class PluginGUIPort(Structure):
     _fields_ = [
         ("valid", c_bool),
@@ -257,6 +264,7 @@ class PluginPort(Structure):
         ("rangeSteps", c_int),
         ("scalePoints", POINTER(PluginPortScalePoint)),
         ("shortName", c_char_p),
+        ("groupSymbol", c_char_p),
     ]
 
 class PluginPortsI(Structure):
@@ -345,6 +353,7 @@ class PluginInfo(Structure):
         ("ports", PluginPorts),
         ("parameters", POINTER(PluginParameter)),
         ("presets", POINTER(PluginPreset)),
+        ("portGroups", POINTER(PluginPortGroup)),
     ]
 
 # a subset of PluginInfo
@@ -517,6 +526,7 @@ TrueBypassStateChanged = CFUNCTYPE(None, c_bool, c_bool)
 CvExpInputModeChanged = CFUNCTYPE(None, c_bool)
 
 c_struct_types = (PluginAuthor,
+                  PluginPortGroup,
                   PluginGUI,
                   PluginGUI_Mini,
                   PluginPortRanges,
@@ -533,6 +543,7 @@ c_structp_types = (POINTER(PluginGUIPort),
                    POINTER(PluginPort),
                    POINTER(PluginParameter),
                    POINTER(PluginPreset),
+                   POINTER(PluginPortGroup),
                    POINTER(PedalboardPlugin),
                    POINTER(PedalboardConnection),
                    POINTER(PedalboardPluginPort),
