@@ -541,9 +541,10 @@ body > .mod-settings.mod-window-visible {
     display:block;
     font-size:11px;
     font-weight:bold;
-    height:11px;
+    height:23px;
     line-height:1;
-    margin:9px 0;
+    margin:3px 0;
+    padding:6px 0;
     position:relative;
     overflow:hidden;
     text-align:center;
@@ -893,12 +894,12 @@ body > .mod-settings.mod-window-visible {
 }
 
 /* 32 Groups */
-.mod-pedal-settings .mod-group.mod-group-start > .mod-knob-title {
+.mod-pedal-settings .mod-group.mod-group-start > .mod-group-item-title {
     border-top-left-radius: 2px;
     border-bottom-left-radius: 2px;
 }
 
-.mod-pedal-settings .mod-group.mod-group-end > .mod-knob-title {
+.mod-pedal-settings .mod-group.mod-group-end > .mod-group-item-title {
     border-top-right-radius: 2px;
     border-bottom-right-radius: 2px;
 }
@@ -907,100 +908,100 @@ body > .mod-settings.mod-window-visible {
      margin-right:2px;
 }
 
-.mod-pedal-settings .mod-group-0 > .mod-knob-title {
+.mod-pedal-settings .mod-group-0 > .mod-group-item-title {
     background-color: #DE7558;
 }
-.mod-pedal-settings .mod-group-1 > .mod-knob-title {
+.mod-pedal-settings .mod-group-1 > .mod-group-item-title {
     background-color: #16ACA6;
 }
-.mod-pedal-settings .mod-group-2 > .mod-knob-title {
+.mod-pedal-settings .mod-group-2 > .mod-group-item-title {
     background-color: #74A16B;
 }
-.mod-pedal-settings .mod-group-3 > .mod-knob-title {
+.mod-pedal-settings .mod-group-3 > .mod-group-item-title {
     background-color: #EC2469;
 }
-.mod-pedal-settings .mod-group-4 > .mod-knob-title {
+.mod-pedal-settings .mod-group-4 > .mod-group-item-title {
     background-color: #860FDA;
 }
-.mod-pedal-settings .mod-group-5 > .mod-knob-title {
+.mod-pedal-settings .mod-group-5 > .mod-group-item-title {
     background-color: #D4BA3D;
 }
-.mod-pedal-settings .mod-group-6 > .mod-knob-title {
+.mod-pedal-settings .mod-group-6 > .mod-group-item-title {
     background-color: #819393;
 }
-.mod-pedal-settings .mod-group-7 > .mod-knob-title {
+.mod-pedal-settings .mod-group-7 > .mod-group-item-title {
     background-color: #9951BF;
 }
-.mod-pedal-settings .mod-group-8 > .mod-knob-title {
+.mod-pedal-settings .mod-group-8 > .mod-group-item-title {
     background-color: #DFB6A5;
 }
-.mod-pedal-settings .mod-group-9 > .mod-knob-title {
+.mod-pedal-settings .mod-group-9 > .mod-group-item-title {
     background-color: #B9A843;
 }
-.mod-pedal-settings .mod-group-10 > .mod-knob-title {
+.mod-pedal-settings .mod-group-10 > .mod-group-item-title {
     background-color: #81DEA8;
 }
-.mod-pedal-settings .mod-group-11 > .mod-knob-title {
+.mod-pedal-settings .mod-group-11 > .mod-group-item-title {
     background-color: #AB386B;
 }
-.mod-pedal-settings .mod-group-12 > .mod-knob-title {
+.mod-pedal-settings .mod-group-12 > .mod-group-item-title {
     background-color: #4D80DD;
 }
-.mod-pedal-settings .mod-group-13 > .mod-knob-title {
+.mod-pedal-settings .mod-group-13 > .mod-group-item-title {
     background-color: #EBE65A;
 }
-.mod-pedal-settings .mod-group-14 > .mod-knob-title {
+.mod-pedal-settings .mod-group-14 > .mod-group-item-title {
     background-color: #0B575B;
 }
-.mod-pedal-settings .mod-group-15 > .mod-knob-title {
+.mod-pedal-settings .mod-group-15 > .mod-group-item-title {
     background-color: #5755F7;
 }
-.mod-pedal-settings .mod-group-16 > .mod-knob-title {
+.mod-pedal-settings .mod-group-16 > .mod-group-item-title {
     background-color: #3DC745;
 }
-.mod-pedal-settings .mod-group-17 > .mod-knob-title {
+.mod-pedal-settings .mod-group-17 > .mod-group-item-title {
     background-color: #F51034;
 }
-.mod-pedal-settings .mod-group-18 > .mod-knob-title {
+.mod-pedal-settings .mod-group-18 > .mod-group-item-title {
     background-color: #F91114;
 }
-.mod-pedal-settings .mod-group-19 > .mod-knob-title {
+.mod-pedal-settings .mod-group-19 > .mod-group-item-title {
     background-color: #84D08B;
 }
-.mod-pedal-settings .mod-group-20 > .mod-knob-title {
+.mod-pedal-settings .mod-group-20 > .mod-group-item-title {
     background-color: #CAB8B0;
 }
-.mod-pedal-settings .mod-group-21 > .mod-knob-title {
+.mod-pedal-settings .mod-group-21 > .mod-group-item-title {
     background-color: #425265;
 }
-.mod-pedal-settings .mod-group-22 > .mod-knob-title {
+.mod-pedal-settings .mod-group-22 > .mod-group-item-title {
     background-color: #341B05;
 }
-.mod-pedal-settings .mod-group-23 > .mod-knob-title {
+.mod-pedal-settings .mod-group-23 > .mod-group-item-title {
     background-color: #055538;
 }
-.mod-pedal-settings .mod-group-24 > .mod-knob-title {
+.mod-pedal-settings .mod-group-24 > .mod-group-item-title {
     background-color: #1AE35C;
 }
-.mod-pedal-settings .mod-group-25 > .mod-knob-title {
+.mod-pedal-settings .mod-group-25 > .mod-group-item-title {
     background-color: #9D0B8E;
 }
-.mod-pedal-settings .mod-group-26 > .mod-knob-title {
+.mod-pedal-settings .mod-group-26 > .mod-group-item-title {
     background-color: #6F8C9A;
 }
-.mod-pedal-settings .mod-group-27 > .mod-knob-title {
+.mod-pedal-settings .mod-group-27 > .mod-group-item-title {
     background-color: #069758;
 }
-.mod-pedal-settings .mod-group-28 > .mod-knob-title {
+.mod-pedal-settings .mod-group-28 > .mod-group-item-title {
     background-color: #2340B9;
 }
-.mod-pedal-settings .mod-group-29 > .mod-knob-title {
+.mod-pedal-settings .mod-group-29 > .mod-group-item-title {
     background-color: #3F7CBB;
 }
-.mod-pedal-settings .mod-group-30 > .mod-knob-title {
+.mod-pedal-settings .mod-group-30 > .mod-group-item-title {
     background-color: #8185D4;
 }
-.mod-pedal-settings .mod-group-31 > .mod-knob-title {
+.mod-pedal-settings .mod-group-31 > .mod-group-item-title {
     background-color: #080F1F;
 }
 
