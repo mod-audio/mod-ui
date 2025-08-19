@@ -1,0 +1,197 @@
+@prefix lv2:  <http://lv2plug.in/ns/lv2core#>.
+@prefix doap: <http://usefulinc.com/ns/doap#>.
+@prefix epp: <http://lv2plug.in/ns/ext/port-props/#>.
+@prefix foaf: <http://xmlns.com/foaf/0.1/>.
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix mod: <http://moddevices.com/ns/mod#>.
+@prefix epg: <http://lv2plug.in/ns/ext/port-groups#> .
+
+@prefix tap_dynamics_lv2: <http://moddevices.com/plugins/tap/dynamics>.
+
+<http://moddevices.com/plugins/tap/dynamics>
+a lv2:Plugin, lv2:DynamicsPlugin;
+
+doap:name "TAP Mono Dynamics";
+
+
+doap:developer [
+    foaf:name "Tom Szilagyi";
+    foaf:homepage <http://tap-plugins.sourceforge.net>;
+    foaf:mbox <mailto:tsziagyi@users.sourceforge.net>;
+    ];
+
+doap:maintainer [
+    foaf:name "MOD Team";
+    foaf:homepage <http://moddevices.com>;
+    foaf:mbox <mailto:devel@moddevices.com>;
+    ];
+
+mod:brand "TAP";
+mod:label "Mono Dynamics";
+
+doap:license <http://usefulinc.com/doap/licenses/gpl>;
+lv2:minorVersion 7;
+lv2:microVersion 2;
+
+rdfs:comment """
+TAP Dynamics is a versatile tool for changing the dynamic content of your tracks. Currently it supports 15 dynamics transfer functions, among which there are compressors, limiters, expanders and noise gates. However, the plugin itself supports arbitrary dynamics transfer functions, so you may add your own functions as well, without any actual programming.
+
+The plugin comes in two versions: Mono (M) and Stereo (St). This is needed because independent processing of two channels is not always desirable in the case of stereo material. The stereo version has an additional control to set the appropriate mode for stereo processing (you may still choose to process the two channels independently, although the same effect is achieved by using the mono version).
+
+source: http://tap-plugins.sourceforge.net/ladspa/dynamics.html
+""";
+
+lv2:port
+[
+    a lv2:InputPort, lv2:ControlPort;
+    lv2:index 0;
+    lv2:symbol "attack";
+    lv2:name "Attack";
+    lv2:default 128;
+    lv2:minimum 4;
+    lv2:maximum 500;
+    epg:group tap_dynamics_lv2:DYN_GROUP ;
+],
+[
+    a lv2:InputPort, lv2:ControlPort;
+    lv2:index 1;
+    lv2:symbol "release";
+    lv2:name "Release";
+    lv2:default 502;
+    lv2:minimum 4;
+    lv2:maximum 1000;
+    epg:group tap_dynamics_lv2:DYN_GROUP ;
+],
+[
+    a lv2:InputPort, lv2:ControlPort;
+    lv2:index 2;
+    lv2:symbol "offset";
+    lv2:name "Offset Gain";
+    lv2:default 0;
+    lv2:minimum -20;
+    lv2:maximum 20;
+    epg:group tap_dynamics_lv2:GAIN_GROUP ;
+],
+[
+    a lv2:InputPort, lv2:ControlPort;
+    lv2:index 3;
+    lv2:symbol "makeup";
+    lv2:name "Makeup Gain";
+    lv2:default 0;
+    lv2:minimum -20;
+    lv2:maximum 20;
+    epg:group tap_dynamics_lv2:GAIN_GROUP ;
+],
+[
+    a lv2:OutputPort, lv2:ControlPort;
+    lv2:index 4;
+    lv2:symbol "envelope";
+    lv2:name "Envelope Volume";
+    lv2:default 0;
+    lv2:minimum -60;
+    lv2:maximum 20;
+],
+[
+    a lv2:OutputPort, lv2:ControlPort;
+    lv2:index 5;
+    lv2:symbol "adjustment";
+    lv2:name "Gain Adjustment";
+    lv2:default 0;
+    lv2:minimum -60;
+    lv2:maximum 20;
+],
+[
+    a lv2:InputPort, lv2:ControlPort;
+    lv2:index 6;
+    lv2:symbol "function";
+    lv2:name "Function";
+    lv2:default 0;
+    lv2:minimum 0;
+    lv2:maximum 14;
+    lv2:portProperty lv2:integer;
+    lv2:portProperty lv2:enumeration ;
+    epg:group tap_dynamics_lv2:DYN_GROUP ;
+    lv2:scalePoint
+    [
+        rdfs:label "2:1 comp at -6 dB";
+        rdf:value 0
+    ],
+    [
+        rdfs:label "2:1 comp at -9 dB";
+        rdf:value 1
+    ],
+    [
+        rdfs:label "2:1 comp at -12 dB";
+        rdf:value 2
+    ],
+    [
+        rdfs:label "2:1 comp at -18 dB";
+        rdf:value 3
+    ],
+    [
+        rdfs:label "2.5:1 comp at -12 dB";
+        rdf:value 4
+    ],
+    [
+        rdfs:label "3:1 comp at -12 dB";
+        rdf:value 5
+    ],
+    [
+        rdfs:label "3:1 comp at -15 dB";
+        rdf:value 6
+    ],
+    [
+        rdfs:label "Compressor/Gate";
+        rdf:value 7
+    ],
+    [
+        rdfs:label "Expander";
+        rdf:value 8
+    ],
+    [
+        rdfs:label "Hard limiter at -6 dB";
+        rdf:value 9
+    ],
+    [
+        rdfs:label "Hard limiter at -12 dB";
+        rdf:value 10
+    ],
+    [
+        rdfs:label "Hard gate at -35 dB";
+        rdf:value 11
+    ],
+    [
+        rdfs:label "Soft limiter";
+        rdf:value 12
+    ],
+    [
+        rdfs:label "Soft knee comp/gate";
+        rdf:value 13
+    ],
+    [
+        rdfs:label "Soft gate below -36 dB";
+        rdf:value 14
+    ]
+],
+[
+    a lv2:InputPort, lv2:AudioPort;
+    lv2:index 7;
+    lv2:symbol "input";
+    lv2:name "Input";
+],
+[
+    a lv2:OutputPort, lv2:AudioPort;
+    lv2:index 8;
+    lv2:symbol "output";
+    lv2:name "Output";
+].
+
+tap_dynamics_lv2:DYN_GROUP
+	a epg:InputGroup ;
+	lv2:symbol "DYN" ;
+	lv2:name "Dynamics" .
+tap_dynamics_lv2:GAIN_GROUP
+	a epg:InputGroup ;
+	lv2:symbol "GAIN" ;
+	lv2:name "GAIN" .

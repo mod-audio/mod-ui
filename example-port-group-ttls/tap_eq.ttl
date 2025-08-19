@@ -1,0 +1,249 @@
+@prefix lv2:  <http://lv2plug.in/ns/lv2core#>.
+@prefix doap: <http://usefulinc.com/ns/doap#>.
+@prefix epp: <http://lv2plug.in/ns/ext/port-props/#>.
+@prefix foaf: <http://xmlns.com/foaf/0.1/>.
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix mod: <http://moddevices.com/ns/mod#>.
+@prefix epg: <http://lv2plug.in/ns/ext/port-groups#> .
+
+@prefix tap_eq_lv2: <http://moddevices.com/plugins/tap/eq#>.
+
+<http://moddevices.com/plugins/tap/eq>
+a lv2:Plugin, lv2:EQPlugin;
+
+doap:name "TAP Equalizer";
+
+mod:brand "TAP";
+mod:label "Equalizer";
+
+doap:developer [
+    foaf:name "Tom Szilagyi";
+    foaf:homepage <http://tap-plugins.sourceforge.net/>;
+    foaf:mbox <mailto:tsziagyi@users.sourceforge.net>;
+];
+
+doap:maintainer [
+    foaf:name "MOD Team";
+    foaf:homepage <http://moddevices.com>;
+    foaf:mbox <mailto:devel@moddevices.com>;
+];
+
+mod:brand "TAP";
+mod:label "Equalizer";
+
+doap:license <http://usefulinc.com/doap/licenses/gpl>;
+lv2:minorVersion 7;
+lv2:microVersion 2;
+
+rdfs:comment """
+This plugin is an 8-band equalizer with adjustable band center frequencies. It allows you to make precise adjustments to the tonal coloration of your tracks. The design and code of this plugin is based on that of the DJ EQ plugin by Steve Harris, which can be downloaded (among lots of other useful plugins) from http://plugin.org.uk.
+
+source: http://tap-plugins.sourceforge.net/ladspa/eq.html
+""";
+
+lv2:port
+[
+    a lv2:InputPort, lv2:ControlPort;
+    lv2:index 0;
+    lv2:symbol "Band1GainDb";
+    lv2:name "Band 1 Gain [dB]";
+    lv2:default 0;
+    lv2:minimum -50;
+    lv2:maximum 20;
+    epg:group tap_eq_lv2:BAND1_GROUP ;
+],
+[
+    a lv2:InputPort, lv2:ControlPort;
+    lv2:index 1;
+    lv2:symbol "Band2GainDb";
+    lv2:name "Band 2 Gain [dB]";
+    lv2:default 0;
+    lv2:minimum -50;
+    lv2:maximum 20;
+    epg:group tap_eq_lv2:BAND2_GROUP ;
+],
+[
+    a lv2:InputPort, lv2:ControlPort;
+    lv2:index 2;
+    lv2:symbol "Band3GainDb";
+    lv2:name "Band 3 Gain [dB]";
+    lv2:default 0;
+    lv2:minimum -50;
+    lv2:maximum 20;
+    epg:group tap_eq_lv2:BAND3_GROUP ;
+],
+[
+    a lv2:InputPort, lv2:ControlPort;
+    lv2:index 3;
+    lv2:symbol "Band4GainDb";
+    lv2:name "Band 4 Gain [dB]";
+    lv2:default 0;
+    lv2:minimum -50;
+    lv2:maximum 20;
+    epg:group tap_eq_lv2:BAND4_GROUP ;
+],
+[
+    a lv2:InputPort, lv2:ControlPort;
+    lv2:index 4;
+    lv2:symbol "Band5GainDb";
+    lv2:name "Band 5 Gain [dB]";
+    lv2:default 0;
+    lv2:minimum -50;
+    lv2:maximum 20;
+    epg:group tap_eq_lv2:BAND5_GROUP ;
+],
+[
+    a lv2:InputPort, lv2:ControlPort;
+    lv2:index 5;
+    lv2:symbol "Band6GainDb";
+    lv2:name "Band 6 Gain [dB]";
+    lv2:default 0;
+    lv2:minimum -50;
+    lv2:maximum 20;
+    epg:group tap_eq_lv2:BAND6_GROUP ;
+],
+[
+    a lv2:InputPort, lv2:ControlPort;
+    lv2:index 6;
+    lv2:symbol "Band7GainDb";
+    lv2:name "Band 7 Gain [dB]";
+    lv2:default 0;
+    lv2:minimum -50;
+    lv2:maximum 20;
+    epg:group tap_eq_lv2:BAND7_GROUP ;
+],
+[
+    a lv2:InputPort, lv2:ControlPort;
+    lv2:index 7;
+    lv2:symbol "Band8GainDb";
+    lv2:name "Band 8 Gain [dB]";
+    lv2:default 0;
+    lv2:minimum -50;
+    lv2:maximum 20;
+    epg:group tap_eq_lv2:BAND8_GROUP ;
+],
+[
+    a lv2:InputPort, lv2:ControlPort;
+    lv2:index 8;
+    lv2:symbol "Band1FreqHz";
+    lv2:name "Band 1 Freq [Hz]";
+    lv2:default 100;
+    lv2:minimum 40;
+    lv2:maximum 280;
+    epg:group tap_eq_lv2:BAND1_GROUP ;
+],
+[
+    a lv2:InputPort, lv2:ControlPort;
+    lv2:index 9;
+    lv2:symbol "Band2FreqHz";
+    lv2:name "Band 2 Freq [Hz]";
+    lv2:default 200;
+    lv2:minimum 100;
+    lv2:maximum 500;
+    epg:group tap_eq_lv2:BAND2_GROUP ;
+],
+[
+    a lv2:InputPort, lv2:ControlPort;
+    lv2:index 10;
+    lv2:symbol "Band3FreqHz";
+    lv2:name "Band 3 Freq [Hz]";
+    lv2:default 400;
+    lv2:minimum 200;
+    lv2:maximum 1000;
+    epg:group tap_eq_lv2:BAND3_GROUP ;
+],
+[
+    a lv2:InputPort, lv2:ControlPort;
+    lv2:index 11;
+    lv2:symbol "Band4FreqHz";
+    lv2:name "Band 4 Freq [Hz]";
+    lv2:default 1000;
+    lv2:minimum 400;
+    lv2:maximum 2800;
+    epg:group tap_eq_lv2:BAND4_GROUP ;
+],
+[
+    a lv2:InputPort, lv2:ControlPort;
+    lv2:index 12;
+    lv2:symbol "Band5FreqHz";
+    lv2:name "Band 5 Freq [Hz]";
+    lv2:default 3000;
+    lv2:minimum 1000;
+    lv2:maximum 5000;
+    epg:group tap_eq_lv2:BAND5_GROUP ;
+],
+[
+    a lv2:InputPort, lv2:ControlPort;
+    lv2:index 13;
+    lv2:symbol "Band6FreqHz";
+    lv2:name "Band 6 Freq [Hz]";
+    lv2:default 6000;
+    lv2:minimum 3000;
+    lv2:maximum 9000;
+    epg:group tap_eq_lv2:BAND6_GROUP ;
+],
+[
+    a lv2:InputPort, lv2:ControlPort;
+    lv2:index 14;
+    lv2:symbol "Band7FreqHz";
+    lv2:name "Band 7 Freq [Hz]";
+    lv2:default 12000;
+    lv2:minimum 6000;
+    lv2:maximum 18000;
+    epg:group tap_eq_lv2:BAND7_GROUP ;
+],
+[
+    a lv2:InputPort, lv2:ControlPort;
+    lv2:index 15;
+    lv2:symbol "Band8FreqHz";
+    lv2:name "Band 8 Freq [Hz]";
+    lv2:default 15000;
+    lv2:minimum 10000;
+    lv2:maximum 20000;
+    epg:group tap_eq_lv2:BAND8_GROUP ;
+],
+[
+    a lv2:InputPort, lv2:AudioPort;
+    lv2:index 16;
+    lv2:symbol "Input";
+    lv2:name "Input";
+],
+[
+    a lv2:OutputPort, lv2:AudioPort;
+    lv2:index 17;
+    lv2:symbol "Output";
+    lv2:name "Output";
+].
+
+tap_eq_lv2:BAND1_GROUP
+	a epg:InputGroup ;
+	lv2:symbol "BAND1" ;
+	lv2:name "Band 1" .
+tap_eq_lv2:BAND2_GROUP
+	a epg:InputGroup ;
+	lv2:symbol "BAND2" ;
+	lv2:name "Band 2" .
+tap_eq_lv2:BAND3_GROUP
+	a epg:InputGroup ;
+	lv2:symbol "BAND3" ;
+	lv2:name "Band 3" .
+tap_eq_lv2:BAND4_GROUP
+	a epg:InputGroup ;
+	lv2:symbol "BAND4" ;
+	lv2:name "Band 4" .
+tap_eq_lv2:BAND5_GROUP
+	a epg:InputGroup ;
+	lv2:symbol "BAND5" ;
+	lv2:name "Band 5" .
+tap_eq_lv2:BAND6_GROUP
+	a epg:InputGroup ;
+	lv2:symbol "BAND6" ;
+	lv2:name "Band 6" .
+tap_eq_lv2:BAND7_GROUP
+	a epg:InputGroup ;
+	lv2:symbol "BAND7" ;
+	lv2:name "Band 7" .
+tap_eq_lv2:BAND8_GROUP
+	a epg:InputGroup ;
+	lv2:symbol "BAND8" ;
+	lv2:name "Band 8" .

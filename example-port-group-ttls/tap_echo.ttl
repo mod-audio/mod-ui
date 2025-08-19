@@ -1,0 +1,181 @@
+@prefix lv2:  <http://lv2plug.in/ns/lv2core#>.
+@prefix doap: <http://usefulinc.com/ns/doap#>.
+@prefix epp: <http://lv2plug.in/ns/ext/port-props/#>.
+@prefix foaf: <http://xmlns.com/foaf/0.1/>.
+@prefix mod: <http://moddevices.com/ns/mod#>.
+@prefix time: <http://lv2plug.in/ns/ext/time/#>.
+@prefix units: <http://lv2plug.in/ns/extensions/units#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix epg: <http://lv2plug.in/ns/ext/port-groups#> .
+
+@prefix tap_echo_lv2: <http://moddevices.com/plugins/tap/echo>.
+
+<http://moddevices.com/plugins/tap/echo>
+    a lv2:Plugin, lv2:DelayPlugin;
+
+doap:name "TAP Stereo Echo";
+
+doap:developer [
+    foaf:name "Tom Szilagyi";
+    foaf:homepage <http://tap-plugins.sourceforge.net/>;
+    foaf:mbox <mailto:tsziagyi@users.sourceforge.net>;
+    ];
+
+doap:maintainer [
+    foaf:name "MOD Team";
+    foaf:homepage <http://moddevices.com>;
+    foaf:mbox <mailto:devel@moddevices.com>;
+    ];
+
+mod:brand "TAP";
+mod:label "Stereo Echo";
+
+doap:license <http://usefulinc.com/doap/licenses/gpl>;
+lv2:optionalFeature lv2:hardRTCapable;
+lv2:minorVersion 7;
+lv2:microVersion 2;
+
+rdfs:comment """
+This plugin supports conventional mono and stereo delays, ping-pong delays and the Haas effect (also known as Cross Delay Stereo). A relatively simple yet quite effective plugin.
+
+source: http://tap-plugins.sourceforge.net/ladspa/echo.html
+""";
+
+lv2:port
+[
+    a lv2:InputPort, lv2:ControlPort;
+    lv2:index 0;
+    lv2:symbol "ldelay";
+    lv2:name "L Delay";
+    lv2:default 300;
+    lv2:minimum 0;
+    lv2:maximum 2000;
+    lv2:designation  time:beatsPerMinute;
+    units:unit units:ms ;
+    epg:group tap_echo_lv2:LEFT_GROUP ;
+],
+[
+    a lv2:InputPort, lv2:ControlPort;
+    lv2:index 1;
+    lv2:symbol "lfeedback";
+    lv2:name "Left Feedback";
+    lv2:default 50;
+    lv2:minimum 0;
+    lv2:maximum 100;
+    epg:group tap_echo_lv2:LEFT_GROUP ;
+],
+[
+    a lv2:InputPort, lv2:ControlPort;
+    lv2:index 2;
+    lv2:symbol "rhaasdelay";
+    lv2:name "Right Haas Delay";
+    lv2:default 300;
+    lv2:minimum 0;
+    lv2:maximum 2000;
+    lv2:designation  time:beatsPerMinute;
+    units:unit units:ms ;
+    epg:group tap_echo_lv2:RIGHT_GROUP ;
+],
+[
+    a lv2:InputPort, lv2:ControlPort;
+    lv2:index 3;
+    lv2:symbol "rhaasfeedback";
+    lv2:name "Right Haas Feedback";
+    lv2:default 50;
+    lv2:minimum 0;
+    lv2:maximum 100;
+    epg:group tap_echo_lv2:RIGHT_GROUP ;
+],
+[
+    a lv2:InputPort, lv2:ControlPort;
+    lv2:index 4;
+    lv2:symbol "lecholevel";
+    lv2:name "Left Echo Level";
+    lv2:default -4;
+    lv2:minimum -70;
+    lv2:maximum 10;
+    epg:group tap_echo_lv2:LEFT_GROUP ;
+],
+[
+    a lv2:InputPort, lv2:ControlPort;
+    lv2:index 5;
+    lv2:symbol "recholevel";
+    lv2:name "Right Echo Level";
+    lv2:default -4;
+    lv2:minimum -70;
+    lv2:maximum 10;
+    epg:group tap_echo_lv2:RIGHT_GROUP ;
+],
+[
+    a lv2:InputPort, lv2:ControlPort;
+    lv2:index 6;
+    lv2:symbol "dryLevel";
+    lv2:name "Dry Level";
+    lv2:default -4;
+    lv2:minimum -70;
+    lv2:maximum 10;
+],
+[
+    a lv2:InputPort, lv2:ControlPort;
+    lv2:index 7;
+    lv2:symbol "crossmode";
+    lv2:name "Cross Mode";
+    lv2:default 1;
+    lv2:minimum 0;
+    lv2:maximum 1;
+    lv2:portProperty lv2:toggled;
+],
+[
+    a lv2:InputPort, lv2:ControlPort;
+    lv2:index 8;
+    lv2:symbol "haaseffect";
+    lv2:name "Haas Effect";
+    lv2:default 0;
+    lv2:minimum 0;
+    lv2:maximum 1;
+    lv2:portProperty lv2:toggled;
+],
+[
+    a lv2:InputPort, lv2:ControlPort;
+    lv2:index 9;
+    lv2:symbol "swapoutputs";
+    lv2:name "Swap Outputs";
+    lv2:default 0;
+    lv2:minimum 0;
+    lv2:maximum 1;
+    lv2:portProperty lv2:toggled;
+],
+[
+    a lv2:InputPort, lv2:AudioPort;
+    lv2:index 10;
+    lv2:symbol "inputleft";
+    lv2:name "Input Left";
+],
+[
+    a lv2:OutputPort, lv2:AudioPort;
+    lv2:index 11;
+    lv2:symbol "outputleft";
+    lv2:name "Output Left";
+],
+[
+    a lv2:InputPort, lv2:AudioPort;
+    lv2:index 12;
+    lv2:symbol "inputright";
+    lv2:name "Input Right";
+],
+[
+    a lv2:OutputPort, lv2:AudioPort;
+    lv2:index 13;
+    lv2:symbol "outputright";
+    lv2:name "Output Right";
+].
+
+
+tap_echo_lv2:LEFT_GROUP
+	a epg:InputGroup ;
+	lv2:symbol "LEFT" ;
+	lv2:name "LEFT" .
+tap_echo_lv2:RIGHT_GROUP
+	a epg:InputGroup ;
+	lv2:symbol "RIGHT" ;
+	lv2:name "Right" .
