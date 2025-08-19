@@ -45,6 +45,12 @@ typedef struct {
 
 typedef struct {
     bool valid;
+    const char* symbol;
+    const char* name;
+} PluginPortGroup;
+
+typedef struct {
+    bool valid;
     unsigned int index;
     const char* name;
     const char* symbol;
@@ -108,6 +114,7 @@ typedef struct {
     int rangeSteps;
     const PluginPortScalePoint* scalePoints;
     const char* shortName;
+    const char* groupSymbol;
 } PluginPort;
 
 typedef struct {
@@ -187,6 +194,7 @@ typedef struct {
     PluginPorts ports;
     const PluginParameter* parameters;
     const PluginPreset* presets;
+    const PluginPortGroup* portGroups;
 } PluginInfo;
 
 typedef struct {

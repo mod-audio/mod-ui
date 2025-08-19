@@ -2,6 +2,8 @@
 CC  ?= gcc
 CXX ?= g++
 
+DEBUG=1
+
 TARGET_MACHINE := $(shell $(CC) -dumpmachine)
 
 ifneq (,$(findstring apple,$(TARGET_MACHINE)))
