@@ -112,6 +112,12 @@
                         <span class="mod-knob-min-value" mod-role="input-control-minimum" mod-port-symbol="{{symbol}}"></span>
                         <span class="mod-knob-max-value" mod-role="input-control-maximum" mod-port-symbol="{{symbol}}"></span>
                         <span class="mod-knob-current-value" mod-role="input-control-value" mod-port-symbol="{{symbol}}"></span>
+                        {{#group}}
+                        <div class="mod-knob-background" style="background-color: var(--group-{{groupIndex}}-color);"></div>
+                        {{/group}}
+                        {{^group}}
+                        <div class="mod-knob-background"></div>
+                        {{/group}}
                         {{#integer}}
                         <div class="mod-knob-image mod-knob-image-steps-{{steps}}" mod-role="input-control-port" mod-port-symbol="{{symbol}}" mod-widget="film"></div>
                         {{/integer}}

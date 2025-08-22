@@ -295,6 +295,7 @@ body > .mod-settings.mod-window-visible {
     position: absolute;
     left: 0;
     padding: 4px 10px;
+    margin-top: 5px;
 }
 .mod-presets .btn {
     font-size: 10px;
@@ -347,8 +348,19 @@ body > .mod-settings.mod-window-visible {
     width:160px;
 }
 
+.mod-pedal-settings .mod-knob-background {
+    position: absolute;
+    left: 46px;
+    top: 42px;
+    width: 68px;
+    height: 68px;
+    overflow: hidden;
+    border-radius: 50%;
+    background-color: var(--no-group-color);
+}
+
 .mod-pedal-settings .mod-knob > span.mod-knob-current-value {
-    bottom:12px;
+    bottom:11px;
     font-weight:bold;
     left: 38px;
     position:absolute;
@@ -389,8 +401,7 @@ body > .mod-settings.mod-window-visible {
     font-weight:bold;
     height:23px;
     line-height:1;
-    margin:3px 0;
-    padding:6px 0;
+    padding:6px 0px 3px 0px;
     position:relative;
     overflow:hidden;
     text-transform:uppercase;
@@ -543,8 +554,7 @@ body > .mod-settings.mod-window-visible {
     font-weight:bold;
     height:23px;
     line-height:1;
-    margin:3px 0;
-    padding:6px 0;
+    padding:6px 0px 3px 0px;
     position:relative;
     overflow:hidden;
     text-align:center;
@@ -894,117 +904,157 @@ body > .mod-settings.mod-window-visible {
 }
 
 /* 32 Groups */
+:root {
+    --no-group-color: #883996;;
+    --group-0-color: #DE7558;
+    --group-1-color: #16ACA6;
+    --group-2-color: #74A16B;
+    --group-3-color: #EC2469;
+    --group-4-color: #860FDA;
+    --group-5-color: #D4BA3D;
+    --group-6-color: #819393;
+    --group-7-color: #9951BF;
+    --group-8-color: #DFB6A5;
+    --group-9-color: #B9A843;
+    --group-10-color: #81DEA8;
+    --group-11-color: #AB386B;
+    --group-12-color: #4D80DD;
+    --group-13-color: #EBE65A;
+    --group-14-color: #0B575B;
+    --group-15-color: #5755F7;
+    --group-16-color: #3DC745;
+    --group-17-color: #F51034;
+    --group-18-color: #84D08B;
+    --group-19-color: #CAB8B0;
+    --group-20-color: #425265;
+    --group-21-color: #341B05;
+    --group-22-color: #055538;
+    --group-23-color: #1AE35C;
+    --group-24-color: #9D0B8E;
+    --group-25-color: #6F8C9A;
+    --group-26-color: #F91114;
+    --group-27-color: #069758;
+    --group-28-color: #2340B9;
+    --group-29-color: #3F7CBB;
+    --group-30-color: #8185D4;
+    --group-31-color: #080F1F;
+}
+
 .mod-pedal-settings .mod-group.mod-group-start > .mod-group-item-title {
-    border-top-left-radius: 2px;
-    border-bottom-left-radius: 2px;
+    border-top-left-radius: 1px;
+    border-bottom-left-radius: 1px;
 }
 
 .mod-pedal-settings .mod-group.mod-group-end > .mod-group-item-title {
-    border-top-right-radius: 2px;
-    border-bottom-right-radius: 2px;
+    border-top-right-radius: 1px;
+    border-bottom-right-radius: 1px;
 }
 
 .mod-pedal-settings .mod-group.mod-group-end {
      margin-right:2px;
 }
 
-.mod-pedal-settings .mod-group-0 > .mod-group-item-title {
-    background-color: #DE7558;
-}
-.mod-pedal-settings .mod-group-1 > .mod-group-item-title {
-    background-color: #16ACA6;
-}
-.mod-pedal-settings .mod-group-2 > .mod-group-item-title {
-    background-color: #74A16B;
-}
-.mod-pedal-settings .mod-group-3 > .mod-group-item-title {
-    background-color: #EC2469;
-}
-.mod-pedal-settings .mod-group-4 > .mod-group-item-title {
-    background-color: #860FDA;
-}
-.mod-pedal-settings .mod-group-5 > .mod-group-item-title {
-    background-color: #D4BA3D;
-}
-.mod-pedal-settings .mod-group-6 > .mod-group-item-title {
-    background-color: #819393;
-}
-.mod-pedal-settings .mod-group-7 > .mod-group-item-title {
-    background-color: #9951BF;
-}
-.mod-pedal-settings .mod-group-8 > .mod-group-item-title {
-    background-color: #DFB6A5;
-}
-.mod-pedal-settings .mod-group-9 > .mod-group-item-title {
-    background-color: #B9A843;
-}
-.mod-pedal-settings .mod-group-10 > .mod-group-item-title {
-    background-color: #81DEA8;
-}
-.mod-pedal-settings .mod-group-11 > .mod-group-item-title {
-    background-color: #AB386B;
-}
-.mod-pedal-settings .mod-group-12 > .mod-group-item-title {
-    background-color: #4D80DD;
-}
-.mod-pedal-settings .mod-group-13 > .mod-group-item-title {
-    background-color: #EBE65A;
-}
-.mod-pedal-settings .mod-group-14 > .mod-group-item-title {
-    background-color: #0B575B;
-}
-.mod-pedal-settings .mod-group-15 > .mod-group-item-title {
-    background-color: #5755F7;
-}
-.mod-pedal-settings .mod-group-16 > .mod-group-item-title {
-    background-color: #3DC745;
-}
-.mod-pedal-settings .mod-group-17 > .mod-group-item-title {
-    background-color: #F51034;
-}
-.mod-pedal-settings .mod-group-18 > .mod-group-item-title {
-    background-color: #F91114;
-}
-.mod-pedal-settings .mod-group-19 > .mod-group-item-title {
-    background-color: #84D08B;
-}
-.mod-pedal-settings .mod-group-20 > .mod-group-item-title {
-    background-color: #CAB8B0;
-}
-.mod-pedal-settings .mod-group-21 > .mod-group-item-title {
-    background-color: #425265;
-}
-.mod-pedal-settings .mod-group-22 > .mod-group-item-title {
-    background-color: #341B05;
-}
-.mod-pedal-settings .mod-group-23 > .mod-group-item-title {
-    background-color: #055538;
-}
-.mod-pedal-settings .mod-group-24 > .mod-group-item-title {
-    background-color: #1AE35C;
-}
-.mod-pedal-settings .mod-group-25 > .mod-group-item-title {
-    background-color: #9D0B8E;
-}
-.mod-pedal-settings .mod-group-26 > .mod-group-item-title {
-    background-color: #6F8C9A;
-}
-.mod-pedal-settings .mod-group-27 > .mod-group-item-title {
-    background-color: #069758;
-}
-.mod-pedal-settings .mod-group-28 > .mod-group-item-title {
-    background-color: #2340B9;
-}
-.mod-pedal-settings .mod-group-29 > .mod-group-item-title {
-    background-color: #3F7CBB;
-}
-.mod-pedal-settings .mod-group-30 > .mod-group-item-title {
-    background-color: #8185D4;
-}
-.mod-pedal-settings .mod-group-31 > .mod-group-item-title {
-    background-color: #080F1F;
+.mod-pedal-settings .mod-group-item-title  {
+     border-top-width: 3px;
+     border-top-style: solid;
 }
 
+.mod-pedal-settings .mod-group-0 > .mod-group-item-title {
+    border-top-color: var(--group-0-color);
+}
+.mod-pedal-settings .mod-group-1 > .mod-group-item-title {
+    border-top-color: var(--group-1-color);
+}
+.mod-pedal-settings .mod-group-2 > .mod-group-item-title {
+    border-top-color: var(--group-2-color);
+}
+.mod-pedal-settings .mod-group-3 > .mod-group-item-title {
+    border-top-color: var(--group-3-color);
+}
+.mod-pedal-settings .mod-group-4 > .mod-group-item-title {
+    border-top-color: var(--group-4-color);
+}
+.mod-pedal-settings .mod-group-5 > .mod-group-item-title {
+    border-top-color: var(--group-5-color);
+}
+.mod-pedal-settings .mod-group-6 > .mod-group-item-title {
+    border-top-color: var(--group-6-color);
+}
+.mod-pedal-settings .mod-group-7 > .mod-group-item-title {
+    border-top-color: var(--group-7-color);
+}
+.mod-pedal-settings .mod-group-8 > .mod-group-item-title {
+    border-top-color: var(--group-8-color);
+}
+.mod-pedal-settings .mod-group-9 > .mod-group-item-title {
+    border-top-color: var(--group-9-color);
+}
+.mod-pedal-settings .mod-group-10 > .mod-group-item-title {
+    border-top-color: var(--group-10-color);
+}
+.mod-pedal-settings .mod-group-11 > .mod-group-item-title {
+    border-top-color: var(--group-11-color);
+}
+.mod-pedal-settings .mod-group-12 > .mod-group-item-title {
+    border-top-color: var(--group-12-color);
+}
+.mod-pedal-settings .mod-group-13 > .mod-group-item-title {
+    border-top-color: var(--group-13-color);
+}
+.mod-pedal-settings .mod-group-14 > .mod-group-item-title {
+    border-top-color: var(--group-14-color);
+}
+.mod-pedal-settings .mod-group-15 > .mod-group-item-title {
+    border-top-color: var(--group-15-color);
+}
+.mod-pedal-settings .mod-group-16 > .mod-group-item-title {
+    border-top-color: var(--group-16-color);
+}
+.mod-pedal-settings .mod-group-17 > .mod-group-item-title {
+    border-top-color: var(--group-17-color);
+}
+.mod-pedal-settings .mod-group-18 > .mod-group-item-title {
+    border-top-color: var(--group-18-color);
+}
+.mod-pedal-settings .mod-group-19 > .mod-group-item-title {
+    border-top-color: var(--group-19-color);
+}
+.mod-pedal-settings .mod-group-20 > .mod-group-item-title {
+    border-top-color: var(--group-20-color);
+}
+.mod-pedal-settings .mod-group-21 > .mod-group-item-title {
+    border-top-color: var(--group-21-color);
+}
+.mod-pedal-settings .mod-group-22 > .mod-group-item-title {
+    border-top-color: var(--group-22-color);
+}
+.mod-pedal-settings .mod-group-23 > .mod-group-item-title {
+    border-top-color: var(--group-23-color);
+}
+.mod-pedal-settings .mod-group-24 > .mod-group-item-title {
+    border-top-color: var(--group-24-color);
+}
+.mod-pedal-settings .mod-group-25 > .mod-group-item-title {
+    border-top-color: var(--group-25-color);
+}
+.mod-pedal-settings .mod-group-26 > .mod-group-item-title {
+    border-top-color: var(--group-26-color);
+}
+.mod-pedal-settings .mod-group-27 > .mod-group-item-title {
+    border-top-color: var(--group-27-color);
+}
+.mod-pedal-settings .mod-group-28 > .mod-group-item-title {
+    border-top-color: var(--group-28-color);
+}
+.mod-pedal-settings .mod-group-29 > .mod-group-item-title {
+    border-top-color: var(--group-29-color);
+}
+.mod-pedal-settings .mod-group-30 > .mod-group-item-title {
+    border-top-color: var(--group-30-color);
+}
+.mod-pedal-settings .mod-group-31 > .mod-group-item-title {
+    border-top-color: var(--group-31-color);
+}
 
 /* FIXME put it in the right place */
 .mod-pedal.replaceable-drop {
