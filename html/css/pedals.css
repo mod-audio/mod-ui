@@ -689,10 +689,19 @@ body > .mod-settings.mod-window-visible {
     float:left;
     height:160px;
     margin-bottom:2px;
-    margin-right:2px;
     position:relative;
     text-align:center;
     width:160px;
+}
+
+.mod-pedal-settings .mod-switch-background {
+    height: 23px;
+    left: 81px;
+    position: absolute;
+    overflow: hidden;
+    top: 77px;
+    width: 44px;
+    background-color: var(--no-group-color);
 }
 
 .mod-pedal-settings .mod-switch > span.mod-switch-title {
@@ -700,9 +709,9 @@ body > .mod-settings.mod-window-visible {
     display:block;
     font-size:11px;
     font-weight:bold;
-    height:11px;
+    height:23px;
     line-height:1;
-    margin:9px 0;
+    padding:6px 0px 3px 0px;
     position:relative;
     overflow:hidden;
     text-transform:uppercase;
@@ -946,12 +955,12 @@ body > .mod-settings.mod-window-visible {
 }
 
 .mod-pedal-settings .mod-group.mod-group-end > .mod-group-item-title {
-    border-top-right-radius: 1px;
-    border-bottom-right-radius: 1px;
+    /* border-top-right-radius: 1px;
+    border-bottom-right-radius: 1px; */
 }
 
 .mod-pedal-settings .mod-group.mod-group-end {
-     margin-right:2px;
+     margin-right:3px;
 }
 
 .mod-pedal-settings .mod-group-item-title  {
