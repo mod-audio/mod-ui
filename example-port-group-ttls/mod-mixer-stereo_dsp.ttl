@@ -1,0 +1,452 @@
+@prefix doap: <http://usefulinc.com/ns/doap#> .
+@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+@prefix lv2:  <http://lv2plug.in/ns/lv2core#> .
+@prefix mod:  <http://moddevices.com/ns/mod#> .
+@prefix opts: <http://lv2plug.in/ns/ext/options#> .
+@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix unit: <http://lv2plug.in/ns/extensions/units#> .
+@prefix epg: <http://lv2plug.in/ns/ext/port-groups#> .
+
+@prefix mod_stmix_lv2: <http://moddevices.com/plugins/mod-devel/mixer-stereo>.
+
+<http://moddevices.com/plugins/mod-devel/mixer-stereo>
+    a lv2:Plugin ;
+
+    lv2:extensionData opts:interface ;
+
+    lv2:optionalFeature <http://lv2plug.in/ns/lv2core#hardRTCapable> ,
+                        <http://lv2plug.in/ns/ext/buf-size#boundedBlockLength> ;
+
+    lv2:requiredFeature opts:options ,
+                        <http://lv2plug.in/ns/ext/urid#map> ;
+
+    opts:supportedOption <http://lv2plug.in/ns/ext/buf-size#nominalBlockLength> ,
+                         <http://lv2plug.in/ns/ext/buf-size#maxBlockLength> ,
+                         <http://lv2plug.in/ns/ext/parameters#sampleRate> ;
+
+    lv2:port [
+        a lv2:InputPort, lv2:AudioPort ;
+        lv2:index 0 ;
+        lv2:symbol "lv2_audio_in_1" ;
+        lv2:name "Audio Input 1" ;
+    ] ,
+    [
+        a lv2:InputPort, lv2:AudioPort ;
+        lv2:index 1 ;
+        lv2:symbol "lv2_audio_in_2" ;
+        lv2:name "Audio Input 2" ;
+    ] ,
+    [
+        a lv2:InputPort, lv2:AudioPort ;
+        lv2:index 2 ;
+        lv2:symbol "lv2_audio_in_3" ;
+        lv2:name "Audio Input 3" ;
+    ] ,
+    [
+        a lv2:InputPort, lv2:AudioPort ;
+        lv2:index 3 ;
+        lv2:symbol "lv2_audio_in_4" ;
+        lv2:name "Audio Input 4" ;
+    ] ,
+    [
+        a lv2:InputPort, lv2:AudioPort ;
+        lv2:index 4 ;
+        lv2:symbol "lv2_audio_in_5" ;
+        lv2:name "Audio Input 5" ;
+    ] ,
+    [
+        a lv2:InputPort, lv2:AudioPort ;
+        lv2:index 5 ;
+        lv2:symbol "lv2_audio_in_6" ;
+        lv2:name "Audio Input 6" ;
+    ] ,
+    [
+        a lv2:InputPort, lv2:AudioPort ;
+        lv2:index 6 ;
+        lv2:symbol "lv2_audio_in_7" ;
+        lv2:name "Audio Input 7" ;
+    ] ,
+    [
+        a lv2:InputPort, lv2:AudioPort ;
+        lv2:index 7 ;
+        lv2:symbol "lv2_audio_in_8" ;
+        lv2:name "Audio Input 8" ;
+    ] ;
+
+    lv2:port [
+        a lv2:OutputPort, lv2:AudioPort ;
+        lv2:index 8 ;
+        lv2:symbol "lv2_audio_out_1" ;
+        lv2:name "Audio Output 1" ;
+    ] ,
+    [
+        a lv2:OutputPort, lv2:AudioPort ;
+        lv2:index 9 ;
+        lv2:symbol "lv2_audio_out_2" ;
+        lv2:name "Audio Output 2" ;
+    ] ,
+    [
+        a lv2:OutputPort, lv2:AudioPort ;
+        lv2:index 10 ;
+        lv2:symbol "lv2_audio_out_3" ;
+        lv2:name "Audio Output 3" ;
+    ] ,
+    [
+        a lv2:OutputPort, lv2:AudioPort ;
+        lv2:index 11 ;
+        lv2:symbol "lv2_audio_out_4" ;
+        lv2:name "Audio Output 4" ;
+    ] ;
+
+    lv2:port [
+        a lv2:InputPort, lv2:ControlPort ;
+        lv2:index 12 ;
+        lv2:name """Volume 1""" ;
+        lv2:symbol "Volume1" ;
+        lv2:default 0.500000 ;
+        lv2:minimum 0.000000 ;
+        lv2:maximum 1.000000 ;
+        epg:group mod_stmix_lv2:CH1_GROUP ;
+    ] ,
+    [
+        a lv2:InputPort, lv2:ControlPort ;
+        lv2:index 13 ;
+        lv2:name """Panning 1""" ;
+        lv2:symbol "Panning1" ;
+        lv2:default 0.000000 ;
+        lv2:minimum -1.000000 ;
+        lv2:maximum 1.000000 ;
+        epg:group mod_stmix_lv2:CH1_GROUP ;
+    ] ,
+    [
+        a lv2:InputPort, lv2:ControlPort ;
+        lv2:index 14 ;
+        lv2:name """Solo 1""" ;
+        lv2:symbol "Solo1" ;
+        lv2:default 0.000000 ;
+        lv2:minimum 0.000000 ;
+        lv2:maximum 1.000000 ;
+        lv2:portProperty lv2:toggled ;
+        epg:group mod_stmix_lv2:CH1_GROUP ;
+    ] ,
+    [
+        a lv2:InputPort, lv2:ControlPort ;
+        lv2:index 15 ;
+        lv2:name """Mute 1""" ;
+        lv2:symbol "Mute1" ;
+        lv2:default 0.000000 ;
+        lv2:minimum 0.000000 ;
+        lv2:maximum 1.000000 ;
+        lv2:portProperty lv2:toggled ;
+        epg:group mod_stmix_lv2:CH1_GROUP ;
+    ] ,
+    [
+        a lv2:InputPort, lv2:ControlPort ;
+        lv2:index 16 ;
+        lv2:name """Alt 1""" ;
+        lv2:symbol "Alt1" ;
+        lv2:default 0.000000 ;
+        lv2:minimum 0.000000 ;
+        lv2:maximum 1.000000 ;
+        lv2:portProperty lv2:toggled ;
+        epg:group mod_stmix_lv2:CH1_GROUP ;
+    ] ,
+    [
+        a lv2:InputPort, lv2:ControlPort ;
+        lv2:index 17 ;
+        lv2:name """Volume 2""" ;
+        lv2:symbol "Volume2" ;
+        lv2:default 0.500000 ;
+        lv2:minimum 0.000000 ;
+        lv2:maximum 1.000000 ;
+        epg:group mod_stmix_lv2:CH2_GROUP ;
+    ] ,
+    [
+        a lv2:InputPort, lv2:ControlPort ;
+        lv2:index 18 ;
+        lv2:name """Panning 2""" ;
+        lv2:symbol "Panning2" ;
+        lv2:default 0.000000 ;
+        lv2:minimum -1.000000 ;
+        lv2:maximum 1.000000 ;
+        epg:group mod_stmix_lv2:CH2_GROUP ;
+    ] ,
+    [
+        a lv2:InputPort, lv2:ControlPort ;
+        lv2:index 19 ;
+        lv2:name """Solo 2""" ;
+        lv2:symbol "Solo2" ;
+        lv2:default 0.000000 ;
+        lv2:minimum 0.000000 ;
+        lv2:maximum 1.000000 ;
+        lv2:portProperty lv2:toggled ;
+        epg:group mod_stmix_lv2:CH2_GROUP ;
+    ] ,
+    [
+        a lv2:InputPort, lv2:ControlPort ;
+        lv2:index 20 ;
+        lv2:name """Mute 2""" ;
+        lv2:symbol "Mute2" ;
+        lv2:default 0.000000 ;
+        lv2:minimum 0.000000 ;
+        lv2:maximum 1.000000 ;
+        lv2:portProperty lv2:toggled ;
+        epg:group mod_stmix_lv2:CH2_GROUP ;
+    ] ,
+    [
+        a lv2:InputPort, lv2:ControlPort ;
+        lv2:index 21 ;
+        lv2:name """Alt 2""" ;
+        lv2:symbol "Alt2" ;
+        lv2:default 0.000000 ;
+        lv2:minimum 0.000000 ;
+        lv2:maximum 1.000000 ;
+        lv2:portProperty lv2:toggled ;
+        epg:group mod_stmix_lv2:CH2_GROUP ;
+    ] ,
+    [
+        a lv2:InputPort, lv2:ControlPort ;
+        lv2:index 22 ;
+        lv2:name """Volume 3""" ;
+        lv2:symbol "Volume3" ;
+        lv2:default 0.500000 ;
+        lv2:minimum 0.000000 ;
+        lv2:maximum 1.000000 ;
+        epg:group mod_stmix_lv2:CH3_GROUP ;
+    ] ,
+    [
+        a lv2:InputPort, lv2:ControlPort ;
+        lv2:index 23 ;
+        lv2:name """Panning 3""" ;
+        lv2:symbol "Panning3" ;
+        lv2:default 0.000000 ;
+        lv2:minimum -1.000000 ;
+        lv2:maximum 1.000000 ;
+        epg:group mod_stmix_lv2:CH3_GROUP ;
+    ] ,
+    [
+        a lv2:InputPort, lv2:ControlPort ;
+        lv2:index 24 ;
+        lv2:name """Solo 3""" ;
+        lv2:symbol "Solo3" ;
+        lv2:default 0.000000 ;
+        lv2:minimum 0.000000 ;
+        lv2:maximum 1.000000 ;
+        lv2:portProperty lv2:toggled ;
+        epg:group mod_stmix_lv2:CH3_GROUP ;
+    ] ,
+    [
+        a lv2:InputPort, lv2:ControlPort ;
+        lv2:index 25 ;
+        lv2:name """Mute 3""" ;
+        lv2:symbol "Mute3" ;
+        lv2:default 0.000000 ;
+        lv2:minimum 0.000000 ;
+        lv2:maximum 1.000000 ;
+        lv2:portProperty lv2:toggled ;
+        epg:group mod_stmix_lv2:CH3_GROUP ;
+    ] ,
+    [
+        a lv2:InputPort, lv2:ControlPort ;
+        lv2:index 26 ;
+        lv2:name """Alt 3""" ;
+        lv2:symbol "Alt3" ;
+        lv2:default 0.000000 ;
+        lv2:minimum 0.000000 ;
+        lv2:maximum 1.000000 ;
+        lv2:portProperty lv2:toggled ;
+        epg:group mod_stmix_lv2:CH3_GROUP ;
+    ] ,
+    [
+        a lv2:InputPort, lv2:ControlPort ;
+        lv2:index 27 ;
+        lv2:name """Volume 4""" ;
+        lv2:symbol "Volume4" ;
+        lv2:default 0.500000 ;
+        lv2:minimum 0.000000 ;
+        lv2:maximum 1.000000 ;
+        epg:group mod_stmix_lv2:CH4_GROUP ;
+    ] ,
+    [
+        a lv2:InputPort, lv2:ControlPort ;
+        lv2:index 28 ;
+        lv2:name """Panning 4""" ;
+        lv2:symbol "Panning4" ;
+        lv2:default 0.000000 ;
+        lv2:minimum -1.000000 ;
+        lv2:maximum 1.000000 ;
+        epg:group mod_stmix_lv2:CH4_GROUP ;
+    ] ,
+    [
+        a lv2:InputPort, lv2:ControlPort ;
+        lv2:index 29 ;
+        lv2:name """Solo 4""" ;
+        lv2:symbol "Solo4" ;
+        lv2:default 0.000000 ;
+        lv2:minimum 0.000000 ;
+        lv2:maximum 1.000000 ;
+        lv2:portProperty lv2:toggled ;
+        epg:group mod_stmix_lv2:CH4_GROUP ;
+    ] ,
+    [
+        a lv2:InputPort, lv2:ControlPort ;
+        lv2:index 30 ;
+        lv2:name """Mute 4""" ;
+        lv2:symbol "Mute4" ;
+        lv2:default 0.000000 ;
+        lv2:minimum 0.000000 ;
+        lv2:maximum 1.000000 ;
+        lv2:portProperty lv2:toggled ;
+        epg:group mod_stmix_lv2:CH4_GROUP ;
+    ] ,
+    [
+        a lv2:InputPort, lv2:ControlPort ;
+        lv2:index 31 ;
+        lv2:name """Alt 4""" ;
+        lv2:symbol "Alt4" ;
+        lv2:default 0.000000 ;
+        lv2:minimum 0.000000 ;
+        lv2:maximum 1.000000 ;
+        lv2:portProperty lv2:toggled ;
+        epg:group mod_stmix_lv2:CH4_GROUP ;
+    ] ,
+    [
+        a lv2:InputPort, lv2:ControlPort ;
+        lv2:index 32 ;
+        lv2:name """Master Volume""" ;
+        lv2:symbol "MasterVolume" ;
+        lv2:default 0.500000 ;
+        lv2:minimum 0.000000 ;
+        lv2:maximum 1.000000 ;
+        epg:group mod_stmix_lv2:OUT_GROUP ;
+    ] ,
+    [
+        a lv2:InputPort, lv2:ControlPort ;
+        lv2:index 33 ;
+        lv2:name """Alt Volume""" ;
+        lv2:symbol "AltVolume" ;
+        lv2:default 0.500000 ;
+        lv2:minimum 0.000000 ;
+        lv2:maximum 1.000000 ;
+        epg:group mod_stmix_lv2:OUT_GROUP ;
+    ] ,
+    [
+        a lv2:InputPort, lv2:ControlPort ;
+        lv2:index 34 ;
+        lv2:name """True Panning""" ;
+        lv2:symbol "TruePanning" ;
+        lv2:default 1.000000 ;
+        lv2:minimum 0.000000 ;
+        lv2:maximum 1.000000 ;
+        lv2:portProperty lv2:toggled ;
+        epg:group mod_stmix_lv2:OUT_GROUP ;
+    ] ,
+    [
+        a lv2:InputPort, lv2:ControlPort ;
+        lv2:index 35 ;
+        lv2:name """Plugin Enabled""" ;
+        lv2:symbol "PluginEnabled" ;
+        lv2:default 1.000000 ;
+        lv2:minimum 0.000000 ;
+        lv2:maximum 1.000000 ;
+        lv2:portProperty lv2:toggled ;
+    ] ,
+    [
+        a lv2:OutputPort, lv2:ControlPort ;
+        lv2:index 36 ;
+        lv2:name """PostFader 1 Level""" ;
+        lv2:symbol "PostFader1Level" ;
+        lv2:minimum 0.000000 ;
+        lv2:maximum 1.000000 ;
+        epg:group mod_stmix_lv2:MIX_GROUP ;
+    ] ,
+    [
+        a lv2:OutputPort, lv2:ControlPort ;
+        lv2:index 37 ;
+        lv2:name """PostFader 2 Level""" ;
+        lv2:symbol "PostFader2Level" ;
+        lv2:minimum 0.000000 ;
+        lv2:maximum 1.000000 ;
+        epg:group mod_stmix_lv2:MIX_GROUP ;
+    ] ,
+    [
+        a lv2:OutputPort, lv2:ControlPort ;
+        lv2:index 38 ;
+        lv2:name """PostFader 3 Level""" ;
+        lv2:symbol "PostFader3Level" ;
+        lv2:minimum 0.000000 ;
+        lv2:maximum 1.000000 ;
+        epg:group mod_stmix_lv2:MIX_GROUP ;
+    ] ,
+    [
+        a lv2:OutputPort, lv2:ControlPort ;
+        lv2:index 39 ;
+        lv2:name """PostFader 4 Level""" ;
+        lv2:symbol "PostFader4Level" ;
+        lv2:minimum 0.000000 ;
+        lv2:maximum 1.000000 ;
+        epg:group mod_stmix_lv2:MIX_GROUP ;
+    ] ,
+    [
+        a lv2:OutputPort, lv2:ControlPort ;
+        lv2:index 40 ;
+        lv2:name """Master Monitor Level""" ;
+        lv2:symbol "MasterMonitorLevel" ;
+        lv2:minimum 0.000000 ;
+        lv2:maximum 1.000000 ;
+        epg:group mod_stmix_lv2:OUT_GROUP ;
+    ] ,
+    [
+        a lv2:OutputPort, lv2:ControlPort ;
+        lv2:index 41 ;
+        lv2:name """Alt Monitor Level""" ;
+        lv2:symbol "AltMonitorLevel" ;
+        lv2:minimum 0.000000 ;
+        lv2:maximum 1.000000 ;
+        epg:group mod_stmix_lv2:OUT_GROUP ;
+    ] ;
+
+    mod:brand "MOD" ;
+    mod:label "Mixer" ;
+
+    doap:name """Mixer""" ;
+    doap:license """Custom""" ;
+
+    doap:maintainer [
+        foaf:name """MOD""" ;
+        foaf:homepage <http://> ;
+    ] ;
+
+    lv2:microVersion 0 ;
+    lv2:minorVersion 2 .
+
+    mod_stmix_lv2:CH1_GROUP
+        a epg:InputGroup ;
+        lv2:symbol "CH1" ;
+        lv2:name "Channel 1" .
+
+    mod_stmix_lv2:CH2_GROUP
+        a epg:InputGroup ;
+        lv2:symbol "CH2" ;
+        lv2:name "Channel 2" .
+
+    mod_stmix_lv2:CH3_GROUP
+        a epg:InputGroup ;
+        lv2:symbol "CH3" ;
+        lv2:name "Channel 3" .
+
+    mod_stmix_lv2:CH4_GROUP
+        a epg:InputGroup ;
+        lv2:symbol "CH4" ;
+        lv2:name "Channel 4" .
+
+    mod_stmix_lv2:OUT_GROUP
+        a epg:InputGroup ;
+        lv2:symbol "OUT" ;
+        lv2:name "Output" .
+
+    mod_stmix_lv2:MIX_GROUP
+        a epg:InputGroup ;
+        lv2:symbol "MIX" ;
+        lv2:name "Mix" .
