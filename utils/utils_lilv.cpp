@@ -731,7 +731,6 @@ static const char* _get_safe_bundlepath(const char* const bundle, size_t& bundle
 // proper lilv_file_uri_parse function that returns absolute paths
 static char* lilv_file_abspath(const char* const path)
 {
-    //fprintf(stderr, ".....lilv_file_abspath: %s\n", path);
     if (char* const lilvpath = lilv_file_uri_parse2(path, nullptr))
     {
         char* const ret = realpath(lilvpath, nullptr);
@@ -1135,7 +1134,6 @@ static void _fill_parameters_for_plugin(LilvWorld* const w,
 // plugins are not truly scanned here, only later per request
 void _refresh()
 {
-    fprintf(stderr, "refresh plugins\n");
     LilvWorld* const w = W;
 
     BUNDLES.clear();
@@ -1159,7 +1157,6 @@ void _refresh()
     }
 
     lilv_node_free(pset_Preset);
-    fprintf(stderr, "refresh plugins done!\n");
 }
 
 // common function used in 2 places
@@ -1983,11 +1980,8 @@ static void _fill_units(LilvWorld* const w,
 const PluginPortGroup _get_port_group(LilvWorld* const w, const LilvNode* const group, const NamespaceDefinitions& ns)
 {
     PluginPortGroup port_group;
-    const char* group_uri = lilv_node_as_string(group);
 
-    fprintf(stderr, "DEBUG: getting group %s\n", group_uri);
     memset(&port_group, 0, sizeof(PluginPortGroup));
-
     if (LilvNode* const group_type = lilv_world_get(w, group, ns.rdf_type, NULL))
     {
         if (lilv_node_equals(group_type, ns.port_groups_inputgroup) || lilv_node_equals(group_type, ns.port_groups_outputgroup))
@@ -2005,10 +1999,6 @@ const PluginPortGroup _get_port_group(LilvWorld* const w, const LilvNode* const 
                     port_group.valid = true;
                     port_group.symbol = strdup(groupsymbol);
                     port_group.name = groupname == nullptr ? strdup(groupsymbol) : strdup(groupname);
-
-                    printf("DEBUG: group %s: %s\n",
-                                                port_group.symbol,
-                                                port_group.name);
 
                     lilv_node_free(group_name);
                 }
@@ -2934,7 +2924,6 @@ const PluginInfo& _get_plugin_info(LilvWorld* const w,
             if (const LilvNode* const symbolnode = lilv_port_get(p, port, ns.port_groups_groupName))
             {
                 const char* groupName = lilv_node_as_string(symbolnode);
-                fprintf(stderr, "group name found: %s\n", groupName);
                 if (!contains(usedGroups, groupName))
                 {
                     const PluginPortGroup& group = _get_port_group(w, symbolnode, ns);
@@ -2944,18 +2933,16 @@ const PluginInfo& _get_plugin_info(LilvWorld* const w,
                         // read the group definition
                         usedGroups[groupName] = group;
                         portinfo.groupSymbol = strdup(group.symbol);
-                        fprintf(stderr, "group definition found: %p -> %s\n", &group, portinfo.groupSymbol);
                     }
                     else
                     {
-                        fprintf(stderr, "group definition not found: %s\n", groupName);
+                        printf("WARNING: Group definition not found for %s\n", groupName);
                     }
                 }
                 else
                 {
                     // already cached
                     portinfo.groupSymbol = strdup(usedGroups[groupName].symbol);
-                    fprintf(stderr, "group found in cache: %s\n", portinfo.groupSymbol);
                 }
             }
 
