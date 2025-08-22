@@ -375,6 +375,7 @@ $('document').ready(function() {
                         pluginData.ports.control.input.forEach(function (port, index) {
                             port.group = undefined;
                             port.groupIndex = undefined;
+                            port.groupCssIndex = undefined; // index used for css coloring
 
                             if (pluginData.portGroups && port.groupSymbol) {
                                 port.group = pluginData.portGroups.find(function (group) {
@@ -385,6 +386,7 @@ $('document').ready(function() {
                                     port.groupStart = false;
                                     port.groupEnd = false;
                                     port.groupIndex = pluginData.portGroups.indexOf(port.group);
+                                    port.groupCssIndex =  port.groupIndex % 32;  // 32 = max supported groups by css
                                 }
                             }
                         });
