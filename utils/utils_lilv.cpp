@@ -20,6 +20,8 @@
 #include <lv2/state/state.h>
 #include <lv2/units/units.h>
 
+#include <lv2/port-groups/port-groups.h>
+
 // do not enable external-ui support in embed targets
 #if !(defined(_MOD_DEVICE_DUO) || defined(_MOD_DEVICE_DUOX) || defined(_MOD_DEVICE_DWARF))
 #define WITH_EXTERNAL_UI_SUPPORT
@@ -210,6 +212,7 @@ static const bool kOnlyShowPluginsWithMODGUI = getenv("MOD_UI_ONLY_SHOW_PLUGINS_
         { nullptr, nullptr }                         \
     },                                               \
     nullptr,                                         \
+    nullptr,                                         \
     nullptr                                          \
 }
 
@@ -295,10 +298,12 @@ inline void fill_iotype(PInfo* const info,
 
 // --------------------------------------------------------------------------------------------------------
 
-#define LILV_NS_INGEN    "http://drobilla.net/ns/ingen#"
-#define LILV_NS_MOD      "http://moddevices.com/ns/mod#"
-#define LILV_NS_MODGUI   "http://moddevices.com/ns/modgui#"
-#define LILV_NS_MODPEDAL "http://moddevices.com/ns/modpedal#"
+#define LILV_NS_INGEN      "http://drobilla.net/ns/ingen#"
+#define LILV_NS_MOD        "http://moddevices.com/ns/mod#"
+#define LILV_NS_MODGUI     "http://moddevices.com/ns/modgui#"
+#define LILV_NS_MODPEDAL   "http://moddevices.com/ns/modpedal#"
+
+#define LV2_NS_PORT_GROUPS "http://lv2plug.in/ns/ext/port-groups#"
 
 #define MOD__CVPort LILV_NS_MOD "CVPort"
 
@@ -366,6 +371,9 @@ struct NamespaceDefinitions {
     LilvNode* units_render;
     LilvNode* units_symbol;
     LilvNode* units_unit;
+    LilvNode* port_groups_inputgroup;
+    LilvNode* port_groups_outputgroup;
+    LilvNode* port_groups_groupName;
     bool initialized;
 
     NamespaceDefinitions(LilvWorld* const w)
@@ -459,6 +467,9 @@ struct NamespaceDefinitions {
         units_render             = lilv_new_uri(w, LV2_UNITS__render);
         units_symbol             = lilv_new_uri(w, LV2_UNITS__symbol);
         units_unit               = lilv_new_uri(w, LV2_UNITS__unit);
+        port_groups_inputgroup   = lilv_new_uri(w, LV2_PORT_GROUPS__InputGroup);
+        port_groups_outputgroup  = lilv_new_uri(w, LV2_PORT_GROUPS__OutputGroup);
+        port_groups_groupName    = lilv_new_uri(w, LV2_PORT_GROUPS__group);
     }
 
     void cleanup()
@@ -530,6 +541,9 @@ struct NamespaceDefinitions {
         lilv_node_free(units_render);
         lilv_node_free(units_symbol);
         lilv_node_free(units_unit);
+        lilv_node_free(port_groups_inputgroup);
+        lilv_node_free(port_groups_outputgroup);
+        lilv_node_free(port_groups_groupName);
     }
 
     static NamespaceDefinitions& getStaticInstance(LilvWorld* const w)
@@ -1963,6 +1977,58 @@ static void _fill_units(LilvWorld* const w,
 
 }
 
+const PluginPortGroup _get_port_group(LilvWorld* const w, const LilvNode* const group, const NamespaceDefinitions& ns)
+{
+    PluginPortGroup port_group;
+
+    memset(&port_group, 0, sizeof(PluginPortGroup));
+    if (LilvNode* const group_type = lilv_world_get(w, group, ns.rdf_type, NULL))
+    {
+        if (lilv_node_equals(group_type, ns.port_groups_inputgroup) || lilv_node_equals(group_type, ns.port_groups_outputgroup))
+        {
+            if (LilvNode* const group_symbol = lilv_world_get(w, group, ns.lv2core_symbol, nullptr))
+            {
+                const char* const groupsymbol = lilv_node_as_string(group_symbol);
+                if (groupsymbol != nullptr && strlen(groupsymbol) > 0)
+                {
+                    // get description
+                    LilvNode* const group_name = lilv_world_get(w, group, ns.lv2core_name, nullptr);
+                    const char* const groupname = (group_name != nullptr) ? lilv_node_as_string(group_name) : nullptr;
+
+                    // create a new port group
+                    port_group.valid = true;
+                    port_group.symbol = strdup(groupsymbol);
+                    port_group.name = groupname == nullptr ? strdup(groupsymbol) : strdup(groupname);
+
+                    lilv_node_free(group_name);
+                }
+                else
+                {
+                    // symbol must be defined for groups
+                    printf("WARNING: invalid group lv2:symbol is empty\n");
+                }
+                lilv_node_free(group_symbol);
+            }
+            else
+            {
+                printf("WARNING: invalid group no lv2:symbol defined\n");
+            }
+
+            lilv_node_free(group_type);
+        }
+        else
+        {
+            printf("WARNING: invalid group no required port type\n");
+        }
+    }
+    else
+    {
+        printf("WARNING: invalid group no rdf:type defined\n");
+    }
+
+    return port_group;
+}
+
 const PluginInfo& _get_plugin_info(LilvWorld* const w,
                                    const LilvPlugin* const p,
                                    const NamespaceDefinitions& ns)
@@ -2611,6 +2677,7 @@ const PluginInfo& _get_plugin_info(LilvWorld* const w,
         uint32_t countControlInput=0, countControlOutput=0;
         uint32_t countCvInput=0,      countCvOutput=0;
         uint32_t countMidiInput=0,    countMidiOutput=0;
+        std::map<std::string, PluginPortGroup> usedGroups;
 
         // precalculate port counts first
         for (uint32_t i=0; i<count; ++i)
@@ -2852,6 +2919,36 @@ const PluginInfo& _get_plugin_info(LilvWorld* const w,
             }
 
             // ----------------------------------------------------------------------------------------------------
+            // groups
+            portinfo.groupSymbol = nc;
+            if (LilvNode* symbolnode = lilv_port_get(p, port, ns.port_groups_groupName))
+            {
+                const char* groupName = lilv_node_as_string(symbolnode);
+                if (!contains(usedGroups, groupName))
+                {
+                    const PluginPortGroup& group = _get_port_group(w, symbolnode, ns);
+
+                    if (group.valid)
+                    {
+                        // read the group definition
+                        usedGroups[groupName] = group;
+                        portinfo.groupSymbol = strdup(group.symbol);
+                    }
+                    else
+                    {
+                        printf("WARNING: Group definition not found for %s\n", groupName);
+                    }
+                }
+                else
+                {
+                    // already cached
+                    portinfo.groupSymbol = strdup(usedGroups[groupName].symbol);
+                }
+
+                lilv_free(symbolnode);
+            }
+
+            // ----------------------------------------------------------------------------------------------------
             // range steps
 
             if (LilvNodes* const nodes = lilv_port_get_value(p, port, ns.mod_rangeSteps))
@@ -3063,6 +3160,22 @@ const PluginInfo& _get_plugin_info(LilvWorld* const w,
 
         // also iotype
         fill_iotype(&info, countAudioInput, countAudioOutput, countMidiInput, countMidiOutput);
+
+        // --------------------------------------------------------------------------------------------------------
+        // groups
+
+        if (size_t countGroups = usedGroups.size())
+        {
+            PluginPortGroup* const groups = new PluginPortGroup[countGroups+1];
+
+            countGroups = 0;
+            for (auto& group : usedGroups)
+                groups[countGroups++] = group.second;
+
+            memset(&groups[countGroups], 0, sizeof(PluginPortGroup));
+
+            info.portGroups = groups;
+        }
     }
     else
     {
@@ -3413,6 +3526,8 @@ static void _clear_port_info(PluginPort& portinfo)
         free((void*)portinfo.designation);
     if (portinfo.shortName != nc)
         free((void*)portinfo.shortName);
+    if (portinfo.groupSymbol != nc)
+        free((void*)portinfo.groupSymbol);
 
     if (portinfo.properties != nullptr)
     {
@@ -3439,6 +3554,12 @@ static void _clear_port_info(PluginPort& portinfo)
     }
 
     memset(&portinfo, 0, sizeof(PluginPort));
+}
+
+static void _clear_port_group_info(const PluginPortGroup& portGroup)
+{
+    free((void*)portGroup.symbol);
+    free((void*)portGroup.name);
 }
 
 static void _clear_parameter_info(const PluginParameter& parameter)
@@ -3608,6 +3729,13 @@ static void _clear_plugin_info(PluginInfo& info)
         for (int i=0; info.ports.midi.output[i].valid; ++i)
             _clear_port_info(info.ports.midi.output[i]);
         delete[] info.ports.midi.output;
+    }
+
+    if (info.portGroups != nullptr)
+    {
+        for (int i=0; info.portGroups[i].valid; ++i)
+            _clear_port_group_info(info.portGroups[i]);
+        delete[] info.portGroups;
     }
 
     if (info.parameters != nullptr)
