@@ -2886,7 +2886,7 @@ const PluginInfo& _get_plugin_info(LilvWorld* const w,
                     if (LilvNode* const group_name = lilv_world_get(w, group, ns.lv2core_name, nullptr))
                     {
                         if (const char* const namestr = lilv_node_as_string(group_name))
-                            portGroup.symbol = strdup(namestr);
+                            portGroup.name = strdup(namestr);
 
                         lilv_node_free(group_name);
                     }
