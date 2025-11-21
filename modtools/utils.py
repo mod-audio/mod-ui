@@ -224,6 +224,7 @@ class PluginGUI_Mini(Structure):
 class PluginPortGroup(Structure):
     _fields_ = [
         ("valid", c_bool),
+        ("uri", c_char_p),
         ("symbol", c_char_p),
         ("name", c_char_p),
     ]
