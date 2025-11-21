@@ -8,6 +8,7 @@
             <div class="mod-switch bypass">
                 <span class="mod-switch-title">ON/OFF</span>
                 <div class="mod-light on" mod-role="bypass-light"></div>
+                <div class="mod-switch-background"></div>
                 <div class="mod-switch-image" mod-role="bypass"></div>
                 <div class="mod-address" mod-role="bypass-address"></div>
             </div>
@@ -94,8 +95,8 @@
 
             {{#effect.ports.control.input}}
             {{#enumeration}}
-            <div class="mod-enumerated">
-                <span class="mod-enumerated-title">{{shortName}}</span>
+            <div class="mod-enumerated{{#group}} mod-group{{#groupStart}} mod-group-start{{/groupStart}} mod-group-{{groupCssIndex}}{{#groupEnd}} mod-group-end{{/groupEnd}}{{/group}}">
+                <span class="mod-enumerated-title{{#group}} mod-group-item-title{{/group}}">{{shortName}}</span>
                 <div class="mod-address" mod-role="input-control-address" mod-port-symbol="{{symbol}}"></div>
                 <div class="mod-enumerated-list" mod-role="input-control-port" mod-port-symbol="{{symbol}}" mod-widget="custom-select">
                     {{#scalePoints}}
@@ -107,11 +108,17 @@
             {{^enumeration}}
                 {{^trigger}}
                     {{^toggled}}
-                    <div class="mod-knob" title="{{comment}}">
-                        <span class="mod-knob-title">{{shortName}}</span>
+                    <div class="mod-knob{{#group}} mod-group{{#groupStart}} mod-group-start{{/groupStart}} mod-group-{{groupCssIndex}}{{#groupEnd}} mod-group-end{{/groupEnd}}{{/group}}" title="{{comment}}">
+                        <span class="mod-knob-title{{#group}} mod-group-item-title{{/group}}">{{shortName}}</span>
                         <span class="mod-knob-min-value" mod-role="input-control-minimum" mod-port-symbol="{{symbol}}"></span>
                         <span class="mod-knob-max-value" mod-role="input-control-maximum" mod-port-symbol="{{symbol}}"></span>
                         <span class="mod-knob-current-value" mod-role="input-control-value" mod-port-symbol="{{symbol}}"></span>
+                        {{#group}}
+                        <div class="mod-knob-background" style="background-color: var(--group-{{groupCssIndex}}-color);"></div>
+                        {{/group}}
+                        {{^group}}
+                        <div class="mod-knob-background"></div>
+                        {{/group}}
                         {{#integer}}
                         <div class="mod-knob-image mod-knob-image-steps-{{steps}}" mod-role="input-control-port" mod-port-symbol="{{symbol}}" mod-widget="film"></div>
                         {{/integer}}
@@ -122,8 +129,14 @@
                     </div>
                     {{/toggled}}
                     {{#toggled}}
-                    <div class="mod-switch" title="{{comment}}">
-                        <span class="mod-switch-title">{{shortName}}</span>
+                    <div class="mod-switch{{#group}} mod-group{{#groupStart}} mod-group-start{{/groupStart}} mod-group-{{groupCssIndex}}{{#groupEnd}} mod-group-end{{/groupEnd}}{{/group}}" title="{{comment}}">
+                        <span class="mod-switch-title{{#group}} mod-group-item-title{{/group}}">{{shortName}}</span>
+                        {{#group}}
+                        <div class="mod-switch-background" style="background-color: var(--group-{{groupCssIndex}}-color);"></div>
+                        {{/group}}
+                        {{^group}}
+                        <div class="mod-switch-background"></div>
+                        {{/group}}
                         <div class="mod-switch-image" mod-role="input-control-port" mod-port-symbol="{{symbol}}" mod-widget="film"></div>
                         <div class="mod-address" mod-role="input-control-address" mod-port-symbol="{{symbol}}"></div>
                     </div>
