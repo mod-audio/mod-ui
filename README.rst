@@ -18,7 +18,7 @@ NOTE: libjack-jackd2-dev can be replaced by libjack-dev if you are using JACK1; 
 
 Start by cloning the repository::
 
-    $ git clone git://github.com/moddevices/mod-ui
+    $ git clone https://github.com/moddevices/mod-ui.git
     $ cd mod-ui
 
 Create a python virtualenv::
@@ -50,6 +50,10 @@ If you do not have mod-host, you can tell mod-ui to fake the connection to the a
 You will not get any audio, but you will be able to load plugins, make connections, save pedalboards and all that. For this, run::
 
     $ export MOD_DEV_HOST=1
+
+If you want a different directory for the user files for impulse responses, neural network models and so on (the default is /data/user-files)::
+
+    $ export MOD_USER_FILES_DIR=~/mod-workdir/user-data
 
 And now you are ready to start the webserver::
 
