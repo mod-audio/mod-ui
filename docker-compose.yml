@@ -1,0 +1,17 @@
+version: "3.7"
+
+services:
+  mod-ui:
+    build:
+      context: ./
+      dockerfile: docker/Dockerfile
+      args:
+        UID: 1000
+        GID: 1000
+    environment:
+      - MOD_DEV_HOST=1
+      - MOD_DEV_ENVIRONMENT=0
+    volumes:
+      - ./:/home/modui
+    ports:
+      - 8888:8888
