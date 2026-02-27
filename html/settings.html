@@ -185,7 +185,7 @@ function refresh_sysprefs() {
                 $("#prefs-bluetooth-name").prop("disabled", true)
             }
 
-            $("#prefs-audio-256-frames").prop("checked", resp.jack_256_frames)
+            $("#prefs-audio-256-frames").prop("checked", resp.jack_buffer_size == 256)
             $("#prefs-audio-mono-copy").prop("checked", resp.jack_mono_copy)
             $("#prefs-audio-sync-mode").prop("checked", resp.jack_sync_mode)
             $("#prefs-audio-separate-spdif-outs").prop("checked", resp.separate_spdif_outs)
@@ -670,11 +670,11 @@ $('document').ready(function() {
     // --- Audio Server
 
     $("#prefs-audio-256-frames").click(function () {
-        var using256 = $(this).prop("checked")
-        create_or_delete_file("using-256-frames", using256)
+        var bufferSize = $(this).prop("checked") ? '256' : '128'
+        write_file_contents("jack-buffer-size", bufferSize)
 
         $.ajax({
-            url: '/set_buffersize/' + (using256 ? '256' : '128'),
+            url: '/set_buffersize/' + bufferSize,
             method: 'POST',
             cache: false,
             success: function () {},
