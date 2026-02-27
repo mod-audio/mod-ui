@@ -34,7 +34,7 @@ from mod.settings import (DESKTOP, LOG, DEV_API,
                           PLUGINS_HTTP_ADDRESS, PEDALBOARDS_HTTP_ADDRESS, CONTROLCHAIN_HTTP_ADDRESS,
                           USER_BANKS_JSON_FILE,
                           LV2_PLUGIN_DIR, LV2_PEDALBOARDS_DIR, IMAGE_VERSION,
-                          UPDATE_CC_FIRMWARE_FILE, UPDATE_MOD_OS_FILE, UPDATE_MOD_OS_HERLPER_FILE, USING_256_FRAMES_FILE,
+                          UPDATE_CC_FIRMWARE_FILE, UPDATE_MOD_OS_FILE, UPDATE_MOD_OS_HERLPER_FILE,
                           DEFAULT_ICON_TEMPLATE, DEFAULT_SETTINGS_TEMPLATE, DEFAULT_ICON_IMAGE,
                           DEFAULT_PEDALBOARD, DEFAULT_SNAPSHOT_NAME, DATA_DIR, KEYS_PATH, USER_FILES_DIR,
                           FAVORITES_JSON_FILE, PREFERENCES_JSON_FILE, USER_ID_JSON_FILE,
@@ -1947,11 +1947,8 @@ class SetBufferSize(JsonRequestHandler):
 
         # If running a real MOD, save this setting for next boot
         if IMAGE_VERSION is not None:
-            if size == 256:
-                with open(USING_256_FRAMES_FILE, 'w') as fh:
-                    fh.write("# if this file exists, jack will use 256 frames instead of the default 128")
-            elif os.path.exists(USING_256_FRAMES_FILE):
-                os.remove(USING_256_FRAMES_FILE)
+            with open("/data/jack-buffer-size", 'w') as fh:
+                fh.write('%d\n' % size)
 
             os_sync()
 

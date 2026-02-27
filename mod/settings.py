@@ -112,4 +112,3 @@ PLAYBACK_PATH='/tmp/playback.ogg'
 UPDATE_MOD_OS_FILE='/data/{}'.format(os.environ.get('MOD_UPDATE_MOD_OS_FILE', 'modduo.tar').replace('*','cloud'))
 UPDATE_MOD_OS_HERLPER_FILE='/data/boot-restore'
 UPDATE_CC_FIRMWARE_FILE='/tmp/cc-firmware.bin'
-USING_256_FRAMES_FILE='/data/using-256-frames'
