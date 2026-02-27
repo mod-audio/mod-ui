@@ -413,9 +413,9 @@ class SystemPreferences(JsonRequestHandler):
         self.prefs = []
 
         self.make_pref("bluetooth_name", self.OPTION_FILE_CONTENTS, "/data/bluetooth/name", str)
+        self.make_pref("jack_buffer_size", self.OPTION_FILE_CONTENTS, "/data/jack-buffer-size", int, 128)
         self.make_pref("jack_mono_copy", self.OPTION_FILE_EXISTS, "/data/jack-mono-copy")
         self.make_pref("jack_sync_mode", self.OPTION_FILE_EXISTS, "/data/jack-sync-mode")
-        self.make_pref("jack_256_frames", self.OPTION_FILE_EXISTS, "/data/using-256-frames")
         self.make_pref("separate_spdif_outs", self.OPTION_FILE_EXISTS, "/data/separate-spdif-outs")
 
         # Optional services
@@ -529,8 +529,7 @@ class SystemExeChange(JsonRequestHandler):
             if path not in ("autorestart-hmi",
                             "jack-mono-copy",
                             "jack-sync-mode",
-                            "separate-spdif-outs",
-                            "using-256-frames"):
+                            "separate-spdif-outs"):
                 self.write(False)
                 return
 
@@ -549,7 +548,8 @@ class SystemExeChange(JsonRequestHandler):
             path    = self.get_argument('path')
             content = self.get_argument('content').strip()
 
-            if path not in ("bluetooth/name",):
+            if path not in ("bluetooth/name",
+                            "jack-buffer-size"):
                 self.write(False)
                 return
 
