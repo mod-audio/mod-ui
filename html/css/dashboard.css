@@ -16,6 +16,7 @@
     left: 0;
     bottom: 45px;
     right: 0;
+    touch-action: pan-x pan-y;
 }
 
 #pedalboard-dashboard.dev_api:after {
