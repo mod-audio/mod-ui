@@ -34,6 +34,11 @@ subprocesses, write outside the sandboxed temp tree, or block forever:
   the global lilv world, which is NULL until ``modtools.utils.init()`` runs
   -- calling them without init SEGFAULTS the test process (see the phase-6
   spec in docs/ before touching these)
+- ``/pedalboard/list``, ``/banks/`` while a real pedalboard bundle exists in
+  the sandbox pedalboards dir -- get_all_pedalboards SEGFAULTS parsing it
+  (NamespaceDefinitions::init / lilv_new_uri, needs the uninitialized global
+  lilv world). Both are safe against an EMPTY pedalboards dir; save/remove a
+  bundle within one test and only list after the dir is empty again
 """
 
 import atexit
@@ -176,3 +181,41 @@ def user_files():
     _reset_user_files_dir()
     yield _UserFilesHelper(_USER_FILES_DIR)
     _reset_user_files_dir()
+
+
+def _reset_pedalboards_dir():
+    if os.path.isdir(_PEDALBOARDS_DIR):
+        shutil.rmtree(_PEDALBOARDS_DIR)
+    os.makedirs(_PEDALBOARDS_DIR, exist_ok=True)
+
+
+@pytest.fixture(autouse=True)
+def pedalboards_dir():
+    """Function-scoped, autouse: wipe/recreate LV2_PEDALBOARDS_DIR and reset
+    the process-global SESSION around every test.
+
+    Mirrors ``user_files`` above, for the same reason: LV2_PEDALBOARDS_DIR is
+    fixed for the whole process (mod.settings reads MOD_USER_PEDALBOARDS_DIR
+    once, at import time), so we clear its contents instead of swapping
+    directories. Phase 3 (docs/characterization-phase-3.md) is the first
+    phase whose tests write real pedalboard bundles to disk via
+    ``SESSION.host.save()`` (through ``POST /pedalboard/save``) and mutate
+    process-global state on ``SESSION.host`` (``pedalboard_path``,
+    ``pedalboard_snapshots``, ``current_pedalboard_snapshot_id``, ...) via
+    ``/pedalboard/load_bundle/`` and ``/snapshot/*``. Neither the on-disk
+    bundles nor that in-memory state may leak between tests or modules.
+
+    ``SESSION.reset(callback)`` (mod/session.py) runs its callback
+    synchronously here: under ``MOD_DEV_ENVIRONMENT=1`` the FakeHMI is never
+    "initialized" (see module docstring), so ``Session.reset`` takes its
+    synchronous branch straight to ``Host.reset``, and ``FakeHost`` (see
+    ``mod/development.py``) invokes every ``send_notmodified``/
+    ``send_modified`` callback immediately with ``True`` -- no real
+    mod-host, no IOLoop pump required.
+    """
+    _reset_pedalboards_dir()
+    from mod.webserver import SESSION
+    SESSION.reset(lambda ok: None)
+    yield
+    SESSION.reset(lambda ok: None)
+    _reset_pedalboards_dir()
