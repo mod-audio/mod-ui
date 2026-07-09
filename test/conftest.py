@@ -90,11 +90,17 @@ _DATA_DIR = os.path.join(_TEST_ROOT, "data")
 _USER_FILES_DIR = os.path.join(_TEST_ROOT, "user-files")
 _PEDALBOARDS_DIR = os.path.join(_TEST_ROOT, "pedalboards")
 _PLUGINS_DIR = os.path.join(_TEST_ROOT, "lv2")
+# Empty, dedicated -- deliberately NOT the same dir as _PLUGINS_DIR
+# (MOD_USER_PLUGINS_DIR) above, to avoid conflating "where mod-ui thinks user
+# plugins live" with "what lilv scans for the phase-6 tests" even though
+# both happen to be empty today.
+_LV2_SCAN_DIR = os.path.join(_TEST_ROOT, "lv2-path-empty")
 
 os.makedirs(_DATA_DIR, exist_ok=True)
 os.makedirs(_USER_FILES_DIR, exist_ok=True)
 os.makedirs(_PEDALBOARDS_DIR, exist_ok=True)
 os.makedirs(_PLUGINS_DIR, exist_ok=True)
+os.makedirs(_LV2_SCAN_DIR, exist_ok=True)
 
 # Replicate the bits of mod.check_environment() that handlers rely on but
 # that we never call (check_environment() only runs inside prepare()).
@@ -114,6 +120,21 @@ os.environ["MOD_DEFAULT_PEDALBOARD"] = os.path.join(REPO_ROOT, "default.pedalboa
 # write into the REAL user home instead of the sandbox.
 os.environ["MOD_USER_PEDALBOARDS_DIR"] = _PEDALBOARDS_DIR
 os.environ["MOD_USER_PLUGINS_DIR"] = _PLUGINS_DIR
+
+# Phase 6 (docs/characterization-phase-6.md): lilv (the C++ library backing
+# modtools.utils.init()) reads the LV2_PATH env var itself, via plain getenv,
+# at lilv_world_load_all() time inside init() -- not at Python import time
+# and not cached anywhere in Python. Confirmed by reading utils/utils_lilv.cpp
+# init() (~:3893): it only calls lilv_world_new()/lilv_world_load_all(W), with
+# no explicit LV2_PATH manipulation of its own (unlike e.g. get_all_pedalboards
+# a few hundred lines below, which saves/restores LV2_PATH around its own
+# private world). So setting os.environ["LV2_PATH"] here, well before any
+# phase-6 test module even calls init() at fixture time, is sufficient --
+# CPython's os.environ.__setitem__ calls os.putenv() under the hood, which is
+# what a later getenv() in the C library will see. Point it at an empty,
+# sandboxed dir so the lilv world phase 6 builds is always empty and
+# deterministic, never the machine's real ~/.lv2 or /usr/lib/lv2.
+os.environ["LV2_PATH"] = _LV2_SCAN_DIR
 
 # ----------------------------------------------------------------------------
 # 1b. Sandbox guard: every writable path mod.settings resolves must live
