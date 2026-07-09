@@ -23,16 +23,39 @@ class TestFilesListCors(ModUITestCase):
         self.assertNotIn("Access-Control-Allow-Origin", response.headers)
 
 
-class TestHelloCors(ModUITestCase):
+class TestHelloAllowedOriginCors(ModUITestCase):
+    """Base case for the allow-list: subclasses only change ``origin``."""
+
     __test__ = True
+    origin = "https://mod.audio"
 
     def test_hello_echoes_allowed_origin(self):
-        response = self.fetch("/hello", headers={"Origin": "https://mod.audio"})
+        response = self.fetch("/hello", headers={"Origin": self.origin})
         self.assertEqual(response.code, 200)
         self.assertEqual(
             response.headers.get("Access-Control-Allow-Origin"),
-            "https://mod.audio",
+            self.origin,
         )
+
+
+class TestHelloAllowedOriginModdevicesCors(TestHelloAllowedOriginCors):
+    origin = "https://moddevices.com"
+
+
+class TestHelloAllowedOriginPlainHttpCors(TestHelloAllowedOriginCors):
+    origin = "http://mod.audio"
+
+
+class TestHelloAllowedOriginModAudioSubdomainCors(TestHelloAllowedOriginCors):
+    origin = "https://pedalboards.mod.audio"
+
+
+class TestHelloAllowedOriginModdevicesSubdomainCors(TestHelloAllowedOriginCors):
+    origin = "https://cloud.moddevices.com"
+
+
+class TestHelloForeignOriginCors(ModUITestCase):
+    __test__ = True
 
     def test_hello_omits_header_for_foreign_origin(self):
         response = self.fetch("/hello", headers={"Origin": "https://evil.example"})

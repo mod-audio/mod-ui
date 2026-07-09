@@ -15,6 +15,25 @@ tornado ``web.Application`` built at import time) against a throwaway on-disk
 tree. Nothing here calls ``mod.webserver.run()`` or ``prepare()`` -- those pull
 in real hardware / mod-host / JACK setup that isn't available in this dev
 environment.
+
+NEVER-CALL LIST -- routes no test in this suite may fetch. They run
+subprocesses, write outside the sandboxed temp tree, or block forever:
+
+- ``/system/cleanup``          deletes ``~/.pedalboards`` and ``~/.lv2``
+- ``/system/exechange``        reboot/systemctl/mod-backup subprocesses
+- ``/update/download/``, ``/update/begin``      writes under /data, /tmp
+- ``/controlchain/download/``  firmware download, subprocess mv to /tmp
+- ``/switch_cpu_freq/``        writes /sys/devices/system/cpu
+- ``/recording/*``             needs JACK; ``play/wait`` long-polls forever
+- ``/pedalboard/pack_bundle``, ``/pedalboard/load_web``,
+  ``/pedalboard/factorycopy``, ``/pedalboard/image/generate``   subprocesses
+- ``/effect/install``, ``/sdk/install``, ``/package/uninstall`` touch the
+  plugin dir via subprocess tar / rmtree
+- ``/effect/list``, ``/effect/get*``, ``/effect/bulk``, ``/effect/add``,
+  ``/effect/image``, ``/effect/file``, ``/resources/(.*)?uri=``  dereference
+  the global lilv world, which is NULL until ``modtools.utils.init()`` runs
+  -- calling them without init SEGFAULTS the test process (see the phase-6
+  spec in docs/ before touching these)
 """
 
 import atexit
@@ -50,9 +69,13 @@ _TEST_ROOT = tempfile.mkdtemp(prefix="modui-test-")
 
 _DATA_DIR = os.path.join(_TEST_ROOT, "data")
 _USER_FILES_DIR = os.path.join(_TEST_ROOT, "user-files")
+_PEDALBOARDS_DIR = os.path.join(_TEST_ROOT, "pedalboards")
+_PLUGINS_DIR = os.path.join(_TEST_ROOT, "lv2")
 
 os.makedirs(_DATA_DIR, exist_ok=True)
 os.makedirs(_USER_FILES_DIR, exist_ok=True)
+os.makedirs(_PEDALBOARDS_DIR, exist_ok=True)
+os.makedirs(_PLUGINS_DIR, exist_ok=True)
 
 # Replicate the bits of mod.check_environment() that handlers rely on but
 # that we never call (check_environment() only runs inside prepare()).
@@ -67,6 +90,32 @@ os.environ["MOD_DATA_DIR"] = _DATA_DIR
 os.environ["MOD_USER_FILES_DIR"] = _USER_FILES_DIR
 os.environ["MOD_HTML_DIR"] = os.path.join(REPO_ROOT, "html")
 os.environ["MOD_DEFAULT_PEDALBOARD"] = os.path.join(REPO_ROOT, "default.pedalboard")
+# Without these two, mod.settings defaults LV2_PEDALBOARDS_DIR/LV2_PLUGIN_DIR
+# to ~/.pedalboards and ~/.lv2 -- and pedalboard save/remove handlers would
+# write into the REAL user home instead of the sandbox.
+os.environ["MOD_USER_PEDALBOARDS_DIR"] = _PEDALBOARDS_DIR
+os.environ["MOD_USER_PLUGINS_DIR"] = _PLUGINS_DIR
+
+# ----------------------------------------------------------------------------
+# 1b. Sandbox guard: every writable path mod.settings resolves must live
+#     under the throwaway test root. mod.settings only reads env vars and
+#     stdlib (importing it here is cheap and does NOT load libmod_utils.so),
+#     so this catches a broken/renamed MOD_* env var before any test can
+#     write outside the sandbox.
+# ----------------------------------------------------------------------------
+
+from mod import settings as _mod_settings  # noqa: E402  (needs env set above)
+
+for _name in ("DATA_DIR", "USER_FILES_DIR", "LV2_PEDALBOARDS_DIR", "LV2_PLUGIN_DIR"):
+    _path = os.path.realpath(getattr(_mod_settings, _name))
+    if not _path.startswith(os.path.realpath(_TEST_ROOT) + os.sep):
+        pytest.exit(
+            "SANDBOX GUARD: mod.settings.{0} resolves to {1}, which is outside "
+            "the test root {2}. Refusing to run -- tests could write into real "
+            "user/system directories. Check the MOD_* env vars set in "
+            "test/conftest.py against mod/settings.py.".format(_name, _path, _TEST_ROOT),
+            returncode=1,
+        )
 
 # Make the repo importable the same way server.py does (test/ is not on
 # sys.path by default under some pytest invocations).
