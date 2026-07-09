@@ -1,0 +1,4 @@
+pytest
+
+# Python 3.12 removed ssl.match_hostname, which tornado 4.3 falls back to importing from this package
+backports.ssl_match_hostname; python_version >= "3.12"
