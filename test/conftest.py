@@ -39,6 +39,20 @@ subprocesses, write outside the sandboxed temp tree, or block forever:
   (NamespaceDefinitions::init / lilv_new_uri, needs the uninitialized global
   lilv world). Both are safe against an EMPTY pedalboards dir; save/remove a
   bundle within one test and only list after the dir is empty again
+- ``/effect/remove/<instance>``    HANGS (no crash, no timeout server-side --
+  the response is simply never sent) for any instance name not already
+  registered in ``SESSION.host.mapper``, which is every instance name in
+  this sandbox (``POST /effect/add`` is itself banned above, so no instance
+  can ever be registered). Root cause: ``Host.remove_plugin``
+  (``mod/host.py:2604``, ``@gen.coroutine``) calls
+  ``self.mapper.get_id_without_creating(instance)`` *before* its own
+  try/except KeyError guard around ``self.plugins.pop(...)`` a few lines
+  down -- the KeyError from the lookup itself is swallowed into the
+  coroutine's Future instead of propagating, so the handler's
+  ``callback(False)`` is never reached and ``gen.Task`` in ``EffectRemove``
+  never resolves. Confirmed by probing with a 4s client-side
+  ``request_timeout``: HTTP 599 (client timeout), not a fast response. See
+  ``test/test_host_commands.py`` module docstring (phase 4).
 """
 
 import atexit
