@@ -222,6 +222,27 @@ function tone3000ClosePopup () {
    page goes into the bfcache. */
 window.addEventListener('pagehide', tone3000ClosePopup)
 
+/* Browser-side for now: this is a preference about this browser's popup, not device state,
+   and there is no user-settings route to put it behind. localStorage throws outright when
+   storage is disabled, rather than degrading, so every access is guarded. */
+var TONE3000_AUTO_OPEN_KEY = 't3k_auto_open'
+
+function tone3000AutoOpen () {
+    try {
+        return localStorage.getItem(TONE3000_AUTO_OPEN_KEY) === '1'
+    } catch (e) {
+        return false
+    }
+}
+
+function tone3000SetAutoOpen (enabled) {
+    try {
+        localStorage.setItem(TONE3000_AUTO_OPEN_KEY, enabled ? '1' : '0')
+    } catch (e) {
+        // Nothing to do -- the checkbox still works for this session.
+    }
+}
+
 JqueryClass('tone3000Box', {
     init: function (options) {
         var self = $(this)
@@ -238,10 +259,26 @@ JqueryClass('tone3000Box', {
             return false
         })
 
-        /* There is deliberately no windowclose handler. It fires whenever the panel hides --
+        var autoOpen = self.find('#tone3000-autoopen')
+        autoOpen.prop('checked', tone3000AutoOpen())
+        autoOpen.change(function () {
+            tone3000SetAutoOpen(this.checked)
+        })
+
+        /* windowopen fires inside the click that selected the tab, so we still hold the user
+           activation window.open needs. Opening the popup any later gets it blocked.
+
+           There is deliberately no windowclose handler. It fires whenever the panel hides --
            including when the window manager hides it to raise another panel -- and closing
-           the popup there would throw away the user's place in the catalog on every trip
-           through another tab. The popup outlives the panel; only leaving the page closes it. */
+           the popup there meant every trip through another tab threw away the user's place
+           in the catalog. The popup outlives the panel; only leaving the page closes it. */
+        options.open = function () {
+            if (tone3000AutoOpen()) {
+                tone3000OpenSelectPopup()
+            }
+            return false
+        }
+
         self.window(options)
     },
 })
