@@ -38,7 +38,8 @@ from mod.settings import (DESKTOP, LOG, DEV_API,
                           DEFAULT_ICON_TEMPLATE, DEFAULT_SETTINGS_TEMPLATE, DEFAULT_ICON_IMAGE,
                           DEFAULT_PEDALBOARD, DEFAULT_SNAPSHOT_NAME, DATA_DIR, KEYS_PATH, USER_FILES_DIR,
                           FAVORITES_JSON_FILE, PREFERENCES_JSON_FILE, USER_ID_JSON_FILE,
-                          DEV_HOST, UNTITLED_PEDALBOARD_NAME, MODEL_CPU, MODEL_TYPE, PEDALBOARDS_LABS_HTTP_ADDRESS)
+                          DEV_HOST, UNTITLED_PEDALBOARD_NAME, MODEL_CPU, MODEL_TYPE, PEDALBOARDS_LABS_HTTP_ADDRESS,
+                          TONE3000_CLIENT_ID, TONE3000_API)
 
 from mod import (
     TextFileFlusher, WINDOWS,
@@ -1819,6 +1820,8 @@ class TemplateHandler(TimelessRequestHandler):
             'preferences': json.dumps(SESSION.prefs.prefs),
             'bufferSize': get_jack_buffer_size(),
             'sampleRate': get_jack_sample_rate(),
+            'tone3000_client_id': mod_squeeze(TONE3000_CLIENT_ID),
+            'tone3000_api': mod_squeeze(TONE3000_API),
         }
         return context
 
@@ -2260,6 +2263,38 @@ class FilesList(JsonRequestHandler):
             'files': tuple(retfiles[fn] for fn in fullnames),
         })
 
+class FilesUpload(JsonRequestHandler):
+    def post(self, filetype):
+        datadir, extensions = FilesList._get_dir_and_extensions_for_filetype(filetype)
+        if datadir is None:
+            raise web.HTTPError(400)
+
+        # Anything outside the 3 CORS "simple" content-types forces a preflight we do not answer,
+        # so a cross-origin page cannot reach this handler.
+        if self.request.headers.get("Content-Type") != "application/octet-stream":
+            raise web.HTTPError(400)
+
+        # basename() alone would quietly turn "../../etc" into "etc" and write it anyway.
+        # Refuse anything it would rewrite, so a caller never gets a file somewhere it did
+        # not ask for. Both are single path components by the time we join them.
+        folder = self.get_argument("folder", "")
+        name   = self.get_argument("name", "")
+        if folder != os.path.basename(folder) or name != os.path.basename(name):
+            raise web.HTTPError(400)
+        if folder in ("", ".", "..") or name in ("", ".", ".."):
+            raise web.HTTPError(400)
+        if not name.lower().endswith(extensions):
+            raise web.HTTPError(400)
+
+        destdir = os.path.join(USER_FILES_DIR, datadir, folder)
+        os.makedirs(destdir, exist_ok=True)
+        fullname = os.path.join(destdir, name)
+        with open(fullname, 'wb') as fh:
+            fh.write(self.request.body)
+
+        # Same string FilesList builds by walking, so a caller can match on it.
+        self.write({'ok': True, 'fullname': fullname})
+
 settings = {'log_function': lambda handler: None} if not LOG else {}
 
 application = web.Application(
@@ -2352,6 +2387,7 @@ application = web.Application(
 
             # file listing etc
             (r"/files/list/?", FilesList),
+            (r"/files/upload/([a-z]+)/?", FilesUpload),
 
             (r"/reset/?", DashboardClean),
 

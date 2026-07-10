@@ -66,6 +66,8 @@
     PEDALBOARDS_LABS_URL  = '{{pedalboards_labs_url}}'
     CONTROLCHAIN_URL = '{{controlchain_url}}'
     LV2_PLUGIN_DIR   = '{{lv2_plugin_dir}}'
+    TONE3000_CLIENT_ID = '{{tone3000_client_id}}'
+    TONE3000_API       = '{{tone3000_api}}'
     VERSION          = '{{version}}'
     BIN_COMPAT       = '{{bin_compat}}'
     PLATFORM         = '{{platform}}'
@@ -138,6 +140,8 @@ $('document').ready(function() {
         bankList: $('#bank-list'),
         fileManagerBox: $('#file-manager-library'),
         fileManagerBoxTrigger: $('#main-menu #mod-file-manager'),
+        tone3000Box: $('#tone3000-library'),
+        tone3000BoxTrigger: $('#main-menu #mod-tone3000'),
         shareButton: $('#pedalboard-info .js-cloud'),
         shareWindow: $('#share-window'),
         presetSaveBox: $('#save-preset'),
@@ -294,6 +298,7 @@ $('document').ready(function() {
 <script type="text/javascript" src="js/pedalboard.js?v={{version}}"></script>
 <script type="text/javascript" src="js/pedalboards.js?v={{version}}"></script>
 <script type="text/javascript" src="js/file_manager.js?v={{version}}"></script>
+<script type="text/javascript" src="js/tone3000.js?v={{version}}"></script>
 <script type="text/javascript" src="js/banks.js?v={{version}}"></script>
 <script type="text/javascript" src="js/effects.js?v={{version}}"></script>
 <script type="text/javascript" src="js/cloudplugin.js?v={{version}}"></script>
@@ -709,6 +714,7 @@ $('document').ready(function() {
         <div id="mod-bank" class="icon" data-message="Banks"></div>
         <div id="mod-file-manager" class="icon" data-message="File Manager"></div>
         <div id="mod-cloud-plugins" class="icon" data-message="Plugin Store"></div>
+        <div id="mod-tone3000" class="icon" data-message="Tone3000"></div>
         <div id="banks-saving">Auto saving banks...</div>
         <div id="mod-update" class="status icon"></div>
         <div id="mod-status" class="status icon mod-hidden"></div>
@@ -1016,6 +1022,35 @@ $('document').ready(function() {
         </div>
     </div></div>
     <!-- END FILE MANAGER -->
+
+    <!-- TONE3000 -->
+    <div id="tone3000-library" class="mod-hidden mod-init-hidden"><div class="box">
+        <header>
+            <h1 class="bottom top">Tone3000</h1>
+        </header>
+        <!-- The catalog opens in a real OS window floated over this panel. It cannot be
+             an iframe: TONE3000's sign-in cookie is SameSite=Lax and is dropped in a
+             cross-site frame. So there is nothing to draw here but the way in. -->
+        <div id="tone3000-wrapper">
+            <img id="tone3000-logo" src="img/tone3000-icon.png" alt="Tone3000">
+            <h2>Tone3000</h2>
+            <p class="tone3000-hint">
+                Browse the TONE3000 catalog and download the tones you like. Each tone is
+                saved to its own folder under <b>NAM Models</b>, where you will find it in
+                the File Manager.
+            </p>
+            <p class="tone3000-hint">
+                A tone you just downloaded goes to the top of the model list of every NAM
+                plugin on the board, so you can load it without hunting for it.
+            </p>
+            <button id="tone3000-browse">Open TONE3000</button>
+            <label class="tone3000-autoopen">
+                <input type="checkbox" id="tone3000-autoopen">
+                Open TONE3000 automatically when this tab is selected
+            </label>
+        </div>
+    </div></div>
+    <!-- END TONE3000 -->
 
     <!-- MOD UPDATE/UPGRADE TOOLTIP -->
     <div class="tooltip mod-hidden" style="right:102px;">
