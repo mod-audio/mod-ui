@@ -188,6 +188,24 @@ function tone3000OpenSelectPopup () {
     })
 }
 
+/* Called from the popup once a download lands -- it is same-origin with us, so it reaches
+   this directly. Every plugin already on the board is holding a file list from before the
+   download, so hand each one a fresh copy, with the files just written at the top of it.
+   `downloaded` holds the paths the upload route reported writing. */
+function tone3000RefreshFileLists (downloaded) {
+    if (typeof desktop === 'undefined' || !desktop || !desktop.pedalboard) {
+        return
+    }
+    var plugins = desktop.pedalboard.data('plugins')
+    for (var instance in plugins) {
+        var plugin = plugins[instance]
+        var gui = (plugin && plugin.data) ? plugin.data('gui') : null
+        if (gui && gui.refreshFileTypesLists) {
+            gui.refreshFileTypesLists('nammodel', downloaded)
+        }
+    }
+}
+
 function tone3000ClosePopup () {
     if (tone3000Popup && !tone3000Popup.closed) {
         tone3000Popup.close()

@@ -394,6 +394,12 @@
                 if (!okCount) {
                     fail('Could not download this tone: ' + failed[0].err)
                 } else {
+                    // Plugins already on the board cached their file list before this download.
+                    // Hand them the paths just written, so those sort to the top of the dropdown.
+                    if (opener.tone3000RefreshFileLists) {
+                        opener.tone3000RefreshFileLists(results.filter(function (r) { return r.ok })
+                                                               .map(function (r) { return r.fullname }))
+                    }
                     if (failed.length) {
                         done('Saved ' + okCount + ' of ' + results.length + ' models to the File Manager.')
                         showSummary(failed.length + ' model' + (failed.length === 1 ? '' : 's') +
