@@ -38,7 +38,8 @@ from mod.settings import (DESKTOP, LOG, DEV_API,
                           DEFAULT_ICON_TEMPLATE, DEFAULT_SETTINGS_TEMPLATE, DEFAULT_ICON_IMAGE,
                           DEFAULT_PEDALBOARD, DEFAULT_SNAPSHOT_NAME, DATA_DIR, KEYS_PATH, USER_FILES_DIR,
                           FAVORITES_JSON_FILE, PREFERENCES_JSON_FILE, USER_ID_JSON_FILE,
-                          DEV_HOST, UNTITLED_PEDALBOARD_NAME, MODEL_CPU, MODEL_TYPE, PEDALBOARDS_LABS_HTTP_ADDRESS)
+                          DEV_HOST, UNTITLED_PEDALBOARD_NAME, MODEL_CPU, MODEL_TYPE, PEDALBOARDS_LABS_HTTP_ADDRESS,
+                          TONE3000_CLIENT_ID, TONE3000_API)
 
 from mod import (
     TextFileFlusher, WINDOWS,
@@ -1819,6 +1820,8 @@ class TemplateHandler(TimelessRequestHandler):
             'preferences': json.dumps(SESSION.prefs.prefs),
             'bufferSize': get_jack_buffer_size(),
             'sampleRate': get_jack_sample_rate(),
+            'tone3000_client_id': mod_squeeze(TONE3000_CLIENT_ID),
+            'tone3000_api': mod_squeeze(TONE3000_API),
         }
         return context
 

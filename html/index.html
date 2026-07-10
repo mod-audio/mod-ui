@@ -66,6 +66,8 @@
     PEDALBOARDS_LABS_URL  = '{{pedalboards_labs_url}}'
     CONTROLCHAIN_URL = '{{controlchain_url}}'
     LV2_PLUGIN_DIR   = '{{lv2_plugin_dir}}'
+    TONE3000_CLIENT_ID = '{{tone3000_client_id}}'
+    TONE3000_API       = '{{tone3000_api}}'
     VERSION          = '{{version}}'
     BIN_COMPAT       = '{{bin_compat}}'
     PLATFORM         = '{{platform}}'
@@ -1026,6 +1028,9 @@ $('document').ready(function() {
         <header>
             <h1 class="bottom top">Tone3000</h1>
         </header>
+        <!-- The catalog opens in a real OS window floated over this panel. It cannot be
+             an iframe: TONE3000's sign-in cookie is SameSite=Lax and is dropped in a
+             cross-site frame. So there is nothing to draw here but the way in. -->
         <div id="tone3000-wrapper">
             <img id="tone3000-logo" src="img/tone3000-icon.png" alt="Tone3000">
             <h2>Tone3000</h2>
@@ -1034,6 +1039,7 @@ $('document').ready(function() {
                 saved to its own folder under <b>NAM Models</b>, where you will find it in
                 the File Manager.
             </p>
+            <button id="tone3000-browse">Open TONE3000</button>
         </div>
     </div></div>
     <!-- END TONE3000 -->

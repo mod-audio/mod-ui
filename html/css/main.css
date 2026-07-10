@@ -12,3 +12,5 @@
 #tone3000-wrapper .tone3000-hint{font-size:13px;line-height:1.5;color:#999;max-width:34em;margin:0 0 1em}
 #tone3000-wrapper .tone3000-hint b{color:#ccc;font-weight:normal}
 #tone3000-wrapper .tone3000-hint:last-of-type{margin-bottom:1.5em}
+#tone3000-browse{background:#883996;border:none;border-radius:3px;color:#fff;cursor:pointer;font-size:14px;padding:.7em 1.4em}
+#tone3000-browse:hover{background:#9d47ad}
