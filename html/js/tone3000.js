@@ -294,6 +294,26 @@ function tone3000RefreshFileLists (downloaded) {
     }
 }
 
+/* browsepy on :8081 renders its directory listing once. The parent cannot call
+   its cross-origin window.location.reload(), but it may navigate the iframe.
+   Do that only after File Manager has created its iframe, and add a query value
+   so an intermediary cannot serve the stale listing from cache. */
+function tone3000RefreshFileManager () {
+    var fileManager = $('#file-manager-library')
+    if (!fileManager.data('loaded')) {
+        return false
+    }
+
+    var iframe = fileManager.find('iframe')
+    var src = iframe.attr('src')
+    if (!src) {
+        return false
+    }
+
+    iframe.attr('src', src.replace(/[?#].*$/, '') + '?_=' + Date.now())
+    return true
+}
+
 function tone3000ClosePopup () {
     if (tone3000Popup && !tone3000Popup.closed) {
         tone3000Popup.close()

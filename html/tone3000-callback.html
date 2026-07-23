@@ -400,6 +400,9 @@
                         opener.tone3000RefreshFileLists(results.filter(function (r) { return r.ok })
                                                                .map(function (r) { return r.fullname }))
                     }
+                    if (opener.tone3000RefreshFileManager) {
+                        opener.tone3000RefreshFileManager()
+                    }
                     if (failed.length) {
                         done('Saved ' + okCount + ' of ' + results.length + ' models to the File Manager.')
                         showSummary(failed.length + ' model' + (failed.length === 1 ? '' : 's') +

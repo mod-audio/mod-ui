@@ -23,7 +23,8 @@ const BODY = '<div id="t3k">' +
              '<div id="tone3000-wrapper"></div>' +
              '<button id="tone3000-browse"></button>' +
              '<input type="checkbox" id="tone3000-autoopen">' +
-             '</div>'
+             '</div>' +
+             '<div id="file-manager-library"><iframe></iframe></div>'
 
 let ctx, $, getOptions
 let opened, popups
@@ -113,6 +114,20 @@ test('open() returns false so it does not swallow the panel-show', () => {
     initBox()
     closePopups()
     assert.equal(getOptions().open(), false)
+})
+
+test('refreshes the File Manager only when its iframe has loaded', () => {
+    const manager = $('#file-manager-library')
+    const iframe = manager.find('iframe')
+    iframe.attr('src', 'http://localhost:8081/')
+
+    assert.equal(ctx.window.tone3000RefreshFileManager(), false)
+    assert.equal(iframe.attr('src'), 'http://localhost:8081/', 'unloaded iframe is untouched')
+
+    manager.data('loaded', true)
+    assert.equal(ctx.window.tone3000RefreshFileManager(), true)
+    assert.match(iframe.attr('src'), /^http:\/\/localhost:8081\/\?_=/,
+                 'loaded iframe is navigated with a cache-busting URL')
 })
 
 test('PKCE S256 works without crypto.subtle on a plain-HTTP device origin', async () => {
