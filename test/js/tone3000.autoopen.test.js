@@ -115,6 +115,16 @@ test('open() returns false so it does not swallow the panel-show', () => {
     assert.equal(getOptions().open(), false)
 })
 
+test('PKCE S256 works without crypto.subtle on a plain-HTTP device origin', async () => {
+    Object.defineProperty(ctx.window, 'crypto', {
+        value: { getRandomValues: a => a },
+        configurable: true,
+    })
+
+    const challenge = await ctx.window.tone3000Sha256Base64Url('abc')
+    assert.equal(challenge, 'ungWv48Bz-pBQUDeXa4iI7ADYaOWF3qctBD_YfIAFa0')
+})
+
 test('re-selecting the tab focuses the open popup, never re-opens or re-navigates it', () => {
     ctx.window.localStorage.setItem(KEY, '1')
     initBox()
