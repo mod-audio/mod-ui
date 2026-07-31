@@ -212,12 +212,12 @@ JqueryClass('cloudPluginBox', {
     // search all or installed, depending on selected option
     search: function (customRenderCallback) {
         var self  = $(this)
-        var query = {
+        var query = DesktopApp.storeQuery({
             text: self.data('searchbox').val(),
             summary: "true",
             image_version: VERSION,
             bin_compat: BIN_COMPAT,
-        }
+        })
 
         if (self.data('fake')) {
             query.stable = true
@@ -737,6 +737,12 @@ JqueryClass('cloudPluginBox', {
 
         var template = featured ? TEMPLATES.featuredplugin : TEMPLATES.cloudplugin
         var rendered = $(Mustache.render(template, plugin_data))
+
+        // Mock store on MOD Desktop: mark everything that isn't already here.
+        if (DesktopApp.isActive() && ! plugin.installedVersion) {
+            rendered.addClass('desktop-app-locked')
+        }
+
         rendered.click(function () {
             self.cloudPluginBox('showPluginInfo', plugin.uri)
         })
@@ -975,7 +981,20 @@ JqueryClass('cloudPluginBox', {
 
             // The remove button will remove the plugin, close window and re-render the plugins
             // without the removed one
-            if (plugin.installedVersion) {
+            if (DesktopApp.isActive()) {
+                // Mock store: the catalogue is the Dwarf's, so nothing here can
+                // be installed, upgraded or removed on this machine.
+                info.find('.js-install').hide()
+                info.find('.js-remove').hide()
+                info.find('.js-upgrade').hide()
+
+                if (plugin.installedVersion) {
+                    info.find('.js-installed-version').show()
+                } else {
+                    info.find('.js-installed-version').hide()
+                    info.find('p.version').after(DesktopApp.pluginMessage())
+                }
+            } else if (plugin.installedVersion) {
                 info.find('.js-install').hide()
                 info.find('.js-remove').show().click(function () {
                     // Remove plugin
@@ -1001,7 +1020,9 @@ JqueryClass('cloudPluginBox', {
                 })
             }
 
-            if (plugin.installedVersion && plugin.latestVersion && compareVersions(plugin.latestVersion, plugin.installedVersion) > 0) {
+            if (DesktopApp.isActive()) {
+                // handled above, no upgrade path on desktop
+            } else if (plugin.installedVersion && plugin.latestVersion && compareVersions(plugin.latestVersion, plugin.installedVersion) > 0) {
                 canUpgrade = true
                 info.find('.js-upgrade').show().click(function () {
                     // Upgrade plugin
@@ -1065,11 +1086,11 @@ JqueryClass('cloudPluginBox', {
         // always get cloud plugin info
         $.ajax({
             url: (self.data('usingLabs') ? CLOUD_LABS_URL : SITEURL) + "/lv2/plugins",
-            data: {
+            data: DesktopApp.storeQuery({
                 uri: plugin.uri,
                 image_version: VERSION,
                 bin_compat: BIN_COMPAT,
-            },
+            }),
             success: function (pluginData) {
                 if (pluginData && pluginData.length > 0) {
                     pluginData = pluginData[0]

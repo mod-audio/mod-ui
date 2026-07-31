@@ -1,0 +1,325 @@
+/* MOD Desktop ("desktop-app") specific styles.
+ *
+ * Only applies when DesktopApp.setup() has put the `desktop-app` class on
+ * <body>. Nothing in here is loaded conditionally, so every rule must be
+ * scoped under .desktop-app to keep MOD hardware untouched.
+ */
+
+/* ------------------------------------------------------------------ *
+ * "exclusive feature" widget
+ *
+ * A full-bleed product shot fading into a dark card. The photos are shot on
+ * black, so the fade to the card background hides the image edge entirely --
+ * no white box floating on a dark screen. Everything is centred on one
+ * column: eyebrow, feature, one sentence, one button.
+ * ------------------------------------------------------------------ */
+
+.desktop-app-exclusive-panel {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    display: flex;
+    /* Top-aligned, not centred: these boxes run the full height of the window,
+     * and a card floating in the dead middle of one reads as unplaced. */
+    align-items: flex-start;
+    justify-content: center;
+    box-sizing: border-box;
+    padding: 90px 24px 30px;
+    color: #b4b4b4;
+}
+
+.desktop-app-exclusive-card {
+    width: 100%;
+    max-width: 700px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: 6px;
+    background: #0c0c0c;
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.75);
+    text-align: center;
+}
+
+.desktop-app-exclusive-image {
+    position: relative;
+    background: #000;
+}
+
+.desktop-app-exclusive-image img {
+    display: block;
+    width: 100%;
+    height: 250px;
+    object-fit: cover;
+    object-position: center 42%;
+}
+
+/* Melts the bottom of the photo into the card. */
+.desktop-app-exclusive-image:after {
+    content: '';
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    height: 70%;
+    background: linear-gradient(to bottom, rgba(12, 12, 12, 0) 0%, rgba(12, 12, 12, 0.85) 55%, #0c0c0c 100%);
+}
+
+.desktop-app-exclusive-text {
+    position: relative;
+    padding: 0 46px 42px;
+    margin-top: -26px;
+}
+
+.desktop-app-exclusive-eyebrow {
+    display: block;
+    margin-bottom: 10px;
+    color: #a86fb8;
+    font-size: 11px;
+    letter-spacing: 1.8px;
+    text-transform: uppercase;
+}
+
+.desktop-app-exclusive-text h2 {
+    margin: 0 0 14px;
+    color: #fff;
+    font-size: 27px;
+    line-height: 1.2;
+}
+
+.desktop-app-exclusive-text p {
+    max-width: 440px;
+    margin: 0 auto 28px;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.desktop-app-exclusive-panel .desktop-app-exclusive-cta {
+    display: inline-block;
+    padding: 11px 28px;
+    border-radius: 3px;
+    background: #883996;
+    color: #fff;
+    font-size: 13px;
+    letter-spacing: 0.8px;
+    text-decoration: none;
+    text-transform: uppercase;
+    transition: background 0.15s ease;
+}
+
+.desktop-app-exclusive-panel .desktop-app-exclusive-cta:hover {
+    background: #9c46ab;
+}
+
+/* Short screens: the card is tall enough to run off the bottom of a laptop
+ * display, and the photo is the part that can afford to lose height. */
+@media (max-height: 780px) {
+    .desktop-app-exclusive-image img {
+        height: 180px;
+    }
+
+    .desktop-app-exclusive-text {
+        padding-bottom: 32px;
+    }
+
+    .desktop-app-exclusive-text h2 {
+        font-size: 23px;
+    }
+
+    .desktop-app-exclusive-text p {
+        margin-bottom: 22px;
+    }
+}
+
+/* ------------------------------------------------------------------ *
+ * plugin page: the card stands where the Install button was
+ *
+ * That page is already dark and already full of content, so this variant
+ * keeps the dark surface and the same photo, laid on its side and sized to
+ * sit in a paragraph's place rather than to fill a window.
+ * ------------------------------------------------------------------ */
+
+.desktop-app-exclusive-compact {
+    position: static;
+    justify-content: flex-start;
+    padding: 0;
+    margin: 14px 0 6px;
+    color: #b4b4b4;
+}
+
+/* Full width, so it lines up with the spec tables further down the page. */
+.desktop-app-exclusive-compact .desktop-app-exclusive-card {
+    display: flex;
+    align-items: center;
+    max-width: none;
+    border-radius: 5px;
+    box-shadow: none;
+    text-align: left;
+}
+
+.desktop-app-exclusive-compact .desktop-app-exclusive-image {
+    flex: 0 0 auto;
+}
+
+.desktop-app-exclusive-compact .desktop-app-exclusive-image img {
+    width: 200px;
+    height: 132px;
+    object-position: center 45%;
+}
+
+/* Sideways card, so the photo melts into the card on its right edge. */
+.desktop-app-exclusive-compact .desktop-app-exclusive-image:after {
+    top: 0;
+    left: auto;
+    width: 70px;
+    height: auto;
+    background: linear-gradient(to right, rgba(12, 12, 12, 0) 0%, #0c0c0c 100%);
+}
+
+/* Clear of the photo entirely -- the fade is there to soften the photo's edge
+ * into the card, not to be read over. The measure stays short while the card
+ * itself is wide, which leaves the text sitting in the middle of the card. */
+.desktop-app-exclusive-compact .desktop-app-exclusive-text {
+    max-width: 520px;
+    padding: 20px 26px 20px 40px;
+    margin: 0;
+}
+
+.desktop-app-exclusive-compact .desktop-app-exclusive-eyebrow {
+    margin-bottom: 6px;
+    font-size: 10px;
+    letter-spacing: 1.4px;
+}
+
+.desktop-app-exclusive-compact .desktop-app-exclusive-text h2 {
+    margin: 0 0 8px;
+    font-size: 18px;
+}
+
+.desktop-app-exclusive-compact .desktop-app-exclusive-text p {
+    max-width: none;
+    margin: 0 0 14px;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.desktop-app-exclusive-compact .desktop-app-exclusive-cta {
+    padding: 8px 20px;
+    font-size: 12px;
+}
+
+/* ------------------------------------------------------------------ *
+ * banks: make the section opaque again
+ *
+ * #bank-library paints nothing of its own -- on a device its three panes
+ * (#bank-list, #bank-edit and the pedalboard search column) tile it edge to
+ * edge, so it never shows. With those hidden the pedalboard constructor shows
+ * straight through and the card reads as a modal floating over it rather than
+ * as its own page. Give the section the surface #bank-edit used to give it.
+ * ------------------------------------------------------------------ */
+
+.desktop-app #bank-library {
+    background: #111 url(../img/watermark.png) 100% 100% no-repeat;
+}
+
+/* ------------------------------------------------------------------ *
+ * plugin store: mock catalogue, nothing is installable
+ * ------------------------------------------------------------------ */
+
+/* These are re-shown by the search render callbacks in cloudplugin.js, so
+ * hiding them here rather than with .hide() is what makes it stick. */
+.desktop-app #cloud_install_all,
+.desktop-app #cloud_update_all {
+    display: none !important;
+}
+
+.desktop-app .desktop-app-locked .cloud-plugin-border,
+.desktop-app .desktop-app-locked > .box {
+    opacity: 0.55;
+}
+
+.desktop-app .desktop-app-locked .status-container:after {
+    content: 'MOD device only';
+    display: inline-block;
+    margin-left: 4px;
+    padding: 1px 5px;
+    border-radius: 2px;
+    background: #444;
+    color: #ddd;
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    vertical-align: middle;
+}
+
+/* ------------------------------------------------------------------ *
+ * addressing dialog: hardware-only tabs select normally and swap the
+ * addressing options for the store card
+ *
+ * This form is white, so the card inverts: light surface, the press shot
+ * taken on white, and a wide layout because the dialog is short.
+ * ------------------------------------------------------------------ */
+
+.desktop-app-exclusive-form {
+    position: static;
+    padding: 12px 0 4px;
+    color: #444;
+}
+
+.desktop-app-exclusive-form .desktop-app-exclusive-card {
+    display: flex;
+    align-items: center;
+    max-width: none;
+    border-color: #ddd;
+    border-radius: 4px;
+    background: #fff;
+    box-shadow: none;
+    text-align: left;
+}
+
+.desktop-app-exclusive-form .desktop-app-exclusive-image {
+    flex: 0 0 auto;
+    background: transparent;
+}
+
+.desktop-app-exclusive-form .desktop-app-exclusive-image img {
+    width: 232px;
+    height: 158px;
+    object-fit: contain;
+    object-position: center;
+}
+
+/* No fade here -- the photo's own white ground already meets the card. */
+.desktop-app-exclusive-form .desktop-app-exclusive-image:after {
+    content: none;
+}
+
+.desktop-app-exclusive-form .desktop-app-exclusive-text {
+    padding: 0 24px 0 4px;
+    margin-top: 0;
+}
+
+.desktop-app-exclusive-form .desktop-app-exclusive-eyebrow {
+    margin-bottom: 6px;
+    color: #883996;
+    font-size: 10px;
+    letter-spacing: 1.4px;
+}
+
+.desktop-app-exclusive-form .desktop-app-exclusive-text h2 {
+    margin: 0 0 8px;
+    color: #222;
+    font-size: 19px;
+}
+
+.desktop-app-exclusive-form .desktop-app-exclusive-text p {
+    max-width: none;
+    margin: 0 0 16px;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.desktop-app-exclusive-form .desktop-app-exclusive-cta {
+    padding: 9px 22px;
+    font-size: 12px;
+}

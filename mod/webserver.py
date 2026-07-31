@@ -1897,6 +1897,19 @@ class BulkTemplateLoader(TimelessRequestHandler):
                           mod_squeeze(contents)
                           )
                        )
+        # mod-desktop specific templates, exposed as TEMPLATES['desktop_app_<name>']
+        appdir = os.path.join(basedir, 'desktop-app')
+        if os.path.isdir(appdir):
+            for template in os.listdir(appdir):
+                if not re.match('^[a-z_]+\.html$', template):
+                    continue
+                with open(os.path.join(appdir, template), 'r') as fh:
+                    contents = fh.read()
+                self.write("TEMPLATES['desktop_app_%s'] = '%s';\n\n"
+                           % (template[:-5],
+                              mod_squeeze(contents)
+                              )
+                           )
         self.finish()
 
     # custom call, we cannot use CachedJsonRequestHandler

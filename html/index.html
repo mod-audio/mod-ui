@@ -33,6 +33,7 @@
 <link rel="stylesheet" type="text/css" href="resources/pedals/default.css?v={{version}}"/>
 <link rel="stylesheet" type="text/css" href="js/lib/slick/slick.css?v={{version}}"/>
 <link rel="stylesheet" type="text/css" href="js/lib/slick/slick-theme.css?v={{version}}"/>
+<link rel="stylesheet" type="text/css" href="css/desktop-app.css?v={{version}}"/>
 
 <style type="text/css">
     /* STYLE FOR LOADING ANIMATION */
@@ -205,7 +206,7 @@ $('document').ready(function() {
     desktop.pedalboardBox.pedalboardBox('initViewMode', PREFERENCES['pb-view-mode'])
 
     if ({{using_desktop}}) {
-        desktop.setupApp()
+        DesktopApp.setup(desktop)
     } else {
         if (PREFERENCES['dev-mode'] == "on") {
             enable_dev_mode(true)
@@ -305,6 +306,7 @@ $('document').ready(function() {
 <script type="text/javascript" src="js/modgui.js?v={{version}}"></script>
 <script type="text/javascript" src="js/notification.js?v={{version}}"></script>
 <script type="text/javascript" src="js/installation.js?v={{version}}"></script>
+<script type="text/javascript" src="js/desktop-app.js?v={{version}}"></script>
 <script type="text/javascript" src="js/desktop.js?v={{version}}"></script>
 <script type="text/javascript" src="js/pedalboard.js?v={{version}}"></script>
 <script type="text/javascript" src="js/pedalboards.js?v={{version}}"></script>

@@ -195,7 +195,7 @@ function Desktop(elements) {
             return Mustache.render(TEMPLATES.addressing, context)
         },
         isApp: function() {
-            return self.isApp;
+            return DesktopApp.isActive();
         },
     })
 
@@ -209,7 +209,6 @@ function Desktop(elements) {
         }
     })
 
-    this.isApp = false
     this.title = ''
     this.cloudAccessToken = null
     this.cloudHardwareDeviceVersions = null
@@ -728,19 +727,6 @@ function Desktop(elements) {
         })
     }
 
-    this.setupApp = function () {
-        self.isApp = true
-        $('#mod-bank').hide()
-        $('#mod-file-manager').hide()
-        $('#mod-settings').hide()
-        $('#mod-devices').hide()
-        $('#mod-status').hide()
-        $('#mod-ram').hide()
-        $('#mod-show-midi-port').hide()
-        $('#pedalboards-library').find('a').hide()
-        $('#pedal-presets-window').find('.js-assign-all').hide()
-    }
-
     this.setupDeviceAuthentication = function () {
         self.authenticateDevice(function (ok) {
             if (ok) {
@@ -790,7 +776,7 @@ function Desktop(elements) {
         })
     }
     this.installMissingPlugins = function (plugins, callback) {
-        if (self.isApp) {
+        if (DesktopApp.isActive()) {
             new Notification('warn', "Cannot load this pedalboard, some plugins are missing", 4000)
             callback(false)
             return
