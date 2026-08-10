@@ -87,6 +87,13 @@
     }
 
     var CLOUD_TERMS_ACCEPTED = PREFERENCES['cloud-terms-accepted'] === "true";
+
+    // User tracking is intentionally disabled. Set to true to restore the
+    // acceptance UI and Matomo collection.
+    var USER_TRACKING_ENABLED = false;
+    var _paq = USER_TRACKING_ENABLED ? [] : {
+        push: function () {}
+    };
     var USING_MOD_DESKTOP = {{using_desktop}};
     var USING_MOD_DEVICE = {{using_mod}} && !{{using_desktop}};
 
@@ -224,7 +231,11 @@ $('document').ready(function() {
     // start of terms handling
 
     var terms = $('#mod-cloud-terms')
-    if (PREFERENCES['cloud-terms-accepted'] !== undefined && (USING_MOD_DEVICE || PREFERENCES['cloud-terms-accepted'] === "true")) {
+    // Keep the acceptance markup and handlers below for a future approved
+    // re-enable, but never present the acceptance message while tracking is disabled.
+    if (!USER_TRACKING_ENABLED) {
+        terms.hide()
+    } else if (PREFERENCES['cloud-terms-accepted'] !== undefined && (USING_MOD_DEVICE || PREFERENCES['cloud-terms-accepted'] === "true")) {
         if (CLOUD_TERMS_ACCEPTED) {
             desktop.setupMatomo()
             terms.hide()
@@ -314,9 +325,6 @@ $('document').ready(function() {
 <script type="text/javascript" src="js/nprogress.js?v={{version}}"></script>
 <script type="text/javascript" src="js/utils/tempo.js?v={{version}}"></script>
 <script type="text/javascript" src="js/utils/plugins.js?v={{version}}"></script>
-
-<!-- For browsers with shields on, avoid breaking on Matomo related code -->
-<script>var _paq = { push: new Function() }</script>
 
 </head>
 <!-- END HEAD -->

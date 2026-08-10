@@ -754,6 +754,9 @@ function Desktop(elements) {
     }
 
     this.setupMatomo = function() {
+        if (!USER_TRACKING_ENABLED) {
+            return
+        }
         var _mtm = window._mtm = window._mtm || [];
         _mtm.push({'mtm.startTime': (new Date().getTime()), 'event': 'mtm.Start'});
         (function() {
