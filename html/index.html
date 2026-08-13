@@ -33,7 +33,9 @@
 <link rel="stylesheet" type="text/css" href="resources/pedals/default.css?v={{version}}"/>
 <link rel="stylesheet" type="text/css" href="js/lib/slick/slick.css?v={{version}}"/>
 <link rel="stylesheet" type="text/css" href="js/lib/slick/slick-theme.css?v={{version}}"/>
+{% if desktop_app %}
 <link rel="stylesheet" type="text/css" href="css/desktop-app.css?v={{version}}"/>
+{% end %}
 
 <style type="text/css">
     /* STYLE FOR LOADING ANIMATION */
@@ -306,7 +308,22 @@ $('document').ready(function() {
 <script type="text/javascript" src="js/modgui.js?v={{version}}"></script>
 <script type="text/javascript" src="js/notification.js?v={{version}}"></script>
 <script type="text/javascript" src="js/installation.js?v={{version}}"></script>
+{% if desktop_app %}
 <script type="text/javascript" src="js/desktop-app.js?v={{version}}"></script>
+{% else %}
+{# MOD hardware never loads the desktop-app seam: not this script, not its
+   stylesheet, not its mustache templates. Shared code still asks DesktopApp
+   questions on paths that do run here, so answer them the device way and stop.
+   Every other method is reached only behind isActive(). This comment is a
+   tornado one, stripped before the page is sent -- as is the whole point. #}
+<script type="text/javascript">
+var DesktopApp = {
+    isActive: function () { return false },
+    storeQuery: function (query) { return query },
+    hideAddressingUpsell: function () {},
+}
+</script>
+{% end %}
 <script type="text/javascript" src="js/desktop.js?v={{version}}"></script>
 <script type="text/javascript" src="js/pedalboard.js?v={{version}}"></script>
 <script type="text/javascript" src="js/pedalboards.js?v={{version}}"></script>

@@ -156,6 +156,60 @@ test('the addressing upsell is inert on a device, where no tab is ever locked', 
 })
 
 /*
+ * On hardware none of the seam is served: no js/desktop-app.js, no
+ * css/desktop-app.css, no desktop_app_* templates. Shared code still calls
+ * DesktopApp on paths that run there, so index.html carries a stub in the
+ * {% else %} branch. This pins the stub to what the shared files actually call,
+ * so adding an unguarded call without stubbing it fails here rather than
+ * throwing ReferenceError on every MOD device.
+ */
+test('the hardware stub answers every DesktopApp call that is not behind isActive()', () => {
+    const html = fs.readFileSync(path.join(HTML, 'index.html'), 'utf8')
+
+    const stubSource = /<script type="text\/javascript">\s*(var DesktopApp = \{[\s\S]*?\n\})\s*<\/script>/
+        .exec(html)
+    assert.ok(stubSource, 'index.html must carry a DesktopApp stub for hardware')
+    const stub = new Function(stubSource[1] + '; return DesktopApp')()
+
+    // Reached only after isActive(), or after a class only set when active, so the
+    // stub deliberately does not answer them.
+    const GUARDED = ['setup', 'pluginMessage', 'showAddressingUpsell']
+
+    const shared = fs.readdirSync(path.join(HTML, 'js'))
+        .filter(f => f.endsWith('.js') && f !== 'desktop-app.js')
+        .map(f => path.join(HTML, 'js', f))
+        .concat(path.join(HTML, 'index.html'))
+
+    const called = new Set()
+    shared.forEach(file => {
+        const src = fs.readFileSync(file, 'utf8')
+        // The stub's own definition is in index.html; skip past it.
+        const body = file.endsWith('index.html') ? src.replace(stubSource[0], '') : src
+        for (const m of body.matchAll(/DesktopApp\.([A-Za-z_]+)/g)) {
+            called.add(m[1])
+        }
+    })
+
+    assert.ok(called.size > 0, 'nothing calls DesktopApp -- the scan is broken')
+    called.forEach(name => {
+        assert.ok(typeof stub[name] === 'function' || GUARDED.includes(name),
+                  'DesktopApp.' + name + ' is called by shared code but the hardware ' +
+                  'stub does not answer it -- stub it, or guard it with isActive()')
+    })
+
+    // And the stub must not answer with something the real seam no longer has.
+    Object.keys(stub).forEach(name => {
+        assert.strictEqual(typeof DesktopApp[name], 'function',
+                           'the stub answers ' + name + ', which desktop-app.js dropped')
+    })
+
+    // The device answers: inactive, and the cloud query untouched.
+    assert.strictEqual(stub.isActive(), false)
+    const query = { bin_compat: 'aarch64-a35', image_version: '1.13.5' }
+    assert.strictEqual(stub.storeQuery(query), query)
+})
+
+/*
  * The rest run against html/index.html itself. It is a tornado template, so {{ }} and
  * {% %} survive as text -- harmless here, since we only assert on structure.
  */
