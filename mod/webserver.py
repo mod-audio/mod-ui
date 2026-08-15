@@ -2224,7 +2224,7 @@ class FilesList(JsonRequestHandler):
             return ("NAM Models", (".nam",))
 
         elif filetype == "easyspinprog":
-            return ("Easy Spin Programs", (".json",".bin",))
+            return ("Easy Spin Programs", (".easyspinprog",))
 
         else:
             return (None, ())
