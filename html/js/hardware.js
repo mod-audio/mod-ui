@@ -798,9 +798,10 @@ function HardwareManager(options) {
             if(jbtn.attr('data-value') == typeInput.val()) {
               btn.addClass('selected')
             }
-            // Hide Device tab under mod-app
+            // Device and Control Chain need MOD hardware. Under mod-desktop we
+            // show them anyway, locked, so the user sees what they're missing.
             if (options.isApp() && (jbtn.attr('data-value') === deviceOption || jbtn.attr('data-value') === ccOption)) {
-              jbtn.hide()
+              jbtn.addClass('desktop-app-locked')
             }
             // Hide MIDI tab if not available
             else if (jbtn.attr('data-value') === kMidiLearnURI && !actuators[kMidiLearnURI]) {
@@ -852,6 +853,16 @@ function HardwareManager(options) {
         form.find('.js-type').click(function () {
           form.find('.js-type').removeClass('selected')
           $(this).addClass('selected')
+
+          // Under mod-desktop these targets need hardware nobody here has. The tab
+          // still selects; it just shows a store card instead of addressing options,
+          // and leaves typeInput alone so nothing can be saved against it.
+          if ($(this).hasClass('desktop-app-locked')) {
+            DesktopApp.showAddressingUpsell(form)
+            return
+          }
+          DesktopApp.hideAddressingUpsell(form)
+
           typeInput.val($(this).attr('data-value'))
           self.showDynamicField(form, typeInput.val(), currentAddressing, port, cvPortSelect.val(), false)
         })

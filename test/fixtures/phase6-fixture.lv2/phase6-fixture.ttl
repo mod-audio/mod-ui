@@ -1,0 +1,25 @@
+@prefix lv2:   <http://lv2plug.in/ns/lv2core#> .
+@prefix doap:  <http://usefulinc.com/ns/doap#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix foaf:  <http://xmlns.com/foaf/0.1/> .
+
+<http://example.org/plugins/phase6-fixture>
+    a lv2:Plugin, lv2:UtilityPlugin ;
+    doap:name "Phase 6 Fixture" ;
+    doap:license <http://opensource.org/licenses/isc> ;
+    doap:maintainer [
+        foaf:name "mod-ui characterization tests"
+    ] ;
+    lv2:microVersion 0 ;
+    lv2:minorVersion 1 ;
+    lv2:port [
+        a lv2:InputPort, lv2:AudioPort ;
+        lv2:index 0 ;
+        lv2:symbol "in" ;
+        lv2:name "In"
+    ] , [
+        a lv2:OutputPort, lv2:AudioPort ;
+        lv2:index 1 ;
+        lv2:symbol "out" ;
+        lv2:name "Out"
+    ] .

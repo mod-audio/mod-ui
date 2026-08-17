@@ -83,6 +83,11 @@ PEDALBOARDS_LABS_HTTP_ADDRESS = os.environ.pop('MOD_PEDALBOARDS_LABS_HTTP_ADDRES
 CONTROLCHAIN_HTTP_ADDRESS = os.environ.pop('MOD_CONTROLCHAIN_HTTP_ADDRESS',
                                            "https://download.mod.audio/releases/cc-firmware/v3")
 
+# Tone3000 integration. The client id is the OAuth publishable key (t3k_pub_...),
+# a public value: it identifies the app, it grants no data access on its own.
+TONE3000_CLIENT_ID = os.environ.get('MOD_TONE3000_CLIENT_ID', "")
+TONE3000_API = os.environ.get('MOD_TONE3000_API', "https://www.tone3000.com")
+
 MIDI_BEAT_CLOCK_SENDER_URI = "urn:mod:mclk"
 MIDI_BEAT_CLOCK_SENDER_INSTANCE_ID = 9993
 MIDI_BEAT_CLOCK_SENDER_OUTPUT_PORT = "mclk" # This is the LV2 symbol of the plug-ins OutputPort

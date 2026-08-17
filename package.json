@@ -1,0 +1,12 @@
+{
+  "name": "mod-ui",
+  "private": true,
+  "description": "Frontend tests for mod-ui. The app itself is browser-global JS served from html/; this package exists only to run the test/js/ suite under Node's built-in test runner.",
+  "scripts": {
+    "test": "node --test \"test/js/**/*.test.js\"",
+    "test:watch": "node --test --watch \"test/js/**/*.test.js\""
+  },
+  "devDependencies": {
+    "jsdom": "^29.1.1"
+  }
+}

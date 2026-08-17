@@ -57,6 +57,25 @@ function loadFileTypesList(parameter, dummy, callback) {
     })
 }
 
+// Only worth expanding once the list outgrows the box. Re-run this whenever the options
+// change: a list that was short enough at build time may not be after a download.
+function assignFileListExpand(elem) {
+    var list = elem.find('.mod-enumerated-list')
+    var button = elem.find('.file-list-btn-expand').off('click')
+
+    if (list.length == 1 && list[0].childElementCount > 5) {
+        button.show().click(function () {
+            if (elem.hasClass('expanded')) {
+                elem.removeClass('expanded')
+            } else {
+                elem.addClass('expanded')
+            }
+        })
+    } else {
+        button.hide()
+    }
+}
+
 function loadDependencies(gui, effect, dummy, callback) { //source, effect, bundle, callback) {
     var iconLoaded = true
     var settingsLoaded = true
@@ -523,6 +542,96 @@ function GUI(effect, options) {
         self.triggerJS({ type: 'change', symbol: symbol, value: value })
     }
 
+    /* A file dropdown is filled once, from the /files/list snapshot taken while the GUI was
+       being built, and nothing ever re-reads it -- so a file added afterwards stays invisible
+       to a plugin already on the board. The backend scan is always live; the staleness is
+       entirely here.
+
+       Re-render the plugin's own templates and swap in just the file-list widgets. Going
+       through the template is what makes this work for any plugin: we never build the option
+       nodes ourselves, so we never assume how the author nested them. Re-rendering the whole
+       icon is not an option -- its port elements carry the jsPlumb endpoints the connection
+       manager holds on to, so replacing them would cut every cable into this plugin. */
+    this.refreshFileTypesLists = function (fileType, hoist) {
+        var parameters = []
+        for (var i in effect.parameters) {
+            var parameter = effect.parameters[i]
+            if (parameter.path && parameter.fileTypes && parameter.fileTypes.indexOf(fileType) >= 0) {
+                parameters.push(parameter)
+            }
+        }
+        if (!parameters.length) {
+            return
+        }
+
+        /* The list arrives sorted by path. Lift the files named in `hoist` to the front, so a
+           tone the user just downloaded is the first thing in the dropdown instead of buried
+           wherever its name happened to sort. Only for as long as this GUI lives -- a reload
+           takes the list straight from /files/list again, in its own order. */
+        var reorder = function (files) {
+            if (!hoist || !hoist.length) {
+                return files
+            }
+            var isNew = function (file) {
+                return hoist.indexOf(file.fullname) >= 0
+            }
+            return files.filter(isNew).concat(files.filter(function (file) { return !isNew(file) }))
+        }
+
+        // The templates read effect.parameters, so refresh those, not the self.parameters copies.
+        var pending = parameters.length
+        parameters.forEach(function (parameter) {
+            loadFileTypesList(parameter, false, function () {
+                parameter.files = reorder(parameter.files)
+                if (--pending === 0) {
+                    self.swapFileWidgets()
+                }
+            })
+        })
+    }
+
+    this.swapFileWidgets = function () {
+        var templateData = self.getTemplateData(effect, self.skipNamespace)
+        var panels = [
+            [self.icon,     effect.gui.iconTemplate     || options.defaultIconTemplate],
+            [self.settings, effect.gui.settingsTemplate || options.defaultSettingsTemplate],
+        ]
+
+        panels.forEach(function (panel) {
+            var live = panel[0]
+            if (!live) {
+                return
+            }
+            var fresh = $('<div>').html(Mustache.render(panel[1], templateData))
+
+            live.find('[mod-widget=custom-select-path]').each(function () {
+                var old = $(this)
+                var uri = old.attr('mod-parameter-uri')
+                var node = fresh.find('[mod-widget=custom-select-path][mod-parameter-uri="' + uri + '"]')
+                if (node.length !== 1) {
+                    return
+                }
+
+                var parameter = self.parameters[uri]
+                parameter.widgets = parameter.widgets.filter(function (widget) {
+                    return widget[0] !== old[0]
+                })
+
+                /* assignControlFunctionality reads mod-instance off the element it is given and
+                   only looks downwards, so hand it a stand-in for the panel holding one widget.
+                   It re-registers the widget and restores the selection from parameter.value. */
+                var holder = $('<div>')
+                if (self.instance) {
+                    holder.attr('mod-instance', self.instance)
+                }
+                self.assignControlFunctionality(holder.append(node), false)
+
+                old.replaceWith(node)
+                assignFileListExpand(node.closest('.mod-file-list'))
+            })
+        })
+    }
+
     // lv2 patch messages, mostly used for parameters
     this.lv2PatchGet = function (uri) {
         // let the host know about this
@@ -804,6 +913,7 @@ function GUI(effect, options) {
 
     this.render = function (instance, callback, skipNamespace) {
         self.instance = instance
+        self.skipNamespace = skipNamespace
 
         var render = function () {
             self.preRender()
@@ -1020,19 +1130,7 @@ function GUI(effect, options) {
             if (instance && self.effect.parameters.length)
             {
                 self.settings.find('.mod-file-list').each(function () {
-                    var elem = $(this)
-                    var list = elem.find('.mod-enumerated-list')
-                    if (list.length == 1 && list[0].childElementCount > 5) {
-                        elem.find('.file-list-btn-expand').click(function () {
-                            if (elem.hasClass('expanded')) {
-                                elem.removeClass('expanded')
-                            } else {
-                                elem.addClass('expanded')
-                            }
-                        })
-                    } else {
-                        elem.find('.file-list-btn-expand').hide()
-                    }
+                    assignFileListExpand($(this))
                 })
             }
 

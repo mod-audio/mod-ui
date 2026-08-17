@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Tone3000 download</title>
+    <!--
+      TONE3000 redirects the Select-flow popup here once the user picks a tone. This
+      page is served from mod-ui's own origin, so it is same-origin with the window
+      that opened it and can read that window's globals and sessionStorage directly --
+      which is where the PKCE verifier and the CSRF state live.
+
+      So the whole tail of the flow runs here, in the popup: verify state, exchange the
+      code, read the tone and its models, download each model and upload it to mod-ui's
+      own /files/upload route. The mod-ui tab behind us stays static.
+
+      The page mirrors what the user will find afterwards in the File Manager: the tone's
+      folder under NAM Models, with one .nam file per model, each row filling in live as
+      it downloads.
+    -->
+    <style>
+        :root {
+            --bg: #232323; --card: #2f2f2f; --line: #414141;
+            --fg: #e6e6e6; --dim: #9a9a9a; --faint: #6f6f6f;
+            --accent: #b968c7; --ok: #74c274; --err: #e2726e;
+        }
+        * { box-sizing: border-box; }
+        html, body { height: 100%; margin: 0; }
+        body {
+            background: radial-gradient(120% 80% at 50% -10%, #2e2e2e 0%, var(--bg) 60%);
+            color: var(--fg); font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+            font-size: 14px; line-height: 1.5;
+            display: flex; align-items: flex-start; justify-content: center;
+            padding: 48px 20px;
+        }
+        .card {
+            width: 100%; max-width: 460px; background: var(--card);
+            border: 1px solid var(--line); border-radius: 10px;
+            box-shadow: 0 12px 40px rgba(0,0,0,.35);
+            padding: 26px 28px 22px;
+        }
+        .brand {
+            font-size: 11px; letter-spacing: .12em; text-transform: uppercase;
+            color: var(--accent); font-weight: 600; margin: 0 0 14px;
+        }
+        h1 {
+            font-size: 19px; font-weight: 600; color: #fff; margin: 0 0 4px;
+            word-break: break-word;
+        }
+        .status { color: var(--dim); margin: 0; min-height: 21px; }
+        .status.error { color: var(--err); }
+
+        /* --- the folder tree --- */
+        .tree { margin: 20px 0 4px; }
+        .tree[hidden] { display: none; }
+        .folder {
+            display: flex; align-items: center; gap: 10px;
+            padding: 10px 12px; background: #292929;
+            border: 1px solid var(--line); border-radius: 8px 8px 0 0;
+        }
+        .folder .ico { color: var(--accent); }
+        .folder-name { font-weight: 600; color: #fff; word-break: break-word; }
+        .folder-where { display: block; font-size: 11px; color: var(--faint);
+                        font-weight: 400; letter-spacing: .02em; }
+        .files {
+            border: 1px solid var(--line); border-top: none;
+            border-radius: 0 0 8px 8px; overflow: hidden;
+        }
+        .file {
+            display: flex; align-items: center; gap: 10px;
+            padding: 9px 12px 9px 26px; position: relative;
+        }
+        .file + .file { border-top: 1px solid #383838; }
+        /* the little tree elbow */
+        .file::before {
+            content: ""; position: absolute; left: 15px; top: 0; bottom: 0;
+            border-left: 1px solid var(--line);
+        }
+        .file:last-child::before { bottom: 50%; }
+        .file .ico { color: var(--dim); flex: none; }
+        .file-name {
+            flex: 1 1 auto; min-width: 0; color: var(--fg);
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        }
+        .file-note { flex: none; font-size: 12px; color: var(--faint); }
+
+        .file.is-waiting     .file-name { color: var(--dim); }
+        .file.is-downloading .ico       { color: var(--accent); }
+        .file.is-saved       .ico       { color: var(--ok); }
+        .file.is-saved       .file-note { color: var(--ok); }
+        .file.is-failed      .ico       { color: var(--err); }
+        .file.is-failed      .file-name { color: var(--err); }
+        .file.is-failed      .file-note { color: var(--err); }
+
+        .ico { width: 18px; height: 18px; display: inline-flex; flex: none; }
+        .ico svg { width: 100%; height: 100%; display: block; }
+        .spinner {
+            width: 15px; height: 15px; border-radius: 50%;
+            border: 2px solid rgba(185,104,199,.3); border-top-color: var(--accent);
+            animation: t3k-spin .7s linear infinite;
+        }
+        @keyframes t3k-spin { to { transform: rotate(360deg); } }
+
+        .summary { margin: 16px 0 0; font-size: 13px; color: var(--dim); }
+        .summary[hidden] { display: none; }
+
+        .actions { margin: 22px 0 0; display: flex; gap: 10px; flex-wrap: wrap; }
+        .actions[hidden] { display: none; }
+        button {
+            font: inherit; font-size: 13px; color: var(--fg); background: #2a2a2a;
+            border: 1px solid #5a5a5a; border-radius: 5px; padding: 9px 16px;
+            cursor: pointer; transition: border-color .12s, color .12s, background .12s;
+        }
+        button:hover { border-color: var(--accent); color: #fff; }
+        #continue-browsing { border-color: var(--accent); background: rgba(185,104,199,.12); }
+        #continue-browsing:hover { background: rgba(185,104,199,.22); }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <p class="brand">TONE3000</p>
+        <h1 id="title">Getting your tone&hellip;</h1>
+        <p class="status" id="status">Exchanging the authorization code&hellip;</p>
+
+        <div class="tree" id="tree" hidden>
+            <div class="folder">
+                <span class="ico" id="folder-ico"></span>
+                <span>
+                    <span class="folder-name" id="folder-name"></span>
+                    <span class="folder-where">in NAM Models &middot; shown in the File Manager</span>
+                </span>
+            </div>
+            <div class="files" id="files"></div>
+        </div>
+
+        <p class="summary" id="summary" hidden></p>
+
+        <div class="actions" id="actions" hidden>
+            <button id="close-window">Close</button>
+            <button id="continue-browsing">Continue browsing TONE3000</button>
+        </div>
+    </div>
+
+<script type="text/javascript">
+(function () {
+    var titleEl   = document.getElementById('title')
+    var statusEl  = document.getElementById('status')
+    var treeEl    = document.getElementById('tree')
+    var folderName = document.getElementById('folder-name')
+    var filesEl   = document.getElementById('files')
+    var summaryEl = document.getElementById('summary')
+    var actions   = document.getElementById('actions')
+
+    var SVG = {
+        folder: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h3.5l2 2H19a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>',
+        file:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg>',
+        check:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>',
+        cross:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>',
+        dot:    '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="12" cy="12" r="3"/></svg>',
+    }
+
+    document.getElementById('folder-ico').innerHTML = SVG.folder
+
+    function setTitle (text) { titleEl.textContent = text }
+    function done (text) { statusEl.textContent = text; statusEl.className = 'status' }
+    function fail (text) { statusEl.textContent = text; statusEl.className = 'status error' }
+    function showSummary (text) { summaryEl.textContent = text; summaryEl.hidden = false }
+    function showActions () { actions.hidden = false }
+
+    // Build the folder skeleton: the tone folder by the exact name it will carry in the
+    // File Manager, and one row per model, each starting in the "waiting" state. The rows
+    // then light up in place as the download chain reaches them.
+    function renderTree (folder, fileNames) {
+        folderName.textContent = folder
+        var rows = fileNames.map(function (name) {
+            var row = document.createElement('div')
+            row.className = 'file is-waiting'
+            var ico  = document.createElement('span'); ico.className  = 'ico';  ico.innerHTML = SVG.file
+            var nm   = document.createElement('span'); nm.className   = 'file-name'; nm.textContent = name; nm.title = name
+            var note = document.createElement('span'); note.className = 'file-note'; note.textContent = 'waiting'
+            row.appendChild(ico); row.appendChild(nm); row.appendChild(note)
+            filesEl.appendChild(row)
+            var set = function (state, icon, noteText, noteTitle) {
+                row.className = 'file is-' + state
+                ico.innerHTML = icon
+                note.textContent = noteText
+                note.title = noteTitle || ''
+            }
+            return {
+                downloading: function () { set('downloading', '<span class="spinner"></span>', 'downloading…') },
+                saved:       function () { set('saved', SVG.check, 'saved') },
+                failed:      function (short, full) { set('failed', SVG.cross, short, full) },
+            }
+        })
+        treeEl.hidden = false
+        return rows
+    }
+
+    document.getElementById('close-window').addEventListener('click', function () {
+        window.close()
+    })
+    document.getElementById('continue-browsing').addEventListener('click', function () {
+        // The auth code is single-use, so we can't navigate back to the tone list.
+        // Mint a fresh authorize URL through the opener and reuse this popup for it.
+        if (!opener || !opener.tone3000BuildAuthorizeUrl) {
+            fail('Lost the mod-ui window -- cannot continue browsing.')
+            return
+        }
+        opener.tone3000BuildAuthorizeUrl().then(function (url) {
+            window.location = url
+        })
+    })
+
+    var params = new URLSearchParams(window.location.search)
+    var callback = {
+        code: params.get('code'),
+        state: params.get('state'),
+        tone_id: params.get('tone_id'),
+        model_id: params.get('model_id'),
+        error: params.get('error'),
+        canceled: params.get('canceled') === 'true',
+    }
+
+    // Reaching into the opener is what lets this page finish the flow alone. Its
+    // globals come from index.html; the PKCE pair from tone3000BuildAuthorizeUrl.
+    // The cross-origin check on window.closed never throws, but be defensive anyway.
+    var opener = null
+    try {
+        opener = (window.opener && !window.opener.closed) ? window.opener : null
+    } catch (e) { /* leave null */ }
+
+    if (!opener) {
+        setTitle('Something went wrong')
+        fail('Lost the mod-ui window that opened this one -- nothing to exchange with.')
+        showActions()
+        return
+    }
+
+    var api = opener.TONE3000_API
+    var clientId = opener.TONE3000_CLIENT_ID
+    var storedState = opener.sessionStorage.getItem(opener.TONE3000_STATE_KEY)
+    var verifier = opener.sessionStorage.getItem(opener.TONE3000_VERIFIER_KEY)
+
+    if (callback.error) {
+        setTitle('Something went wrong')
+        fail('TONE3000 returned an error: ' + callback.error)
+        showActions()
+        return
+    }
+    if (callback.canceled) {
+        setTitle('No tone picked')
+        done('You closed the browser without picking a tone.')
+        showActions()
+        return
+    }
+    if (!callback.state || callback.state !== storedState) {
+        setTitle('Something went wrong')
+        fail('State mismatch -- refusing to exchange the code.')
+        showActions()
+        return
+    }
+    if (!callback.code || !verifier) {
+        setTitle('Something went wrong')
+        fail('No authorization code came back.')
+        showActions()
+        return
+    }
+
+    var body = new URLSearchParams({
+        grant_type: 'authorization_code',
+        code: callback.code,
+        code_verifier: verifier,
+        redirect_uri: window.location.origin + window.location.pathname,
+        client_id: clientId,
+    })
+
+    fetch(api + '/api/v1/oauth/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: body.toString(),
+    }).then(function (res) {
+        if (!res.ok) {
+            throw new Error('token exchange failed: HTTP ' + res.status)
+        }
+        return res.json()
+    }).then(function (tokens) {
+        done('Reading the tone…')
+
+        /* Every TONE3000 data endpoint -- including the model_url file itself --
+           needs the Bearer header. /api/v1/* sends Access-Control-Allow-Origin: *,
+           so this works from our origin, and the token never reaches the device. */
+        function apiGet (path) {
+            return fetch(api + path, {
+                headers: { 'Authorization': 'Bearer ' + tokens.access_token },
+            }).then(function (res) {
+                if (!res.ok) {
+                    throw new Error('GET ' + path + ' failed: HTTP ' + res.status)
+                }
+                return res.json()
+            })
+        }
+
+        function fetchAllModels (id, page, acc) {
+            return apiGet('/api/v1/models?tone_id=' + id + '&page=' + page).then(function (res) {
+                acc = acc.concat(res.data)
+                if (res.page >= res.total_pages) return acc
+                return fetchAllModels(id, page + 1, acc)
+            })
+        }
+
+        // Filenames are shown as-is in the File Manager and the NAM dropdown, so keep
+        // them human-readable: swap only the characters a filesystem can't take.
+        function sanitize (name) {
+            return name.replace(/[\/\\:*?"<>|\x00-\x1f]/g, '-').replace(/\s+/g, ' ').trim()
+        }
+
+        /* A tone is a group of models -- the same capture at several sizes and
+           architectures -- so the selection gives us a tone_id, not a file. */
+        var id = encodeURIComponent(callback.tone_id)
+        return apiGet('/api/v1/tones/' + id).then(function (tone) {
+            return fetchAllModels(id, 1, []).then(function (models) {
+                return { tone: tone, models: models }
+            })
+        }).then(function (result) {
+            var tone = result.tone
+            var toneName = tone.title || ('Tone ' + tone.id)
+            var namModels = result.models.filter(function (m) {
+                return (/\.nam$/i).test(new URL(m.model_url, api).pathname)
+            })
+
+            setTitle(toneName)
+
+            if (!namModels.length) {
+                done('This tone has no NAM models to download.')
+                showActions()
+                return
+            }
+
+            var title = sanitize(tone.title) || ('Tone ' + tone.id)
+            var folder = title + ' (' + tone.id + ')'
+
+            // First occurrence of a name stays clean; later duplicates get the model id
+            // appended, so the common case (no collisions) has no ids in it at all.
+            var baseNames = namModels.map(function (m) { return title + ' - ' + sanitize(m.name) + '.nam' })
+            var counts = {}
+            baseNames.forEach(function (n) { counts[n] = (counts[n] || 0) + 1 })
+            var seen = {}
+            var fileNames = baseNames.map(function (n, i) {
+                seen[n] = (seen[n] || 0) + 1
+                if (counts[n] === 1 || seen[n] === 1) return n
+                return n.slice(0, -4) + ' (' + namModels[i].id + ').nam'
+            })
+
+            var rows = renderTree(folder, fileNames)
+            done('Downloading ' + namModels.length + ' model' + (namModels.length === 1 ? '' : 's') + ' into this folder…')
+
+            return namModels.reduce(function (chain, model, i) {
+                return chain.then(function (results) {
+                    rows[i].downloading()
+                    return fetch(model.model_url, {
+                        headers: { 'Authorization': 'Bearer ' + tokens.access_token },
+                    }).then(function (res) {
+                        if (!res.ok) throw new Error('HTTP ' + res.status)
+                        return res.arrayBuffer()
+                    }).then(function (buf) {
+                        return fetch('/files/upload/nammodel?folder=' + encodeURIComponent(folder) +
+                                      '&name=' + encodeURIComponent(fileNames[i]), {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/octet-stream' },
+                            body: buf,
+                        })
+                    }).then(function (res) {
+                        if (!res.ok) throw new Error('upload failed: HTTP ' + res.status)
+                        return res.json()
+                    }).then(function (saved) {
+                        rows[i].saved()
+                        results.push({ model: model, ok: true, fullname: saved.fullname })
+                        return results
+                    }).catch(function (err) {
+                        // A CORS-blocked fetch rejects with an opaque TypeError indistinguishable
+                        // from a network failure -- name CORS explicitly on the first model only.
+                        var msg = (i === 0)
+                            ? 'could not fetch the model file (' + err + '); this may be a CORS ' +
+                              'restriction on TONE3000, not a network problem'
+                            : String(err)
+                        rows[i].failed('failed', msg)
+                        results.push({ model: model, ok: false, err: msg })
+                        return results
+                    })
+                })
+            }, Promise.resolve([])).then(function (results) {
+                var okCount = results.filter(function (r) { return r.ok }).length
+                var failed = results.filter(function (r) { return !r.ok })
+
+                if (!okCount) {
+                    fail('Could not download this tone: ' + failed[0].err)
+                } else {
+                    // Plugins already on the board cached their file list before this download.
+                    // Hand them the paths just written, so those sort to the top of the dropdown.
+                    if (opener.tone3000RefreshFileLists) {
+                        opener.tone3000RefreshFileLists(results.filter(function (r) { return r.ok })
+                                                               .map(function (r) { return r.fullname }))
+                    }
+                    if (opener.tone3000RefreshFileManager) {
+                        opener.tone3000RefreshFileManager()
+                    }
+                    if (failed.length) {
+                        done('Saved ' + okCount + ' of ' + results.length + ' models to the File Manager.')
+                        showSummary(failed.length + ' model' + (failed.length === 1 ? '' : 's') +
+                                    ' could not be downloaded — see the rows marked in red. ' +
+                                    'Hover a row for the reason.')
+                    } else {
+                        done('Saved ' + okCount + ' model' + (okCount === 1 ? '' : 's') +
+                             ' — now available in the File Manager and the NAM plugin.')
+                    }
+                }
+                showActions()
+            })
+        })
+    }).catch(function (err) {
+        setTitle('Something went wrong')
+        fail(String(err))
+        showActions()
+    })
+})()
+</script>
+</body>
+</html>

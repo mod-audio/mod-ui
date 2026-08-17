@@ -1,0 +1,19 @@
+name: jstest
+
+on: [push]
+
+jobs:
+  jstest:
+    runs-on: ubuntu-22.04
+    name: jstest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies
+        # npm install, not npm ci: the repo ignores package-lock.json (.gitignore), so
+        # there is no committed lockfile for ci to read.
+        run: npm install
+      - name: Run frontend tests
+        run: npm test

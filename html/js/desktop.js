@@ -37,6 +37,8 @@ function Desktop(elements) {
         pedalboardTrigger: $('<div>'),
         fileManagerBox: $('<div>'),
         fileManagerBoxTrigger: $('<div>'),
+        tone3000Box: $('<div>'),
+        tone3000BoxTrigger: $('<div>'),
         pedalboardBox: $('<div>'),
         pedalboardBoxTrigger: $('<div>'),
         bankBox: $('<div>'),
@@ -193,7 +195,7 @@ function Desktop(elements) {
             return Mustache.render(TEMPLATES.addressing, context)
         },
         isApp: function() {
-            return self.isApp;
+            return DesktopApp.isActive();
         },
     })
 
@@ -207,7 +209,6 @@ function Desktop(elements) {
         }
     })
 
-    this.isApp = false
     this.title = ''
     this.cloudAccessToken = null
     this.cloudHardwareDeviceVersions = null
@@ -726,19 +727,6 @@ function Desktop(elements) {
         })
     }
 
-    this.setupApp = function () {
-        self.isApp = true
-        $('#mod-bank').hide()
-        $('#mod-file-manager').hide()
-        $('#mod-settings').hide()
-        $('#mod-devices').hide()
-        $('#mod-status').hide()
-        $('#mod-ram').hide()
-        $('#mod-show-midi-port').hide()
-        $('#pedalboards-library').find('a').hide()
-        $('#pedal-presets-window').find('.js-assign-all').hide()
-    }
-
     this.setupDeviceAuthentication = function () {
         self.authenticateDevice(function (ok) {
             if (ok) {
@@ -752,6 +740,9 @@ function Desktop(elements) {
     }
 
     this.setupMatomo = function() {
+        if (!USER_TRACKING_ENABLED) {
+            return
+        }
         var _mtm = window._mtm = window._mtm || [];
         _mtm.push({'mtm.startTime': (new Date().getTime()), 'event': 'mtm.Start'});
         (function() {
@@ -770,6 +761,8 @@ function Desktop(elements) {
                                     elements.bankBoxTrigger)
     this.fileManagerBox = self.makeFileManagerBox(elements.fileManagerBox,
                                                   elements.fileManagerBoxTrigger)
+    this.tone3000Box = self.makeTone3000Box(elements.tone3000Box,
+                                            elements.tone3000BoxTrigger)
 
     this.getPluginsData = function (uris, callback) {
         $.ajax({
@@ -783,7 +776,7 @@ function Desktop(elements) {
         })
     }
     this.installMissingPlugins = function (plugins, callback) {
-        if (self.isApp) {
+        if (DesktopApp.isActive()) {
             new Notification('warn', "Cannot load this pedalboard, some plugins are missing", 4000)
             callback(false)
             return
@@ -1313,6 +1306,7 @@ function Desktop(elements) {
     elements.bankBoxTrigger.statusTooltip()
     elements.cloudPluginBoxTrigger.statusTooltip()
     elements.fileManagerBoxTrigger.statusTooltip()
+    elements.tone3000BoxTrigger.statusTooltip()
 
     this.upgradeWindow = elements.upgradeWindow.upgradeWindow({
         icon: elements.upgradeIcon,
@@ -1805,6 +1799,14 @@ Desktop.prototype.makeBankBox = function (el, trigger) {
 Desktop.prototype.makeFileManagerBox = function (el, trigger) {
     var self = this
     el.fileManagerBox({
+        trigger: trigger,
+        windowManager: this.windowManager,
+    })
+}
+
+Desktop.prototype.makeTone3000Box = function (el, trigger) {
+    var self = this
+    el.tone3000Box({
         trigger: trigger,
         windowManager: this.windowManager,
     })
