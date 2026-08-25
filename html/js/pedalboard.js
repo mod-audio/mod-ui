@@ -241,6 +241,9 @@ JqueryClass('pedalboard', {
         // Holds all plugins loaded, indexed by instance
         self.data('plugins', {})
 
+        // Instances currently selected by shift-drag or shift-click, indexed by instance
+        self.data('selected', {})
+
         // Hardware inputs and outputs, which have an instance of -1 and symbol as given by application
         self.data('hwInputs', [])
         self.data('hwOutputs', [])
@@ -345,9 +348,19 @@ JqueryClass('pedalboard', {
             }
         }});
 
-        // Dragging the pedalboard move the view area
+        // Dragging the pedalboard moves the view area, shift-dragging selects plugins.
+        // preventDrag is already set here if the mousedown landed on a plugin or a jack,
+        // as their own handlers fire first on the way up
         self.mousedown(function (e) {
-            self.pedalboard('drag', e)
+            if (self.data('preventDrag')) {
+                return
+            }
+            if (e.shiftKey) {
+                self.pedalboard('marquee', e)
+            } else {
+                self.pedalboard('setSelection', {})
+                self.pedalboard('drag', e)
+            }
         })
 
         // The mouse wheel is used to zoom in and out
@@ -849,6 +862,158 @@ JqueryClass('pedalboard', {
     // Prevents dragging of whole dashboard when dragging of effect or jack starts
     preventDrag: function (prevent) {
         $(this).data('preventDrag', prevent)
+    },
+
+    // Replaces the current selection. Keys of `selected` are plugin instances
+    setSelection: function (selected) {
+        var self = $(this)
+        var plugins = self.data('plugins')
+        for (var instance in plugins) {
+            if (plugins[instance] && plugins[instance].length) {
+                plugins[instance].toggleClass('mod-selected', !!selected[instance])
+            }
+        }
+        // lets the stylesheet fade everything that is not selected
+        self.toggleClass('mod-has-selection', Object.keys(selected).length > 0)
+        self.data('selected', selected)
+    },
+
+    // Adds or removes a single plugin from the selection, for shift-click
+    toggleSelected: function (instance) {
+        var self = $(this)
+        var selected = self.data('selected')
+        if (selected[instance]) {
+            delete selected[instance]
+        } else {
+            selected[instance] = true
+        }
+        self.pedalboard('setSelection', selected)
+    },
+
+    // Shift-dragging the background rubber-bands a box and selects what it touches.
+    // The box lives in the unscaled parent, so it needs no scale math, and the hit test
+    // uses getBoundingClientRect, which is already in the same screen space
+    marquee: function (start) {
+        var self = $(this)
+        var box = $('<div class="mod-selection-box">').appendTo(self.parent())
+        var parentRect = self.parent()[0].getBoundingClientRect()
+
+        var rectOf = function (e) {
+            return {
+                left: Math.min(start.clientX, e.clientX),
+                right: Math.max(start.clientX, e.clientX),
+                top: Math.min(start.clientY, e.clientY),
+                bottom: Math.max(start.clientY, e.clientY)
+            }
+        }
+
+        var moveHandler = function (e) {
+            var r = rectOf(e)
+            box.css({
+                left: r.left - parentRect.left,
+                top: r.top - parentRect.top,
+                width: r.right - r.left,
+                height: r.bottom - r.top
+            })
+        }
+
+        var upHandler = function (e) {
+            $(document).unbind('mousemove', moveHandler)
+            $(document).unbind('mouseup', upHandler)
+            box.remove()
+
+            var r = rectOf(e)
+            if (r.right - r.left < 4 && r.bottom - r.top < 4) {
+                // a shift-click with no drag, leave the selection alone
+                return
+            }
+
+            var selected = {}
+            var plugins = self.data('plugins')
+            for (var instance in plugins) {
+                if (! plugins[instance] || ! plugins[instance].length) {
+                    continue
+                }
+                var b = plugins[instance][0].getBoundingClientRect()
+                if (b.right > r.left && b.left < r.right && b.bottom > r.top && b.top < r.bottom) {
+                    selected[instance] = true
+                }
+            }
+            self.pedalboard('setSelection', selected)
+        }
+
+        $(document).bind('mousemove', moveHandler)
+        $(document).bind('mouseup', upHandler)
+    },
+
+    // Called when a plugin drag starts. If that plugin is selected, remember where every
+    // other selected plugin sits so the drag can move them all by the same delta
+    startGroupDrag: function (instance) {
+        var self = $(this)
+        var plugins = self.data('plugins')
+        var selected = self.data('selected')
+
+        self.data('dragGroup', null)
+        if (! selected[instance]) {
+            return
+        }
+
+        var group = []
+        for (var other in selected) {
+            if (other == instance || ! plugins[other] || ! plugins[other].length) {
+                continue
+            }
+            group.push({
+                instance: other,
+                icon: plugins[other],
+                left: parseInt(plugins[other].css('left')),
+                top: parseInt(plugins[other].css('top'))
+            })
+        }
+        if (! group.length) {
+            return
+        }
+
+        self.data('dragGroup', group)
+        self.data('dragOrigin', {
+            left: parseInt(plugins[instance].css('left')),
+            top: parseInt(plugins[instance].css('top'))
+        })
+    },
+
+    // Moves the rest of the selection to follow the dragged plugin. left/top are the
+    // dragged plugin's new position, in canvas units
+    dragGroupTo: function (left, top) {
+        var self = $(this)
+        var group = self.data('dragGroup')
+        if (! group) {
+            return
+        }
+        var origin = self.data('dragOrigin')
+        var dx = left - origin.left
+        var dy = top - origin.top
+        for (var i = 0; i < group.length; i++) {
+            group[i].icon.css({
+                left: group[i].left + dx,
+                top: group[i].top + dy
+            })
+            self.pedalboard('drawPluginJacks', group[i].icon)
+        }
+    },
+
+    // Persists the new position of every plugin that moved along with the dragged one
+    finishGroupDrag: function () {
+        var self = $(this)
+        var group = self.data('dragGroup')
+        if (! group) {
+            return
+        }
+        for (var i = 0; i < group.length; i++) {
+            self.data('pluginMove')(group[i].instance,
+                                    parseInt(group[i].icon.css('left')),
+                                    parseInt(group[i].icon.css('top')))
+        }
+        self.data('dragGroup', null)
     },
 
     // Moves the viewable area of the pedalboard
@@ -1407,6 +1572,7 @@ JqueryClass('pedalboard', {
                 obj.icon.addClass('dragging')
                 obj.icon.css({'z-index': self.data('z_index')+1})
                 self.data('z_index', self.data('z_index')+1)
+                self.pedalboard('startGroupDrag', instance)
                 return true
             },
             drag: function (e, ui) {
@@ -1414,6 +1580,7 @@ JqueryClass('pedalboard', {
                 var scale = self.data('scale')
                 ui.position.left /= scale
                 ui.position.top /= scale
+                self.pedalboard('dragGroupTo', ui.position.left, ui.position.top)
                 self.trigger('modified')
                 self.pedalboard('drawPluginJacks', obj.icon)
             },
@@ -1423,9 +1590,14 @@ JqueryClass('pedalboard', {
                 self.pedalboard('drawPluginJacks', obj.icon)
                 obj.icon.removeClass('dragging')
                 self.data('pluginMove')(instance, ui.position.left, ui.position.top)
+                self.pedalboard('finishGroupDrag')
                 self.pedalboard('adapt', false)
             },
             click: function (event) {
+                if (event.shiftKey) {
+                    self.pedalboard('toggleSelected', instance)
+                    return
+                }
                 obj.icon.css({'z-index': self.data('z_index')+1})
                 self.pedalboard('drawPluginJacks', obj.icon)
                 self.data('z_index', self.data('z_index')+1)
@@ -2051,6 +2223,7 @@ JqueryClass('pedalboard', {
             }
 
             delete plugins[instance]
+            delete self.data('selected')[instance]
 
             // nothing else asks the canvas to reconsider its size after a removal, and
             // scheduleAdapt debounces, so deleting several plugins recalculates once

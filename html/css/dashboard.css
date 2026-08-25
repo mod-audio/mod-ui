@@ -1384,3 +1384,39 @@ svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1001
         display: none !important;
     }
 }
+
+/* = SELECTION (shift-drag on the board to rubber-band, shift-click to toggle)
+================================================ */
+.mod-selection-box {
+    position: absolute;
+    border: 1px dashed #bbb;
+    background: rgba(255, 255, 255, 0.08);
+    pointer-events: none;
+    z-index: 100000;
+}
+
+/* Selected plugins. Two treatments on purpose: the canvas is css-scaled, so any px
+   length shrinks with the zoom (a 3px outline is 0.75px at the 0.25 min zoom), while
+   filters are not geometric and read the same at every zoom. The filter goes on the
+   wrapper, which is already position:absolute, so it introduces no new containing
+   block for the absolutely positioned knobs inside. The outline goes on the template
+   root, the element pedals.css already treats as the pedal body. */
+#pedalboard-dashboard > .mod-pedal.mod-selected {
+    filter: brightness(1.08);
+}
+/* !important is needed to beat `*{outline:0 !important}` in main.css, which otherwise
+   kills this at any specificity */
+#pedalboard-dashboard > .mod-pedal.mod-selected > div:first-child {
+    outline: 4px solid #cbb4d4 !important;
+    outline-offset: 0;
+}
+/* The part that carries the signal: everything NOT selected fades back. opacity is not
+   a length, so it is zoom independent, and the wrapper is already a stacking context,
+   so this changes no paint order. */
+#pedalboard-dashboard.mod-has-selection > .mod-pedal:not(.mod-selected) {
+    opacity: 0.5;
+}
+#pedalboard-dashboard > .mod-pedal {
+    transition: opacity 0.15s, filter 0.15s;
+}
+
