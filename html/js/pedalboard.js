@@ -2201,6 +2201,7 @@ JqueryClass('pedalboard', {
             drop: function (event, ui) {
                 var overCount = self.data('overCount');
                 self.data('overCount', 0);
+                self.data('background').droppable('enable')
 
                 var jack = ui.draggable
                 var outputType = jack.parent().attr('mod-role').split(/-/)[1]
