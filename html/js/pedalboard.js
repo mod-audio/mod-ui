@@ -363,6 +363,25 @@ JqueryClass('pedalboard', {
             }
         })
 
+        // Delete removes the selection. Bound on the document because the pedalboard is
+        // not focusable, and ignored while typing so the plugin settings windows, the
+        // save dialog and the plugin search all keep working. Backspace counts too, for
+        // keyboards whose only delete key is that one
+        $(document).keydown(function (e) {
+            if (e.which != 46 && e.which != 8) {
+                return
+            }
+            var tag = (e.target.tagName || '').toLowerCase()
+            if (tag == 'input' || tag == 'textarea' || tag == 'select' || e.target.isContentEditable) {
+                return
+            }
+            if (! Object.keys(self.data('selected')).length) {
+                return
+            }
+            e.preventDefault()
+            self.pedalboard('removeSelected')
+        })
+
         // The mouse wheel is used to zoom in and out
         self.bind('mousewheel', function (e) {
             // Zoom by mousewheel has been desactivated.
@@ -888,6 +907,34 @@ JqueryClass('pedalboard', {
             selected[instance] = true
         }
         self.pedalboard('setSelection', selected)
+    },
+
+    // Removes every selected plugin. Asks first when more than one is going, since there
+    // is no undo and a stray Delete could otherwise take out a whole board
+    removeSelected: function () {
+        var self = $(this)
+        var plugins = self.data('plugins')
+        // snapshot the keys: removing a plugin drops it from the selection as it goes
+        var instances = Object.keys(self.data('selected'))
+        if (! instances.length) {
+            return
+        }
+        if (instances.length > 1 &&
+            ! confirm('Remove ' + instances.length + ' plugins from the pedalboard?')) {
+            return
+        }
+
+        self.pedalboard('finishConnection')
+        for (var i = 0; i < instances.length; i++) {
+            var plugin = plugins[instances[i]]
+            if (! plugin || ! plugin.length) {
+                continue
+            }
+            // ports is only needed so removePlugin can drop the plugin's cv outputs from
+            // the hardware manager; addPlugin stashes it on the icon for us
+            self.pedalboard('removePlugin', instances[i], plugin.data('ports'))
+        }
+        self.pedalboard('setSelection', {})
     },
 
     // Shift-dragging the background rubber-bands a box and selects what it touches.
@@ -1686,6 +1733,7 @@ JqueryClass('pedalboard', {
 
             icon.data('label', pluginData.label)
             icon.data('uri', pluginData.uri)
+            icon.data('ports', pluginData.ports)
             icon.data('gui', pluginGui)
             icon.data('settings', settings)
             icon.data('instance', instance)
