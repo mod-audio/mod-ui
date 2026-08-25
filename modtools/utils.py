@@ -227,6 +227,7 @@ class PluginPortGroup(Structure):
         ("uri", c_char_p),
         ("symbol", c_char_p),
         ("name", c_char_p),
+        ("index", c_uint),
     ]
 
 class PluginPortRanges(Structure):
