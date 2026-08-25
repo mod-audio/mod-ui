@@ -382,22 +382,31 @@ JqueryClass('pedalboard', {
             self.pedalboard('removeSelected')
         })
 
-        // The mouse wheel is used to zoom in and out
-        self.bind('mousewheel', function (e) {
-            // Zoom by mousewheel has been desactivated.
-            // Let's keep the code here so that maybe later this can be a user option
-            if (true) return;
+        // The mouse wheel is used to zoom in and out.
+        // A wheel gesture is locked to zooming-or-knob on its FIRST event: while zooming,
+        // the pan clamp can slide a knob under a cursor that started over the background,
+        // and the rest of the gesture must not start editing that knob's value.
+        // Capture phase, so we can decide before the knob's own mousewheel handler runs.
+        var gestureEnd = 0, gestureIsZoom = false
+        var wheelZoom = function (ev) {
+            if (ev.timeStamp > gestureEnd) {
+                // check if mouse is not over a control button
+                gestureIsZoom = !self.pedalboard('mouseIsOver', ev, self.find('[mod-role=input-control-port]'))
+            }
+            // 300ms of quiet ends a gesture, raise it if slow scrolling breaks a zoom in two
+            gestureEnd = ev.timeStamp + 300
 
-            var ev = e.originalEvent
-
-            // check if mouse is not over a control button
-            if (self.pedalboard('mouseIsOver', ev, self.find('[mod-role=input-control-port]')))
+            if (!gestureIsZoom) {
                 return
+            }
+            // this gesture is ours, keep it away from whatever is under the cursor now
+            ev.preventDefault()
+            ev.stopPropagation()
 
             var maxS = self.data('maxScale')
             var minS = self.data('minScale')
             var step = (maxS - minS) / 5
-            var steps = ev.wheelDelta / 120
+            var steps = ev.wheelDelta != null ? ev.wheelDelta / 120 : -ev.detail / 3
             var scale = self.data('scale')
             var newScale = scale + steps * step
             newScale = Math.min(maxS, newScale)
@@ -412,7 +421,10 @@ JqueryClass('pedalboard', {
             var screenY = ev.pageY - self.parent().offset().top
 
             self.pedalboard('zoom', newScale, canvasX, canvasY, screenX, screenY, 0)
-        })
+        }
+        // same event names jquery.mousewheel binds, so stopPropagation actually shields the knobs
+        self[0].addEventListener('mousewheel', wheelZoom, true)
+        self[0].addEventListener('DOMMouseScroll', wheelZoom, true)
 
         self.pedalboard('initGestures')
 
@@ -481,15 +493,11 @@ JqueryClass('pedalboard', {
 
     // Check if mouse event has happened over any element of a jquery set in pedalboard
     mouseIsOver: function (ev, elements) {
-        var scale = $(this).data('scale')
-        var top, left, right, bottom, element
+        // getBoundingClientRect already accounts for the pedalboard scale and for
+        // any widget rotation (mod-widget-rotation knobs are css-rotated)
         for (var i = 0; i < elements.length; i++) {
-            element = $(elements[i])
-            top = element.offset().top
-            left = element.offset().left
-            right = left + element.width() * scale
-            bottom = top + element.height() * scale
-            if (ev.pageX >= left && ev.pageX <= right && ev.pageY >= top && ev.pageY <= bottom)
+            var r = elements[i].getBoundingClientRect()
+            if (ev.clientX >= r.left && ev.clientX <= r.right && ev.clientY >= r.top && ev.clientY <= r.bottom)
                 return true
         }
         return false
