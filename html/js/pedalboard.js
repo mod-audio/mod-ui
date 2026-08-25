@@ -1033,16 +1033,41 @@ JqueryClass('pedalboard', {
         var self = $(this)
         // First, get the minmum bounding rectangle,
         // given by minX, maxX, minY and maxY
-        var minX, maxX, minY, maxY, rightMargin, w, h, x, y, plugin, pos
+        var minX, maxX, minY, maxY, padX, padY, w, h, x, y, plugin, pos
         //var pedals = self.find('.js-effect')
         var plugins = self.data('plugins')
         var scale = self.data('scale')
+        // Seeded from the size resetSize starts with rather than from the current canvas.
+        // Seeding with self.width()/height() made the box the union of canvas-and-plugins,
+        // so the canvas could only ever grow - deleting or moving plugins inwards left the
+        // vacated space behind forever. The floor already carries the viewport aspect
+        // ratio, which is what the ratio lock further down expects.
+        // Only the right and bottom are reclaimed this way, and neither moves a plugin.
+        // Left and top slack still cannot be given back without shifting every plugin.
         minX = 0
-        maxX = self.width()
+        maxX = self.parent().width() / self.data('baseScale')
         minY = 0
-        maxY = self.height()
-        rightMargin = 150
+        maxY = self.parent().height() / self.data('baseScale')
         var instance
+
+        // Keep one more plugin's worth of empty canvas past the outermost plugin, so
+        // there is always somewhere to drop the next one instead of having to shove one
+        // against an edge you cannot see past first. The unit is the biggest plugin
+        // currently on the board, so the gap is literally "one more of these fits".
+        // 150 is the old fixed margin, kept as the floor and as the empty board case.
+        //
+        // Right and bottom only. Growing left or up is implemented as a shift of every
+        // plugin (the minX/minY branches below), which runs through pluginMove and so
+        // rewrites and re-persists every saved position and marks the board modified.
+        // Those two sides still grow on demand when a plugin is actually dragged there.
+        padX = 150
+        padY = 150
+        for (instance in plugins) {
+            plugin = plugins[instance]
+            if (!plugin.position) continue
+            padX = Math.max(padX, plugin.width())
+            padY = Math.max(padY, plugin.height())
+        }
         for (instance in plugins) {
             plugin = plugins[instance]
             if (!plugin.position) continue
@@ -1053,9 +1078,9 @@ JqueryClass('pedalboard', {
             y = pos.top / scale
 
             minX = Math.min(minX, x)
-            maxX = Math.max(maxX, x + w + rightMargin)
+            maxX = Math.max(maxX, x + w + padX)
             minY = Math.min(minY, y)
-            maxY = Math.max(maxY, y + h)
+            maxY = Math.max(maxY, y + h + padY)
         }
 
         // Now calculate how much to increase in width and height,
@@ -1070,14 +1095,18 @@ JqueryClass('pedalboard', {
             wDif -= minX
             left -= minX
         }
-        if (maxX > w)
-            wDif += maxX - w
         if (minY < 0) {
             hDif -= minY
             top -= minY
         }
-        if (maxY > h)
-            hDif += maxY - h
+        // Unconditional, so these can come out negative and give space back. They used to
+        // be guarded by maxX > w / maxY > h, which is why the canvas could only grow: once
+        // maxX is the floor rather than the current width, the guard is false whenever
+        // there is slack to reclaim and adapt fell straight through to its early return.
+        // The result is w + wDif == maxX - minX, i.e. exactly the box we want, in either
+        // direction. Only the right and bottom move; left and top still need the shift.
+        wDif += maxX - w
+        hDif += maxY - h
 
         if (wDif == 0 && hDif == 0 && ! forcedUpdate) {
             // nothing has changed
@@ -2022,6 +2051,10 @@ JqueryClass('pedalboard', {
             }
 
             delete plugins[instance]
+
+            // nothing else asks the canvas to reconsider its size after a removal, and
+            // scheduleAdapt debounces, so deleting several plugins recalculates once
+            self.pedalboard('scheduleAdapt', false)
         } else {
             connMgr.iterate(function (jack) {
                 var input   = jack.data('destination')
