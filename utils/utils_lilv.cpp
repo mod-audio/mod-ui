@@ -2873,6 +2873,7 @@ const PluginInfo& _get_plugin_info(LilvWorld* const w,
                         portinfo.group,
                         nc,
                         nc,
+                        0
                     };
 
                     if (LilvNode* const group_symbol = lilv_world_get(w, group, ns.lv2core_symbol, nullptr))
@@ -2889,6 +2890,12 @@ const PluginInfo& _get_plugin_info(LilvWorld* const w,
                             portGroup.name = strdup(namestr);
 
                         lilv_node_free(group_name);
+                    }
+
+                    if (LilvNode* const node = lilv_world_get(w, group, ns.lv2core_index, nullptr))
+                    {
+                        portGroup.index = lilv_node_as_int(node);
+                        lilv_node_free(node);
                     }
                 }
 
@@ -3122,11 +3129,25 @@ const PluginInfo& _get_plugin_info(LilvWorld* const w,
 
     if (size_t count = portGroups.size())
     {
-        PluginPortGroup* const groups = new PluginPortGroup[count+1];
+        PluginPortGroup* const groups = new PluginPortGroup[count + 1]();
 
-        count = 0;
-        for (auto& group : portGroups)
-            groups[count++] = group.second;
+        size_t index = 0;
+        for (const auto& kv : portGroups)
+        {
+            groups[index++] = kv.second;
+        }
+
+        // Sort the final array directly in-place
+        std::sort(groups, groups + count, [](const PluginPortGroup& a, const PluginPortGroup& b) {
+            if (a.index != b.index)
+                return a.index < b.index;
+
+            int cmpName = strcmp(a.name, b.name);
+            if (cmpName != 0)
+                return cmpName < 0;
+
+            return strcmp(a.symbol, b.symbol) < 0;
+        });
 
         memset(&groups[count], 0, sizeof(PluginPortGroup));
 
