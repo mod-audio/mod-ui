@@ -620,6 +620,9 @@ $('document').ready(function() {
     } else {
         $("#prefs-update-channel-stable").prop("checked", true)
     }
+    if (PREFERENCES['merge-stereo-cables'] != "false") {
+        $("#prefs-ui-stereo-cables").prop("checked", true)
+    }
     if (! HMI_EEPROM) {
         $("#prefs-delete-hmi-settings_br").hide()
         $("#prefs-delete-hmi-settings_label").hide()
@@ -896,6 +899,10 @@ $('document').ready(function() {
 
     $("#prefs-ui-unstable-plugins").click(function () {
         config_set("show-unstable-plugins", bool2str($(this).prop("checked")))
+    })
+
+    $("#prefs-ui-stereo-cables").click(function () {
+        config_set("merge-stereo-cables", bool2str($(this).prop("checked")))
     })
 
     // ----------------------------------------------------------------------------------------------------------------
@@ -1357,6 +1364,16 @@ $('document').ready(function() {
                         controller ping times, Install/Update All in the Plugin Store, and Export / Import buttons in each plugin's
                         preset list (to send a preset to a plugin developer as a .modpreset file). Applies when you go back to the main
                         screen.
+                    </p>
+                    <label>
+                        <input type="checkbox" autocomplete="off" id="prefs-ui-stereo-cables">
+                            Merge stereo cables
+                        </input>
+                    </label>
+                    <p>
+                        Draw the two halves of a stereo connection as a single cable, instead of
+                        one per channel. Only pairs wired straight across are merged; a left/right
+                        swap stays as two cables so it remains visible.
                     </p>
                     <label>
                         <input type="checkbox" autocomplete="off" id="prefs-ui-unstable-plugins">
