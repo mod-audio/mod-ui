@@ -383,15 +383,17 @@ JqueryClass('pedalboard', {
         })
 
         // The mouse wheel is used to zoom in and out.
-        // A wheel gesture is locked to zooming-or-knob on its FIRST event: while zooming,
+        // A wheel gesture is locked to zooming-or-widget on its FIRST event: while zooming,
         // the pan clamp can slide a knob under a cursor that started over the background,
         // and the rest of the gesture must not start editing that knob's value.
-        // Capture phase, so we can decide before the knob's own mousewheel handler runs.
+        // Capture phase, so we can decide before the widget's own mousewheel handler runs.
         var gestureEnd = 0, gestureIsZoom = false
         var wheelZoom = function (ev) {
             if (ev.timeStamp > gestureEnd) {
-                // check if mouse is not over a control button
-                gestureIsZoom = !self.pedalboard('mouseIsOver', ev, self.find('[mod-role=input-control-port]'))
+                // ask the event target, not the geometry: an open enumeration list
+                // overflows the box of the control port it lives in, so hit-testing
+                // bounding boxes calls it background and swallows the list's scrolling
+                gestureIsZoom = !self.pedalboard('wheelClaimedByWidget', ev.target)
             }
             // 300ms of quiet ends a gesture, raise it if slow scrolling breaks a zoom in two
             gestureEnd = ev.timeStamp + 300
@@ -491,14 +493,23 @@ JqueryClass('pedalboard', {
         })
     },
 
-    // Check if mouse event has happened over any element of a jquery set in pedalboard
-    mouseIsOver: function (ev, elements) {
-        // getBoundingClientRect already accounts for the pedalboard scale and for
-        // any widget rotation (mod-widget-rotation knobs are css-rotated)
-        for (var i = 0; i < elements.length; i++) {
-            var r = elements[i].getBoundingClientRect()
-            if (ev.clientX >= r.left && ev.clientX <= r.right && ev.clientY >= r.top && ev.clientY <= r.bottom)
+    // Does anything between a wheel event's target and the pedalboard want the wheel
+    // for itself? Asking the target beats hit-testing bounding boxes: an open
+    // enumeration list overflows the box of the control port it belongs to, so a
+    // geometric test calls it background and the list never gets to scroll.
+    wheelClaimedByWidget: function (target) {
+        var root = this[0]
+        for (var el = target; el && el !== root; el = el.parentElement) {
+            // knobs and other value controls -- the wheel edits them
+            if (el.getAttribute && el.getAttribute('mod-role') === 'input-control-port')
                 return true
+            // anything that can actually scroll, e.g. an open .mod-enumerated-list.
+            // scrollHeight first: it is free, getComputedStyle is not.
+            if (el.scrollHeight > el.clientHeight) {
+                var overflow = window.getComputedStyle(el).overflowY
+                if (overflow === 'auto' || overflow === 'scroll')
+                    return true
+            }
         }
         return false
     },
