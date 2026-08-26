@@ -174,6 +174,10 @@ $('document').ready(function() {
         bufferSizeButton: $('#mod-buffersize'),
         xrunsButton: $('#mod-xruns'),
         cpuStatsButton: $('#mod-cpu-stats'),
+        cpuButton: $('#mod-cpu'),
+        cpuLoadWindow: $('#cpu-load-window'),
+        cpuLoadList: $('#cpu-load-list'),
+        cpuLoadSummary: $('#cpu-load-summary'),
     })
 
     if ('{{bundlepath}}' && '{{title}}') {
@@ -370,8 +374,10 @@ $('document').ready(function() {
 <script type="text/javascript" src="js/transport.js?v={{version}}"></script>
 <script type="text/javascript" src="js/nprogress.js?v={{version}}"></script>
 <script type="text/javascript" src="js/utils/tempo.js?v={{version}}"></script>
+<script type="text/javascript" src="js/utils/criticalpath.js?v={{version}}"></script>
 <script type="text/javascript" src="js/utils/plugins.js?v={{version}}"></script>
 <script type="text/javascript" src="js/report.js?v={{version}}"></script>
+<script type="text/javascript" src="js/cpuload.js?v={{version}}"></script>
 
 <!-- For browsers with shields on, avoid breaking on Matomo related code -->
 <script>var _paq = { push: new Function() }</script>
@@ -675,6 +681,39 @@ $('document').ready(function() {
         <!-- END PEDALBOARD-DASHBOARD -->
 
         <!-- MIDI DEVICE LIST WINDOW -->
+        <div id="cpu-load-window" class="save-popup mod-hidden">
+            <div class="mod-box" id="cpu-load-box">
+                <h1>Plugin CPU Usage<button type="button" id="cpu-load-info" class="cpu-load-info" title="What do these numbers mean?" aria-expanded="false">i</button></h1>
+                <p id="cpu-load-summary" class="cpu-load-summary"></p>
+                <div id="cpu-load-list"></div>
+                <div id="cpu-load-help" class="cpu-load-help mod-hidden">
+                    <p>
+                        <b>cpu</b> is the worst single audio cycle that plugin has been seen
+                        to use, as a share of the cycle. A peak, not an average: a plugin that
+                        usually costs 5% and occasionally costs 60% is the one that drops audio,
+                        and an average hides that. Peaks only ever climb &mdash; <b>Reset peaks</b>
+                        clears them and re-ranks the list.
+                        <br>
+                        <b>effect on the audio cycle</b> is a different question. A plugin cannot
+                        start until its input arrives, so the cycle is only as long as the longest
+                        chain of plugins waiting on each other &mdash; the <b>critical path</b>.
+                        Plugins off that chain run alongside something slower and finish early, so
+                        making them cheaper buys nothing; their <b>spare</b> is how much more they
+                        could use before they became the longest chain themselves.
+                        <br>
+                        So the most expensive plugin is often not the one to remove. Two caveats:
+                        the chain total adds up peaks that rarely happen in the same cycle, so it
+                        is a worst case rather than a prediction and will read higher than the CPU
+                        meter; and work a plugin hands to a background thread is not counted here.
+                    </p>
+                </div>
+                <div class="actions">
+                    <button type="button" class="js-reset-peaks">Reset peaks</button>
+                    <button class="js-close">Close</button>
+                </div>
+            </div>
+        </div>
+
         <div id="midi-ports-window" class="save-popup mod-hidden">
             <div class="mod-box" id="midi-ports-box">
                 <h1>MIDI Ports List</h1>
