@@ -2533,6 +2533,13 @@ JqueryClass('pedalboard', {
     // the drawing of the merged cable.
     stereoPartner: function (element) {
         var self = $(this)
+
+        // Off by preference: every connection then draws as its own cable, which is
+        // what the rest of the code does anyway when nothing pairs up.
+        if (typeof PREFERENCES !== 'undefined' && PREFERENCES['merge-stereo-cables'] == "false") {
+            return null
+        }
+
         var counterpart = stereoCounterpart(element.data('symbol'))
         if (! counterpart) {
             return null
