@@ -16,19 +16,6 @@ var STEREO_OTHER_SIDE = {
     'right': 'left',
 }
 
-// A trailing "l" only means "left" when it stands as a token of its own: the whole
-// symbol ("l"), after a separator ("in_l"), or after a case change ("outL"). Without
-// that rule "signal" and "pedal" read as left channels and pair with whatever port
-// happens to be called "signar" - or, far more likely, with nothing, which is merely
-// wasted work. The case-change rule is what keeps "SIGNAL" out.
-function stereoSideIsOwnToken(prefix, separator, side) {
-    if (prefix === '' || separator !== '') {
-        return true
-    }
-    var last = prefix.slice(-1)
-    return side === side.toUpperCase() && last !== last.toUpperCase()
-}
-
 // Recase `word` the way `like` is cased: "R" for "L", "Right" for "Left", else lower
 function stereoRecase(word, like) {
     if (like === like.toUpperCase()) {
@@ -47,8 +34,13 @@ function stereoRecase(word, like) {
 // The returned symbol is a guess: the caller decides it is a real pair by checking that
 // a port of the same type and direction actually goes by that name.
 function stereoCounterpart(symbol) {
+    // Deliberately permissive: "signal" is read as a left channel and guesses "signar".
+    // Nothing is named that, so the caller's existence check throws the guess away. An
+    // earlier version demanded a separator or a case change to rule such words out, and
+    // that cost real pairs -- inl/inr, outl/outr, inputleft/inputright, OUT1L/OUT1R --
+    // because plenty of plugins name their ports in one flat case.
     var m = /^(.*?)([_-]?)(left|right|l|r)$/i.exec(symbol)
-    if (m !== null && stereoSideIsOwnToken(m[1], m[2], m[3])) {
+    if (m !== null) {
         var side = m[3].toLowerCase()
         return {
             symbol: m[1] + m[2] + stereoRecase(STEREO_OTHER_SIDE[side], m[3]),
