@@ -2660,17 +2660,26 @@ JqueryClass('pedalboard', {
         var deltaX = cableDeltaX(x1, x2)
 
         var parts = [['pathShadow', 'shadow'], ['pathCable', 'cable'], ['pathLight', 'light']]
-        for (var i = 0; i < parts.length; i++) {
-            var path = canvas.data(parts[i][0])
-            path.reset()
-            // One unbroken stroke in through the trunk and out the other side, then the
-            // two stubs that make it a Y at either end
-            path.move(out1.x, out1.y).line(x1, y1)
-                .curveC(x2 - deltaX, y1, x1 + deltaX, y2, x2, y2)
-                .line(in1.x, in1.y)
-            path.move(out2.x, out2.y).line(x1, y1)
-            path.move(x2, y2).line(in2.x, in2.y)
-            svg.path(null, path, { class_: stylePrefix + parts[i][1] })
+        var i
+
+        // The trunk is the only part carrying both channels, so it is the only part drawn
+        // as a stereo cable -- heavier, and striped.
+        for (i = 0; i < parts.length; i++) {
+            var trunk = canvas.data(parts[i][0])
+            trunk.reset()
+            trunk.move(x1, y1).curveC(x2 - deltaX, y1, x1 + deltaX, y2, x2, y2)
+            svg.path(null, trunk, { class_: stylePrefix + parts[i][1] + ' mod-trunk' })
+        }
+
+        // The four legs carry one channel each, so they are drawn as ordinary cable. They
+        // are separate paths from the trunk only so the stereo styling can skip them.
+        for (i = 0; i < parts.length; i++) {
+            var legs = svg.createPath()
+            legs.move(out1.x, out1.y).line(x1, y1)
+            legs.move(out2.x, out2.y).line(x1, y1)
+            legs.move(x2, y2).line(in1.x, in1.y)
+            legs.move(x2, y2).line(in2.x, in2.y)
+            svg.path(null, legs, { class_: stylePrefix + parts[i][1] })
         }
     },
 
