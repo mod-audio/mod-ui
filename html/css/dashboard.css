@@ -560,6 +560,40 @@ svg .light {
     transform: none;
 }
 
+/* Hovering a jack traces its cable: every other cable on the board fades back, so the one
+   under the pointer is the only one left bright. This is for any cable, not only a merged
+   stereo pair -- for a pair it additionally fades the half that is not the hovered jack's,
+   which is what says which of the two channels you are on. The trunk carries both and so
+   stays bright either way.
+
+   The lit flag is an attribute on the canvas div rather than a class on the svg, because
+   jQuery 1.9.1 sets classes through element.className, which on an svg element is a
+   readonly SVGAnimatedString and silently no-ops. Matching svg classes from css is fine;
+   only setting them from script is not. */
+.mod-cable-canvas {
+    transition: opacity 0.12s ease;
+}
+.mod-tracing .mod-cable-canvas {
+    opacity: 0.22;
+}
+.mod-tracing .mod-cable-canvas[data-cable-lit] {
+    opacity: 1;
+}
+/* the jacks fade with their cables, so the two ends of the traced one stand out too */
+.mod-output-jack {
+    transition: opacity 0.12s ease;
+}
+.mod-tracing .mod-output-jack {
+    opacity: 0.35;
+}
+.mod-tracing .mod-output-jack[data-jack-lit] {
+    opacity: 1;
+}
+[data-cable-lit="0"] svg .mod-leg-1,
+[data-cable-lit="1"] svg .mod-leg-0 {
+    opacity: 0.28;
+}
+
 svg .connecting-shadow { fill: none; stroke: #077; stroke-width: 10; z-index: 1000; }
 svg .connecting-cable { fill: none; stroke: #0AA; stroke-width: 8; z-index: 1000; }
 svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1001; -webkit-transform: translateY(2px); transform: translateY(2px); }

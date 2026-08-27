@@ -343,6 +343,18 @@ JqueryClass('pedalboard', {
             }
         }});
 
+        // Hovering a port traces every cable touching it. Delegated from the pedalboard
+        // rather than bound per jack: jacks are created and destroyed with every
+        // connection, and a port is the thing that knows all of its cables anyway -- an
+        // output fans out to as many inputs as you like, and an input takes as many
+        // cables as you like. Hardware ports carry mod-port too, so they trace as well.
+        self.on('mouseenter', '[mod-port]', function () {
+            self.pedalboard('traceFrom', $(this))
+        })
+        self.on('mouseleave', '[mod-port]', function () {
+            self.pedalboard('clearTracing')
+        })
+
         // Dragging the pedalboard move the view area
         self.mousedown(function (e) {
             self.pedalboard('drag', e)
@@ -2301,6 +2313,9 @@ JqueryClass('pedalboard', {
         // one for the background shadow and one for the reflecting light.
         var canvas = $('<div>');
         canvas.addClass('ignore-arrive');
+        // named so the tracing css can dim every cable without also catching the canvas
+        // that startConnection makes for a cable being dragged
+        canvas.addClass('mod-cable-canvas');
 
         if (output.attr("class").search("mod-audio-") >= 0)
             canvas.addClass("mod-audio");
@@ -2442,6 +2457,10 @@ JqueryClass('pedalboard', {
                 // end it
                 self.pedalboard('finishConnection')
 
+                // the cable about to be dragged is drawn into this jack's own canvas, so
+                // any trace still running would dim it along with the rest
+                self.pedalboard('clearTracing')
+
                 // Highlight all inputs in which this jack can be dropped
                 self.pedalboard('highlightInputs', true, jack)
 
@@ -2513,6 +2532,7 @@ JqueryClass('pedalboard', {
         // where its partner used to land, or nothing at all - until what is left of the
         // pair is redrawn on its own
         var pair = self.pedalboard('stereoPartnerJack', jack)
+        self.pedalboard('clearTracing')
         self.data('connectionManager').disconnect(output.attr('mod-port'), input.attr('mod-port'))
         jack.data('canvas').remove()
         jack.remove()
@@ -2624,6 +2644,89 @@ JqueryClass('pedalboard', {
         return { xi: xi, yi: yi, xo: xo, yo: yo }
     },
 
+    // The canvas actually carrying a jack's paint, and which half of it the jack is. Both
+    // halves of a merged stereo pair are painted together into the left half's canvas and
+    // the right half's is emptied, so hovering either half lights the left one; leg says
+    // which of the two sets of legs is the hovered jack's own. An unmerged cable is all
+    // one thing, so its leg is null.
+    litCanvas: function (jack) {
+        var self = $(this)
+        var pair = self.pedalboard('stereoPartnerJack', jack)
+        if (pair && pair.jack.data('connected')) {
+            return { canvas: (pair.first ? jack : pair.jack).data('canvas'),
+                     leg: pair.first ? 0 : 1, partner: pair.jack }
+        }
+        return { canvas: jack.data('canvas'), leg: null, partner: null }
+    },
+
+    // Every jack touching a port. origIndex is keyed by output port and destIndex by
+    // input port, each holding a map of the other end to its jack, so one lookup in each
+    // covers a port whichever way round it is.
+    jacksAtPort: function (port) {
+        var self = $(this)
+        var name = port.attr('mod-port')
+        var manager = self.data('connectionManager')
+        var jacks = []
+        if (! name || ! manager) {
+            return jacks
+        }
+        var indexes = [manager.origIndex[name], manager.destIndex[name]]
+        for (var i = 0; i < indexes.length; i++) {
+            for (var otherEnd in indexes[i]) {
+                jacks.push(indexes[i][otherEnd])
+            }
+        }
+        return jacks
+    },
+
+    // True while a new cable is being made, either by dragging a jack out of an output or
+    // by the click to start, click to finish path. Tracing keeps out of the way then: the
+    // cable being dragged is drawn into its own jack's canvas, which the dimming would
+    // catch, so the one cable the pointer is carrying is the one that would go dim.
+    connecting: function () {
+        var self = $(this)
+        return !! self.data('ongoingConnection') || self.find('.jack-connecting').length > 0
+    },
+
+    // Lights every cable on a port, and the jacks at both ends of each. A port with
+    // nothing connected traces nothing at all, which is what keeps the spare jack an
+    // output always holds for dragging from dimming the board and lighting nothing.
+    traceFrom: function (port) {
+        var self = $(this)
+        if (self.pedalboard('connecting')) {
+            return
+        }
+        var jacks = self.pedalboard('jacksAtPort', port)
+        var traced = 0
+        for (var i = 0; i < jacks.length; i++) {
+            var jack = jacks[i]
+            if (! jack || ! jack.data('connected')) {
+                continue
+            }
+            var lit = self.pedalboard('litCanvas', jack)
+            lit.canvas.attr('data-cable-lit', lit.leg === null ? '' : lit.leg)
+            jack.attr('data-jack-lit', '')
+            // both jacks of a merged pair belong to the one cable being traced
+            if (lit.partner) {
+                lit.partner.attr('data-jack-lit', '')
+            }
+            traced++
+        }
+        if (traced) {
+            self.addClass('mod-tracing')
+        }
+    },
+
+    // Ends a trace. Sweeps rather than remembering what it lit, because a trace can cover
+    // any number of cables, and because destroyJack calls this for a jack removed under
+    // the pointer, which never gets a mouseleave of its own.
+    clearTracing: function () {
+        var self = $(this)
+        self.find('[data-cable-lit]').removeAttr('data-cable-lit')
+        self.find('[data-jack-lit]').removeAttr('data-jack-lit')
+        self.removeClass('mod-tracing')
+    },
+
     // A stereo pair running to a matching stereo pair is drawn as one cable that splits
     // into a Y at each end, rather than as two cables following the same route. Both
     // halves keep their own jack, canvas and host connection - only the paint is merged.
@@ -2714,14 +2817,17 @@ JqueryClass('pedalboard', {
         }
 
         // The four legs carry one channel each, so they are drawn as ordinary cable. They
-        // are separate paths from the trunk only so the stereo styling can skip them.
+        // are separate paths from the trunk so the stereo styling can skip them, and one
+        // path per channel rather than one for all four so that hovering a jack can fade
+        // the half that is not its own.
+        var channels = [[out1, in1], [out2, in2]]
         for (i = 0; i < parts.length; i++) {
-            var legs = svg.createPath()
-            legs.move(out1.x, out1.y).line(x1, y1)
-            legs.move(out2.x, out2.y).line(x1, y1)
-            legs.move(x2, y2).line(in1.x, in1.y)
-            legs.move(x2, y2).line(in2.x, in2.y)
-            svg.path(null, legs, { class_: stylePrefix + parts[i][1] })
+            for (var c = 0; c < channels.length; c++) {
+                var legs = svg.createPath()
+                legs.move(channels[c][0].x, channels[c][0].y).line(x1, y1)
+                legs.move(x2, y2).line(channels[c][1].x, channels[c][1].y)
+                svg.path(null, legs, { class_: stylePrefix + parts[i][1] + ' mod-leg-' + c })
+            }
         }
     },
 
@@ -2767,6 +2873,7 @@ JqueryClass('pedalboard', {
         var self = $(this)
         if (self.data('ongoingConnection'))
             return
+        self.pedalboard('clearTracing')
         var jack = output.find('[mod-role=output-jack]')
         var canvas = $('<div>')
         canvas.addClass('ignore-arrive')
