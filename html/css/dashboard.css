@@ -589,6 +589,93 @@ svg .light {
 .mod-tracing .mod-output-jack[data-jack-lit] {
     opacity: 1;
 }
+
+/* A teleport's label. The output end is typed into and the input ends follow it, so the
+   read-only ones are dimmed a little to say so. Positioned in board coordinates by
+   placeTeleportBox, so the pedalboard's own transform scales them with the zoom. */
+.mod-teleport {
+    position: absolute;
+    z-index: 20;
+    width: 184px;
+    padding: 2px 8px;
+    border: 1px solid #6b6b6b;
+    border-radius: 5px;
+    /* opaque, not translucent: several teleports into one input draw their boxes at the
+       same spot, and at 0.92 the ones underneath ghost through as garbled text. The badge
+       says how many are there, so the pile only needs to read as one clean label. */
+    background: #141414;
+    color: #ddd;
+    font: 26px/34px sans-serif;
+    text-align: center;
+    text-overflow: ellipsis;
+    transition: opacity 0.12s ease;
+}
+.mod-teleport:focus {
+    border-color: #aaa;
+    color: #fff;
+    outline: none;
+}
+.mod-teleport-in {
+    color: #b9b9b9;
+    cursor: default;
+    /* a label, not a field: no drag-select, so nothing suggests it can be edited here */
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    user-select: none;
+}
+/* Says how many teleports are piled up at one input, since they all draw at the same
+   spot and only the topmost is visible. Sits on the corner of the pile; clicking it fans
+   the jacks out, as clicking the input itself does. Only shown while collapsed -- once
+   expanded you can count them. */
+.mod-teleport-badge {
+    position: absolute;
+    z-index: 21;
+    padding: 0 10px;
+    border-radius: 16px;
+    background: #883996;
+    color: #fff;
+    font: bold 22px/32px sans-serif;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: opacity 0.12s ease;
+}
+.mod-tracing .mod-teleport-badge {
+    opacity: 0.22;
+}
+
+/* main.css sets ::selection { background: transparent } for the whole app, so a selection
+   in here is invisible until we opt back in -- which is what #share-window input.share-url
+   and the other editable fields already do. Same purple they use. */
+.mod-teleport-out::selection {
+    background-color: #883996;
+    color: #fff;
+}
+.mod-teleport-out::-moz-selection {
+    background-color: #883996;
+    color: #fff;
+}
+/* refused because another output already answers to this name */
+.mod-teleport.mod-teleport-clash {
+    border-color: #b4413c;
+}
+
+/* the boxes fade with the cable they belong to */
+.mod-tracing .mod-teleport {
+    opacity: 0.22;
+}
+/* The traced box is the highlight, not just an undimmed one. A teleported cable is a
+   stub barely long enough to see, so lighting the cable alone says almost nothing --
+   the box is the part of it you can actually pick out at a glance. Neutral white rather
+   than a signal colour, for the same reason the stereo stripe is: it has to read over
+   audio purple, midi teal and cv orange without a variant for each. */
+.mod-tracing .mod-teleport[data-teleport-lit] {
+    opacity: 1;
+    border-color: #fff;
+    color: #fff;
+    background: rgba(48,48,48,0.96);
+    box-shadow: 0 0 9px 2px rgba(255,255,255,0.4);
+}
+
 [data-cable-lit="0"] svg .mod-leg-1,
 [data-cable-lit="1"] svg .mod-leg-0 {
     opacity: 0.28;

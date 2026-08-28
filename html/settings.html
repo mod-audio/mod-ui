@@ -633,6 +633,12 @@ $('document').ready(function() {
     if (PREFERENCES['merge-stereo-cables'] == "true") {
         $("#prefs-ui-stereo-cables").prop("checked", true)
     }
+    var teleportScale = parseFloat(PREFERENCES['teleport-label-scale'])
+    if (! (teleportScale > 0)) {
+        teleportScale = 1
+    }
+    $("#prefs-ui-teleport-scale").val(teleportScale)
+    $("#prefs-ui-teleport-scale-value").text(teleportScale.toFixed(1) + "x")
     if (! HMI_EEPROM) {
         $("#prefs-delete-hmi-settings_br").hide()
         $("#prefs-delete-hmi-settings_label").hide()
@@ -913,6 +919,21 @@ $('document').ready(function() {
 
     $("#prefs-ui-stereo-cables").click(function () {
         config_set("merge-stereo-cables", bool2str($(this).prop("checked")))
+    })
+
+    // The readout follows the slider as it is dragged; the value is saved once, on
+    // release. `change` rather than a debounce on `input`: a debounce drops the save
+    // outright if the page is left inside its window, and config_set posts and logs on
+    // every call, which a drag would fire dozens of times.
+    //
+    // There is deliberately no live preview of the board here. This is a standalone page
+    // -- it loads neither pedalboard.js nor desktop.js -- so there is no pedalboard in
+    // this document to resize. The new size is picked up when the board next loads.
+    $("#prefs-ui-teleport-scale").on("input", function () {
+        $("#prefs-ui-teleport-scale-value").text((parseFloat($(this).val()) || 1).toFixed(1) + "x")
+    })
+    $("#prefs-ui-teleport-scale").on("change", function () {
+        config_set("teleport-label-scale", String(parseFloat($(this).val()) || 1))
     })
 
     // ----------------------------------------------------------------------------------------------------------------
@@ -1445,6 +1466,15 @@ $('document').ready(function() {
             <div class="settings-page mod-hidden" id="settings-page-developer">
                 <h1>Plugin Store</h1>
                 <form class="form">
+                    <label>
+                        Teleport label size
+                        <input type="range" autocomplete="off" id="prefs-ui-teleport-scale"
+                               min="0.6" max="2" step="0.1" style="vertical-align:middle;width:160px">
+                        <span id="prefs-ui-teleport-scale-value"></span>
+                    </label>
+                    <p>
+                        How large the label boxes on a split cable are drawn.
+                    </p>
                     <label>
                         <input type="checkbox" autocomplete="off" id="prefs-ui-unstable-plugins">
                             Show beta plugins in the Store
