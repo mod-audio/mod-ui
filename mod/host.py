@@ -394,12 +394,9 @@ class Host(object):
         self.current_pedalboard_snapshot_id = -1
         self.pedalboard_snapshots = []
         self.pedalboard_teleports = {'names': {}, 'cables': []}
-        # Bumped whenever the board changes under the browser. A teleport POST carries the
-        # generation it was computed from, and one from a board that is already gone is
-        # dropped rather than allowed to overwrite the current map. The teardown flags in
-        # the browser reduce the noise; this is what actually makes it safe, because the
-        # disconnect echoes those flags are meant to cover arrive asynchronously, after the
-        # flag has been lowered.
+        # Bumped whenever the board changes under the browser. A POST carries the
+        # generation it was computed from and a stale one is dropped -- the browser's
+        # teardown flags cannot cover the disconnect echoes, which arrive asynchronously.
         self.pedalboard_teleports_gen = 0
         self.next_hmi_pedalboard_to_load = None
         self.next_hmi_pedalboard_loading = False
@@ -2331,10 +2328,8 @@ class Host(object):
     def reset(self, bank_id, callback):
         def host_callback(ok):
             self.msg_callback("remove :all")
-            # A blank board gets a teleports message too, even though the map is empty.
-            # It is how the browser learns the new generation: without one it has nothing
-            # to stamp a POST with, and a teleport made on a never-yet-saved board would
-            # draw but never reach the server, then vanish on the first save.
+            # Sent even though the map is empty: it is how the browser learns the new
+            # generation. Without one, a teleport on a never-saved board never reaches us.
             self.msg_callback("teleports %s" % b64encode(
                 json.dumps(dict(self.pedalboard_teleports,
                                 gen=self.pedalboard_teleports_gen)).encode("utf-8")).decode("utf-8"))
@@ -3918,10 +3913,8 @@ class Host(object):
             self.send_notmodified("state_load \"{}\"".format(bundlepath))
             self.addressings.load(bundlepath, instances, skippedPortAddressings, abort_catcher)
         else:
-            # No bundle, so nothing was loaded and no teleports message went out. The
-            # generation deliberately does NOT advance here: bumping it without telling the
-            # browser would make every later POST look stale, and they would be dropped in
-            # silence with no way back short of a reload.
+            # No bundle, so no message went out -- and so the generation must NOT advance.
+            # Bumping silently would make every later POST look stale and be dropped.
             self.pedalboard_teleports = {'names': {}, 'cables': []}
 
         if abort_catcher is not None and abort_catcher.get('abort', False):
@@ -4003,12 +3996,9 @@ class Host(object):
         if not isinstance(cables, list):
             cables = []
 
-        # A midi hardware port is not called the same thing twice: the comment in load_pb
-        # says it outright, which is why connections are stored under an alias and put back
-        # through these maps on load. Teleports name the very same ports, so they have to
-        # take the same trip -- otherwise a teleport on a usb-midi port survives the save,
-        # misses its jack on the next boot because the device enumerated differently, and
-        # is quietly dropped for exactly the class of port the remapping exists to protect.
+        # Midi hardware ports get different names between boots, which is why connections
+        # are stored under an alias and remapped on load. Teleports name the same ports and
+        # need the same trip, or they miss their jack and are dropped.
         def remap(port, old, new):
             if not port.startswith("/graph/"):
                 return port
@@ -4042,10 +4032,8 @@ class Host(object):
         self.pedalboard_teleports_gen += 1
 
     def set_teleports(self, data, pbgen):
-        # A POST computed from a board that has since been torn down or replaced must not
-        # land on the current one. The browser echoes back the generation it was told, and
-        # anything stale is dropped: the disconnect echoes that follow a reset arrive well
-        # after the reset itself, so they cannot be excluded by timing alone.
+        # A POST computed from a board that is already gone must not land on this one.
+        # Timing cannot exclude them: the disconnect echoes arrive well after the reset.
         if pbgen != self.pedalboard_teleports_gen:
             return
         names = data.get('names', {}) if isinstance(data, dict) else {}
@@ -4376,12 +4364,9 @@ class Host(object):
         self.addressings.save(bundlepath, instances)
 
     def save_state_teleports(self, bundlepath):
-        # NOT part of save_state_snapshots, even though it was at first. The four snapshot
-        # routes (save, save-as, rename, remove) reach that function through
-        # save_snapshots_to_disk, so writing here would let renaming a snapshot commit --
-        # or, through the remove branch, erase -- teleport state the user never saved.
-        # Called from the two paths that really are a pedalboard save: save_state_to_ttl,
-        # and hmi_save_current_pedalboard for a save made on the device itself.
+        # Deliberately NOT in save_state_snapshots: the four snapshot routes reach that
+        # through save_snapshots_to_disk, so renaming a snapshot would commit -- or, via
+        # the remove branch, erase -- teleport state the user never saved.
         teleportsfile = os.path.join(bundlepath, "teleports.json")
         if self.pedalboard_teleports['names'] or self.pedalboard_teleports['cables']:
             with TextFileFlusher(teleportsfile) as fh:

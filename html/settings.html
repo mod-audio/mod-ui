@@ -921,14 +921,9 @@ $('document').ready(function() {
         config_set("merge-stereo-cables", bool2str($(this).prop("checked")))
     })
 
-    // The readout follows the slider as it is dragged; the value is saved once, on
-    // release. `change` rather than a debounce on `input`: a debounce drops the save
-    // outright if the page is left inside its window, and config_set posts and logs on
-    // every call, which a drag would fire dozens of times.
-    //
-    // There is deliberately no live preview of the board here. This is a standalone page
-    // -- it loads neither pedalboard.js nor desktop.js -- so there is no pedalboard in
-    // this document to resize. The new size is picked up when the board next loads.
+    // Readout follows the drag, value saved once on release -- a debounce on `input`
+    // would drop the save if the page is left inside its window. No live preview: this is
+    // a standalone page with no pedalboard in it, so the size applies on the next load.
     $("#prefs-ui-teleport-scale").on("input", function () {
         $("#prefs-ui-teleport-scale-value").text((parseFloat($(this).val()) || 1).toFixed(1) + "x")
     })

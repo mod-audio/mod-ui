@@ -1,12 +1,9 @@
 // SPDX-FileCopyrightText: 2012-2026 MOD Audio UG
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-// Rules for cable teleports, kept apart from the drawing so they can be tested without
-// a DOM. A name belongs to an output port; being teleported belongs to a cable. The two
-// are never derived from each other.
-//
-// `names`  is { outputPort: name }
-// `cables` is [ { from: outputPort, to: inputPort } ]
+// Rules for cable teleports, kept apart from the drawing so they are testable without a
+// DOM. A name belongs to an output port, being teleported belongs to a cable, and neither
+// is derived from the other.  names: { outputPort: name }  cables: [ {from, to} ]
 
 // The separator used in the saved form. No port name can contain it.
 var TELEPORT_ARROW = ' -> '

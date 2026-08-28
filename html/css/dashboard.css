@@ -590,9 +590,8 @@ svg .light {
     opacity: 1;
 }
 
-/* A teleport's label. The output end is typed into and the input ends follow it, so the
-   read-only ones are dimmed a little to say so. Positioned in board coordinates by
-   placeTeleportBox, so the pedalboard's own transform scales them with the zoom. */
+/* A teleport's label. The output end is typed into, the input ends follow it. Positioned
+   in board coordinates, so the pedalboard's transform scales them with the zoom. */
 .mod-teleport {
     position: absolute;
     z-index: 20;
@@ -623,10 +622,8 @@ svg .light {
     -moz-user-select: none;
     user-select: none;
 }
-/* Says how many teleports are piled up at one input, since they all draw at the same
-   spot and only the topmost is visible. Sits on the corner of the pile; clicking it fans
-   the jacks out, as clicking the input itself does. Only shown while collapsed -- once
-   expanded you can count them. */
+/* How many teleports are piled at one input, since they all draw at the same spot.
+   Clicking it fans the jacks out. Only shown while collapsed. */
 .mod-teleport-badge {
     position: absolute;
     z-index: 21;
@@ -643,9 +640,8 @@ svg .light {
     opacity: 0.22;
 }
 
-/* main.css sets ::selection { background: transparent } for the whole app, so a selection
-   in here is invisible until we opt back in -- which is what #share-window input.share-url
-   and the other editable fields already do. Same purple they use. */
+/* main.css sets ::selection { background: transparent } app-wide, so editable fields opt
+   back in individually -- same purple #share-window input.share-url uses. */
 .mod-teleport-out::selection {
     background-color: #883996;
     color: #fff;
@@ -663,11 +659,8 @@ svg .light {
 .mod-tracing .mod-teleport {
     opacity: 0.22;
 }
-/* The traced box is the highlight, not just an undimmed one. A teleported cable is a
-   stub barely long enough to see, so lighting the cable alone says almost nothing --
-   the box is the part of it you can actually pick out at a glance. Neutral white rather
-   than a signal colour, for the same reason the stereo stripe is: it has to read over
-   audio purple, midi teal and cv orange without a variant for each. */
+/* The traced box is the highlight: a teleported cable is too short a stub for lighting
+   the cable to say much. White, so it reads over audio purple, midi teal and cv orange. */
 .mod-tracing .mod-teleport[data-teleport-lit] {
     opacity: 1;
     border-color: #fff;
