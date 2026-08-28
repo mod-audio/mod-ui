@@ -825,6 +825,10 @@ svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1001
     margin:0;
 }
 
+.cpu-load-help > p {
+    padding:4px;
+}
+
 .cpu-load-empty {
     color:#888;
     font-size:12px;

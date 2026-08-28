@@ -693,14 +693,14 @@ $('document').ready(function() {
                         usually costs 5% and occasionally costs 60% is the one that drops audio,
                         and an average hides that. Peaks only ever climb &mdash; <b>Reset peaks</b>
                         clears them and re-ranks the list.
-                        <br>
+                    </p><p>
                         <b>effect on the audio cycle</b> is a different question. A plugin cannot
                         start until its input arrives, so the cycle is only as long as the longest
                         chain of plugins waiting on each other &mdash; the <b>critical path</b>.
                         Plugins off that chain run alongside something slower and finish early, so
                         making them cheaper buys nothing; their <b>spare</b> is how much more they
                         could use before they became the longest chain themselves.
-                        <br>
+                    </p><p>
                         So the most expensive plugin is often not the one to remove. Two caveats:
                         the chain total adds up peaks that rarely happen in the same cycle, so it
                         is a worst case rather than a prediction and will read higher than the CPU
