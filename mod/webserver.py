@@ -1826,6 +1826,26 @@ class PedalboardImageWait(JsonRequestHandler):
             'ctime': "%.1f" % ctime,
         })
 
+class PedalboardTeleports(JsonRequestHandler):
+    def post(self):
+        # Drawing state for the web ui: which cables are drawn split, and the names of the
+        # outputs they leave. Held by the session so that a save from anywhere writes the
+        # current map rather than whatever the browser last sent along with a save.
+        try:
+            data = json.loads(self.get_argument('teleports', ''))
+        except ValueError:
+            self.write(False)
+            return
+        try:
+            # default rather than a bare get_argument: a missing argument raises
+            # MissingArgumentError, an HTTPError, which the except below would not catch
+            pbgen = int(self.get_argument('gen', ''))
+        except ValueError:
+            self.write(False)
+            return
+        SESSION.host.set_teleports(data, pbgen)
+        self.write(True)
+
 class PedalboardCvAddressingPluginPortAdd(JsonRequestHandler):
     @web.asynchronous
     @gen.engine
@@ -2805,6 +2825,7 @@ application = web.Application(
             # pedalboard stuff
             (r"/pedalboard/list", PedalboardList),
             (r"/pedalboard/save", PedalboardSave),
+            (r"/pedalboard/teleports/?", PedalboardTeleports),
             (r"/pedalboard/pack_bundle/?", PedalboardPackBundle),
             (r"/pedalboard/load_bundle/", PedalboardLoadBundle),
             (r"/pedalboard/load_remote/*(/[A-Za-z0-9_/]+[^/])/?", PedalboardLoadRemote),

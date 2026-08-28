@@ -510,6 +510,11 @@ $('document').ready(function() {
             return
         }
 
+        if (cmd == "teleports") {
+            desktop.pedalboard.pedalboard("applyTeleports", JSON.parse(atob(data)))
+            return
+        }
+
         if (cmd == "act_del") {
             var uri = data
             desktop.hardwareManager.removeActuator(uri)

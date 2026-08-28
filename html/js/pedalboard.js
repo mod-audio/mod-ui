@@ -260,6 +260,31 @@ JqueryClass('pedalboard', {
         // replacement plugin, used for recreating connections
         self.data('replacementPlugin', null)
 
+        // teleported cables: names spoken for, and the boxes currently drawn for them
+        self.data('teleportNames', {})
+        self.data('teleportBoxes', {})
+
+        // What each output was last called, kept apart from the live names above. The
+        // lifetime rule deliberately drops a name the moment its last cable stops being
+        // teleported, so that a name is never held by something invisible -- but that also
+        // threw away a label you had typed the instant you toggled the cable off. This
+        // remembers it so toggling back on restores it, WITHOUT it counting as in use:
+        // uniqueness is still checked against teleportNames alone. Not serialised, because
+        // the saved file's invariant is that every name in it has a live cable.
+        self.data('teleportNamesRemembered', {})
+
+        // teleported cables named by a map that arrived before their connection existed
+        // (applyTeleports, during a bundle load), keyed "from -> to" same as the saved
+        // form -- consumed by connect() once the cable actually shows up
+        self.data('pendingTeleports', {})
+
+        // true while resetData is tearing a pedalboard down, so teleportsChanged prunes
+        // in memory but does not POST the shrinking map to the server -- see resetData
+        self.data('teleportsTeardown', false)
+
+        // the label size is a preference, so it has to be applied before any box is drawn
+        self.pedalboard('applyTeleportScale')
+
         // t3k integration
         self.data('T3KIntegration', new T3KIntegration(self, T3K_API_KEY)) //'t3k_pub_7uGZokPvXdxakAUSGVxh_5HXH5PjIdoY'))
 
@@ -357,9 +382,70 @@ JqueryClass('pedalboard', {
             self.pedalboard('clearTracing')
         })
 
+        // What the teleport key will act on. Tracked separately from the tracing hover above, which
+        // deliberately ignores ports with nothing connected.
+        self.on('mouseenter', '[mod-port]', function () {
+            self.data('hoverPort', $(this))
+        })
+        self.on('mouseleave', '[mod-port]', function () {
+            self.data('hoverPort', null)
+        })
+        self.on('mouseenter', '[mod-role=output-jack]', function () {
+            self.data('hoverJack', $(this))
+        })
+
+        // A teleported cable is a stub barely long enough to hover, so its label has to be
+        // a trace target too -- that is the part of it you can actually put a pointer on.
+        self.on('mouseenter', '.mod-teleport', function () {
+            var source = $(this).data('sourcePort')
+            if (source) {
+                self.pedalboard('traceFrom', source)
+            }
+        })
+        self.on('mouseleave', '.mod-teleport', function () {
+            self.pedalboard('clearTracing')
+        })
+        self.on('mouseleave', '[mod-role=output-jack]', function () {
+            self.data('hoverJack', null)
+        })
+
         // Dragging the pedalboard move the view area
         self.mousedown(function (e) {
             self.pedalboard('drag', e)
+        })
+
+        // TELEPORT_KEY splits whatever the pointer is on. Never while typing, and never
+        // while a cable is being dragged.
+        $(document).keydown(function (e) {
+            if (e.ctrlKey || e.metaKey || e.altKey) {
+                return
+            }
+            // e.which on keydown is a keyCode, NOT a character code: F4 is 115, and
+            // String.fromCharCode(115) is 's', so comparing as text fired this on F4 too.
+            // A letter's keyCode is its upper-case char code, which is what to match.
+            if (e.which !== TELEPORT_KEY.toUpperCase().charCodeAt(0)) {
+                return
+            }
+            // keydown auto-repeats about 30 times a second; holding the key would toggle
+            // dozens of times, and each toggle-off drops the output's name
+            // jQuery 1.9 copies a fixed property list onto its event object and `repeat`
+            // is not on it, so this has to come off the native event
+            if (e.originalEvent && e.originalEvent.repeat) {
+                return
+            }
+            var tag = (e.target.tagName || '').toLowerCase()
+            if (tag == 'input' || tag == 'textarea' || tag == 'select' || e.target.isContentEditable) {
+                return
+            }
+            if (self.pedalboard('connecting')) {
+                return
+            }
+            var target = self.pedalboard('teleportTarget')
+            if (! target.length) {
+                return
+            }
+            e.preventDefault()
+            self.pedalboard('toggleTeleport', target)
         })
 
         // The mouse wheel is used to zoom in and out
@@ -1270,6 +1356,18 @@ JqueryClass('pedalboard', {
             self.data('pedalboardFinishedLoading')(function () {
                 self.pedalboard('adapt', forcedUpdate)
                 self.data('wait').stopIfNeeded()
+                // Only for the adapt that concludes a LOAD. scheduleAdapt(true) has a
+                // single caller, the loading_end handler; adding a plugin, removing
+                // one and three places in modgui all pass false. Firing on those too
+                // would discard the pending map on any quiet moment -- mid-load
+                // between two plugins' /effect/get, or in the window where a re-route
+                // or a plugin replacement has parked a key waiting for connect() --
+                // which is the very loss moving this call here was meant to stop.
+                // adaptForcedUpdate is sticky until consumed, so it survives being
+                // coalesced with the false calls of the same load.
+                if (forcedUpdate) {
+                    self.pedalboard('finishTeleportLoad')
+                }
             })
         }
 
@@ -1620,6 +1718,11 @@ JqueryClass('pedalboard', {
                         var inport  = input.attr('mod-port')
                         var output  = jack.data('origin')
                         var outport = output.attr('mod-port')
+                        // Captured here because this is the last moment it exists: removing
+                        // the plugin below destroys these jacks, and the lifetime rule then
+                        // drops the name. close() puts both back when it recreates the cable.
+                        var teleport = jack.data('teleported')
+                                     ? self.pedalboard('teleportName', output) : null
                         var type
                         if (input.hasClass('mod-audio-input')) {
                             type = 'audio'
@@ -1648,7 +1751,7 @@ JqueryClass('pedalboard', {
                                 }
                             }
                         }
-                        replacement[type].push([inport, outport])
+                        replacement[type].push([inport, outport, teleport])
                     })
 
                     console.log(replacement)
@@ -1776,7 +1879,8 @@ JqueryClass('pedalboard', {
                     outport = replacementPlugin.audio[i][1]
                 }
 
-                self.data('portConnect')(outport, inport, finalizeConnection)
+                var teleportKey = self.pedalboard('restoreReplacedTeleport', ports[2], outport, inport)
+                self.data('portConnect')(outport, inport, self.pedalboard('replacedConnectionDone', teleportKey, finalizeConnection))
             }
 
             for (var i in replacementPlugin.midi) {
@@ -1801,7 +1905,8 @@ JqueryClass('pedalboard', {
                     outport = replacementPlugin.midi[i][1]
                 }
 
-                self.data('portConnect')(outport, inport, finalizeConnection)
+                var teleportKey = self.pedalboard('restoreReplacedTeleport', ports[2], outport, inport)
+                self.data('portConnect')(outport, inport, self.pedalboard('replacedConnectionDone', teleportKey, finalizeConnection))
             }
         }
     },
@@ -2122,6 +2227,16 @@ JqueryClass('pedalboard', {
 
             self.pedalboard('positionHardwarePorts')
         }
+
+        // Neither branch above goes through destroyJack or disconnect -- jacks here are
+        // taken out with a bare jack.remove() -- so nothing on this path reaches
+        // teleportsChanged on its own. Called here, once, for both the plugin branch and
+        // the hardware-port branch, since a hardware port can hold a teleport name too.
+        // [] because the jacks are already gone; this only re-derives which names are
+        // still spoken for and lets the server hear about a genuine edit -- unlike the
+        // teardown paths, this is not suppressed, and if a teardown path happens to route
+        // through here teleportsTeardown is already raised and covers it.
+        self.pedalboard('teleportsChanged', [])
     },
 
     // Highlight all inputs to which a jack can be connected (any inputs that are not from same
@@ -2157,10 +2272,24 @@ JqueryClass('pedalboard', {
         self.data('bypassApplication', false)
         self.data('callbacksToArrive', {})
 
+        // disconnect() below also runs teleportsChanged per jack, same as destroyJack does
+        // in resetData -- this is a second, separate teleportsTeardown window, raised and
+        // dropped synchronously around this loop only, not resetData's redundantly. It
+        // cannot be held open across the async self.data('reset') callback below:
+        // resetData opens and closes its own window inside that callback, and a flag left
+        // raised across the async gap would swallow POSTs from real edits if the callback
+        // never fires (ok is false).
         var connMgr = self.data('connectionManager')
-        connMgr.iterate(function (jack) {
-            self.pedalboard('disconnect', jack)
-        })
+        self.data('teleportsTeardown', true)
+        try {
+            connMgr.iterate(function (jack) {
+                self.pedalboard('disconnect', jack)
+            })
+        } finally {
+            // a throw in here must not leave the flag raised: it would silently swallow
+            // every teleport POST for the rest of the session
+            self.data('teleportsTeardown', false)
+        }
 
         self.data('reset')(function (ok) {
             if (!ok) {
@@ -2177,32 +2306,58 @@ JqueryClass('pedalboard', {
     resetData: function () {
         var self = $(this)
 
-        self.data('hardwareManager').reset()
+        // destroyJack below runs once per jack, and each of those calls teleportsChanged.
+        // POSTing the shrinking map to the server on every single one of those would race
+        // the next pedalboard's load, which resets and reloads this same server-side
+        // state from disk -- a straggler landing after that load would overwrite the new
+        // board's map with the old board's. The in-memory prune still runs; only the
+        // network call is held back until teardown is over.
+        self.data('teleportsTeardown', true)
+        try {
+            // Nothing re-seeds these on a blank board: applyTeleports only runs when a
+            // bundle is loaded, so a key parked by the previous board would survive. Port
+            // ids are identical across boards, so wiring capture_1 -> playback_1 on the
+            // new one would silently come up teleported under the old board's name.
+            self.data('pendingTeleports', {})
+            self.data('teleportNames', {})
+            self.data('teleportNamesRemembered', {})
+            // teleportGen is deliberately NOT cleared. It belongs to the server, which
+            // pushes a fresh one on every load and on reset, and rejects a stale one on
+            // arrival. resetData runs twice per reset with the server's message landing
+            // between them, so clearing here would wipe the generation just delivered --
+            // and if the follow-up load never comes, every later POST is dropped silently.
 
-        var connMgr = self.data('connectionManager')
+            self.data('hardwareManager').reset()
 
-        connMgr.iterate(function(jack) {
-            self.pedalboard('destroyJack', jack);
-        })
+            var connMgr = self.data('connectionManager')
 
-        connMgr.reset()
+            connMgr.iterate(function(jack) {
+                self.pedalboard('destroyJack', jack);
+            })
 
-        var plugins = self.data('plugins')
-        for (var instance in plugins) {
-            var plugin = plugins[instance]
+            connMgr.reset()
 
-            // plugin might have failed to register
-            if (plugin && plugin.data) {
-                var pluginGui = plugin.data('gui')
-                pluginGui && pluginGui.triggerJS({ type: 'end' })
+            var plugins = self.data('plugins')
+            for (var instance in plugins) {
+                var plugin = plugins[instance]
+
+                // plugin might have failed to register
+                if (plugin && plugin.data) {
+                    var pluginGui = plugin.data('gui')
+                    pluginGui && pluginGui.triggerJS({ type: 'end' })
+                }
+                if (plugin && plugin.length) {
+                    plugin.remove()
+                }
             }
-            if (plugin && plugin.length) {
-                plugin.remove()
-            }
+            self.data('plugins', {})
+
+            self.pedalboard('resetSize')
+        } finally {
+            // a throw anywhere above must not leave the flag raised: it would silently
+            // swallow every teleport POST for the rest of the session
+            self.data('teleportsTeardown', false)
         }
-        self.data('plugins', {})
-
-        self.pedalboard('resetSize')
     },
 
     // Make element an audio/midi inputs, to which jacks can be dragged to make connections
@@ -2559,6 +2714,9 @@ JqueryClass('pedalboard', {
         self.data('connectionManager').disconnect(output.attr('mod-port'), input.attr('mod-port'))
         jack.data('canvas').remove()
         jack.remove()
+        // after the remove, not before: teleportedJacks() walks the live dom, so a jack
+        // still in it counts itself and the prune lags a cable behind
+        self.pedalboard('teleportsChanged', [])
         self.pedalboard('packJacks', input)
         if (pair) {
             self.pedalboard('drawJack', pair.jack)
@@ -2667,6 +2825,560 @@ JqueryClass('pedalboard', {
         return { xi: xi, yi: yi, xo: xo, yo: yo }
     },
 
+    // How far a teleport's stub runs before it meets its box.
+    // (TELEPORT_STUB is defined at the bottom of this file, beside cableDeltaX)
+
+    // The name of the point an output feeds, or null if it has none.
+    teleportName: function (port) {
+        var self = $(this)
+        return self.data('teleportNames')[port.attr('mod-port')] || null
+    },
+
+    // Every jack currently drawn as a teleport. Walked rather than indexed: teleports are
+    // changed by hand, a few at a time, so there is nothing here worth an index.
+    teleportedJacks: function () {
+        var self = $(this)
+        var out = []
+        self.find('[mod-role=output-jack]').each(function () {
+            var jack = $(this)
+            if (jack.data('teleported') && jack.data('connected')) {
+                out.push(jack)
+            }
+        })
+        return out
+    },
+
+    // The cables the teleport key acts on. A jack inside an expanded input is a single cable and wins,
+    // because that is the whole reason for expanding an input; otherwise it is every cable
+    // on the hovered port, whichever way round the port is.
+    teleportTarget: function () {
+        var self = $(this)
+        var jack = self.data('hoverJack')
+        if (jack && jack.data('connected') && jack.closest('.expanded').length) {
+            return [jack]
+        }
+        var port = self.data('hoverPort')
+        if (! port) {
+            return []
+        }
+        var jacks = self.pedalboard('jacksAtPort', port)
+        var out = []
+        for (var i = 0; i < jacks.length; i++) {
+            if (jacks[i] && jacks[i].data('connected')) {
+                out.push(jacks[i])
+            }
+        }
+        return out
+    },
+
+    // Turns the given cables into teleports, or back. Off when they are all already on, so
+    // that pressing the teleport key twice on the same target undoes itself.
+    //
+    // A stereo partner is dragged along in BOTH directions: a pair that could be
+    // un-teleported one leg at a time would end up half-teleported with one leg still
+    // crossing the board, which is the state the rule exists to prevent.
+    toggleTeleport: function (jacks) {
+        var self = $(this)
+        var i
+        if (! jacks.length) {
+            return
+        }
+        var turningOff = true
+        for (i = 0; i < jacks.length; i++) {
+            if (! jacks[i].data('teleported')) {
+                turningOff = false
+                break
+            }
+        }
+
+        var todo = []
+        var seen = []
+        for (i = 0; i < jacks.length; i++) {
+            var group = [jacks[i]]
+            var pair = self.pedalboard('stereoPartnerJack', jacks[i])
+            if (pair && pair.jack.data('connected')) {
+                group.push(pair.jack)
+            }
+            for (var g = 0; g < group.length; g++) {
+                if (seen.indexOf(group[g][0]) < 0) {
+                    seen.push(group[g][0])
+                    todo.push(group[g])
+                }
+            }
+        }
+
+        for (i = 0; i < todo.length; i++) {
+            var jack = todo[i]
+            jack.data('teleported', ! turningOff)
+            if (! turningOff) {
+                // an output with no name yet gets one, unique by construction
+                var output = jack.data('origin')
+                if (! self.pedalboard('teleportName', output)) {
+                    var names = self.data('teleportNames')
+                    var key = output.attr('mod-port')
+                    var last = self.data('teleportNamesRemembered')[key]
+                    if (last && teleportNameAvailable(last, key, names)) {
+                        // what you called it last time, unless someone else has taken it
+                        names[key] = last
+                    } else {
+                        names[key] = teleportDefaultName(
+                            self.pedalboard('teleportPluginName', output),
+                            output.attr('title') || output.data('symbol') || '',
+                            names)
+                    }
+                }
+            }
+        }
+
+        self.pedalboard('teleportsChanged', todo)
+        self.trigger('modified')
+    },
+
+    // The plugin a port belongs to, by the name shown on its pedal, for use in a default
+    // teleport name. The plugin's own label wins over the effect's -- the same order
+    // updateGlobalVUMeterPluginInfo uses. Hardware ports belong to no plugin and get an
+    // empty string, which teleportDefaultName handles by using the port name alone.
+    teleportPluginName: function (port) {
+        var self = $(this)
+        var instance = port.data('instance')
+        if (! instance) {
+            return ''
+        }
+        // getGui rather than reaching into data('plugins') directly: host.js registers a
+        // bare {} placeholder for an instance while its /effect/get is in flight, and it
+        // stays {} forever if that request fails. {} is truthy but has no .data, so
+        // touching it here threw and left toggleTeleport half-done -- some jacks flagged,
+        // no box drawn, nothing posted. getGui carries the plugin && plugin.data guard.
+        var gui = self.pedalboard('getGui', instance)
+        if (! gui) {
+            return ''
+        }
+        return gui.label || (gui.effect ? gui.effect.label : '') || ''
+    },
+
+    // THE lifetime rule: a name exists exactly as long as one of its output's cables is
+    // teleported. Disconnects and removed plugins need nothing of their own -- their
+    // jacks are gone, so they hold no name up. Split out of teleportsChanged so the
+    // end-of-load cleanup (finishTeleportLoad) can apply the same rule without posting
+    // anything or marking the pedalboard modified.
+    pruneTeleportNames: function () {
+        var self = $(this)
+        var names = self.data('teleportNames')
+        var used = {}
+        var live = self.pedalboard('teleportedJacks')
+        for (var i = 0; i < live.length; i++) {
+            used[live[i].data('origin').attr('mod-port')] = true
+        }
+        // A cable with no jack right now still counts if it is parked in pendingTeleports:
+        // during a load its connection has not arrived yet, and during a re-route the jack
+        // carrying it is destroyed and replaced. Either way the name must survive the gap.
+        var pending = self.data('pendingTeleports')
+        for (var key in pending) {
+            used[key.split(TELEPORT_ARROW)[0]] = true
+        }
+        var remembered = self.data('teleportNamesRemembered')
+        for (var port in names) {
+            if (! used[port]) {
+                // keep it recallable, but stop it occupying the namespace
+                remembered[port] = names[port]
+                delete names[port]
+            }
+        }
+    },
+
+    // Everything that changes a teleport ends here: names are dropped once nothing uses
+    // them, dead boxes go, and the affected cables are redrawn. Marking the pedalboard
+    // modified is the caller's job, not this function's -- see below. Also posts the
+    // current map to the server, so it lands in the bundle on the next save -- except
+    // while resetData is tearing the whole pedalboard down (teleportsTeardown), when
+    // every one of the jacks it destroys would otherwise fire its own POST of a
+    // shrinking map, racing the next pedalboard's load on the server.
+    teleportsChanged: function (jacks) {
+        var self = $(this)
+        var i
+
+        self.pedalboard('pruneTeleportNames')
+        self.pedalboard('pruneTeleportBoxes')
+        for (i = 0; i < (jacks || []).length; i++) {
+            self.pedalboard('drawJack', jacks[i])
+        }
+        // NOT modified here: the removal paths that come through (a disconnect, a plugin
+        // or a hardware port going away) mark the board themselves when they are edits at
+        // all, and unplugging a usb midi device must not dirty it. The two callers that
+        // are always a user edit -- toggleTeleport and setTeleportName -- trigger it.
+        // No generation means no board has been handed to us yet, so there is nothing this
+        // POST could correctly be about. The teardown flag still spares the obviously
+        // pointless writes; the generation is what makes a late one harmless.
+        var gen = self.data('teleportGen')
+        if (! self.data('teleportsTeardown') && gen !== null && gen !== undefined) {
+            $.ajax({
+                url: '/pedalboard/teleports/',
+                type: 'POST',
+                data: {
+                    teleports: JSON.stringify(self.pedalboard('serialiseTeleports')),
+                    gen: gen,
+                },
+                cache: false,
+                dataType: 'json',
+            })
+        }
+
+        // A trace is worked out once, when the pointer enters a port, and it names the
+        // canvas each cable was painted into at that moment. Teleporting a traced cable
+        // moves the paint -- a merged stereo pair stops being merged, so each half starts
+        // using its own canvas -- and creates label boxes that did not exist to be lit.
+        // The stale trace then dims the very cable the pointer is on. Recompute it from
+        // the port still under the pointer, behind the redraws above, which defer their
+        // own work and are what create the boxes.
+        if (self.hasClass('mod-tracing')) {
+            setTimeout(function () {
+                var hovered = self.data('hoverPort')
+                if (! hovered) {
+                    return
+                }
+                self.pedalboard('clearTracing')
+                self.pedalboard('traceFrom', hovered)
+            }, 0)
+        }
+    },
+
+    // The saved shape, built from the live jacks rather than from a stored key set. A jack
+    // dragged to another input is disconnected and reconnected as the SAME element, so a
+    // set keyed by "out -> in" would see one key vanish and an unrelated one appear; the
+    // flag rides on the jack instead and the key comes out right here.
+    serialiseTeleports: function () {
+        var self = $(this)
+        var jacks = self.pedalboard('teleportedJacks')
+        var cables = []
+        for (var i = 0; i < jacks.length; i++) {
+            cables.push({ from: jacks[i].data('origin').attr('mod-port'),
+                          to:   jacks[i].data('destination').attr('mod-port') })
+        }
+        return teleportSerialise(self.data('teleportNames'), cables)
+    },
+
+    // Applies a map that arrived with a pedalboard. Names are per-port and valid the
+    // moment they arrive, whether or not their cable has. Cables are not so lucky: the
+    // plugins on either end are still being created by an async /effect/get at this
+    // point (add is asynchronous, connect is not), so most of them have no jack here yet.
+    // Whatever is missing is stashed in pendingTeleports, keyed the same way the saved
+    // form is ("from -> to"), and consumed by connect() the moment that cable is actually
+    // made. Does not go through teleportsChanged: that would post the map straight back
+    // to the server and mark a freshly loaded pedalboard as modified.
+    applyTeleports: function (data) {
+        var self = $(this)
+        var parsed = teleportDeserialise(data)
+        var manager = self.data('connectionManager')
+        // this map belongs to THIS load: started fresh, so a cable left unplaced by a
+        // previous board can never latch onto a connection in the next one
+        var pending = {}
+        var i
+
+        self.data('teleportNames', parsed.names)
+        self.data('pendingTeleports', pending)
+        // the generation this map belongs to, echoed back on every POST so the server can
+        // drop a write computed from a board that has since been torn down
+        self.data('teleportGen', (data && typeof data.gen === 'number') ? data.gen : null)
+        for (i = 0; i < parsed.cables.length; i++) {
+            var from = parsed.cables[i].from
+            var to = parsed.cables[i].to
+            var byDest = manager.origIndex[from]
+            var jack = byDest ? byDest[to] : null
+            if (jack) {
+                jack.data('teleported', true)
+            } else {
+                pending[from + TELEPORT_ARROW + to] = true
+            }
+        }
+
+        var jacks = self.pedalboard('teleportedJacks')
+        self.pedalboard('pruneTeleportBoxes')
+        for (i = 0; i < jacks.length; i++) {
+            self.pedalboard('drawJack', jacks[i])
+        }
+    },
+
+    // Called once a bundle load finishes (host.js's loading_end). Any teleport still
+    // pending at this point named a cable that never showed up -- the plugin or
+    // connection it belonged to is gone from the pedalboard -- and is dropped rather than
+    // left to latch onto some unrelated connection made later. Runs the same lifetime-rule
+    // prune teleportsChanged does, but never through teleportsChanged itself: that would
+    // post the map back and mark a freshly loaded pedalboard as modified.
+    finishTeleportLoad: function () {
+        var self = $(this)
+        self.data('pendingTeleports', {})
+        self.pedalboard('pruneTeleportNames')
+    },
+
+    // Applies a name the user typed. Empty means remove the teleport from every cable on
+    // this output -- the explicit way to say you no longer want it. A name another output
+    // already answers to is refused, and the caller puts the old text back: silently
+    // numbering what you typed would be worse, and taking the name off the other output is
+    // action at a distance.
+    setTeleportName: function (port, typed) {
+        var self = $(this)
+        var names = self.data('teleportNames')
+        var key = port.attr('mod-port')
+        var name = (typed || '').trim()
+        var affected = []
+        var jacks = self.pedalboard('teleportedJacks')
+        var i
+
+        for (i = 0; i < jacks.length; i++) {
+            if (jacks[i].data('origin').attr('mod-port') === key) {
+                affected.push(jacks[i])
+            }
+        }
+
+        // The box under the pointer is about to be replaced or removed, so its mouseleave
+        // will never arrive and the trace would stay on with nothing to clear it -- the
+        // board sits dimmed until something else happens. destroyJack does this for the
+        // same reason.
+        self.pedalboard('clearTracing')
+
+        if (! name) {
+            for (i = 0; i < affected.length; i++) {
+                affected[i].data('teleported', false)
+            }
+            delete names[key]
+            // an explicit discard, so the remembered copy goes too -- otherwise an earlier
+            // toggle-off would quietly bring the old label back on the next teleport
+            delete self.data('teleportNamesRemembered')[key]
+            self.pedalboard('teleportsChanged', affected)
+            self.trigger('modified')
+            return true
+        }
+
+        if (! teleportNameAvailable(name, key, names)) {
+            return false
+        }
+
+        names[key] = name
+        self.pedalboard('teleportsChanged', affected)
+        self.trigger('modified')
+        return true
+    },
+
+    // How many teleported cables arrive at one input. They all draw their box at the same
+    // place, so past one only the topmost is visible and the rest are hidden behind it.
+    teleportsIntoPort: function (port) {
+        var self = $(this)
+        var wanted = port.attr('mod-port')
+        var jacks = self.pedalboard('teleportedJacks')
+        var n = 0
+        for (var i = 0; i < jacks.length; i++) {
+            var dest = jacks[i].data('destination')
+            if (dest && dest.attr('mod-port') === wanted) {
+                n++
+            }
+        }
+        return n
+    },
+
+    // The count shown over a pile of boxes at one input, so a stack of them does not read
+    // as a single teleport. One badge per input rather than one per box: they are all at
+    // the same spot, and which of them ends up on top is not something to depend on.
+    teleportBadge: function (port) {
+        var self = $(this)
+        var boxes = self.data('teleportBoxes')
+        var key = 'badge ' + port.attr('mod-port')
+        var badge = boxes[key]
+        if (! badge) {
+            badge = $('<div>').addClass('ignore-arrive mod-teleport-badge')
+            badge.attr('title', 'Several teleports arrive here -- click to fan them out')
+            badge.on('mousedown', function (e) { e.stopPropagation() })
+            // as above: a second click on the badge must not zoom the board out
+            badge.on('dblclick', function (e) { e.stopPropagation() })
+            badge.on('click', function (e) {
+                e.stopPropagation()
+                self.pedalboard('expandInput', port)
+            })
+            badge.appendTo(self)
+            boxes[key] = badge
+        }
+        badge.data('port', port)
+        return badge
+    },
+
+    // The box at one end of a teleport. Keyed by side, port and name, so an output with
+    // one name shows one box however many cables leave it, and an input shows one box per
+    // distinct name arriving. Boxes are html, not svg: they take text and a caret, and the
+    // canvas holding the svg has pointer-events:none anyway.
+    teleportBox: function (side, port, name) {
+        var self = $(this)
+        var boxes = self.data('teleportBoxes')
+        var key = side + ' ' + port.attr('mod-port') + ' ' + name
+        var box = boxes[key]
+        if (! box) {
+            box = $('<input type="text" spellcheck="false">')
+            box.addClass('ignore-arrive mod-teleport mod-teleport-' + side)
+            if (side === 'in') {
+                // Only the output end is editable; the input ends mirror it. Kept out of
+                // the tab order as well as read-only -- it is a label, and anything that
+                // invites you to type in it is a lie, since the text lives on the output.
+                box.attr('readonly', 'readonly')
+                box.attr('tabindex', '-1')
+            }
+            box.appendTo(self)
+            if (side === 'out') {
+                box.on('keydown', function (e) {
+                    // do not let the board's own shortcuts see the typing
+                    e.stopPropagation()
+                    if (e.keyCode === 13) {
+                        $(this).blur()
+                    } else if (e.keyCode === 27) {
+                        $(this).val($(this).data('committed')).blur()
+                    }
+                })
+                box.on('focus', function () {
+                    $(this).data('committed', $(this).val())
+                })
+                box.on('blur', function () {
+                    var typed = $(this).val()
+                    // nothing typed, nothing to commit -- this is also what makes Escape a
+                    // real cancel, since it puts the committed text back before blurring
+                    if (typed === $(this).data('committed')) {
+                        return
+                    }
+                    if (! self.pedalboard('setTeleportName', $(this).data('port'), typed)) {
+                        $(this).val($(this).data('committed'))
+                        $(this).addClass('mod-teleport-clash')
+                        var flashing = $(this)
+                        setTimeout(function () { flashing.removeClass('mod-teleport-clash') }, 900)
+                    }
+                })
+            }
+            if (side === 'in') {
+                // The label is what you can actually hit when several teleports stack at
+                // one input -- the input itself is behind them. Same action as clicking
+                // the port: fan the jacks out so each box gets its own cable.
+                box.on('click', function (e) {
+                    e.stopPropagation()
+                    self.pedalboard('expandInput', $(this).data('port'))
+                })
+            }
+
+            // Both ends swallow mousedown. The read-only end needs it as much as the
+            // editable one: it has to take pointer events to be hoverable for its
+            // tooltip, and mousedown on the board starts a pan.
+            //
+            // The read-only end also refuses focus outright. It is still an <input>, so
+            // clicking it would otherwise put a blinking caret in a field that cannot be
+            // typed into. preventDefault on mousedown stops the focus without stopping the
+            // click, which is what fans the stack out.
+            box.on('mousedown', function (e) {
+                e.stopPropagation()
+                if (side === 'in') {
+                    e.preventDefault()
+                }
+            })
+
+            // Neither end lets a double-click reach the board, which double-click-zooms
+            // out -- clicking a pile whose first click looks inert is exactly when someone
+            // clicks twice. Only the editable end also selects: selecting text in the
+            // mirror suggests you can change it there, and you cannot.
+            // It has to be stopped from reaching the board, which double-click-zooms out,
+            // and from reaching body, where desktop.js registers preventDefault for every
+            // dblclick and so kills the native selection.
+            box.on('dblclick', function (e) {
+                e.stopPropagation()
+                if (side === 'out') {
+                    this.select()
+                }
+            })
+            boxes[key] = box
+        }
+        box.data('port', port)
+        // the box is narrower than some names, so the full one is on hover
+        box.attr('title', name)
+        // do not fight the caret while the user is typing in this very box
+        if (document.activeElement !== box[0]) {
+            box.val(name)
+        }
+        return box
+    },
+
+    // Drops boxes that no teleported cable asks for any more. Called when teleports
+    // change -- a keypress, a rename, a disconnect -- not on every redraw, because a
+    // redraw happens on every drag tick and changes nothing about which boxes exist.
+    pruneTeleportBoxes: function () {
+        var self = $(this)
+        var boxes = self.data('teleportBoxes')
+        var live = {}
+        var jacks = self.pedalboard('teleportedJacks')
+        for (var i = 0; i < jacks.length; i++) {
+            var jack = jacks[i]
+            var name = self.pedalboard('teleportName', jack.data('origin'))
+            if (! name) {
+                continue
+            }
+            live['out ' + jack.data('origin').attr('mod-port') + ' ' + name] = true
+            live['in ' + jack.data('destination').attr('mod-port') + ' ' + name] = true
+        }
+        for (var key in boxes) {
+            // A badge is keyed by input port, not by name, so the name-based sweep below
+            // says nothing about it. It goes when its input no longer has a pile to count
+            // -- including when the last teleport there is removed, after which
+            // drawTeleportJack never runs for that input again to take it down itself.
+            if (key.indexOf('badge ') === 0) {
+                var bport = boxes[key].data('port')
+                if (! bport || ! bport.closest('body').length ||
+                    self.pedalboard('teleportsIntoPort', bport) < 2) {
+                    boxes[key].remove()
+                    delete boxes[key]
+                }
+                continue
+            }
+            if (! live[key]) {
+                boxes[key].remove()
+                delete boxes[key]
+            }
+        }
+    },
+
+    // Puts a teleport back on a cable that a plugin replacement is recreating. The old
+    // jack is gone, so the flag went with it and the lifetime rule dropped the name; both
+    // are restored here, and the cable itself is parked so that connect() flags whichever
+    // jack ends up carrying it -- the same bridge a re-route uses.
+    //
+    // The name is only restored if it is still free: another output may have taken it
+    // while this plugin was away, and uniqueness is not worth breaking to get a label back.
+    restoreReplacedTeleport: function (name, outport, inport) {
+        var self = $(this)
+        if (! name) {
+            return null
+        }
+        var names = self.data('teleportNames')
+        if (! names[outport] && teleportNameAvailable(name, outport, names)) {
+            names[outport] = name
+        }
+        if (! names[outport]) {
+            return null
+        }
+        var key = outport + TELEPORT_ARROW + inport
+        self.data('pendingTeleports')[key] = true
+        // Handed back so the caller can drop it if the reconnect is refused. A key nobody
+        // consumes is not harmless: pruneTeleportNames counts a parked key as in use, so
+        // the name would sit in the namespace with no cable and no box until the next load.
+        // do_connect does the same on its own failure path.
+        return key
+    },
+
+    // Wraps the replacement's finalizeConnection so a refused reconnect also un-parks the
+    // teleport key restoreReplacedTeleport put down for it.
+    replacedConnectionDone: function (key, finalize) {
+        var self = $(this)
+        return function (ok) {
+            if (! ok && key) {
+                delete self.data('pendingTeleports')[key]
+                // the key was the only thing keeping that name alive; without this it sits
+                // in the namespace with no cable and no box, refusing itself to others
+                self.pedalboard('pruneTeleportNames')
+            }
+            finalize(ok)
+        }
+    },
+
     // The canvas actually carrying a jack's paint, and which half of it the jack is. Both
     // halves of a merged stereo pair are painted together into the left half's canvas and
     // the right half's is emptied, so hovering either half lights the left one; leg says
@@ -2675,7 +3387,12 @@ JqueryClass('pedalboard', {
     litCanvas: function (jack) {
         var self = $(this)
         var pair = self.pedalboard('stereoPartnerJack', jack)
-        if (pair && pair.jack.data('connected')) {
+        // Same guard as drawStereoJack: a teleported pair is painted into two separate
+        // canvases, not merged into the left half's, so resolving to the partner's canvas
+        // here would light the wrong cable (or the partner's, and never this jack's own)
+        // whenever either half of the pair is teleported.
+        if (pair && pair.jack.data('connected') &&
+                ! jack.data('teleported') && ! pair.jack.data('teleported')) {
             return { canvas: (pair.first ? jack : pair.jack).data('canvas'),
                      leg: pair.first ? 0 : 1, partner: pair.jack }
         }
@@ -2729,6 +3446,25 @@ JqueryClass('pedalboard', {
             var lit = self.pedalboard('litCanvas', jack)
             lit.canvas.attr('data-cable-lit', lit.leg === null ? '' : lit.leg)
             jack.attr('data-jack-lit', '')
+            // a teleported cable's boxes are not inside the canvas the tracing lights, so
+            // they have to be picked out by name
+            if (jack.data('teleported')) {
+                var tname = self.pedalboard('teleportName', jack.data('origin'))
+                if (tname) {
+                    // read the boxes, never teleportBox(): that CREATES one on a key miss
+                    // and tracing has no business placing it, so a miss would leave an
+                    // unpositioned box sitting at the origin
+                    var boxes = self.data('teleportBoxes')
+                    var outBox = boxes['out ' + jack.data('origin').attr('mod-port') + ' ' + tname]
+                    var inBox = boxes['in ' + jack.data('destination').attr('mod-port') + ' ' + tname]
+                    if (outBox) {
+                        outBox.attr('data-teleport-lit', '')
+                    }
+                    if (inBox) {
+                        inBox.attr('data-teleport-lit', '')
+                    }
+                }
+            }
             // both jacks of a merged pair belong to the one cable being traced
             if (lit.partner) {
                 lit.partner.attr('data-jack-lit', '')
@@ -2747,6 +3483,7 @@ JqueryClass('pedalboard', {
         var self = $(this)
         self.find('[data-cable-lit]').removeAttr('data-cable-lit')
         self.find('[data-jack-lit]').removeAttr('data-jack-lit')
+        self.find('[data-teleport-lit]').removeAttr('data-teleport-lit')
         self.removeClass('mod-tracing')
     },
 
@@ -2761,6 +3498,11 @@ JqueryClass('pedalboard', {
         // The partner is still in the connection index between a disconnect and the host
         // confirming it, so its own connected flag is what says the pair is still whole
         if (! pair || ! pair.jack.data('connected')) {
+            return false
+        }
+        // a merged pair is one cable running end to end, which a teleported cable is not.
+        // the teleport key takes both halves together, so this normally sees both or neither
+        if (jack.data('teleported') || pair.jack.data('teleported')) {
             return false
         }
 
@@ -2800,12 +3542,137 @@ JqueryClass('pedalboard', {
             if (!jack.data('connected') && !force)
                 return
 
+            // a teleported cable is drawn split, and never merged with a stereo partner:
+            // a merged pair is one cable running end to end, which this no longer is
+            if (jack.data('teleported') && self.pedalboard('drawTeleportJack', jack, force))
+                return
+
             if (self.pedalboard('drawStereoJack', jack, force))
                 return
 
             var c = self.pedalboard('jackCoords', jack, force)
             self.pedalboard('drawBezier', jack.data('canvas'), c.xi, c.yi, c.xo, c.yo, '')
         }, 0)
+    },
+
+    // A teleported cable is two short stubs rather than one long curve: out of the output
+    // into its box, and out of the destination's box into the input. Straight lines --
+    // over this distance a bezier is indistinguishable from one and costs more to read.
+    drawTeleportBezier: function (canvas, outFrom, outTo, inFrom, inTo) {
+        var svg = canvas.svg('get')
+        if (! svg) {
+            return
+        }
+        svg.clear()
+        canvas.removeClass('mod-stereo')
+
+        var parts = [['pathShadow', 'shadow'], ['pathCable', 'cable'], ['pathLight', 'light']]
+        for (var i = 0; i < parts.length; i++) {
+            var path = canvas.data(parts[i][0])
+            path.reset()
+            path.move(outFrom.x, outFrom.y).line(outTo.x, outTo.y)
+            path.move(inFrom.x, inFrom.y).line(inTo.x, inTo.y)
+            svg.path(null, path, { class_: parts[i][1] })
+        }
+    },
+
+    // Resizes the teleport labels from the teleport-label-scale preference. Written into
+    // one stylesheet rule rather than onto each box, so it lands on every box that exists
+    // now and every box made later, with no redraw. The base numbers here are the ones in
+    // dashboard.css at scale 1; the box and its text scale together, so a long name clips
+    // no sooner when it is small.
+    applyTeleportScale: function () {
+        var self = $(this)
+        var scale = 1
+        if (typeof PREFERENCES !== 'undefined' && PREFERENCES['teleport-label-scale']) {
+            var wanted = parseFloat(PREFERENCES['teleport-label-scale'])
+            if (wanted > 0) {
+                scale = wanted
+            }
+        }
+        var sheet = $('#mod-teleport-scale')
+        if (! sheet.length) {
+            sheet = $('<style id="mod-teleport-scale">').appendTo('head')
+        }
+        sheet.text('.mod-teleport {' +
+                   ' width: ' + Math.round(184 * scale) + 'px;' +
+                   ' font-size: ' + Math.round(26 * scale) + 'px;' +
+                   ' line-height: ' + Math.round(34 * scale) + 'px;' +
+                   ' padding: ' + Math.round(2 * scale) + 'px ' + Math.round(8 * scale) + 'px;' +
+                   ' }' +
+                   // the count rides along, so it stays in proportion to the pile it counts
+                   '.mod-teleport-badge {' +
+                   ' font-size: ' + Math.round(22 * scale) + 'px;' +
+                   ' line-height: ' + Math.round(32 * scale) + 'px;' +
+                   ' padding: 0 ' + Math.round(10 * scale) + 'px;' +
+                   ' border-radius: ' + Math.round(16 * scale) + 'px;' +
+                   ' }')
+        // the boxes just changed size, so where they are centred has moved; the next
+        // redraw places them, and a resize is always followed by one
+    },
+
+    // Places both boxes and draws the two stubs between them and their ports. Returns
+    // false when this jack should be drawn as an ordinary cable after all, which is what
+    // happens if its output has somehow lost its name.
+    drawTeleportJack: function (jack, force) {
+        var self = $(this)
+        var output = jack.data('origin')
+        var input = jack.data('destination')
+        var name = self.pedalboard('teleportName', output)
+        if (! name || ! input) {
+            return false
+        }
+
+        var c = self.pedalboard('jackCoords', jack, force)
+        var outBox = self.pedalboard('teleportBox', 'out', output, name)
+        var inBox = self.pedalboard('teleportBox', 'in', input, name)
+
+        // xi,yi is the output end and xo,yo the input end, despite the letters
+        var outX = c.xi + TELEPORT_STUB
+        var inX = c.xo - TELEPORT_STUB
+
+        // Both ends remember the output that owns the name. Hovering either box traces
+        // from there, which is exactly the cables that box stands for -- tracing an input
+        // box from its own port would drag in every other cable arriving at that input.
+        outBox.data('sourcePort', output)
+        inBox.data('sourcePort', output)
+
+        self.pedalboard('placeTeleportBox', outBox, 'out', output, name, outX, c.yi)
+        self.pedalboard('placeTeleportBox', inBox, 'in', input, name,
+                        inX - inBox.outerWidth(), c.yo)
+
+        // Only worth saying when the boxes are actually piled up: expanding the input fans
+        // them onto their own cables, at which point you can see how many there are.
+        var stacked = self.pedalboard('teleportsIntoPort', input)
+        if (stacked > 1 && ! input.data('expanded')) {
+            var badge = self.pedalboard('teleportBadge', input)
+            badge.text('x' + stacked)
+            badge.css({ left: inX - badge.outerWidth() - 3,
+                        top: c.yo - inBox.outerHeight() / 2 - badge.outerHeight() / 2 })
+        } else {
+            var old = self.data('teleportBoxes')['badge ' + input.attr('mod-port')]
+            if (old) {
+                old.remove()
+                delete self.data('teleportBoxes')['badge ' + input.attr('mod-port')]
+            }
+        }
+
+        self.pedalboard('drawTeleportBezier', jack.data('canvas'),
+                        { x: c.xi, y: c.yi }, { x: outX, y: c.yi },
+                        { x: inX, y: c.yo }, { x: c.xo, y: c.yo })
+
+        return true
+    },
+
+    placeTeleportBox: function (box, side, port, name, x, y) {
+        // Centred on its own cable, always. Boxes at one port used to stack instead, so
+        // that a collapsed input did not pile them on top of each other -- but the stack
+        // offset is a box height, and once boxes are large that is further than the gap
+        // between the cables, which walks every box after the first away from the cable it
+        // belongs to. Sitting on the right cable matters more than being separately
+        // readable: expanding the input still fans them apart when you need that.
+        var h = box.outerHeight() || 42
+        box.css({ left: x, top: y - h / 2 })
     },
 
     // One trunk with a Y at each end: out1 and out2 converge, run as a single cable, then
@@ -2970,6 +3837,7 @@ JqueryClass('pedalboard', {
         var self = $(this)
         var output = jack.data('origin')
         var previousInput = jack.data('destination')
+        var pendingKey = output.attr('mod-port') + TELEPORT_ARROW + input.attr('mod-port')
 
         if (self.pedalboard('connected', output, input)) {
             // If this jack is already connected to this output, keep connection
@@ -3006,6 +3874,15 @@ JqueryClass('pedalboard', {
 
         // This jack was connected to some other input, let's disconnect it
         if (previousInput && overCount < 2) {
+            // Re-routing keeps the teleport, and nothing else can carry it across the gap:
+            // disconnect() drops this cable's claim on the name, and the jack itself does
+            // not survive either -- the server echoes the disconnect back and destroyJack
+            // removes it, so the follow-up connect echo picks up the output's SPARE jack.
+            // Parking the new pair means the name stays and whichever jack ends up with
+            // the cable is flagged, exactly as a cable arriving during a load is.
+            if (jack.data('teleported')) {
+                self.data('pendingTeleports')[pendingKey] = true
+            }
             self.pedalboard('disconnect', jack)
             self.pedalboard('packJacks', previousInput)
         }
@@ -3013,6 +3890,9 @@ JqueryClass('pedalboard', {
         self.data('portConnect')(output.attr('mod-port'), input.attr('mod-port'),
             function (ok) {
                 if (!ok) {
+                    // the connection was refused, so nothing will ever consume the parked
+                    // teleport above -- drop it rather than let it wait for a load
+                    delete self.data('pendingTeleports')[pendingKey]
                     self.pedalboard('disconnect', jack)
                 }
             })
@@ -3052,6 +3932,24 @@ JqueryClass('pedalboard', {
         jack.data('destination', input)
         jack.data('connected', true)
         input.append(jack)
+
+        // A teleport map that arrived before this connection existed (applyTeleports,
+        // during a bundle load) left this cable here rather than forcing a retry loop.
+        // Consumed the moment the cable it names actually shows up.
+        var pendingTeleports = self.data('pendingTeleports')
+        var pendingKey = output.attr('mod-port') + TELEPORT_ARROW + input.attr('mod-port')
+        if (pendingTeleports && pendingTeleports[pendingKey]) {
+            delete pendingTeleports[pendingKey]
+            jack.data('teleported', true)
+            if (skipModified) {
+                // during a load: the map came from the server, posting it back is noise
+                self.pedalboard('drawJack', jack)
+            } else {
+                // a re-route: the disconnect half of it posted a map without this cable,
+                // so the server has to hear the finished pair or the next save loses it
+                self.pedalboard('teleportsChanged', [jack])
+            }
+        }
 
         // Add status classes
         output.addClass('output-connected')
@@ -3114,6 +4012,8 @@ JqueryClass('pedalboard', {
         }
 
         jack.data('connected', false)
+        // the lifetime rule: this cable no longer holds its output's name up
+        self.pedalboard('teleportsChanged', [])
 
         if (pair) {
             self.pedalboard('drawJack', pair.jack)
@@ -3235,6 +4135,17 @@ JqueryClass('pedalboard', {
         self.pedalboard('drawPluginJacks', plugin)
     },
 })
+
+// How far a teleport's stub runs from its port before it meets its box. Long enough to
+// read as a cable going somewhere, short enough that it is not the thing you notice.
+var TELEPORT_STUB = 44
+
+// The key that splits a cable into a teleport, and joins one back up. `s` for split;
+// nothing else on the board claims it -- the only other shortcuts here are delete and
+// backspace. A single lower-case letter, matched case-insensitively and only when no
+// modifier is held. Named rather than inlined so that a setting, if one is ever added,
+// has exactly one place to write to.
+var TELEPORT_KEY = 's'
 
 // Horizontal pull on a cable's bezier control points. The numbers below were
 // empirically obtained by trying several things. It gives us a pretty good result
