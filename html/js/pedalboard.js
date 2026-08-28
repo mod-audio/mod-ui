@@ -1661,6 +1661,14 @@ JqueryClass('pedalboard', {
             },
             click: function (event) {
                 if (event.shiftKey) {
+                    // A port has its own shift-click, which toggles its vu meter, and the
+                    // ports sit inside the plugin, so the click reaches here too on its
+                    // way up. Selecting is for the plugin's own body only. closest()
+                    // rather than is(), because the click can land on a jack or on some
+                    // other decoration inside the port.
+                    if ($(event.target).closest('[mod-port]').length) {
+                        return
+                    }
                     self.pedalboard('toggleSelected', instance)
                     return
                 }
