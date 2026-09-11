@@ -713,6 +713,16 @@ $('document').ready(function() {
         }
     })
 
+    // --- Report a problem
+
+    var problemReport = new ProblemReport({
+        version: '{{version}}',
+        feedbackUrl: '{{feedback_url}}',
+    })
+    $("#button-action-report").click(function () {
+        problemReport.open()
+    })
+
     // --- User Interface
 
     $("#prefs-ui-developer-mode").click(function () {
@@ -921,6 +931,7 @@ $('document').ready(function() {
 <script type="text/javascript" src="js/modgui.js?v={{version}}"></script>
 <script type="text/javascript" src="js/notification.js?v={{version}}"></script>
 <script type="text/javascript" src="js/nprogress.js?v={{version}}"></script>
+<script type="text/javascript" src="js/report.js?v={{version}}"></script>
 
 </head>
 <!-- END HEAD -->
@@ -1050,6 +1061,18 @@ $('document').ready(function() {
                         Note: the update server does not honour this setting yet. Testing releases are currently
                         offered to registered devices only, or installed manually from the announcement.
                     </p>
+                </form>
+
+                <h1>Report a problem</h1>
+                <form class="form">
+                    <p>
+                        <b>Found a bug, or something that does not behave as it should?</b><br/>
+                        This collects the system details a good report needs, for you to paste into the
+                        forum topic of this release. Nothing is sent automatically.
+                    </p>
+                    <label>
+                        <input type="button" id="button-action-report" value="Report a problem..."></input>
+                    </label>
                 </form>
             </div>
         </div>
