@@ -332,7 +332,7 @@ JqueryClass('pedalboard', {
         }});
 
         // Dragging the pedalboard move the view area
-        self.mousedown(function (e) {
+        self.bind('mousedown touchstart', function (e) {
             self.pedalboard('drag', e)
         })
 
@@ -840,33 +840,42 @@ JqueryClass('pedalboard', {
     // Moves the viewable area of the pedalboard
     drag: function (start) {
         var self = $(this)
-
         self.trigger('dragStart')
-
         var scale = self.data('scale')
 
+        function shape(e) {
+            if (!e.type.startsWith('touch')) return { pageX: e.pageX, pageY: e.pageY, pageD: 0.0001 }
+            var touches = e.originalEvent.touches
+            if (touches.length == 1) return { pageX: touches[0].pageX, pageY: touches[0].pageY, pageD: 0.0001 } 
+            var [ x0, x1, y0, y1 ] = [ touches[0].pageX, touches[1].pageX, touches[0].pageY, touches[1].pageY ]
+            return {
+                pageX: Math.round(x0+(x1-x0)*0.50),
+                pageY: Math.round(y0+(y1-y0)*0.50),
+                pageD: Math.hypot(x0 - x1, y0 - y1)
+            }
+        }
+
+        start = shape(start)
         var canvasX = (start.pageX - self.offset().left) / scale
         var canvasY = (start.pageY - self.offset().top) / scale
-        var screenX = start.pageX - self.parent().offset().left
-        var screenY = start.pageY - self.parent().offset().top
 
         var moveHandler = function (e) {
-            if (self.data('preventDrag'))
-                return
-
-            self.pedalboard('zoom', scale, canvasX, canvasY,
-                screenX + e.pageX - start.pageX,
-                screenY + e.pageY - start.pageY,
-                0)
+            if (self.data('preventDrag')) return
+            e = shape(e)
+            var newScale = scale * e.pageD / start.pageD
+            newScale = Math.min(self.data('maxScale'), newScale)
+            newScale = Math.max(self.data('minScale'), newScale)
+            self.pedalboard( 'zoom', newScale, canvasX, canvasY, 
+                             e.pageX - self.parent().offset().left, e.pageY - self.parent().offset().top, 0 )
         }
 
         var upHandler = function (e) {
-            $(document).unbind('mouseup', upHandler)
-            $(document).unbind('mousemove', moveHandler)
+            $(document).unbind('mouseup touchend', upHandler)
+            $(document).unbind('mousemove touchmove', moveHandler)
         }
 
-        $(document).bind('mousemove', moveHandler)
-        $(document).bind('mouseup', upHandler)
+        $(document).bind('mousemove touchmove', moveHandler)
+        $(document).bind('mouseup touchend', upHandler)
     },
 
     // Changes the viewing scale of the pedalboard and position it in a way that
@@ -1522,13 +1531,13 @@ JqueryClass('pedalboard', {
                 }
             }
 
-            icon.mousedown(function () {
+            icon.bind('mousedown touchstart', function () {
                 self.pedalboard('preventDrag', true)
                 var upHandler = function () {
                     self.pedalboard('preventDrag', false)
-                    $('body').unbind('mouseup', upHandler)
+                    $('body').unbind('mouseup touchend', upHandler)
                 }
-                $('body').bind('mouseup', upHandler)
+                $('body').bind('mouseup touchend', upHandler)
             })
 
             icon.attr('mod-io-type', pluginData.iotype)
