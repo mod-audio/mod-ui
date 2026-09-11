@@ -9,8 +9,15 @@ jobs:
     steps:
       - name: Format message
         id: message
+        # The commit message goes through the environment, not through shell
+        # interpolation: a quote in a commit message used to break the script.
+        env:
+          ACTOR: ${{ github.actor }}
+          COMMIT_MESSAGE: ${{ github.event.commits[0].message }}
+          COMMIT_URL: ${{ github.event.commits[0].url }}
         run: |
-          echo "message=${{ github.actor }} pushed $(echo '${{ github.event.commits[0].message }}' | head -n 1) ${{ github.event.commits[0].url }}" >> $GITHUB_OUTPUT
+          first_line=$(printf '%s\n' "$COMMIT_MESSAGE" | head -n 1)
+          echo "message=$ACTOR pushed $first_line $COMMIT_URL" >> "$GITHUB_OUTPUT"
       - name: IRC notification
         uses: Gottox/irc-message-action@v2
         with:
