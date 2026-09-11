@@ -83,6 +83,10 @@ PEDALBOARDS_LABS_HTTP_ADDRESS = os.environ.pop('MOD_PEDALBOARDS_LABS_HTTP_ADDRES
 CONTROLCHAIN_HTTP_ADDRESS = os.environ.pop('MOD_CONTROLCHAIN_HTTP_ADDRESS',
                                            "https://download.mod.audio/releases/cc-firmware/v3")
 
+# Where "Report a problem" sends people: the forum topic (or category) for the running
+# release. Set per build, like the version; the default is the forum's Beta Testing category.
+FEEDBACK_URL = os.environ.get('MOD_FEEDBACK_URL', "https://forum.mod.audio/c/beta-testing/41")
+
 MIDI_BEAT_CLOCK_SENDER_URI = "urn:mod:mclk"
 MIDI_BEAT_CLOCK_SENDER_INSTANCE_ID = 9993
 MIDI_BEAT_CLOCK_SENDER_OUTPUT_PORT = "mclk" # This is the LV2 symbol of the plug-ins OutputPort

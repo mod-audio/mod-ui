@@ -38,7 +38,8 @@ from mod.settings import (DESKTOP, LOG, DEV_API,
                           DEFAULT_ICON_TEMPLATE, DEFAULT_SETTINGS_TEMPLATE, DEFAULT_ICON_IMAGE,
                           DEFAULT_PEDALBOARD, DEFAULT_SNAPSHOT_NAME, DATA_DIR, KEYS_PATH, USER_FILES_DIR,
                           FAVORITES_JSON_FILE, PREFERENCES_JSON_FILE, USER_ID_JSON_FILE,
-                          DEV_HOST, UNTITLED_PEDALBOARD_NAME, MODEL_CPU, MODEL_TYPE, PEDALBOARDS_LABS_HTTP_ADDRESS)
+                          DEV_HOST, UNTITLED_PEDALBOARD_NAME, MODEL_CPU, MODEL_TYPE, PEDALBOARDS_LABS_HTTP_ADDRESS,
+                          FEEDBACK_URL)
 
 from mod import (
     TextFileFlusher, WINDOWS,
@@ -380,7 +381,25 @@ class SystemInfo(JsonRequestHandler):
         else:
             sysdate = "Unknown"
 
+        controller = "Unknown"
+        if os.path.exists("/etc/mod-release/controller"):
+            with open("/etc/mod-release/controller") as fh:
+                for line in fh:
+                    if line.startswith("revision="):
+                        controller = line[len("revision="):].strip()
+                        break
+
+        uptime = None
+        try:
+            with open("/proc/uptime") as fh:
+                uptime = int(float(fh.read().split()[0]))
+        except (IOError, OSError, ValueError, IndexError):
+            pass
+
         info = {
+            "release": IMAGE_VERSION or "Unknown",
+            "controller": controller,
+            "uptime": uptime,
             "hwname": hwdesc.get('name', "Unknown"),
             "architecture": hwdesc.get('architecture', "Unknown"),
             "cpu": MODEL_CPU or hwdesc.get('cpu', "Unknown"),
@@ -1817,6 +1836,7 @@ class TemplateHandler(TimelessRequestHandler):
             'user_email': mod_squeeze(user_id.get("email", "")),
             'favorites': json.dumps(gState.favorites),
             'preferences': json.dumps(SESSION.prefs.prefs),
+            'feedback_url': FEEDBACK_URL,
             'bufferSize': get_jack_buffer_size(),
             'sampleRate': get_jack_sample_rate(),
         }
@@ -1868,6 +1888,7 @@ class TemplateHandler(TimelessRequestHandler):
             'version': self.get_argument('v'),
             'hmi_eeprom': 'true' if hwdesc.get('hmi_eeprom', False) else 'false',
             'preferences': json.dumps(prefs),
+            'feedback_url': FEEDBACK_URL,
             'bufferSize': get_jack_buffer_size(),
             'sampleRate': get_jack_sample_rate(),
         }

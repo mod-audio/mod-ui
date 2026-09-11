@@ -193,6 +193,32 @@ $('document').ready(function() {
     }
     desktop.pedalboardBox.pedalboardBox('initViewMode', PREFERENCES['pb-view-mode'])
 
+    // "Report a problem": always reachable from the main screen for now. Once the
+    // update service can tell us whether the running build is published to everyone
+    // (group 0), this button is meant to stay only while the build is a release
+    // candidate, and live in Settings the rest of the time.
+    desktop.problemReport = new ProblemReport({
+        version: '{{version}}',
+        feedbackUrl: '{{feedback_url}}',
+        getPedalboard: function () {
+            var plugins = desktop.pedalboard.data('plugins') || {}
+            var uris = []
+            for (var instance in plugins) {
+                var uri = plugins[instance].data('uri')
+                if (uri) {
+                    uris.push(uri)
+                }
+            }
+            return { title: desktop.title || 'Untitled', plugins: uris }
+        },
+        getStats: function () {
+            return { xruns: cached_xruns, cpuLoad: cached_cpuLoad }
+        },
+    })
+    $('#mod-report').click(function () {
+        desktop.problemReport.open()
+    })
+
     if ({{using_desktop}}) {
         desktop.setupApp()
     } else {
@@ -309,6 +335,7 @@ $('document').ready(function() {
 <script type="text/javascript" src="js/nprogress.js?v={{version}}"></script>
 <script type="text/javascript" src="js/utils/tempo.js?v={{version}}"></script>
 <script type="text/javascript" src="js/utils/plugins.js?v={{version}}"></script>
+<script type="text/javascript" src="js/report.js?v={{version}}"></script>
 
 <!-- For browsers with shields on, avoid breaking on Matomo related code -->
 <script>var _paq = { push: new Function() }</script>
@@ -714,6 +741,7 @@ $('document').ready(function() {
         <div id="mod-status" class="status icon mod-hidden"></div>
         <div id="mod-devices" class="status icon"></div>
         <div id="mod-settings" class="status icon mod-settings" data-message="Go to settings screen"></div>
+        <div id="mod-report" class="icon" title="Report a problem with this release">Report a problem</div>
         <div id="mod-ram" class="icon">
             <div class="progress" id="ram-bar" style="width: 100%;">
                 <div class="bar"></div> <!-- not sure if this is needed -->
