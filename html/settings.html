@@ -533,6 +533,12 @@ $('document').ready(function() {
     if (PREFERENCES['show-labs-plugins'] == "true") {
         $("#prefs-ui-labs-plugins").prop("checked", true)
     }
+    if (PREFERENCES['update-channel'] == "testing") {
+        $("#prefs-update-channel-testing").prop("checked", true)
+        $("#prefs-update-channel-note").show()
+    } else {
+        $("#prefs-update-channel-stable").prop("checked", true)
+    }
     if (! HMI_EEPROM) {
         $("#prefs-delete-hmi-settings_br").hide()
         $("#prefs-delete-hmi-settings_label").hide()
@@ -692,6 +698,21 @@ $('document').ready(function() {
     })
 
     // ----------------------------------------------------------------------------------------------------------------
+    // --- Update channel
+    // Stored as a preference only. Nothing reads it yet: the device does not send a channel
+    // when it checks for updates (the server derives the group from the device registration),
+    // so this switch becomes effective once the update service exposes a self-service group.
+
+    $("input[name=prefs-update-channel]").click(function () {
+        var channel = $(this).val()
+        config_set("update-channel", channel)
+        if (channel == "testing") {
+            $("#prefs-update-channel-note").show()
+        } else {
+            $("#prefs-update-channel-note").hide()
+        }
+    })
+
     // --- Report a problem
 
     var problemReport = new ProblemReport({
@@ -1020,6 +1041,26 @@ $('document').ready(function() {
                     <label>
                         <input type="button" id="button-action-restore" value="Start update mode"></input>
                     </label>
+                    <br/><br/>
+                    <p>
+                        <b>Update channel</b>.<br/>
+                        Stable receives final releases only. Testing also receives release candidates
+                        before they become final, so you can try new features early and report problems.
+                    </p>
+                    <label>
+                        <input type="radio" name="prefs-update-channel" value="stable" id="prefs-update-channel-stable" autocomplete="off">
+                            Stable
+                        </input>
+                    </label>
+                    <label>
+                        <input type="radio" name="prefs-update-channel" value="testing" id="prefs-update-channel-testing" autocomplete="off">
+                            Testing
+                        </input>
+                    </label>
+                    <p id="prefs-update-channel-note" class="mod-hidden">
+                        Note: the update server does not honour this setting yet. Testing releases are currently
+                        offered to registered devices only, or installed manually from the announcement.
+                    </p>
                 </form>
 
                 <h1>Report a problem</h1>

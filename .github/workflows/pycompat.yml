@@ -1,0 +1,27 @@
+# Rejects Python syntax the device's 3.4 runtime cannot byte-compile.
+#
+# mod-ui ships inside a MOD OS image whose toolchain provides Python 3.4. A
+# newer construct (f-string, async/await, walrus, ...) does not fail loudly:
+# the image build's byte-compile step fails for that module and the device
+# ships without it. tools/check_py34.py catches that here instead.
+#
+# Deliberately does NOT need a Python 3.4 interpreter: the checker parses with
+# the host interpreter's ast module and rejects node types 3.4 does not have.
+# GitHub Actions no longer offers 3.4 (EOL 2019), so an interpreter-based gate
+# would not be runnable here.
+
+name: pycompat
+
+on: [push, pull_request]
+
+jobs:
+  python34-syntax:
+    runs-on: ubuntu-22.04
+    name: python 3.4 syntax gate
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Reject post-3.4 syntax in shipped Python
+        run: python3 tools/check_py34.py
