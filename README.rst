@@ -58,3 +58,44 @@ And now you are ready to start the webserver::
 
 Setting the environment variables is needed when developing on a PC.
 Open your browser and point to http://localhost:8888/.
+
+Running with docker
+-------------------
+
+You can also run mod-ui locally using docker.
+
+Note that, with docker, mod-ui will run with fake connections to the host (there is no host). So no sound will be produced.
+
+Run docker:
+
+```
+docker pull moddevices/mod-ui
+docker run -p 8888:8888 
+```
+
+Open your browser and point to http://localhost:8888/.
+
+There are two volumes you can mount:
+* /lv2 -> the folder containing all the lv2 plugins (by default, this image brings all plugins inside plugins-fixed folder in the mod-lv2-data repository)
+* /mod-ui -> the MOD UI source code (this repository)
+
+Using your own LV2 plugins
+++++++++++++++++++++++++++
+
+You can mount a volume to your LV2 plugins folder to be able to use them with the MOD UI.
+
+```
+docker run -p 8888:8888 -v /path-to-my-lv2-folder/lv2:/lv2 moddevices/mod-ui
+
+```
+
+Mounting the UI source code
++++++++++++++++++++++++++++
+
+If you are developing the UI, you probably want to mount the source code from your machine into docker. Doing this, you can code on your environment and see the changes working on the server inside docker:
+
+```
+docker run -p 8888:8888 -v /path-to-your-clone-of-this-repo/mod-ui:/mod-ui moddevices/mod-ui
+
+```
+
