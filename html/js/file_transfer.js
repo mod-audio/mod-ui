@@ -156,20 +156,16 @@ function SimpleTransference(from, to, options) {
 
     this.abort = function (error) {
         isInstallingPackage = false
-        for (var i in self.requests) {
-            self.requests[i].abort()
+        // abort the in-flight request, if any (a no-op on one that already completed)
+        if (self.request != null) {
+            self.request.abort()
+            self.request = null
         }
         self.reportError(error)
     }
 
-    this.endRequest = function (request, xis, ypis) {
-        var i = self.requests.indexOf(request)
-        if (i >= 0)
-            self.requests.splice(i, 1)
-    }
-
     this.release = function () {
-        for (attr in this) {
+        for (var attr in this) {
             delete this[attr]
         }
     }

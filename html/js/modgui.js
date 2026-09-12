@@ -1831,15 +1831,19 @@ var baseWidget = {
         self.data('minimum',      port.ranges.minimum)
         self.data('enumeration',  port.properties.indexOf("enumeration") >= 0)
         self.data('integer',      port.properties.indexOf("integer") >= 0)
-        self.data('logarithmic',  port.properties.indexOf("logarithmic") >= 0)
+        // log2 of a non-positive bound is undefined; treat such a port as linear
+        // instead of silently mapping the bound to 1 (which also made value 0 unreachable)
+        var isLogarithmic = port.properties.indexOf("logarithmic") >= 0
+                         && port.ranges.minimum > 0 && port.ranges.maximum > 0
+        self.data('logarithmic',  isLogarithmic)
         self.data('toggled',      port.properties.indexOf("toggled") >= 0)
         self.data('trigger',      port.properties.indexOf("trigger") >= 0)
         self.data('linear',       isLinear)
         self.data('scalePoints',  port.scalePoints)
 
-        if (port.properties.indexOf("logarithmic") >= 0) {
-            self.data('scaleMinimum', (port.ranges.minimum != 0) ? Math.log(port.ranges.minimum) / Math.log(2) : 0)
-            self.data('scaleMaximum', (port.ranges.maximum != 0) ? Math.log(port.ranges.maximum) / Math.log(2) : 0)
+        if (isLogarithmic) {
+            self.data('scaleMinimum', Math.log(port.ranges.minimum) / Math.log(2))
+            self.data('scaleMaximum', Math.log(port.ranges.maximum) / Math.log(2))
         } else {
             self.data('scaleMinimum', port.ranges.minimum)
             self.data('scaleMaximum', port.ranges.maximum)

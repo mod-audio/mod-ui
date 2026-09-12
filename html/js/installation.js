@@ -24,7 +24,7 @@ function InstallationQueue() {
         $.ajax({
             url: (usingLabs ? CLOUD_LABS_URL : SITEURL) + '/lv2/bundles/' + bundleId,
             success: function (data) {
-                var bincompat, targetfiles = null
+                var bin_compat, targetfiles = null
                 for (var i in data.files) {
                     bin_compat = data.files[i].bin_compat
                     if (bin_compat !== undefined && bin_compat.toUpperCase() == BIN_COMPAT.toUpperCase()) {
@@ -184,6 +184,11 @@ function InstallationQueue() {
         }
 
         trans.reportError = function (reason) {
+            // resolve every pending caller before dropping the queue, same as the
+            // authentication-failure path above; otherwise they wait forever
+            for (var i in callbacks) {
+                callbacks[i]({ok:false, error:reason})
+            }
             queue = []
             callbacks = []
             notification.close()
