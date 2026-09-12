@@ -911,7 +911,7 @@ JqueryClass('pedalboard', {
         if (self.data('skipAnimations')) {
             duration = 0
         } else if (duration == null) {
-            duration == 400
+            duration = 400
         }
 
         // workaround some browsers that send a zero value at step start, which is an invalid scale

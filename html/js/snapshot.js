@@ -112,7 +112,9 @@ function SnapshotsManager(options) {
                   i++
                 })
             },
-            error: function () {},
+            error: function () {
+                new Notification('error', "Failed to delete snapshot", 5000)
+            },
             cache: false,
         })
 
@@ -248,7 +250,9 @@ function SnapshotsManager(options) {
             success: function () {
                 new Notification("info", "Snapshot " + prtitle + " loaded", 2000)
             },
-            error: function () {},
+            error: function () {
+                new Notification('error', "Failed to load snapshot", 5000)
+            },
             cache: false,
         })
     }
@@ -288,7 +292,9 @@ function SnapshotsManager(options) {
                 elem.html((parseInt(prId)+1) + "." + resp.title)
                 options.renamedCallback(resp.title)
             },
-            error: function () {},
+            error: function () {
+                new Notification('error', "Failed to rename snapshot", 5000)
+            },
             cache: false,
         })
 
