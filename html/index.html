@@ -66,11 +66,11 @@
     startSelectFlowPopup: startSelectFlowPopup,
     exchangeCode: exchangeCode,
     getTokens: function() {
-        const raw = sessionStorage.getItem('starless_t3k_tokens');
+        const raw = sessionStorage.getItem('mod_t3k_tokens');
         return raw ? JSON.parse(raw) : null;
     },
     setTokens: function(tokens) {
-        sessionStorage.setItem('starless_t3k_tokens', JSON.stringify(tokens));
+        sessionStorage.setItem('mod_t3k_tokens', JSON.stringify(tokens));
     }
   }
 </script>

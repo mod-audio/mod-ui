@@ -3095,12 +3095,16 @@ function T3KIntegration(pedalboard, pubKey) {
                 const top = Math.round(window.screenY + (window.outerHeight - height) / 2);
                 let url = "/t3ksplash.html?v=" + VERSION
                 const t3kwelcome = window.open(url, 't3k_select', `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no,location=no,status=no,resizable=yes,scrollbars=yes`);
-                t3kwelcome.onSplashContinue = function() {
+                // Register the continuation on the opener (us), where the splash can
+                // reach it via window.opener. Setting it on the popup directly loses the
+                // race with the popup's document load on first open.
+                window.onT3KSplashContinue = function() {
                     // continue with the select workflow skipAuthCheck = true
                     if (hasApiKey) {
                         self.startSelectFlow(effect, parameter, true)
                     }
                 }
+                try { t3kwelcome.onSplashContinue = window.onT3KSplashContinue } catch (e) {}
 
                 return // stop now because we have shown the splash window
             }

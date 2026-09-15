@@ -128,7 +128,13 @@
             buttonContinue.click(function () {
                 if (hasApiKey) {
                     // Trigger sign-in flow / hide splash and proceed
-                    if (typeof window.onSplashContinue === 'function') {
+                    // The opener registers the continuation on itself before opening
+                    // this window: a property set on the popup's initial about:blank
+                    // global is lost when this document replaces it (race on first open).
+                    var opener = window.opener
+                    if (opener && typeof opener.onT3KSplashContinue === 'function') {
+                        opener.onT3KSplashContinue()
+                    } else if (typeof window.onSplashContinue === 'function') {
                         window.onSplashContinue()
                     }
                 } else {
@@ -148,7 +154,7 @@
             <!-- BRAND LOCKUP: MOD x TONE3000 -->
             <div class="t3k-splash-brands">
                 <span class="t3k-splash-mod-logo">
-                    <img src="/img/icons/36/mod.png?v={{version}}" alt="Starless"/>
+                    <img src="/img/icons/36/mod.png?v={{version}}" alt="MOD"/>
                 </span>
                 <span class="t3k-splash-x">&times;</span>
                 <span class="t3k-splash-t3k-logo">
@@ -158,7 +164,7 @@
 
             <!-- PARTNERSHIP COPY -->
             <p class="t3k-splash-text" id="t3k-splash-text">
-                <strong>Starless</strong> has partnered with TONE3000 to give you access to a massive library of Neural Amp Modeler (NAM) captures and IRs of real analog gear, created by a global community of musicians.
+                <strong>MOD Audio</strong> has partnered with TONE3000 to give you access to a massive library of Neural Amp Modeler (NAM) captures and IRs of real analog gear, created by a global community of musicians.
             </p>
 
             <div  class="t3k-splash-error mod-hidden" id="t3k-no-api-key">
