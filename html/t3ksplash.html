@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html>
+
+<!-- HEAD -->
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<title>MOD</title>
+
+<link rel="stylesheet" type="text/css" href="css/main.css?v={{version}}"/>
+<link rel="stylesheet" type="text/css" href="css/fonts.css?v={{version}}"/>
+<link rel="stylesheet" type="text/css" href="img/icons/icons.css?v={{version}}"/>
+
+<script type="text/javascript" src="js/lib/jquery-1.9.1.min.js?v={{version}}"></script>
+
+<style type="text/css">
+    /* --- t3k splash ------------------------------------------------------ */
+    .t3k-splash {
+        --t3k-bg:        #0d0d0d;
+        --t3k-surface:   #1a1a1a;
+        --t3k-line:      #2b2b2b;
+        --t3k-fg:        #f2f2f2;
+        --t3k-fg-dim:    #9a9a9a;
+        --t3k-accent:    #ffe000;
+
+        box-sizing: border-box;
+        max-width: 640px;
+        margin: 0 auto;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--t3k-bg);
+        color: var(--t3k-fg);
+        font-family: 'Questrial', 'Helvetica Neue', Arial, sans-serif;
+    }
+    .t3k-splash *, .t3k-splash *:before, .t3k-splash *:after { box-sizing: inherit; }
+
+    .t3k-splash-inner {
+        width: 100%;
+        padding: 40px 28px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+
+    /* logos row: [mod logo] x [tone3000 logo] */
+    .t3k-splash-brands {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+    .t3k-splash-mod-logo img { display: block; height: 34px; width: auto; }
+    .t3k-splash-x {
+        font-size: 18px;
+        color: var(--t3k-fg-dim);
+    }
+    .t3k-splash-t3k-logo img { display: block; height: 30px; width: auto; }
+
+    .t3k-splash-message--warning {
+        background: rgba(255, 224, 0, 0.08);
+        border: 1px solid var(--t3k-accent);
+        color: var(--t3k-fg);
+    }
+    .t3k-splash-message--warning .t3k-splash-msg-icon {
+        color: var(--t3k-accent);
+    }
+    .t3k-splash-msg-icon {
+        font-weight: 700;
+        font-size: 28px;
+        line-height: 1;
+        flex-shrink: 0;
+        margin-top: 2px;
+    }
+    
+    /* partnership copy */
+    .t3k-splash-text {
+        max-width: 420px;
+        margin: 0 0 34px;
+        font-size: 15px;
+        line-height: 1.5;
+        color: var(--t3k-fg-dim);
+    }
+    .t3k-splash-text b,
+    .t3k-splash-text strong {
+        color: var(--t3k-fg);
+        font-weight: 700;
+    }
+
+    /* continue button */
+    .t3k-splash-btn {
+        appearance: none;
+        border: none;
+        border-radius: 999px;
+        padding: 14px 40px;
+        font-family: inherit;
+        font-size: 15px;
+        font-weight: 700;
+        color: #0d0d0d;
+        background: #fff;
+        cursor: pointer;
+        transition: opacity .15s ease;
+    }
+    .t3k-splash-btn:hover { opacity: .88; }
+    .t3k-splash-btn:active { opacity: .72; }
+
+    @media (max-width: 380px) {
+        .t3k-splash-text { font-size: 14px; }
+        .t3k-splash-mod-logo img { height: 28px; }
+        .t3k-splash-t3k-logo img { height: 24px; }
+    }
+</style>
+    <script type="text/javascript">
+        var t3k_api_key = '{{t3k_api_key}}'
+        $('document').ready(function() {
+            const hasApiKey = t3k_api_key && t3k_api_key.length > 0
+            const buttonContinue = $('#t3k-splash-continue')
+
+            if (hasApiKey) {
+                $('#t3k-no-api-key').addClass('mod-hidden')
+            } else {
+                $('#t3k-no-api-key').removeClass('mod-hidden')
+            }
+            buttonContinue.text(hasApiKey ? 'Continue' : 'Close')
+            buttonContinue.click(function () {
+                if (hasApiKey) {
+                    // Trigger sign-in flow / hide splash and proceed
+                    if (typeof window.onSplashContinue === 'function') {
+                        window.onSplashContinue()
+                    }
+                } else {
+                    window.close()
+                }
+            })
+        })
+    </script>
+</head>
+<!-- END HEAD -->
+
+<!-- BODY -->
+<body class="mod-dark" style="min-width: unset;">
+    <div class="t3k-splash" id="t3k-splash">
+        <div class="t3k-splash-inner">
+
+            <!-- BRAND LOCKUP: MOD x TONE3000 -->
+            <div class="t3k-splash-brands">
+                <span class="t3k-splash-mod-logo">
+                    <img src="/img/icons/36/mod.png?v={{version}}" alt="Starless"/>
+                </span>
+                <span class="t3k-splash-x">&times;</span>
+                <span class="t3k-splash-t3k-logo">
+                    <img src="js/lib/t3k/logo/TONE3000%20logo.png" alt="TONE3000"/>
+                </span>
+            </div>
+
+            <!-- PARTNERSHIP COPY -->
+            <p class="t3k-splash-text" id="t3k-splash-text">
+                <strong>Starless</strong> has partnered with TONE3000 to give you access to a massive library of Neural Amp Modeler (NAM) captures and IRs of real analog gear, created by a global community of musicians.
+            </p>
+
+            <div  class="t3k-splash-error mod-hidden" id="t3k-no-api-key">
+                <p>
+                    <span class="t3k-splash-msg-icon">⚠️</span>
+                    <div class="t3k-splash-msg-body">
+                        <strong>No Tone3000 API key is configured on the system</strong>
+                    </div>
+                    <div>
+                        Tone3000 integration is disabled.
+                    </div>
+                </p>
+            </div>
+            <!-- CONTINUE -->
+            <button class="t3k-splash-btn" id="t3k-splash-continue">Close</button>
+
+        </div>
+    </div>
+
+</body>
+<!-- END BODY -->
+
+</html>

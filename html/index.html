@@ -55,6 +55,25 @@
 <script type="text/javascript" src="js/lib/arrive.min.js?v={{version}}"></script>
 <script type="text/javascript" src="js/lib/lunr.min.js?v={{version}}"></script>
 <script type="text/javascript" src="js/lib/slick/slick.min.js?v={{version}}"></script>
+<script type="text/javascript" src="js/lib/crypto-js.min.js?v={{version}}"></script>
+
+<script type="module">
+  // Import ESM modules for Tone3000 client functionality
+  import { startSelectFlowPopup, exchangeCode } from './js/lib/t3k/tone3000-client.js?v={{version}}';
+
+  // make select API available to legacy javascript code
+  window.Tone3000Client = {
+    startSelectFlowPopup: startSelectFlowPopup,
+    exchangeCode: exchangeCode,
+    getTokens: function() {
+        const raw = sessionStorage.getItem('starless_t3k_tokens');
+        return raw ? JSON.parse(raw) : null;
+    },
+    setTokens: function(tokens) {
+        sessionStorage.setItem('starless_t3k_tokens', JSON.stringify(tokens));
+    }
+  }
+</script>
 
 <script type="text/javascript">
     {% autoescape None %}
@@ -78,6 +97,7 @@
     var FAVORITES = {{favorites}}
     var PREFERENCES = {{preferences}}
     var ADDRESSING_PAGES = {{addressing_pages}}
+    var T3K_API_KEY = '{{t3k_api_key}}'
     var DEBUG = true;
     if (!DEBUG) {
         console = console || {}

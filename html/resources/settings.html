@@ -56,6 +56,11 @@
             <div class="mod-enumerated mod-file-list">
                 <span class="mod-enumerated-title">{{label}}</span>
                 <div class="mod-file-list-buttons">
+                    {{#t3k}}
+                    <button class="btn btn-xs btn-primary file-list-btn-t3k" title="T3K Browse tones" mod-parameter-uri="{{uri}}">
+                        <img src="js/lib/t3k/logo/T3K%20logo.png" style="height: 18px;width: 36px;"/>
+                    </button>
+                    {{/t3k}}
                     <button class="btn btn-xs btn-primary file-list-btn-expand" title="Expand">EXP</button>
                 </div>
                 <div class="mod-enumerated-list" mod-role="input-parameter" mod-parameter-uri="{{uri}}" mod-widget="custom-select-path">

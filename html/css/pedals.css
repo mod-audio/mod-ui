@@ -499,6 +499,7 @@ body > .mod-settings.mod-window-visible {
     overflow:auto;
     position:relative;
 }
+
 .mod-pedal-settings .mod-enumerated.mod-file-list .mod-file-list-buttons {
     position: absolute;
     top: 0px;
@@ -508,6 +509,15 @@ body > .mod-settings.mod-window-visible {
 .mod-pedal-settings .mod-enumerated.mod-file-list .mod-enumerated-list {
     height:130px;
 }
+
+.mod-enumerated-list > [mod-role="enumeration-option"] {
+    height: 28px;
+    line-height: 24px;
+    overflow: hidden;
+    text-overflow: clip;
+    text-wrap-mode: nowrap;
+}
+
 .mod-pedal-settings .mod-enumerated.mod-file-list.expanded .mod-enumerated-list {
     height: calc(100vh - 175px);
     z-index: 1;
@@ -1224,4 +1234,15 @@ body > .mod-settings.mod-window-visible {
 }
 #mod-cloud-terms .btn {
     margin: 0px 4px;
+}
+
+.mod-select-path-icon {
+    opacity: 0.6;
+    transition: opacity 0.2s ease;
+}
+
+[mod-role="enumeration-option"].selected > .mod-select-path-icon,
+[mod-role="enumeration-option"]:hover > .mod-select-path-icon {
+    opacity: 1;
+    transition: opacity 0.2s ease;
 }
