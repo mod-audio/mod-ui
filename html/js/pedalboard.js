@@ -3159,8 +3159,7 @@ function T3KIntegration(pedalboard, pubKey) {
 
     this.refreshPluginsFilelist = function(senderEffect, senderParameter, senderSetValue) {
         const plugins = self.pedalboard.data('plugins')
-        const sender = plugins[senderEffect] // the effect who completed the download
-        const senderGui = sender.data('gui')
+        // the requesting plugin may have been removed while the download ran
         for(let pluginKey in plugins) {
             // refresh the file lists
             const plugin = plugins[pluginKey]
@@ -3374,14 +3373,11 @@ function T3KIntegration(pedalboard, pubKey) {
                                             t3kinfo.popup?.progress?.(msg, perc)
                                         })
                                         .then((files) => {
-                                            // refresh plugins file list
-                                            let setValue = undefined
-                                            if (files && files.length > 0) {
-                                                files.sort((a, b) =>  a.fullname.localeCompare(b.fullname))
-                                                // first in alphabetic order
-                                                setValue = files[0]
-                                            }
-                                            self.refreshPluginsFilelist(effect, t3kinfo.parameter, setValue)
+                                            // refresh the file lists only; do not auto-load the first
+                                            // downloaded model into the plugin (a model load racing a
+                                            // plugin removal is the prime suspect for a host abort seen
+                                            // on a Dwarf, 2026-09-15) - the user picks the file.
+                                            self.refreshPluginsFilelist(effect, t3kinfo.parameter, undefined)
                                             cleanup(t3kinfo)
                                             new Notification('info', 'Download from Tone3000 completed.', 2000)
                                         })
