@@ -3373,11 +3373,14 @@ function T3KIntegration(pedalboard, pubKey) {
                                             t3kinfo.popup?.progress?.(msg, perc)
                                         })
                                         .then((files) => {
-                                            // refresh the file lists only; do not auto-load the first
-                                            // downloaded model into the plugin (a model load racing a
-                                            // plugin removal is the prime suspect for a host abort seen
-                                            // on a Dwarf, 2026-09-15) - the user picks the file.
-                                            self.refreshPluginsFilelist(effect, t3kinfo.parameter, undefined)
+                                            // refresh the file lists and load the first downloaded
+                                            // file (alphabetical) into the requesting plugin
+                                            let setValue = undefined
+                                            if (files && files.length > 0) {
+                                                files.sort((a, b) =>  a.fullname.localeCompare(b.fullname))
+                                                setValue = files[0]
+                                            }
+                                            self.refreshPluginsFilelist(effect, t3kinfo.parameter, setValue)
                                             cleanup(t3kinfo)
                                             new Notification('info', 'Download from Tone3000 completed.', 2000)
                                         })
