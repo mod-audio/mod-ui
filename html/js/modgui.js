@@ -24,17 +24,39 @@ function shouldSkipPort(port) {
     return false;
 }
 
+function supportsT3K(parameter) {
+    return parameter.fileTypes.some(type => type == 'nammodel' || type == 'cabsim' || type == 'ir' || type == 'aidadspmodel')
+}
+
 function loadFileTypesList(parameter, dummy, callback) {
     var files = []
-    if (parameter.ranges.default) {
-        var sdef = parameter.ranges.default
-        files.push({
-            'fullname': sdef,
-            'basename': sdef.slice(sdef.lastIndexOf('/')+1),
-        })
+
+    parameter.files = files
+    parameter.basepaths = []
+    const addDefaultParamValues = function() {
+        if (parameter.ranges.default) {
+            var sdef = parameter.ranges.default
+            files.push({
+                'fullname': sdef,
+                'dirname': '',
+                'basename': sdef.slice(sdef.lastIndexOf('/')+1),
+                'icon': '<i class="icon-preset mod-select-path-icon"></i>' // box
+            })
+        }
+        // check if parameters can be suported by T3K
+        parameter.t3k = supportsT3K(parameter)
+        if (parameter.t3k) {
+            // this parameter can be downloaded from T3K
+            files.push({
+                'fullname': 't3k://browse',
+                'dirname': '',
+                'basename': 'Browse tones',
+                'icon': '<img class="t3k-enumerated-option-logo" src="js/lib/t3k/logo/T3K%20logo.png" />'
+            })
+        }
     }
     if (dummy) {
-        parameter.files = files
+        addDefaultParamValues()
         parameter.path = true
         callback()
         return
@@ -45,11 +67,59 @@ function loadFileTypesList(parameter, dummy, callback) {
             'types': parameter.fileTypes.join(","),
         },
         success: function (data) {
-            parameter.files = files.concat(data.files)
+            const dirs = []
+            const basePaths = []
+            for(let file of data.files) {
+                if (file.dirname && file.dirname.length > 0) {
+                    let dirPath = file.fullname
+                    const lastSlashIndex = Math.max(file.fullname.lastIndexOf('/'), file.fullname.lastIndexOf('\\'));
+
+                    if (lastSlashIndex != -1) {
+                        dirPath = file.fullname.slice(0, lastSlashIndex);
+                    }
+                    if (!dirs.find((value, index) => value === dirPath)) {
+                        dirs.push(dirPath)
+                    }
+                }
+
+                if (!basePaths.find((value, index) => value === file.basepath)) {
+                    basePaths.push(file.basepath)
+                }
+            }
+
+            // file sorting criteria
+            // first directory
+            dirs.sort()
+            for(let dir of dirs) {
+                const lastSlashIndex = Math.max(dir.lastIndexOf('/'), dir.lastIndexOf('\\'));
+                let dirname
+
+                if (lastSlashIndex != -1) {
+                    dirname = dir.slice(lastSlashIndex + 1);
+                } else {
+                    dirname = dir
+                }
+                files.push({
+                    'basename': dirname,
+                    'dirname': dirname,
+                    'filetype': 'dir',
+                    'fullname': 'dir://' + dir
+                })
+            }
+
+            // then user downloaded files
+            files = files.concat(data.files)
+            // then plugin resources
+            // then special uris like t3k://
+            addDefaultParamValues()
+
+            parameter.files = files
+            parameter.basepaths = basePaths
             parameter.path = true
             callback()
         },
         error: function () {
+            addDefaultParamValues()
             callback()
         },
         cache: false,
@@ -1033,6 +1103,17 @@ function GUI(effect, options) {
                     } else {
                         elem.find('.file-list-btn-expand').hide()
                     }
+
+                    elem.find('.file-list-btn-t3k').click(function () {
+                        const uri = $(this).attr('mod-parameter-uri')
+                        const parameter = self.effect.parameters.find((p) => p.uri == uri)
+
+                        if (parameter) {
+                            // TODO T3K: check if file type can be downloaded from tone3000
+                            const t3k = desktop.pedalboard.data('T3KIntegration')
+                            t3k.startSelectFlow(instance, parameter)
+                        }
+                    })
                 })
             }
 
@@ -1125,6 +1206,9 @@ function GUI(effect, options) {
                     value: port.value
                 })
             }
+
+            // T3K Integration
+
             // ready!
             self.jsStarted = true
             self.triggerJS({ type: 'start', parameters: jsParameters, ports: jsPorts })
@@ -1243,6 +1327,101 @@ function GUI(effect, options) {
         if (handle.length > 0) {
             element.draggable(drag_options)
             element.click(options.click)
+        }
+    }
+
+    this.assignParameterControlFunctionality = function(instance, control, uri, onlySetValues) {
+        var parameter = self.parameters[uri]
+
+        if (parameter)
+        {
+            /*  */ if (parameter.type === "http://lv2plug.in/ns/ext/atom#Bool") {
+                parameter.valuetype = 'b'
+            } else if (parameter.type === "http://lv2plug.in/ns/ext/atom#Int") {
+                parameter.valuetype = 'i'
+            } else if (parameter.type === "http://lv2plug.in/ns/ext/atom#Long") {
+                parameter.valuetype = 'l'
+            } else if (parameter.type === "http://lv2plug.in/ns/ext/atom#Float") {
+                parameter.valuetype = 'f'
+            } else if (parameter.type === "http://lv2plug.in/ns/ext/atom#Double") {
+                parameter.valuetype = 'g'
+            } else if (parameter.type === "http://lv2plug.in/ns/ext/atom#String") {
+                parameter.valuetype = 's'
+            } else if (parameter.type === "http://lv2plug.in/ns/ext/atom#Path") {
+                parameter.valuetype = 'p'
+            } else if (parameter.type === "http://lv2plug.in/ns/ext/atom#URI") {
+                parameter.valuetype = 'u'
+            } else if (parameter.type === "http://lv2plug.in/ns/ext/atom#Vector") {
+                parameter.valuetype = 'v'
+            } else {
+                return
+            }
+
+            if (parameter.control || parameter.string)
+            {
+                // Set the display formatting of this control
+                if (parameter.string)
+                    parameter.format = '%s'
+                else if (parameter.units.render)
+                    parameter.format = parameter.units.render.replace('%f', '%.2f')
+                else
+                    parameter.format = '%.2f'
+
+                if (parameter.properties.indexOf("integer") >= 0) {
+                    parameter.format = parameter.format.replace(/%\.\d+f/, '%d')
+                }
+
+                var valueField = element.find('[mod-role=input-parameter-value][mod-parameter-uri="' + uri + '"]')
+                parameter.valueFields.push(valueField)
+
+                if (valueField.length > 0 && parameter.properties.indexOf("toggled") < 0)
+                {
+                    self.setupValueField(valueField, parameter, function (value) {
+                        self.lv2PatchSet(uri, parameter.valuetype, value, control)
+                        // setWritableParameterValue() skips this control as it's the same as the 'source'
+                        control.controlWidget('setValue', value, true)
+                    })
+                }
+            }
+            else if (parameter.path)
+            {
+                // TODO?
+            }
+            else
+            {
+                return
+            }
+
+            let currentPath = undefined
+            if (control.customSelectPath) {
+                // preserve current path if available
+                currentPath = control.customSelectPath('getCurrentPath')
+            }
+            control.controlWidget({
+                dummy: onlySetValues,
+                port: parameter,
+                currentPath: currentPath ,
+                change: function (e, value) {
+                    self.lv2PatchSet(uri, parameter.valuetype, value, control)
+                },
+                urihandle: function(value) {
+                    console.log(`handle special uri ${value}`)
+                    const t3k = desktop.pedalboard.data('T3KIntegration')
+                    t3k.startSelectFlow(instance, parameter)
+                }
+            })
+
+            if (instance) {
+                control.attr("mod-instance", instance)
+            }
+
+            parameter.widgets.push(control)
+
+            self.setWritableParameterValue(uri, parameter.valuetype, parameter.value, control, true)
+        }
+        else
+        {
+            control.text('No such parameter: ' + uri)
         }
     }
 
@@ -1372,87 +1551,7 @@ function GUI(effect, options) {
         element.find('[mod-role=input-parameter]').each(function () {
             var control = $(this)
             var uri = $(this).attr('mod-parameter-uri')
-            var parameter = self.parameters[uri]
-
-            if (parameter)
-            {
-                /*  */ if (parameter.type === "http://lv2plug.in/ns/ext/atom#Bool") {
-                    parameter.valuetype = 'b'
-                } else if (parameter.type === "http://lv2plug.in/ns/ext/atom#Int") {
-                    parameter.valuetype = 'i'
-                } else if (parameter.type === "http://lv2plug.in/ns/ext/atom#Long") {
-                    parameter.valuetype = 'l'
-                } else if (parameter.type === "http://lv2plug.in/ns/ext/atom#Float") {
-                    parameter.valuetype = 'f'
-                } else if (parameter.type === "http://lv2plug.in/ns/ext/atom#Double") {
-                    parameter.valuetype = 'g'
-                } else if (parameter.type === "http://lv2plug.in/ns/ext/atom#String") {
-                    parameter.valuetype = 's'
-                } else if (parameter.type === "http://lv2plug.in/ns/ext/atom#Path") {
-                    parameter.valuetype = 'p'
-                } else if (parameter.type === "http://lv2plug.in/ns/ext/atom#URI") {
-                    parameter.valuetype = 'u'
-                } else if (parameter.type === "http://lv2plug.in/ns/ext/atom#Vector") {
-                    parameter.valuetype = 'v'
-                } else {
-                    return
-                }
-
-                if (parameter.control || parameter.string)
-                {
-                    // Set the display formatting of this control
-                    if (parameter.string)
-                        parameter.format = '%s'
-                    else if (parameter.units.render)
-                        parameter.format = parameter.units.render.replace('%f', '%.2f')
-                    else
-                        parameter.format = '%.2f'
-
-                    if (parameter.properties.indexOf("integer") >= 0) {
-                        parameter.format = parameter.format.replace(/%\.\d+f/, '%d')
-                    }
-
-                    var valueField = element.find('[mod-role=input-parameter-value][mod-parameter-uri="' + uri + '"]')
-                    parameter.valueFields.push(valueField)
-
-                    if (valueField.length > 0 && parameter.properties.indexOf("toggled") < 0)
-                    {
-                        self.setupValueField(valueField, parameter, function (value) {
-                            self.lv2PatchSet(uri, parameter.valuetype, value, control)
-                            // setWritableParameterValue() skips this control as it's the same as the 'source'
-                            control.controlWidget('setValue', value, true)
-                        })
-                    }
-                }
-                else if (parameter.path)
-                {
-                    // TODO?
-                }
-                else
-                {
-                    return
-                }
-
-                control.controlWidget({
-                    dummy: onlySetValues,
-                    port: parameter,
-                    change: function (e, value) {
-                        self.lv2PatchSet(uri, parameter.valuetype, value, control)
-                    }
-                })
-
-                if (instance) {
-                    control.attr("mod-instance", instance)
-                }
-
-                parameter.widgets.push(control)
-
-                self.setWritableParameterValue(uri, parameter.valuetype, parameter.value, control, true)
-            }
-            else
-            {
-                control.text('No such parameter: ' + uri)
-            }
+            self.assignParameterControlFunctionality(instance, control, uri, onlySetValues)
         })
 
         if (onlySetValues) {
@@ -1673,6 +1772,65 @@ function GUI(effect, options) {
         return data
     }
 
+    this.refreshPluginFileListParameter = function(instance, parameteri, setValue) {
+
+        loadFileTypesList(parameteri, false, function() {
+            let options = ""
+            var parameter = self.parameters[parameteri.uri]
+            // update indexed parameter with new files
+            $.extend(parameter, parameteri)
+            // delete previous widgets
+            parameter.widgets = []
+
+            for(let file of parameter.files) {
+                options +=
+                    '<div mod-role="enumeration-option" mod-parameter-value="' + file.fullname +'">' + file.basename + '</div>\n'
+            }
+
+            // need to update the values in the icon UI
+            self.icon
+                .find('.mod-enumerated[mod-role="input-parameter"][mod-parameter-uri="' + parameter.uri + '"]')
+                .find('.mod-enumerated-list')
+                .html(options)
+            self.icon
+                .find('[mod-role="input-parameter"][mod-parameter-uri="' + parameter.uri + '"]')
+                .each(function() {
+                    // reattach the widget
+                    let control = $(this)
+                    self.assignParameterControlFunctionality(instance, control, parameter.uri, false)
+                })
+            // need to update the values in the settings UI
+            if (self.settings) {
+                self.settings
+                    .find('.mod-enumerated-list[mod-role="input-parameter"][mod-parameter-uri="' + parameter.uri + '"]')
+                    .html(options)
+                    .each(function() {
+                        // reattach the widget
+                        let control = $(this)
+                        self.assignParameterControlFunctionality(instance, control, parameter.uri, false)
+                        if (setValue) {
+                            if (control.customSelectPath) {
+                                // preserve current path if available
+                                currentPath = control.customSelectPath('setValue', setValue)
+                            }
+                        }
+                    })
+            }
+
+            // need to update the values in the settings for performance mode
+            if (self.settingsPerformance) {
+                self.settingsPerformance
+                    .find('.mod-enumerated-list[mod-role="input-parameter"][mod-parameter-uri="' + parameter.uri + '"]')
+                    .html(options)
+                    .each(function() {
+                        // reattach the widget
+                        let control = $(this)
+                        self.assignParameterControlFunctionality(instance, control, parameter.uri, false)
+                    })
+            }
+        })
+    }
+
     this.jsData = {}
     this.jsStarted = false
 
@@ -1831,15 +1989,19 @@ var baseWidget = {
         self.data('minimum',      port.ranges.minimum)
         self.data('enumeration',  port.properties.indexOf("enumeration") >= 0)
         self.data('integer',      port.properties.indexOf("integer") >= 0)
-        self.data('logarithmic',  port.properties.indexOf("logarithmic") >= 0)
+        // log2 of a non-positive bound is undefined; treat such a port as linear
+        // instead of silently mapping the bound to 1 (which also made value 0 unreachable)
+        var isLogarithmic = port.properties.indexOf("logarithmic") >= 0
+                         && port.ranges.minimum > 0 && port.ranges.maximum > 0
+        self.data('logarithmic',  isLogarithmic)
         self.data('toggled',      port.properties.indexOf("toggled") >= 0)
         self.data('trigger',      port.properties.indexOf("trigger") >= 0)
         self.data('linear',       isLinear)
         self.data('scalePoints',  port.scalePoints)
 
-        if (port.properties.indexOf("logarithmic") >= 0) {
-            self.data('scaleMinimum', (port.ranges.minimum != 0) ? Math.log(port.ranges.minimum) / Math.log(2) : 0)
-            self.data('scaleMaximum', (port.ranges.maximum != 0) ? Math.log(port.ranges.maximum) / Math.log(2) : 0)
+        if (isLogarithmic) {
+            self.data('scaleMinimum', Math.log(port.ranges.minimum) / Math.log(2))
+            self.data('scaleMaximum', Math.log(port.ranges.maximum) / Math.log(2))
         } else {
             self.data('scaleMinimum', port.ranges.minimum)
             self.data('scaleMaximum', port.ranges.maximum)
@@ -2652,23 +2814,212 @@ JqueryClass('customSelect', baseWidget, {
 JqueryClass('customSelectPath', baseWidget, {
     init: function (options) {
         var self = $(this)
+        self.data('initialized', false)
+        self.data('icons', {
+            backArrow: `<i class="icon-folder-up mod-select-path-icon"></i>`,
+            folder: `<i class="icon-folder mod-select-path-icon"></i>`,
+            folderOpen: `<i class="icon-folder-open mod-select-path-icon"></i>`,
+            userFile: `<i class="icon-user-file mod-select-path-icon"></i>`,
+        })
+        self.data('currentPath', options.currentPath || [])
+        self.data('port', options.port)
+        self.data('urihandle', options.urihandle)
         self.customSelectPath('config', options)
         self.customSelectPath('setValue', options.port.value, true)
         self.find('[mod-role=enumeration-option]').each(function () {
             var opt = $(this)
+            let icon = undefined
+            const optValue = opt.attr('mod-parameter-value')
+
+            // find the options in the port (parameter) files
+            const file = options.port.files.find(item => item.fullname == optValue)
+
+            if (file && file.icon && file.icon.length > 0) {
+                icon = file.icon
+            }
+
+            if (!icon) {
+                const icons = self.data('icons')
+                if (optValue.startsWith("dir://")) {
+                    icon = icons.folder
+                } else {
+                    icon = icons.userFile
+                }
+            }
+            opt.attr('title', opt.text())
+            opt.html(`${icon}` + opt.html())
             opt.click(function (e) {
                 if (!self.data('enabled')) {
                     return self.customSelectPath('prevent', e)
                 }
                 var value = opt.attr('mod-parameter-value').replace(/\\/g,'\\\\')
-                self.customSelectPath('setValue', value, false)
+                if (value?.startsWith('dir://')) {
+                    const icons = self.data('icons')
+                    const currentPath = self.customSelectPath('getCurrentPath')
+                    let isNavigateBack = false
+
+                    if (currentPath.length > 0) {
+                        // click on the same folder, is a navigate back
+                        isNavigateBack = 'dir://' + currentPath[currentPath.length - 1] == value
+                    }
+                    if (isNavigateBack) {
+                        self.customSelectPath('popDir')
+                        opt.html(opt.html().substr(icons.backArrow.length).replace('icon-folder-open', 'icon-folder'))
+                    } else {
+                        self.customSelectPath('pushDir', value)
+                        opt.html(icons.backArrow + opt.html().replace('icon-folder', 'icon-folder-open'))
+                    }
+                    e.stopPropagation()
+                } else if (value?.indexOf('://', 0) > -1) {
+                    // handle special uri
+                    const urihandle = self.data('urihandle')
+                    if (urihandle) {
+                        urihandle(value)
+                    }
+                } else {
+                    self.customSelectPath('setValue', value, false)
+                }
             })
         })
-        self.click(function () {
+
+        self.off('click.customSelectPath')
+        self.on('click.customSelectPath', function() {
             self.find('.mod-enumerated-list').toggle()
         })
 
+        self.customSelectPath('refreshFileList', self.data('currentPath'))
+        self.data('initialized', true)
         return self
+    },
+
+    getCurrentPath: function() {
+        let self = $(this)
+
+        return self.data('currentPath')
+    },
+
+
+    refreshFileList: function(current) {
+        let self = $(this)
+        let port = self.data('port')
+        let currentPaths
+
+        if (current.length == 0) {
+            currentPaths = port.basepaths
+        } else {
+            // show only files in the current path
+            currentPaths = [ current.join('/') ]
+        }
+
+        let validItems = []
+        for(let file of port.files) {
+            if (file.fullname.startsWith('t3k://')) {
+                if (current.length == 0) {
+                    validItems.push(file)
+                }
+                continue;
+            }
+            // check if file path is direct child of current path
+            // if yes add to files to show
+            let fullname = file.fullname
+            let itemIsDir = fullname.startsWith('dir://')
+
+            if (itemIsDir) {
+                fullname = fullname.substr('dir://'.length)
+            }
+
+            // remove last element
+            const lastSlashIndex = Math.max(fullname.lastIndexOf('/'), fullname.lastIndexOf('\\'));
+
+            if (lastSlashIndex != -1) {
+                itemPath = fullname.slice(0, lastSlashIndex);
+            } else {
+                itemPath = fullname
+            }
+
+            for(let currentPath of currentPaths) {
+                if (currentPath === itemPath
+                    || (current.length > 0 && itemIsDir && currentPath == fullname) // always show the current folder since is used to navigate up
+                    || (current.length == 0 && file.dirname == '') // show the default value on root
+                    ) {
+                    validItems.push(file)
+                }
+            }
+        }
+
+         self.find('[mod-role=enumeration-option]').each(function () {
+            let opt = $(this)
+            let item = opt.attr('mod-parameter-value').replace(/\\/g,'\\\\')
+
+            if (validItems.find((file) => item === file.fullname)) {
+                opt.removeClass('mod-hidden')
+            } else {
+                opt.addClass('mod-hidden')
+            }
+        });
+    },
+
+    pushDir: function(dir) {
+        let self = $(this)
+        let current = self.data('currentPath')
+        let port = self.data('port')
+        // set the value as current folder
+        let currentPath = dir.substr('dir://'.length)
+        current.push(currentPath)
+
+        let validItems = []
+        for(let file of port.files) {
+            if (file.fullname.startsWith('t3k://')) {
+                if (current.length == 0) {
+                    validItems.push(file)
+                }
+                continue;
+            }
+            // check if file path is direct child of current path
+            // if yes add to files to show
+            let fullname = file.fullname
+            let itemIsDir = fullname.startsWith('dir://')
+
+            if (itemIsDir) {
+                fullname = fullname.substr('dir://'.length)
+            }
+
+            if (fullname == currentPath) {
+                // always show current folder since is used to navigate Up
+                validItems.push(file)
+            } else {
+                // remove last element
+                const lastSlashIndex = Math.max(fullname.lastIndexOf('/'), fullname.lastIndexOf('\\'));
+
+                if (lastSlashIndex != -1) {
+                    itemPath = fullname.slice(0, lastSlashIndex);
+                } else {
+                    itemPath = fullname
+                }
+
+                if (currentPath === itemPath) {
+                    validItems.push(file)
+                }
+            }
+        }
+
+        self.find('[mod-role=enumeration-option]').each(function () {
+            let opt = $(this)
+            let item = opt.attr('mod-parameter-value').replace(/\\/g,'\\\\')
+
+            if (validItems.find((file) => item === file.fullname)) {
+                opt.removeClass('mod-hidden')
+            } else {
+                opt.addClass('mod-hidden')
+            }
+        });
+    },
+
+    popDir: function() {
+        let self = $(this)
+        let current = self.data('currentPath')
+        current.pop()
+        self.customSelectPath('refreshFileList', current)
     },
 
     setValue: function (value, only_gui) {
@@ -2688,6 +3039,47 @@ JqueryClass('customSelectPath', baseWidget, {
             valueField.text(selected.text())
         }
 
+        // sync the current folder with the value path
+        if (self.data('initialized')) {
+            let parts = value.split('/')
+            let path = ""
+            let parentPath = ""
+            let newCurrent = []
+
+            for(let index = 0; index < parts.length - 1; index++) {
+                if (index > 0) path += '/'
+                path += parts[index]
+                const folder = self.find("[mod-role=enumeration-option][mod-parameter-value='dir://" + path + "']")
+                if (folder.length > 0) {
+                    if (parentPath.length > 0) {
+                        // puth the other folders
+                        newCurrent.push(parts[index])
+                    } else {
+                        // push the root
+                        newCurrent.push(path)
+                    }
+                    parentPath = path
+                    // update the element UI
+                    const backArrow = self.data('icons').backArrow
+
+                    if (!folder.html().startsWith(backArrow)) {
+                        folder.html(backArrow + folder.html())
+                    }
+                }
+            }
+
+            // check if current folder is different
+            const current = self.data('currentPath')
+            let changeCurrentFolder = false
+
+            if (current.length !== newCurrent.length || !current.every((val, index) => val === newCurrent[index])) {
+                // empty the array
+                current.splice(0, current.length);
+                newCurrent.forEach(item => current.push(item))
+                // update the UI
+                self.customSelectPath('refreshFileList', current)
+            }
+        }
         if (!only_gui) {
             self.trigger('valuechange', value)
         }

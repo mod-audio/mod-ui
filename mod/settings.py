@@ -16,6 +16,8 @@ DESKTOP = bool(int(os.environ.get('MOD_DESKTOP', False)))
 LOG = int(os.environ.get('MOD_LOG', 0))
 
 API_KEY = os.environ.pop('MOD_API_KEY', None)
+# Tone3000 public (vendor) API key for the image; lowest-precedence default, see webserver get_t3k_api_key
+TONE3000_CLIENT_ID = os.environ.pop('MOD_TONE3000_CLIENT_ID', None)
 DEVICE_KEY = os.environ.pop('MOD_DEVICE_KEY', None)
 DEVICE_TAG = os.environ.pop('MOD_DEVICE_TAG', None)
 DEVICE_UID = os.environ.pop('MOD_DEVICE_UID', None)
@@ -83,6 +85,10 @@ PEDALBOARDS_LABS_HTTP_ADDRESS = os.environ.pop('MOD_PEDALBOARDS_LABS_HTTP_ADDRES
 CONTROLCHAIN_HTTP_ADDRESS = os.environ.pop('MOD_CONTROLCHAIN_HTTP_ADDRESS',
                                            "https://download.mod.audio/releases/cc-firmware/v3")
 
+# Where "Report a problem" sends people: the forum topic (or category) for the running
+# release. Set per build, like the version; the default is the forum's Beta Testing category.
+FEEDBACK_URL = os.environ.get('MOD_FEEDBACK_URL', "https://forum.mod.audio/c/beta-testing/41")
+
 MIDI_BEAT_CLOCK_SENDER_URI = "urn:mod:mclk"
 MIDI_BEAT_CLOCK_SENDER_INSTANCE_ID = 9993
 MIDI_BEAT_CLOCK_SENDER_OUTPUT_PORT = "mclk" # This is the LV2 symbol of the plug-ins OutputPort
@@ -112,4 +118,3 @@ PLAYBACK_PATH='/tmp/playback.ogg'
 UPDATE_MOD_OS_FILE='/data/{}'.format(os.environ.get('MOD_UPDATE_MOD_OS_FILE', 'modduo.tar').replace('*','cloud'))
 UPDATE_MOD_OS_HERLPER_FILE='/data/boot-restore'
 UPDATE_CC_FIRMWARE_FILE='/tmp/cc-firmware.bin'
-USING_256_FRAMES_FILE='/data/using-256-frames'

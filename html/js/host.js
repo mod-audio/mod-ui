@@ -371,6 +371,63 @@ $('document').ready(function() {
                     success: function (pluginData) {
                         var instancekey = '[mod-instance="' + instance + '"]'
 
+                        // resolve groups
+                        pluginData.ports.control.input.forEach(function (port, index) {
+                            const groupUri = port.group;
+                            port.group = undefined;
+                            port.groupIndex = undefined;
+                            port.groupCssIndex = undefined; // index used for css coloring
+
+                            if (pluginData.portGroups && groupUri) {
+                                port.group = pluginData.portGroups.find(function (group) {
+                                    return group.uri === groupUri;
+                                });
+
+                                if (port.group) {
+                                    port.groupStart = false;
+                                    port.groupEnd = false;
+                                    port.groupIndex = pluginData.portGroups.indexOf(port.group);
+                                    port.groupCssIndex =  port.groupIndex % 32;  // 32 = max supported groups by css
+                                }
+                            }
+                        });
+
+                        // sort port with groups
+                        pluginData.ports.control.input.sort(function (a, b) {
+                            if (a.groupIndex < b.groupIndex) {
+                                return -1;
+                            } else if (a.groupIndex > b.groupIndex) {
+                                return 1;
+                            } else {
+                                return a.index - b.index;
+                            }
+                        });
+
+                        // add start or end group flags
+                        let prevPort = undefined;
+                        pluginData.ports.control.input.forEach(function (port, index) {
+                            if (port.group)
+                            {
+                                if (prevPort === undefined || prevPort.group === undefined) {
+                                    port.groupStart = true;
+                                } else {
+                                    if (prevPort.groupIndex != port.groupIndex) {
+                                        port.groupStart = true;
+
+                                        if (prevPort.group) {
+                                            prevPort.groupEnd = true;
+                                        }
+                                    }
+                                }
+                            }
+
+                            prevPort = port;
+                        });
+
+                        if (prevPort !== undefined && prevPort.group) {
+                            prevPort.groupEnd = true;
+                        }
+
                         if (!$(instancekey).length) {
                             var cb = function () {
                                 desktop.pedalboard.pedalboard('scheduleAdapt', false)
@@ -577,6 +634,73 @@ $('document').ready(function() {
         if (cmd == "bufsize") {
             var bufsize = data
             $("#mod-buffersize").text(bufsize+" frames")
+            return
+        }
+
+
+        if (cmd == "t3k-tone-selected") {
+            // tone selected from the t3k integration
+            // the first parameter is the effect instance
+            data      = data.split(" ",4)
+            const instance  = data[0]
+            const code = data[1]
+            const state = data[2]
+            const toneId = parseInt(data[3])
+            const t3k = desktop.pedalboard.data('T3KIntegration')
+
+            t3k.t3kToneSelected(instance, code, state, toneId)
+            return
+        }
+
+        if (cmd == "t3k-cancel") {
+            // tone selected from the t3k integration
+            // the first paramater is the effect instance
+            const instance  = data
+            const t3k = desktop.pedalboard.data('T3KIntegration')
+
+            t3k.t3kCancel(instance)
+            return
+        }
+
+        if (cmd == "progress") {
+            // long server operation progress
+            const stringParse = function(str) {
+                // parse the string like string.split, but also support 'strings with spaces'
+                // returns an array of strings
+                const result = []
+                let current = ""
+                let state = false
+
+                for(const c of str) {
+                    if (state == true) {
+                        if (c == "'") {
+                            state = false
+                        } else {
+                            current += c
+                        }
+                    } else {
+                        if (c == "'") {
+                            state = true
+                        } else if (c == " ") {
+                            result.push(current)
+                            current = ""
+                        } else {
+                            current += c
+                        }
+                    }
+                }
+
+                if (current.length > 0) {
+                    result.push(current)
+                }
+
+                return result
+            }
+            data      = stringParse(data)
+            const source = data[0]
+            const msg = data[1].replace('\_', ' ')
+            const progress = parseInt(data[2])
+
             return
         }
     }

@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html>
+
+<!-- HEAD -->
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<title>MOD</title>
+
+<link rel="stylesheet" type="text/css" href="css/main.css?v={{version}}"/>
+<link rel="stylesheet" type="text/css" href="css/fonts.css?v={{version}}"/>
+<link rel="stylesheet" type="text/css" href="img/icons/icons.css?v={{version}}"/>
+<link rel="stylesheet" type="text/css" href="js/lib/slick/slick.css?v={{version}}"/>
+<link rel="stylesheet" type="text/css" href="js/lib/slick/slick-theme.css?v={{version}}"/>
+
+<script type="text/javascript" src="js/lib/jquery-1.9.1.min.js?v={{version}}"></script>
+<script type="text/javascript" src="js/lib/slick/slick.min.js?v={{version}}"></script>
+<script type="text/javascript" src="js/lib/mustache.js?v={{version}}"></script>
+
+<style type="text/css">
+    /* --- t3k page ------------------------------------------------------ */
+    .t3k-page {
+        --t3k-bg:        #0d0d0d;
+        --t3k-surface:   #1a1a1a;
+        --t3k-line:      #2b2b2b;
+        --t3k-fg:        #f2f2f2;
+        --t3k-fg-dim:    #9a9a9a;
+        --t3k-accent:    #ffe000;
+
+        box-sizing: border-box;
+        max-width: 640px;
+        margin: 0 auto;
+        min-height: 100vh;
+        background: var(--t3k-bg);
+        color: var(--t3k-fg);
+        font-family: 'Questrial', 'Helvetica Neue', Arial, sans-serif;
+    }
+    .t3k-page *, .t3k-page *:before, .t3k-page *:after { box-sizing: inherit; }
+
+    /* header */
+    .t3k-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 10px 14px;
+        background: var(--t3k-surface);
+        border-bottom: 1px solid var(--t3k-line);
+    }
+    .t3k-header-logo img { display: block; height: 26px; width: auto; }
+    .t3k-header-mod img { display: block; height: 28px; width: auto; }
+
+    /* notice bar */
+    .t3k-notice {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 10px 14px;
+        font-size: 14px;
+        color: var(--t3k-fg-dim);
+        background: #111;
+        border-bottom: 1px solid var(--t3k-line);
+    }
+    .t3k-notice-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 16px; height: 16px;
+        border: 1px solid currentColor;
+        border-radius: 50%;
+        font-size: 11px;
+        font-style: italic;
+        line-height: 1;
+    }
+
+    /* content */
+    .t3k-main { padding: 22px 16px 40px; }
+
+    .t3k-hero {
+        margin: 0 0 26px;
+        /* border: 1px solid var(--t3k-line); 
+        border-radius: 4px;*/
+        overflow: hidden;
+        background: #000;
+        aspect-ratio: 16 / 10;
+    }
+    .t3k-hero img { display: block; width: 100%; height: 100%; object-fit: contain; }
+
+    .t3k-title {
+        margin: 0 0 10px;
+        font-size: 34px;
+        line-height: 1.12;
+        font-weight: 700;
+        letter-spacing: -0.5px;
+    }
+    .t3k-subtitle { 
+        margin: 0 0 22px;
+        font-size: 15px;
+        color: var(--t3k-fg-dim); 
+        overflow: auto;
+        max-height: 96px;
+    }
+
+    /* status / download */
+    .t3k-status {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 14px;
+        padding: 22px 16px;
+        border: 1px solid var(--t3k-line);
+        border-radius: 4px;
+        background: var(--t3k-surface);
+        font-size: 20px;
+        text-align: center;
+    }
+
+    .t3k-hidden { display: none !important; }
+
+    @media (prefers-reduced-motion: reduce) {
+        .t3k-spinner { animation: none; }
+    }
+    @media (max-width: 380px) {
+        .t3k-title { font-size: 28px; }
+    }
+</style>
+
+<script type="text/javascript">
+    $('document').ready(function() {
+        console.log("t3k ready")
+        window.progress = function(msg, progress) {
+            $('#t3k-status-text').text(msg)
+        }
+        window.setToneInfo = function(user, title, description, image) {
+            $('#t3k-title').text(title)
+
+            if (description) {
+                $('#t3k-subtitle').text(description).removeClass('t3k-hidden')
+            } else {
+                $('#t3k-subtitle').addClass('t3k-hidden')
+            }
+            if (user) {
+                $('#t3k-user').text(`by ${user}`).removeClass('t3k-hidden')
+            } else {
+                $('#t3k-user').addClass('t3k-hidden')
+            }
+            if (image) {
+                $('#t3k-hero-img').attr('src', image)
+            } else {
+                $('#t3k-hero-img').attr('src', 'js/lib/t3k/logo/NoImage.svg')
+            }
+        }
+    })
+</script>
+</head>
+<!-- END HEAD -->
+
+<!-- BODY -->
+<body class="mod-dark" style="min-width: unset;">
+    <div class="t3k-page" id="t3k-page">
+
+        <!-- HEADER -->
+        <header class="t3k-header">
+            <a class="t3k-header-logo" href="#" id="t3k-logo">
+                <img src="js/lib/t3k/logo/TONE3000%20logo.png" alt="TONE3000"/>
+            </a>
+            <span class="t3k-header-mod" id="t3k-mod-logo">
+                <img src="/img/icons/36/mod.png?v={{version}}" alt="MOD"/>
+            </span>
+        </header>
+
+        <!-- NOTICE BAR -->
+        <div class="t3k-notice">
+            <!-- <span class="t3k-notice-icon" aria-hidden="true">i</span> -->
+            <span id="t3k-notice-text">MOD Audio &#10084;&#65039; TONE3000 &middot; made possible by Starless</span>
+        </div>
+
+        <!-- CONTENT -->
+        <main class="t3k-main">
+            <figure class="t3k-hero">
+                <img id="t3k-hero-img" src="js/lib/t3k/logo/NoImage.svg" alt="Gear Image"/>
+            </figure>
+
+            <h1 class="t3k-title" id="t3k-title"></h1>
+            <p class="t3k-subtitle t3k-hidden" id="t3k-subtitle"></p>
+            <p class="t3k-user t3k-hidden" id="t3k-user"></p>
+
+            <section class="t3k-status" id="t3k-status">
+                <span id="t3k-status-text">Downloading tone&hellip;</span>
+            </section>
+        </main>
+
+    </div>
+</body>
+<!-- END BODY -->
+
+</html>

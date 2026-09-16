@@ -764,6 +764,10 @@ function Desktop(elements) {
     }
 
     this.setupMatomo = function() {
+        // Analytics is for the desktop app only; a MOD device never loads the tracker
+        if (USING_MOD_DEVICE) {
+            return
+        }
         var _mtm = window._mtm = window._mtm || [];
         _mtm.push({'mtm.startTime': (new Date().getTime()), 'event': 'mtm.Start'});
         (function() {

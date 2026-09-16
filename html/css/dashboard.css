@@ -749,6 +749,21 @@ svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1001
 }
 
 
+#report-window .box {
+    width:640px;
+    margin:-260px -338px;
+}
+#report-window textarea {
+    width:100%;
+    box-sizing:border-box;
+    font-family:monospace;
+    font-size:12px;
+    resize:vertical;
+}
+#report-window .actions a {
+    margin:0 6px;
+}
+
 #midi-ports-window .mod-box {
     width:500px;
     margin:-150px -280px;
