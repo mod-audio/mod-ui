@@ -16,6 +16,8 @@ DESKTOP = bool(int(os.environ.get('MOD_DESKTOP', False)))
 LOG = int(os.environ.get('MOD_LOG', 0))
 
 API_KEY = os.environ.pop('MOD_API_KEY', None)
+# Tone3000 public (vendor) API key for the image; lowest-precedence default, see webserver get_t3k_api_key
+TONE3000_CLIENT_ID = os.environ.pop('MOD_TONE3000_CLIENT_ID', None)
 DEVICE_KEY = os.environ.pop('MOD_DEVICE_KEY', None)
 DEVICE_TAG = os.environ.pop('MOD_DEVICE_TAG', None)
 DEVICE_UID = os.environ.pop('MOD_DEVICE_UID', None)

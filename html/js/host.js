@@ -635,5 +635,72 @@ $('document').ready(function() {
             $("#mod-buffersize").text(bufsize+" frames")
             return
         }
+
+
+        if (cmd == "t3k-tone-selected") {
+            // tone selected from the t3k integration
+            // the first parameter is the effect instance
+            data      = data.split(" ",4)
+            const instance  = data[0]
+            const code = data[1]
+            const state = data[2]
+            const toneId = parseInt(data[3])
+            const t3k = desktop.pedalboard.data('T3KIntegration')
+
+            t3k.t3kToneSelected(instance, code, state, toneId)
+            return
+        }
+
+        if (cmd == "t3k-cancel") {
+            // tone selected from the t3k integration
+            // the first paramater is the effect instance
+            const instance  = data
+            const t3k = desktop.pedalboard.data('T3KIntegration')
+
+            t3k.t3kCancel(instance)
+            return
+        }
+
+        if (cmd == "progress") {
+            // long server operation progress
+            const stringParse = function(str) {
+                // parse the string like string.split, but also support 'strings with spaces'
+                // returns an array of strings
+                const result = []
+                let current = ""
+                let state = false
+
+                for(const c of str) {
+                    if (state == true) {
+                        if (c == "'") {
+                            state = false
+                        } else {
+                            current += c
+                        }
+                    } else {
+                        if (c == "'") {
+                            state = true
+                        } else if (c == " ") {
+                            result.push(current)
+                            current = ""
+                        } else {
+                            current += c
+                        }
+                    }
+                }
+
+                if (current.length > 0) {
+                    result.push(current)
+                }
+
+                return result
+            }
+            data      = stringParse(data)
+            const source = data[0]
+            const msg = data[1].replace('\_', ' ')
+            const progress = parseInt(data[2])
+
+            return
+        }
     }
 })

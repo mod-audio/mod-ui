@@ -249,6 +249,9 @@ JqueryClass('pedalboard', {
         // replacement plugin, used for recreating connections
         self.data('replacementPlugin', null)
 
+        // t3k integration
+        self.data('T3KIntegration', new T3KIntegration(self, T3K_API_KEY)) //'t3k_pub_7uGZokPvXdxakAUSGVxh_5HXH5PjIdoY'))
+
         // Pedalboard itself will get big dimensions and will have it's scale and position changed dinamically
         // often. So, let's wrap it inside an element with same original dimensions and positioning, with overflow
         // hidden, so that the visible part of the pedalboard is always occupying the area that was initially determined
@@ -2892,7 +2895,7 @@ JqueryClass('pedalboard', {
         plugin.css({ top: y, left: x })
         self.pedalboard('fitToWindow')
         self.pedalboard('drawPluginJacks', plugin)
-    }
+    },
 })
 
 function ConnectionManager() {
@@ -3008,5 +3011,422 @@ function ConnectionManager() {
 
         delete self.origByInstanceIndex[instance]
         delete self.destByInstanceIndex[instance]
+    }
+}
+
+
+function T3KIntegration(pedalboard, pubKey) {
+    /*
+     * Handle Tone3000 integration
+     *
+     * Terminology:
+     *
+     * CLIENT: is the javascript mod UI that runs in the browser
+     * SERVER: is the python mod server that runs in the unit (dwarf)
+     * T3K: is the Tone3000 remote REST api
+     *
+     * Flow:
+     *
+     * 1. The CLIENT start the select tone flow using the T3K API
+     * 2. T3K callback the python SERVER when a tone is selected or the popup is closed
+     * 3. The SERVER callback the CLIENT to inform the tone selection is done using the websocket connection using the command 't3k-tone-selected' or 't3k-cancel'
+     * 4. The CLIENT exchange the code with an auth token using T3K API
+     * 5. The CLIENT call the T3K to fetch the tones and upload to the SERVER
+     *
+     */
+    const self = this
+    let t3kOpenPopups = []
+
+    this.pedalboard = pedalboard
+    /*
+     * Find ongoing t3k state by effect.
+     *
+     * Returns the popup window or undefined
+     */
+    const findInfoByEffect = function(effect) {
+        for(let item of t3kOpenPopups) {
+            if (item.effect === effect) {
+                return item
+            }
+        }
+
+        return undefined
+    }
+
+    /*
+     * Delete the effect from the list of monitored effects
+     */
+    const deleteEffectPopup = function(effect) {
+        t3kOpenPopups = t3kOpenPopups.filter(item => item.effect != effect)
+    }
+
+    this.startSelectFlow = function(effect, parameter, skipAuthCheck) {
+        const hasApiKey = pubKey && pubKey.length > 0
+
+        if (!skipAuthCheck || !hasApiKey) {
+            let authenticated = false
+            if (hasApiKey) {
+                    // check if I'm authenticated
+                    const auth = window.Tone3000Client.getTokens()
+                    if (auth != null) {
+                        // note that this call is sync
+                        $.ajax({
+                        url: `https://www.tone3000.com/api/v1/user`,
+                        type: 'GET',
+                        async: false,
+                        headers: {
+                            'Authorization': 'Bearer ' + auth.tokens.access_token
+                        },
+                        success: function (tone) {
+                            authenticated = true
+                        },
+                        error: function(xhr, status, error) {
+                            console.error("AJAX Error:", status, error);
+                        }
+                    })
+                }
+            }
+
+            if (!authenticated || !hasApiKey) {
+                // if not authenticated show the T3K welcome
+                const width = 480;
+                const height = 720;
+                const left = Math.round(window.screenX + (window.outerWidth - width) / 2);
+                const top = Math.round(window.screenY + (window.outerHeight - height) / 2);
+                let url = "/t3ksplash.html?v=" + VERSION
+                const t3kwelcome = window.open(url, 't3k_select', `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no,location=no,status=no,resizable=yes,scrollbars=yes`);
+                // Register the continuation on the opener (us), where the splash can
+                // reach it via window.opener. Setting it on the popup directly loses the
+                // race with the popup's document load on first open.
+                window.onT3KSplashContinue = function() {
+                    // continue with the select workflow skipAuthCheck = true
+                    if (hasApiKey) {
+                        self.startSelectFlow(effect, parameter, true)
+                    }
+                }
+                try { t3kwelcome.onSplashContinue = window.onT3KSplashContinue } catch (e) {}
+
+                return // stop now because we have shown the splash window
+            }
+        }
+
+        // start the select workflow
+        const callbackUrl = window.location.origin + '/effect/t3k/select' + effect
+        // todo: gears -> check if we need to load an amp/effet or a cab/ir
+
+        gears = []
+        parameter.fileTypes.forEach(value => {
+            if (value == 'nammodel' || value == 'aidadspmodel') {
+                gears.push('amp')
+                gears.push('amp-cab')
+                gears.push('pedal')
+                gears.push('outboard')
+            } else if (value == 'cabsim') {
+                gears.push('cab')
+            } else if (value == 'ir') {
+                gears.push('space')
+            }
+        });
+
+        if (gears.length == 0) {
+            gears.push('amp')
+            gears.push('amp-cab')
+            gears.push('pedal')
+            gears.push('outboard')
+        } else {
+            gears = [...new Set(gears)];
+        }
+
+        const options = {
+            gears: gears.join('_'),
+            //format: string,
+            menubar: true,
+            //loginHint: string,
+            architecture: 2, // NAM A2
+            preview: true
+        }
+        window.Tone3000Client
+            .startSelectFlowPopup(pubKey, callbackUrl, options)
+            .then((data) => {
+                // add the popup to the traked popups
+                t3kOpenPopups.push({effect: effect, parameter: parameter, popup: data})
+            })
+            .catch((error) => {
+                console.error("T3KSelect error:", error);
+                t3kOpenPopups.close()
+            })
+    }
+
+    this.refreshPluginsFilelist = function(senderEffect, senderParameter, senderSetValue) {
+        const plugins = self.pedalboard.data('plugins')
+        // the requesting plugin may have been removed while the download ran
+        for(let pluginKey in plugins) {
+            // refresh the file lists
+            const plugin = plugins[pluginKey]
+            const pluginGui = plugin.data('gui')
+
+            pluginGui?.effect?.parameters?.forEach(parameter => {
+                // we need to refresh a plugin parameter if it has the same filetype of the senderParameter
+                if (parameter.fileTypes && senderParameter.fileTypes.some(item => parameter.fileTypes.includes(item))) {
+                    pluginGui.refreshPluginFileListParameter(pluginKey, parameter, (pluginKey == senderEffect ? senderSetValue?.fullname : undefined))
+                }
+            });
+        }
+    }
+
+    this.getToneInfo = async function (access_token, toneId) {
+        try {
+            const tone = await $.ajax({
+                url: 'https://www.tone3000.com/api/v1/tones/' + toneId,
+                type: 'GET',
+                headers: {
+                    'Authorization': 'Bearer ' + access_token
+                },
+                cache: false,
+                dataType: 'json'
+            })
+
+            return tone
+        } catch (error) {
+            throw new Error(`Error downloading the tone metadata: ${error}`)
+        }
+    }
+
+    /*
+     * Get the tone models from T3K
+     */
+    this.getModels = async function (access_token, tone) {
+        // now fetch the models
+        try {
+            let models = []
+            const pageSize = 50
+            let page = 1
+            let total = 1
+
+            let baseurl = `https://www.tone3000.com/api/v1/models?tone_id=${tone.id}`
+            if (tone.a2_models_count > 0)
+                baseurl += '&architecture=2'
+
+            while (models.length < total) {
+                const pageModels = await $.ajax({
+                    url: `${baseurl}&page=${page}&page_size=${pageSize}`,
+                    headers: {
+                        'Authorization': 'Bearer ' + access_token
+                    },
+                    cache: false,
+                    dataType: 'json'
+                })
+
+                if (!pageModels.data || pageModels.data.length == 0)
+                    throw new Error('no models on data')
+                models = models.concat(pageModels.data)
+                total = pageModels.total
+                page += 1
+            }
+            return models
+        } catch (error) {
+            throw new Error(`Error downloading the tone models metadata: ${error}`)
+        }
+    }
+
+    /*
+     * This function download the models files and upload to the device using the file upload api
+     */
+    this.downloadModelsFiles = async function (access_token, tone, models, progressFunc) {
+        try {
+            const total = models.length
+            const files = []
+            let current = 0
+            let directory = total > 1 ? tone.title : "" // do not place in a subfolder if it's just one file
+
+            progressFunc?.(null, 0, total)
+            for(const model of models) {
+                current += 1
+                progressFunc?.(model, current, total)
+                const url = new URL(model.model_url);
+                const tmpFilename = url.pathname.split('/').pop();
+                const fileExtension = tmpFilename.split('.').pop();
+                let fileName = (total > 1 ? model.name : tone.title)
+
+                if (tone.gear == 'cab') {
+                    filetype = 'cabsim'
+                } else if (tone.gear == 'space') {
+                    filetype = 'ir'
+                } else {
+                    filetype = 'nammodel'
+                }
+                const uploadConfig = {
+                    directory: directory,
+                    onDirectoryConflict: current == 1 ? 'rename' : 'merge', // rename directory if exists, the file is always renamed on conflict
+                    filename: (fileName + (fileExtension ? '.' + fileExtension : '')).trim(),
+                    filetype: filetype,
+                    metadata: {
+                        source: 'T3K',
+                        data: {
+                            toneId: tone.id,
+                            modelId: model.id
+                        }
+                    }
+                }
+
+                const response = await new Promise((resolve, reject) => {
+                    var transfer = new SimpleTransference(
+                                        model.model_url,
+                                        '/files/upload',
+                                        {
+                                            from_args: {
+                                                headers: { 'Authorization': 'Bearer ' + access_token }
+                                            },
+                                            to_args: {
+                                                headers: {
+                                                    'Authorization' : 'MOD ' + desktop.cloudAccessToken,
+                                                    'X-Upload-Config': encodeURIComponent(JSON.stringify(uploadConfig))
+                                                }
+                                            }
+                                        })
+
+                    transfer.reauthorizeUpload = desktop.authenticateDevice
+
+                    transfer.reportFinished = function (resp2) {
+                        resolve(resp2)
+                    }
+
+                    transfer.reportError = function (error) {
+                    reject(new Error(error))
+                    }
+
+                    transfer.start()
+                })
+
+                if (!response.ok)
+                    throw new Error(model.name)
+
+                if (current == 1) // place all the other files in the same directory (the server can rename the directory to not overwrite files)
+                    directory = response.result.dirname
+
+                files.push(response.result)
+            }
+
+            return files
+        } catch (error) {
+            throw new Error(`Error downloading the tone models file: ${error}`)
+        }
+    }
+
+    /*
+     * This function is called on tone selection (3)
+     */
+    this.t3kToneSelected = function(effect, code, state, toneId) {
+        // Select Flow — user browses TONE3000 and picks a tone
+        // Optional: gears, platform, architecture, menubar (same query params as authorize URL)
+        // console.log(`t3k cancel instance ${effect}, code ${code}, state ${state}, toneId ${toneId}`)
+        const cleanup = function(t3kinfo) {
+            t3kinfo.popup.location = 'about:blank'
+            t3kinfo.popup.close()
+            deleteEffectPopup(t3kinfo.effect)
+        }
+        const onError = function(t3kinfo, error) {
+            cleanup(t3kinfo)
+            new Notification('error', 'Error downloading from Tone3000.')
+            console.error(`t3kToneSelected status error: ${error} `);
+        }
+        const t3kinfo = findInfoByEffect(effect)
+
+        // check if we have a popup registered
+        if (!t3kinfo) {
+            console.error(`t3kToneSelected t3kinfo for instance ${effect} can't download models`)
+            return
+        }
+
+        t3kinfo.state = 'downloading'
+        t3kinfo.popup.location = "/t3k.html?v=" + VERSION
+
+        // must match the callbackUrl of the request we need to exchange the code for
+        const callbackUrl = window.location.origin + '/effect/t3k/select' + effect
+        // start the download
+        const t3kClient = window.Tone3000Client
+
+        t3kClient
+            .exchangeCode(pubKey, callbackUrl, code, state)
+            .then((auth) => {
+                if (auth?.ok) {
+                    // fetching the tone info
+                    t3kClient.setTokens(auth)
+                    self
+                        .getToneInfo(auth.tokens.access_token, toneId)
+                        .then((tone) => {
+                            // update the popup with the info of the tone
+                            const title = tone.title
+                            const des = tone.description
+                            const user = tone.user?.display_name
+                            const image = tone.images?.[0]
+
+                            t3kinfo.popup?.setToneInfo?.(user, title, des, image)
+                            self
+                                .getModels(auth.tokens.access_token, tone)
+                                .then((models) => {
+                                    // download models and store on the dwarf user files
+                                    self
+                                        .downloadModelsFiles(auth.tokens.access_token, tone, models, function(model, current, count) {
+                                            const msg = `Downloading files ${current}/${count}...`
+                                            const perc = Math.round(current / Math.min(1, count) * 100)
+                                            t3kinfo.popup?.progress?.(msg, perc)
+                                        })
+                                        .then((files) => {
+                                            // refresh the file lists and load the first downloaded
+                                            // file (alphabetical) into the requesting plugin
+                                            let setValue = undefined
+                                            if (files && files.length > 0) {
+                                                files.sort((a, b) =>  a.fullname.localeCompare(b.fullname))
+                                                setValue = files[0]
+                                            }
+                                            self.refreshPluginsFilelist(effect, t3kinfo.parameter, setValue)
+                                            cleanup(t3kinfo)
+                                            new Notification('info', 'Download from Tone3000 completed.', 2000)
+                                        })
+                                        .catch((errDownloadModels) => {
+                                            onError(t3kinfo, errDownloadModels)
+                                        })
+                                })
+                                .catch((errFetchModels) => {
+                                    onError(t3kinfo, errFetchModels)
+                                })
+
+                        })
+                        .catch((errTone) => {
+                            onError(t3kinfo, errTone)
+                        })
+                }
+            })
+            .catch((error) => {
+                onError(t3kinfo, error)
+            })
+    }
+
+    /*
+     * This function is called on tone selection (3)
+     */
+    this.t3kCancel = function(instance) {
+        console.log("t3k cancel " + instance)
+        const t3kinfo = findInfoByEffect(instance)
+
+        // check if we have a popup registered
+        if (t3kinfo) {
+            deleteEffectPopup(instance)
+            t3kinfo.popup?.close()
+        } else {
+            console.error(`t3kCancel no popup for instance ${instance} can't download models`)
+            return
+        }
+    }
+
+    /*
+     * Update the popup UI with the progress of the
+     * (download) current operation
+     */
+    this.t3kProgress = function(instance, msg, progress) {
+        const t3kinfo = findInfoByEffect(instance)
+
+        t3kinfo?.popup?.progress?.(msg, progress)
     }
 }

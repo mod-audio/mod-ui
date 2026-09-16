@@ -7010,3 +7010,5 @@ _:b%i
         self.profile_applied = True
 
     # -----------------------------------------------------------------------------------------------------------------
+    def notify_progress(self, source, msg, perc, args: str = ""):
+        self.msg_callback("progress %s '%s' %s %s" % (source, msg, perc, args))
