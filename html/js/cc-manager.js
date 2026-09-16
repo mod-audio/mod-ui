@@ -46,7 +46,8 @@ function ControlChainDeviceManager(options) {
         var item = [dev_uri, label, version]
         self.connectedDevices.push(item)
         self._devicesUpdated()
-        self.deviceConnected(label, version)
+
+        options.showNotification('New Control Chain device connected:<br/>' + label + ' v' + version)
     }
 
     this.deviceRemoved = function (dev_uri, label, version) {
@@ -59,14 +60,7 @@ function ControlChainDeviceManager(options) {
             }
         }
         self._devicesUpdated()
-        self.deviceDisconnected(label, version)
-    }
 
-    this.deviceConnected = function (label, version) {
-        options.showNotification('New Control Chain device connected:<br/>' + label + ' v' + version)
-    }
-
-    this.deviceDisconnected = function (label, version) {
         options.showNotification('Control Chain device disconnected:<br/>' + label + ' v' + version)
     }
 
@@ -91,9 +85,9 @@ function ControlChainDeviceManager(options) {
 
             var msg
             if (count == 1) {
-                msg = "1 Control Chain device activated"
+                msg = "1 Control Chain device connected"
             } else {
-                msg = sprintf("%d Control Chain devices activated", count)
+                msg = sprintf("%d Control Chain devices connected", count)
             }
             options.devicesIcon.statusTooltip('message', msg, true)
         }
