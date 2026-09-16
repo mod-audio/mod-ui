@@ -530,22 +530,6 @@ $('document').ready(function() {
             return
         }
 
-        if (cmd == "hw_con") {
-            data        = data.split(" ",2)
-            var label   = data[0].replace(/_/g," ")
-            var version = data[1]
-            desktop.ccDeviceConnected(label, version)
-            return
-        }
-
-        if (cmd == "hw_dis") {
-            data        = data.split(" ",2)
-            var label   = data[0].replace(/_/g," ")
-            var version = data[1]
-            desktop.ccDeviceDisconnected(label, version)
-            return
-        }
-
         if (cmd == "loading_start") {
             data     = data.split(" ",2)
             empty    = parseInt(data[0]) != 0

@@ -88,7 +88,7 @@ CLOUD_HTTP_ADDRESS = os.environ.pop('MOD_CLOUD_HTTP_ADDRESS', "https://api.mod.a
 PLUGINS_HTTP_ADDRESS = os.environ.pop('MOD_PLUGINS_HTTP_ADDRESS', "https://pedalboards.mod.audio/plugins")
 PEDALBOARDS_HTTP_ADDRESS = os.environ.pop('MOD_PEDALBOARDS_HTTP_ADDRESS', "https://pedalboards.mod.audio")
 CONTROLCHAIN_HTTP_ADDRESS = os.environ.pop('MOD_CONTROLCHAIN_HTTP_ADDRESS',
-                                           "https://download.mod.audio/releases/cc-firmware/v3")
+                                           "https://download.mod.audio/releases/cc-firmware/v2")
 
 # "Report a problem" target. The OS build sets MOD_FEEDBACK_URL per release (the RC topic); a frozen
 # MOD Desktop build gets it baked in the same way as the Tone3000 id (its own topic, distinct from
