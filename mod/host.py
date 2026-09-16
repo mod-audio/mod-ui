@@ -2736,7 +2736,15 @@ class Host(object):
 
     def patch_set(self, instance, paramuri, value, callback):
         instance_id = self.mapper.get_id_without_creating(instance)
-        pluginData  = self.plugins[instance_id]
+        pluginData  = self.plugins.get(instance_id, None)
+
+        if pluginData is None:
+            # the plugin was removed while the message was in flight; ignore instead of
+            # raising, which would take the client's websocket down with it
+            if callback is not None:
+                callback(False)
+            return False
+
         parameter   = pluginData['parameters'].get(paramuri, None)
 
         if parameter is not None:
