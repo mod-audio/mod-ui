@@ -1,0 +1,40 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "MOD UI",
+  "version": "0.1.0",
+  "identifier": "audio.mod.ui",
+  "build": {
+    "devUrl": "http://localhost:18181",
+    "frontendDist": "http://localhost:18181"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "MOD UI",
+        "width": 1280,
+        "height": 800,
+        "minWidth": 800,
+        "minHeight": 600,
+        "center": true,
+        "resizable": true
+      }
+    ],
+    "security": {
+      "capabilities": []
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "category": "Music",
+    "shortDescription": "Desktop application for the MOD audio interface"
+  }
+}
