@@ -83,7 +83,7 @@ PLUGINS_HTTP_ADDRESS = os.environ.pop('MOD_PLUGINS_HTTP_ADDRESS', "https://pedal
 PEDALBOARDS_HTTP_ADDRESS = os.environ.pop('MOD_PEDALBOARDS_HTTP_ADDRESS', "https://pedalboards.mod.audio")
 PEDALBOARDS_LABS_HTTP_ADDRESS = os.environ.pop('MOD_PEDALBOARDS_LABS_HTTP_ADDRESS', "https://pedalboards-labs.mod.audio")
 CONTROLCHAIN_HTTP_ADDRESS = os.environ.pop('MOD_CONTROLCHAIN_HTTP_ADDRESS',
-                                           "https://download.mod.audio/releases/cc-firmware/v3")
+                                           "https://download.mod.audio/releases/cc-firmware/v2")
 
 # Where "Report a problem" sends people: the forum topic (or category) for the running
 # release. Set per build, like the version; the default is the forum's Beta Testing category.
