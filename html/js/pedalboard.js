@@ -1506,7 +1506,7 @@ JqueryClass('pedalboard', {
             // Find elements with mod-role of audio/midi input/output ports and assign functionality to them
             var types = ['audio', 'midi', 'cv']
             var directions = ['input', 'output']
-            var j, k, type, direction, method
+            var j, k, type, direction, method, element
             for (i = 0; i < types.length; i++) {
                 type = types[i]
                 for (j = 0; j < directions.length; j++) {
