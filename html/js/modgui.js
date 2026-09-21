@@ -71,14 +71,17 @@ function loadFileTypesList(parameter, dummy, callback) {
             const basePaths = []
             for(let file of data.files) {
                 if (file.dirname && file.dirname.length > 0) {
+                    // add the file's directory and every ancestor below the basepath,
+                    // so a folder that only contains subfolders gets an entry too
                     let dirPath = file.fullname
-                    const lastSlashIndex = Math.max(file.fullname.lastIndexOf('/'), file.fullname.lastIndexOf('\\'));
+                    let lastSlashIndex = Math.max(dirPath.lastIndexOf('/'), dirPath.lastIndexOf('\\'));
 
-                    if (lastSlashIndex != -1) {
-                        dirPath = file.fullname.slice(0, lastSlashIndex);
-                    }
-                    if (!dirs.find((value, index) => value === dirPath)) {
-                        dirs.push(dirPath)
+                    while (lastSlashIndex > file.basepath.length) {
+                        dirPath = dirPath.slice(0, lastSlashIndex);
+                        if (!dirs.find((value, index) => value === dirPath)) {
+                            dirs.push(dirPath)
+                        }
+                        lastSlashIndex = Math.max(dirPath.lastIndexOf('/'), dirPath.lastIndexOf('\\'));
                     }
                 }
 
