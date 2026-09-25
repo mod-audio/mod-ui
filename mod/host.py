@@ -2066,7 +2066,7 @@ class Host(object):
         # Audio In
         for i in range(len(self.audioportsIn)):
             name  = self.audioportsIn[i]
-            title = name.title().replace(" ","_")
+            title = self.get_port_name_alias("system:" + name).replace(" ","_")
             websocket.write_message("add_hw_port /graph/%s audio 0 %s %i" % (name, title, i+1))
 
         # Control Voltage In
@@ -2078,7 +2078,7 @@ class Host(object):
         # Audio Out
         for i in range(len(self.audioportsOut)):
             name  = self.audioportsOut[i]
-            title = name.title().replace(" ","_")
+            title = self.get_port_name_alias("system:" + name).replace(" ","_")
             websocket.write_message("add_hw_port /graph/%s audio 1 %s %i" % (name, title, i+1))
 
         # Control Voltage Out
