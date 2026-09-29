@@ -218,6 +218,15 @@ def midi_port_alias_to_name(alias, withSpaces):
           .replace("/midi_capture_",space+"MIDI"+space)\
           .replace("/midi_playback_",space+"MIDI"+space)
 
+# The USB audio ports carry the device-side JACK names (capture = what the computer plays).
+# Label them by direction as seen from the computer; the port names themselves stay, saved pedalboards use them.
+def hw_audio_port_title(name):
+    if name.startswith("USB_Audio_Capture_"):
+        return "USB_From_Computer_" + name.rsplit("_",1)[-1]
+    if name.startswith("USB_Audio_Playback_"):
+        return "USB_To_Computer_" + name.rsplit("_",1)[-1]
+    return name.title().replace(" ","_")
+
 def get_all_good_and_bad_pedalboards(ptype):
     allpedals  = get_all_pedalboards(ptype)
     goodpedals = []
@@ -573,7 +582,7 @@ class Host(object):
             name = name[len(self.jack_usbgadget_prefix+2):]
             ptype = "audio"
             index = 200 + int(name.rsplit("_",1)[-1])
-            title = name.title().replace(" ","_")
+            title = hw_audio_port_title(name)
             self.msg_callback("add_hw_port /graph/%s %s %i %s %i" % (name, ptype, int(isOutput), title, index))
             return
 
@@ -2058,7 +2067,7 @@ class Host(object):
         # Audio In
         for i in range(len(self.audioportsIn)):
             name  = self.audioportsIn[i]
-            title = name.title().replace(" ","_")
+            title = hw_audio_port_title(name)
             websocket.write_message("add_hw_port /graph/%s audio 0 %s %i" % (name, title, i+1))
 
         # Control Voltage In
@@ -2070,7 +2079,7 @@ class Host(object):
         # Audio Out
         for i in range(len(self.audioportsOut)):
             name  = self.audioportsOut[i]
-            title = name.title().replace(" ","_")
+            title = hw_audio_port_title(name)
             websocket.write_message("add_hw_port /graph/%s audio 1 %s %i" % (name, title, i+1))
 
         # Control Voltage Out
@@ -4325,7 +4334,7 @@ _:b%i
     lv2:symbol "%s" ;
     a lv2:AudioPort ,
         lv2:InputPort .
-""" % (port, index, port.title().replace("_"," "), port)
+""" % (port, index, hw_audio_port_title(port).replace("_"," "), port)
 
         # Ports (CV In)
         for port in self.cvportsIn:
@@ -4351,7 +4360,7 @@ _:b%i
     lv2:symbol "%s" ;
     a lv2:AudioPort ,
         lv2:OutputPort .
-""" % (port, index, port.title().replace("_"," "), port)
+""" % (port, index, hw_audio_port_title(port).replace("_"," "), port)
 
         # Ports (CV Out)
         for port in self.cvportsOut:
