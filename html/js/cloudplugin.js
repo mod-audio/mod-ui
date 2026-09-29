@@ -105,11 +105,6 @@ JqueryClass('cloudPluginBox', {
             self.cloudPluginBox('search')
         })
 
-        self.find('input:radio[name=plugins-source]').click(function (e) {
-            self.cloudPluginBox('toggleFeaturedPlugins')
-            self.cloudPluginBox('search')
-        })
-
         $('#cloud_install_all').click(function (e) {
             if (! $(this).hasClass("disabled")) {
                 $(this).addClass("disabled").css({color:'#444'})

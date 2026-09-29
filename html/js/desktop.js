@@ -869,7 +869,7 @@ function Desktop(elements) {
             contentType: 'application/json',
             success: function (resp) {
                 if (resp.data.stable === false && PREFERENCES['show-unstable-plugins'] !== "true") {
-                    new Notification('error', 'This pedalboard contains beta plugins. To load it, you need to enable beta plugins in <a href="settings">Settings</a> -> Advanced');
+                    new Notification('error', 'This pedalboard contains beta plugins. To load it, you need to enable beta plugins in <a href="settings">Settings</a> -> Developer');
                     return;
                 }
                 self.reset(function () {
