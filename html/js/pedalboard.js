@@ -442,6 +442,55 @@ JqueryClass('pedalboard', {
             self.pedalboard('toggleTeleport', target)
         })
 
+        // Right-clicking a port offers the same split/join as TELEPORT_KEY, for anyone who
+        // does not know the key. Ports with no cables keep the browser's own menu.
+        self.on('contextmenu', '[mod-port], [mod-role=output-jack]', function (e) {
+            if (self.pedalboard('connecting')) {
+                return
+            }
+            var target = self.pedalboard('teleportTarget')
+            if (! target.length) {
+                return
+            }
+            e.preventDefault()
+            e.stopPropagation()
+            var joining = true
+            for (var i = 0; i < target.length; i++) {
+                if (! target[i].data('teleported')) {
+                    joining = false
+                    break
+                }
+            }
+            $('.mod-teleport-menu').remove()
+            var plural = target.length > 1 ? 's' : ''
+            var menu = $('<div class="mod-teleport-menu">')
+                .css({ left: e.clientX, top: e.clientY })
+                .appendTo('body')
+            var close = function () {
+                menu.remove()
+                $(document).off('.teleportmenu')
+            }
+            var item = function (label, action) {
+                $('<div>').text(label).appendTo(menu).on('click', function () {
+                    close()
+                    action()
+                })
+            }
+            item((joining ? 'Join cable' : 'Split cable') + plural, function () {
+                self.pedalboard('toggleTeleport', target)
+            })
+            // same cables as the split: one jack of an expanded input, else all on the port
+            item('Disconnect' + (target.length > 1 ? ' all' : ''), function () {
+                for (var j = 0; j < target.length; j++) {
+                    self.pedalboard('disconnect', target[j])
+                }
+            })
+            menu.on('mousedown', function (ev) {
+                ev.stopPropagation()
+            })
+            $(document).on('mousedown.teleportmenu keydown.teleportmenu wheel.teleportmenu', close)
+        })
+
         // The mouse wheel is used to zoom in and out
         self.bind('mousewheel', function (e) {
             // Zoom by mousewheel has been desactivated.
