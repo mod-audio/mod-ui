@@ -650,6 +650,26 @@ svg .light {
     background-color: #883996;
     color: #fff;
 }
+/* right-click menu on a port: split / join its cables */
+.mod-teleport-menu {
+    position: fixed;
+    z-index: 10000;
+    padding: 4px 0;
+    border: 1px solid #6b6b6b;
+    border-radius: 4px;
+    background: #141414;
+    color: #ddd;
+    font: 13px sans-serif;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.6);
+}
+.mod-teleport-menu > div {
+    padding: 6px 14px;
+}
+.mod-teleport-menu > div:hover {
+    background: #883996;
+    color: #fff;
+}
 /* refused because another output already answers to this name */
 .mod-teleport.mod-teleport-clash {
     border-color: #b4413c;
