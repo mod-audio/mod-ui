@@ -470,15 +470,19 @@ JqueryClass('pedalboard', {
                 menu.remove()
                 $(document).off('.teleportmenu')
             }
-            var item = function (label, action) {
-                $('<div>').text(label).appendTo(menu).on('click', function () {
+            var item = function (label, action, key) {
+                var row = $('<div>').text(label).appendTo(menu).on('click', function () {
                     close()
                     action()
                 })
+                // the shortcut, so the menu teaches it
+                if (key) {
+                    $('<span class="mod-teleport-menu-key">').text(key).appendTo(row)
+                }
             }
             item((joining ? 'Join cable' : 'Split cable') + plural, function () {
                 self.pedalboard('toggleTeleport', target)
-            })
+            }, TELEPORT_KEY.toUpperCase())
             // same cables as the split: one jack of an expanded input, else all on the port
             item('Disconnect' + (target.length > 1 ? ' all' : ''), function () {
                 for (var j = 0; j < target.length; j++) {

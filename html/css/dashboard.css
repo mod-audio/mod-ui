@@ -670,6 +670,20 @@ svg .light {
     background: #883996;
     color: #fff;
 }
+.mod-teleport-menu-key {
+    float: right;
+    margin-left: 24px;
+    padding: 0 5px;
+    border: 1px solid #6b6b6b;
+    border-radius: 3px;
+    color: #999;
+    font-size: 11px;
+    line-height: 15px;
+}
+.mod-teleport-menu > div:hover .mod-teleport-menu-key {
+    border-color: #fff;
+    color: #fff;
+}
 /* refused because another output already answers to this name */
 .mod-teleport.mod-teleport-clash {
     border-color: #b4413c;
