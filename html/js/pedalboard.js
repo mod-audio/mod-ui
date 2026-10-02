@@ -480,7 +480,7 @@ JqueryClass('pedalboard', {
             }
             item((joining ? 'Join cable' : 'Split cable') + plural, function () {
                 self.pedalboard('toggleTeleport', target)
-            }, TELEPORT_KEY.toUpperCase())
+            }, TELEPORT_KEY)
             // same cables as the split: one jack of an expanded input, else all on the port
             item('Disconnect' + (target.length > 1 ? ' all' : ''), function () {
                 for (var j = 0; j < target.length; j++) {
