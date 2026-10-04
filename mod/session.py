@@ -237,6 +237,9 @@ class Session(object):
         def ready(_):
             self.websockets.append(ws)
             self.host.open_connection_if_needed(ws)
+            # a "data_ready" sent before this socket was registered reached nobody, ask again
+            if not self.host.web_data_ready_ok:
+                ws.write_message("data_ready %i" % self.host.web_data_ready_counter)
             callback(True)
 
         # if this is the 1st socket, start ui session

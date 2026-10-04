@@ -361,6 +361,7 @@ class Host(object):
         self.web_connected = False
         self.web_data_ready_counter = 0
         self.web_data_ready_ok = True
+        self.web_data_ready_time = 0
 
         self.alluserpedalboards = None
         self.allfactorypedalboards = None
@@ -1626,6 +1627,7 @@ class Host(object):
             if self.web_connected:
                 self.web_data_ready_ok = False
                 self.web_data_ready_counter += 1
+                self.web_data_ready_time = ioloop.time()
                 self.msg_callback("data_ready %i" % self.web_data_ready_counter)
                 return
 
@@ -4759,6 +4761,12 @@ _:b%i
     def statstimer_callback(self):
         data = get_jack_data(False)
         self.msg_callback("stats %0.1f %i" % (data['cpuLoad'], data['xruns']))
+
+        # mod-host sends nothing more until a "data_ready" is answered, and an answer can get lost.
+        # Ask again when it takes too long.
+        if self.web_connected and not self.web_data_ready_ok:
+            if IOLoop.instance().time() - self.web_data_ready_time >= 2.0:
+                self.msg_callback("data_ready %i" % self.web_data_ready_counter)
 
     def get_free_memory_value(self):
         if not self.memfile:
