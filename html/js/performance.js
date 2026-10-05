@@ -223,7 +223,10 @@ function PerformanceView(options) {
                 takeIcon(icon)
                 icon.appendTo(s.scaler)
             }
-            s.icon = icon
+            if (!s.icon || s.icon[0] !== icon[0]) {
+                s.icon = icon
+                measure(s)
+            }
             s.settings = icon.data('settings')
             next.push(s)
         })
@@ -254,7 +257,7 @@ function PerformanceView(options) {
             return
         }
 
-        layout()
+        layout(true)
 
         // which pedal should be active?
         var idx = -1
@@ -276,31 +279,50 @@ function PerformanceView(options) {
         scrollToIndex(idx, false)
     }
 
-    var layout = function () {
+    // Native pedal size. offsetWidth/Height ignore transforms, so this works
+    // while the pedal is scaled; it only changes if the face itself changes.
+    var measure = function (s) {
+        s.nw = s.icon.outerWidth()
+        s.nh = s.icon.outerHeight()
+        return s.nw > 0 && s.nh > 0
+    }
+
+    var lastStage = ''
+    var layout = function (force) {
         if (!slides.length) {
-            return
+            return false
         }
         var stageW = stage[0].clientWidth
         var stageH = stage[0].clientHeight
+        var key = stageW + 'x' + stageH
+        var remeasured = false
+        slides.forEach(function (s) {
+            if (!s.nw || !s.nh) remeasured = measure(s) || remeasured
+        })
+        if (!force && !remeasured && key === lastStage) {
+            return false  // nothing to do: never touch styles needlessly, it repaints every pedal
+        }
+        lastStage = key
+
         var availH = Math.max(40, stageH - PAD_Y * 2)
         var availW = Math.max(40, stageW * 0.86)
-
-        slides.forEach(function (s) {
-            s.scaler.css('transform', 'none')
-            // measure at native size
-            var w = s.icon.outerWidth()
-            var h = s.icon.outerHeight()
-            if (!w || !h) { w = 200; h = 300 }
+        slides.forEach(function (s, i) {
+            var w = s.nw || 200, h = s.nh || 300
             var scale = Math.min(MAX_SCALE, availH / h, availW / w)
+            var gap = i === slides.length - 1 ? 0 : GAP
+            if (scale === s.scale && w === s.lw && h === s.lh && gap === s.gap) return
+            s.scale = scale
+            s.lw = w
+            s.lh = h
+            s.gap = gap
             s.w = w * scale
             s.h = h * scale
-            s.scale = scale
             s.scaler.css({ width: w, height: h, transform: 'scale(' + scale + ')' })
-            s.slide.css({ width: s.w, height: s.h, marginRight: GAP })
+            s.slide.css({ width: s.w, height: s.h, marginRight: gap })
         })
-        slides[slides.length - 1].slide.css('marginRight', 0)
         spacerL.css('width', Math.max(0, (stageW - slides[0].w) / 2))
         spacerR.css('width', Math.max(0, (stageW - slides[slides.length - 1].w) / 2))
+        return true
     }
 
     // Programmatic moves are animated by hand with snapping switched off:
@@ -455,15 +477,19 @@ function PerformanceView(options) {
         if (e.keyCode === 39) { self.goTo(active + 1); e.preventDefault() }
     })
 
+    // Only real window resizes / rotations. (jquery.ba-resize, used elsewhere
+    // in the UI, triggers 'resize' on elements and those bubble up to window;
+    // reacting to them re-laid-out and re-centred the carousel mid-swipe.)
     var resizeTimer = null
-    $(window).on('resize orientationchange', function () {
-        if (!isOpen) return
+    $(window).on('resize orientationchange', function (e) {
+        if (!isOpen || e.target !== window) return
         clearTimeout(resizeTimer)
         resizeTimer = setTimeout(function () {
             var keep = active
-            layout()
-            scrollToIndex(keep, false)
-            setActive(keep, true)
+            if (layout(false) && keep >= 0) {
+                scrollToIndex(keep, false)
+                setActive(keep, true)
+            }
         }, 120)
     })
 
@@ -512,6 +538,7 @@ function PerformanceView(options) {
             syncFooter()
             // plugins and connections can change under us (another browser,
             // the device, a pedalboard load); follow along
+            if (slides.some(function (sl) { return !sl.nw || !sl.nh })) layout(false)
             var sig = currentSignature()
             if (sig !== signature) {
                 signature = sig

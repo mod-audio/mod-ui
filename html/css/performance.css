@@ -61,6 +61,7 @@ body.performance-mode #js-cv-addressing-toggle {
     overflow-x: auto;
     overflow-y: hidden;
     scroll-snap-type: x mandatory;
+    will-change: scroll-position;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior-x: contain;
     scrollbar-width: none;
@@ -90,6 +91,11 @@ body.performance-mode #js-cv-addressing-toggle {
     opacity: 0.6;
     transition: opacity 0.2s;
     cursor: pointer;
+    /* each pedal on its own GPU layer: scrolling and dimming then move and
+       fade finished pixels instead of repainting the faces every frame */
+    will-change: transform, opacity;
+    transform: translateZ(0);
+    contain: layout style;  /* not paint: the ring and pedal shadows sit outside the box */
 }
 /* selection ring (a pseudo element: main.css resets outline) */
 #performance-view .performance-slide:after {
@@ -99,17 +105,21 @@ body.performance-mode #js-cv-addressing-toggle {
     top: -10px;
     right: -10px;
     bottom: -10px;
-    border: 3px solid transparent;
+    border: 3px solid #883996;
     border-radius: 10px;
     pointer-events: none;
-    transition: border-color 0.2s;
+    /* fade with opacity on its own layer: a border-color transition would
+       repaint the whole pedal every frame */
+    opacity: 0;
+    transition: opacity 0.2s;
+    will-change: opacity;
 }
 #performance-view .performance-slide.active {
     opacity: 1;
     cursor: auto;
 }
 #performance-view .performance-slide.active:after {
-    border-color: #883996;
+    opacity: 1;
 }
 #performance-view .performance-scaler {
     position: absolute;
