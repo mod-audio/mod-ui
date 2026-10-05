@@ -165,7 +165,7 @@ body.performance-mode #js-cv-addressing-toggle {
     position: relative;
     background: #111;
     border-top: 1px solid #2b2b2b;
-    min-height: 164px;
+    min-height: 124px;
 }
 
 /* the editor's settings window for the active pedal, shown as a strip */
@@ -175,6 +175,10 @@ body.performance-mode #js-cv-addressing-toggle {
     background: none !important;
     opacity: 1 !important;
     z-index: auto !important;
+    /* MOD's settings panel at 75%: the pedal gets the height back. zoom
+       (unlike transform) shrinks the layout box too, so scrolling and
+       centring keep working on the real size */
+    zoom: 0.75;
 }
 #performance-view .performance-settings .mod-pedal-settings {
     position: static;
