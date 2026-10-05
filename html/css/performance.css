@@ -166,6 +166,162 @@ body.performance-mode #js-cv-addressing-toggle {
     background: #111;
     border-top: 1px solid #2b2b2b;
     min-height: 124px;
+    display: flex;
+    align-items: stretch;
+}
+#performance-view .performance-strip > .mod-settings.performance-settings {
+    flex: 1 1 auto;
+    min-width: 0;  /* let the controls row scroll instead of widening the strip */
+}
+
+/* = HIDE BUTTON
+================================================ */
+#performance-view .performance-tools {
+    flex: 0 0 auto;
+    display: flex;
+    padding: 2px 0 2px 9px;
+}
+#performance-view .performance-hide {
+    width: 64px;
+    border: 0;
+    border-radius: 0;
+    background: #212121;
+    color: #999;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-size: 10px;
+    font-weight: bold;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: color 0.15s, background 0.15s;
+}
+#performance-view .performance-hide:hover,
+#performance-view .performance-hide:active {
+    color: #fff;
+    background: #2b2b2b;
+}
+
+/* = HIDDEN TILE (end of the carousel)
+================================================ */
+#performance-view .performance-tile-box {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    border: 2px dashed #555;
+    border-radius: 10px;
+    background: rgba(0, 0, 0, 0.45);
+    color: #bbb;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    text-align: center;
+}
+#performance-view .performance-tile-box svg {
+    width: 34px;
+    height: 34px;
+}
+#performance-view .performance-tile-box b {
+    font-size: 18px;
+    font-weight: normal;
+    color: #fff;
+}
+#performance-view .performance-tile-box small {
+    font-size: 12px;
+    color: #888;
+}
+#performance-view .performance-tile.active .performance-tile-box small {
+    visibility: hidden;  /* the shelf below is the next step */
+}
+
+/* = SHELF OF HIDDEN PEDALS (in the strip)
+================================================ */
+#performance-view .performance-shelf {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 8px 12px 6px;
+    color: #fff;
+}
+#performance-view .performance-shelf-head {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 16px;
+    font-size: 11px;
+    font-weight: bold;
+    text-transform: uppercase;
+    color: #999;
+    margin-bottom: 8px;
+}
+#performance-view .performance-show-all {
+    border: 1px solid #883996;
+    background: none;
+    color: #fff;
+    font-size: 10px;
+    font-weight: bold;
+    text-transform: uppercase;
+    padding: 3px 10px;
+    cursor: pointer;
+}
+#performance-view .performance-show-all:hover {
+    background: #883996;
+}
+#performance-view .performance-shelf-row {
+    display: flex;
+    gap: 10px;
+    width: max-content;
+    max-width: 100%;
+    margin: 0 auto;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    touch-action: pan-x;
+    scrollbar-width: thin;
+    scrollbar-color: #444 transparent;
+}
+#performance-view .performance-shelf-item {
+    flex: 0 0 auto;
+    width: 110px;
+    border: 0;
+    border-radius: 0;
+    background: #212121;
+    color: #ddd;
+    padding: 8px 6px 6px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+#performance-view .performance-shelf-item:hover,
+#performance-view .performance-shelf-item:active {
+    background: #2b2b2b;
+}
+#performance-view .performance-shelf-thumb {
+    height: 52px;
+    display: flex;
+    align-items: center;
+}
+#performance-view .performance-shelf-thumb img {
+    max-height: 52px;
+    max-width: 96px;
+}
+#performance-view .performance-shelf-label {
+    font-size: 11px;
+    line-height: 1.2;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 /* the editor's settings window for the active pedal, shown as a strip */

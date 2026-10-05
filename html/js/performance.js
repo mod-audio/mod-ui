@@ -35,6 +35,8 @@ function PerformanceView(options) {
     var POLL_MS     = 400
     var SETTLE_MS   = 140
     var STORAGE_KEY = 'mod-performance-view'
+    var HIDDEN_KEY  = 'mod-performance-hidden'
+    var TILE        = ':hidden'  // pseudo instance of the "N hidden" tile
 
     var pb       = options.pedalboard
     var view     = options.view
@@ -56,6 +58,14 @@ function PerformanceView(options) {
     var scrollRaf    = null
     var spacerL      = $('<div class="performance-spacer">')
     var spacerR      = $('<div class="performance-spacer">')
+
+    // strip furniture of our own: a hide button next to the borrowed settings
+    // panel, and the shelf of hidden pedals shown when the tile is centred
+    var EYE_OFF = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M3 3l18 18M10.6 5.1A10.4 10.4 0 0 1 12 5c5.5 0 9 5.5 9.5 7-.3.8-1.3 2.6-3 4.2M6.6 6.6C4.4 8 3 10.2 2.5 12c.6 1.7 4 7 9.5 7 1.6 0 3-.4 4.3-1.1M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>'
+    var tools = $('<div class="performance-tools">').prependTo(strip)
+    var hideButton = $('<button type="button" class="performance-hide" title="Hide this pedal from the performance view">' + EYE_OFF + '<span>Hide</span></button>').appendTo(tools)
+    var shelf = $('<div class="performance-shelf">').appendTo(strip).hide()
+    var tile = null  // the "N hidden" slide, created on demand
 
     this.isOpen = function () {
         return isOpen
@@ -81,6 +91,29 @@ function PerformanceView(options) {
         }
         try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) } catch (e) { return null }
     }
+
+    // Hidden pedals, per pedalboard, in this browser only:
+    // { "<bundle path>": ["/graph/instance", ...] }
+    var hiddenMap = null
+    var loadHidden = function () {
+        try { hiddenMap = JSON.parse(localStorage.getItem(HIDDEN_KEY)) || {} } catch (e) { hiddenMap = hiddenMap || {} }
+    }
+    var hiddenList = function () {
+        if (!hiddenMap) loadHidden()
+        return (hiddenMap[boardKey()] || []).slice()
+    }
+    var saveHidden = function (list) {
+        if (!hiddenMap) loadHidden()
+        if (list.length) hiddenMap[boardKey()] = list
+        else delete hiddenMap[boardKey()]
+        try { localStorage.setItem(HIDDEN_KEY, JSON.stringify(hiddenMap)) } catch (e) {}
+    }
+    // other tabs of this browser
+    window.addEventListener('storage', function (e) {
+        if (e.key !== HIDDEN_KEY) return
+        loadHidden()
+        if (isOpen) rebuild()
+    })
 
     // ------------------------------------------------------------------
     // plugin order: follow the signal, left to right
@@ -180,6 +213,55 @@ function PerformanceView(options) {
         settings.find('.mod-controls').scrollLeft(0)
     }
 
+    // what the strip shows for a slide: its settings, or the hidden shelf
+    var showStrip = function (s) {
+        if (s && s.tile) {
+            hideSettings()
+            tools.hide()
+            renderShelf()
+            shelf.show()
+        } else {
+            shelf.hide()
+            tools.toggle(!!s)
+            showSettings(s && s.settings)
+        }
+    }
+
+    var thumbnailUrl = function (icon) {
+        var gui = icon.data('gui')
+        var v = gui && gui.effect && gui.effect.renderedVersion
+        return '/effect/image/thumbnail.png?uri=' + escape(icon.data('uri')) + (v ? '&v=' + v : '')
+    }
+
+    var renderShelf = function () {
+        var plugins = pb.data('plugins') || {}
+        var hidden = {}
+        hiddenList().forEach(function (i) { hidden[i] = true })
+        var ids = self.signalOrder().filter(function (i) { return hidden[i] })
+
+        shelf.empty()
+        var head = $('<div class="performance-shelf-head">').appendTo(shelf)
+        $('<span>').text('Hidden from this view').appendTo(head)
+        if (ids.length > 1) {
+            $('<button type="button" class="performance-show-all">Show all</button>').appendTo(head).click(function () {
+                saveHidden([])
+                rebuild({ focus: ids[0] })
+            })
+        }
+        var row = $('<div class="performance-shelf-row">').appendTo(shelf)
+        ids.forEach(function (instance) {
+            var icon = plugins[instance]
+            var item = $('<button type="button" class="performance-shelf-item">').attr('title', 'Show in the performance view')
+            $('<span class="performance-shelf-thumb">').append($('<img alt="">').attr('src', thumbnailUrl(icon))).appendTo(item)
+            $('<span class="performance-shelf-label">').text(icon.data('label') || instance.split('/').pop()).appendTo(item)
+            item.click(function () {
+                saveHidden(hiddenList().filter(function (i) { return i !== instance }))
+                rebuild({ focus: instance })
+            })
+            row.append(item)
+        })
+    }
+
     var hideSettings = function () {
         if (!shownSettings) {
             return
@@ -188,11 +270,27 @@ function PerformanceView(options) {
         shownSettings = null
     }
 
+    hideButton.click(function () {
+        var s = slides[active]
+        if (!s || s.tile) return
+        var pedals = slides.filter(function (x) { return !x.tile })
+        var i = pedals.indexOf(s)
+        // the next pedal slides into the middle; at the end, the previous one
+        var next = pedals[i + 1] || pedals[i - 1]
+        saveHidden(hiddenList().concat([s.instance]))
+        rebuild({ focus: next ? next.instance : TILE })
+    })
+
     // ------------------------------------------------------------------
     // building and laying out the carousel
 
-    var rebuild = function () {
-        var order = self.signalOrder()
+    var rebuild = function (opts) {
+        opts = opts || {}
+        var all = self.signalOrder()
+        var hidden = {}
+        hiddenList().forEach(function (i) { hidden[i] = true })
+        var order = all.filter(function (i) { return !hidden[i] })
+        var hiddenCount = all.length - order.length
         var key = boardKey()
         var boardChanged = key !== builtFor
         builtFor = key
@@ -202,7 +300,7 @@ function PerformanceView(options) {
         var prevIndex = boardChanged ? -1 : active
         var plugins = pb.data('plugins') || {}
         var byInstance = {}
-        slides.forEach(function (s) { byInstance[s.instance] = s })
+        slides.forEach(function (s) { if (!s.tile) byInstance[s.instance] = s })
 
         var next = []
         order.forEach(function (instance) {
@@ -243,6 +341,17 @@ function PerformanceView(options) {
             g.slide.remove()
         }
 
+        if (hiddenCount) {
+            if (!tile) {
+                tile = { instance: TILE, tile: true, nw: 180, nh: 250, maxScale: 1.3 }
+                tile.slide  = $('<div class="performance-slide performance-tile">').attr('data-instance', TILE)
+                tile.scaler = $('<div class="performance-scaler">').appendTo(tile.slide)
+                tile.box    = $('<div class="performance-tile-box">').html(EYE_OFF + '<b></b><small>Tap to show</small>').appendTo(tile.scaler)
+            }
+            tile.box.find('b').text(hiddenCount + ' hidden')
+            next.push(tile)
+        }
+
         slides = next
         active = -1  // indexes may have shifted; setActive() below re-applies classes
         track.children().detach()
@@ -253,7 +362,7 @@ function PerformanceView(options) {
         empty.toggle(slides.length === 0)
         if (slides.length === 0) {
             active = -1
-            hideSettings()
+            showStrip(null)
             return
         }
 
@@ -261,7 +370,10 @@ function PerformanceView(options) {
 
         // which pedal should be active?
         var idx = -1
-        if (prevInstance) {
+        if (opts.focus) {
+            idx = slides.findIndex(function (s) { return s.instance === opts.focus })
+        }
+        if (idx < 0 && prevInstance) {
             idx = slides.findIndex(function (s) { return s.instance === prevInstance })
             if (idx < 0 && prevIndex >= 0) {
                 // same board, pedal removed: stay close to where we were
@@ -275,6 +387,7 @@ function PerformanceView(options) {
             }
         }
         if (idx < 0) idx = 0
+        if (slides[idx].tile && slides.length > 1 && !opts.focus && prevInstance !== TILE) idx = 0  // don't open on the tile
         setActive(idx, true)
         scrollToIndex(idx, false)
     }
@@ -282,6 +395,7 @@ function PerformanceView(options) {
     // Native pedal size. offsetWidth/Height ignore transforms, so this works
     // while the pedal is scaled; it only changes if the face itself changes.
     var measure = function (s) {
+        if (s.tile) return true
         s.nw = s.icon.outerWidth()
         s.nh = s.icon.outerHeight()
         return s.nw > 0 && s.nh > 0
@@ -308,7 +422,7 @@ function PerformanceView(options) {
         var availW = Math.max(40, stageW * 0.86)
         slides.forEach(function (s, i) {
             var w = s.nw || 200, h = s.nh || 300
-            var scale = Math.min(MAX_SCALE, availH / h, availW / w)
+            var scale = Math.min(s.maxScale || MAX_SCALE, availH / h, availW / w)
             var gap = i === slides.length - 1 ? 0 : GAP
             if (scale === s.scale && w === s.lw && h === s.lh && gap === s.gap) return
             s.scale = scale
@@ -383,10 +497,10 @@ function PerformanceView(options) {
         }
         clearTimeout(settleTimer)
         if (immediateSettings) {
-            showSettings(slides[idx].settings)
+            showStrip(slides[idx])
         } else {
             settleTimer = setTimeout(function () {
-                if (slides[active]) showSettings(slides[active].settings)
+                if (slides[active]) showStrip(slides[active])
             }, SETTLE_MS)
         }
     }
@@ -554,7 +668,7 @@ function PerformanceView(options) {
         clearTimeout(settleTimer)
         saveState()
 
-        hideSettings()
+        showStrip(null)
         slides.forEach(function (s) {
             if (s.icon && s.icon.parent().is(s.scaler) && s.icon.data('gui')) returnIcon(s.icon)
         })
