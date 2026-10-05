@@ -1,0 +1,210 @@
+/* SPDX-FileCopyrightText: 2026 Niels
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ *
+ * Performance view: pedal carousel + settings strip
+ */
+
+/* = FOOTER ICON
+================================================ */
+#main-menu #mod-performance {
+    position: relative;
+    transition: all 0.33s;
+}
+#main-menu #mod-performance:before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 45px;
+    height: 45px;
+    background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 45 45'><path d='M25.5 7 13 25h8.2L18.5 38 32 19h-8.4z' fill='%23fff'/><path d='M21.2 25 18.5 38 32 19h-5.6L21.2 25z' fill='%23f29446'/></svg>") center / 45px 45px no-repeat;
+    opacity: 0.4;
+    transition: opacity 0.33s;
+}
+#main-menu #mod-performance:hover,
+#main-menu #mod-performance.selected {
+    background-color: #000;
+}
+#main-menu #mod-performance:hover:before,
+#main-menu #mod-performance.selected:before {
+    opacity: 1;
+}
+
+/* = VIEW
+================================================ */
+#performance-view {
+    position: absolute;
+    top: 45px;     /* below #pedalboard-actions */
+    bottom: 45px;  /* above #main-menu */
+    left: 0;
+    right: 0;
+    z-index: 6;    /* over the canvas and plugin library, under the footer */
+    display: flex;
+    flex-direction: column;
+    background: #111 url(../img/background.jpg);
+    background-size: cover;
+    overflow: hidden;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+body.performance-mode #zoom-controllers,
+body.performance-mode #js-cv-addressing-toggle {
+    visibility: hidden;
+}
+
+/* pedal stage: horizontal scroller that always settles on a centred pedal */
+#performance-view .performance-stage {
+    position: relative;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+}
+#performance-view .performance-stage.performance-animating {
+    scroll-snap-type: none;
+}
+#performance-view .performance-stage::-webkit-scrollbar {
+    display: none;
+}
+#performance-view .performance-track {
+    display: flex;
+    align-items: center;
+    height: 100%;
+    width: max-content;
+}
+#performance-view .performance-spacer {
+    flex: 0 0 auto;
+    height: 1px;
+}
+
+#performance-view .performance-slide {
+    position: relative;
+    flex: 0 0 auto;
+    scroll-snap-align: center;
+    scroll-snap-stop: always;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+    cursor: pointer;
+}
+/* selection ring (a pseudo element: main.css resets outline) */
+#performance-view .performance-slide:after {
+    content: '';
+    position: absolute;
+    left: -10px;
+    top: -10px;
+    right: -10px;
+    bottom: -10px;
+    border: 3px solid transparent;
+    border-radius: 10px;
+    pointer-events: none;
+    transition: border-color 0.2s;
+}
+#performance-view .performance-slide.active {
+    opacity: 1;
+    cursor: auto;
+}
+#performance-view .performance-slide.active:after {
+    border-color: #883996;
+}
+#performance-view .performance-scaler {
+    position: absolute;
+    left: 0;
+    top: 0;
+    transform-origin: 0 0;
+}
+
+/* the editor's own pedal icon, parked on stage */
+#performance-view .performance-icon {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    z-index: auto !important;
+    margin: 0 !important;
+}
+#performance-view .performance-icon .mod-actions,
+#performance-view .performance-icon [mod-role$="-audio-port"],
+#performance-view .performance-icon [mod-role$="-midi-port"],
+#performance-view .performance-icon [mod-role$="-cv-port"],
+#performance-view .performance-icon .mod-pedal-input,
+#performance-view .performance-icon .mod-pedal-output {
+    display: none !important;
+}
+#performance-view .performance-icon [mod-role="drag-handle"] {
+    cursor: auto;
+}
+
+#performance-view .performance-empty {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 45%;
+    text-align: center;
+    color: #999;
+    font-size: 20px;
+}
+
+/* = SETTINGS STRIP
+================================================ */
+#performance-view .performance-strip {
+    flex: 0 0 auto;
+    position: relative;
+    background: #111;
+    border-top: 1px solid #2b2b2b;
+    min-height: 164px;
+}
+
+/* the editor's settings window for the active pedal, shown as a strip */
+#performance-view .performance-strip > .mod-settings.performance-settings {
+    display: block !important;  /* other windows may try to close it */
+    position: static !important;
+    background: none !important;
+    opacity: 1 !important;
+    z-index: auto !important;
+}
+#performance-view .performance-settings .mod-pedal-settings {
+    position: static;
+    overflow: visible;
+    margin: 0;
+}
+#performance-view .performance-settings .mod-pedal-settings > header {
+    display: none;
+}
+#performance-view .performance-settings .mod-controls {
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+    touch-action: pan-x;
+    padding: 2px 0 0;
+}
+#performance-view .performance-settings .mod-control-group {
+    display: flex;
+    flex-wrap: nowrap;
+    width: max-content;
+    margin: 0 auto;  /* centred when it fits, scrollable when it doesn't */
+    padding: 0 12px;
+}
+#performance-view .performance-settings .mod-control-group:before,
+#performance-view .performance-settings .mod-control-group:after {
+    display: none;  /* clearfix pseudo elements would become flex items */
+}
+#performance-view .performance-settings .mod-control-group > * {
+    flex: 0 0 auto;
+    float: none;
+}
+#performance-view .performance-settings .mod-controls {
+    scrollbar-width: thin;
+    scrollbar-color: #444 transparent;
+}
+#performance-view .performance-settings .mod-controls::-webkit-scrollbar {
+    height: 6px;
+}
+#performance-view .performance-settings .mod-controls::-webkit-scrollbar-thumb {
+    background: #444;
+    border-radius: 3px;
+}

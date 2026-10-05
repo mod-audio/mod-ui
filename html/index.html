@@ -30,6 +30,7 @@
 <link rel="stylesheet" type="text/css" href="css/fonts.css?v={{version}}"/>
 <link rel="stylesheet" type="text/css" href="img/icons/icons.css?v={{version}}"/>
 <link rel="stylesheet" type="text/css" href="css/pedals.css?v={{version}}"/>
+<link rel="stylesheet" type="text/css" href="css/performance.css?v={{version}}"/>
 <link rel="stylesheet" type="text/css" href="resources/pedals/default.css?v={{version}}"/>
 <link rel="stylesheet" type="text/css" href="js/lib/slick/slick.css?v={{version}}"/>
 <link rel="stylesheet" type="text/css" href="js/lib/slick/slick-theme.css?v={{version}}"/>
@@ -149,6 +150,8 @@ $('document').ready(function() {
         transportSyncMode: $('#mod-enum-transport-sync-mode'),
         effectBox: $('#plugins-library'),
         pedalboardTrigger: $('#main-menu #mod-plugins'),
+        performanceView: $('#performance-view'),
+        performanceTrigger: $('#main-menu #mod-performance'),
         cloudPluginBox: $('#cloud-plugins-library'),
         cloudPluginBoxTrigger: $('#mod-cloud-plugins'),
         pedalboardBox: $('#pedalboards-library'),
@@ -338,6 +341,7 @@ $('document').ready(function() {
 <script type="text/javascript" src="js/installation.js?v={{version}}"></script>
 <script type="text/javascript" src="js/desktop.js?v={{version}}"></script>
 <script type="text/javascript" src="js/pedalboard.js?v={{version}}"></script>
+<script type="text/javascript" src="js/performance.js?v={{version}}"></script>
 <script type="text/javascript" src="js/pedalboards.js?v={{version}}"></script>
 <script type="text/javascript" src="js/file_manager.js?v={{version}}"></script>
 <script type="text/javascript" src="js/banks.js?v={{version}}"></script>
@@ -749,9 +753,20 @@ $('document').ready(function() {
     </div>
     <!-- END PEDALBOARD -->
 
+    <!-- PERFORMANCE VIEW -->
+    <div id="performance-view" style="display:none">
+        <div class="performance-stage">
+            <div class="performance-track"></div>
+            <div class="performance-empty" style="display:none">No plugins on this pedalboard</div>
+        </div>
+        <div class="performance-strip"></div>
+    </div>
+    <!-- END PERFORMANCE VIEW -->
+
     <!-- MAIN MENU-->
     <div id="main-menu" class="mod-init-hidden">
         <div id="mod-plugins" class="icon selected" data-message="Constructor"></div>
+        <div id="mod-performance" class="icon" data-message="Performance view"></div>
         <div id="mod-pedalboard" class="icon" data-message="Pedalboards Library"></div>
         <div id="mod-bank" class="icon" data-message="Banks"></div>
         <div id="mod-file-manager" class="icon" data-message="File Manager"></div>

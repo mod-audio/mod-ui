@@ -803,6 +803,11 @@ JqueryClass('pedalboard', {
     // dimensions
     fitToWindow: function () {
         var self = $(this)
+        // performance view has borrowed the plugin icons, leave the canvas alone
+        if (self.data('performanceMode')) {
+            self.data('performancePendingFit', true)
+            return
+        }
 
         var old = {
             width: self.width(),
@@ -964,6 +969,10 @@ JqueryClass('pedalboard', {
     // Zoom to desired plugin
     focusPlugin: function (plugin) {
         var self = $(this)
+        // performance view has borrowed the plugin icons, leave the canvas alone
+        if (self.data('performanceMode')) {
+            return
+        }
         var scale = self.data('scale')
         var x = plugin.position().left / scale + plugin.width() / 2
         var y = plugin.position().top / scale + plugin.height() / 2
@@ -1020,6 +1029,10 @@ JqueryClass('pedalboard', {
     // Enlarge the pedalboard to a minimum size capable of accommodating all plugins.
     adapt: function (forcedUpdate) {
         var self = $(this)
+        // performance view has borrowed the plugin icons, leave the canvas alone
+        if (self.data('performanceMode')) {
+            return
+        }
         // First, get the minmum bounding rectangle,
         // given by minX, maxX, minY and maxY
         var minX, maxX, minY, maxY, rightMargin, w, h, x, y, plugin, pos
@@ -1754,6 +1767,19 @@ JqueryClass('pedalboard', {
         return "effect"
     },
 
+    // true when the plugin's icon is in the page: on the canvas, or borrowed by the performance view
+    isPluginRendered: function (instance, targetname) {
+        var self = $(this)
+        if (self.find(targetname).length) {
+            return true
+        }
+        if (!self.data('performanceMode')) {
+            return false
+        }
+        var icon = self.data('plugins')[instance]
+        return !!(icon && icon.length && $.contains(document.documentElement, icon[0]))
+    },
+
     getGui: function (instance) {
         var plugin = $(this).data('plugins')[instance]
         if (plugin && plugin.data) {
@@ -1785,7 +1811,7 @@ JqueryClass('pedalboard', {
         var callbackId = instance+'/'+symbol+":enabled"
         var gui = self.pedalboard('getGui', instance)
 
-        if (gui && self.find(targetname).length) {
+        if (gui && self.pedalboard('isPluginRendered', instance, targetname)) {
             if (enabled || feedback) {
                 gui.enable(symbol)
             } else {
@@ -1822,7 +1848,7 @@ JqueryClass('pedalboard', {
         var callbackId = instance+'/'+symbol+":value"
         var gui = self.pedalboard('getGui', instance)
 
-        if (gui && self.find(targetname).length) {
+        if (gui && self.pedalboard('isPluginRendered', instance, targetname)) {
             gui.setPortWidgetsValue(symbol, value, null, true)
 
         } else {
@@ -1890,7 +1916,7 @@ JqueryClass('pedalboard', {
         var callbackId = instance+'@'+uri+'@value'
         var gui = self.pedalboard('getGui', instance)
 
-        if (gui && self.find(targetname).length) {
+        if (gui && self.pedalboard('isPluginRendered', instance, targetname)) {
             gui.setWritableParameterValue(uri, valuetype, valuedata, null, true)
 
         } else {
@@ -1945,6 +1971,10 @@ JqueryClass('pedalboard', {
     // Redraw all connections from or to a plugin
     drawPluginJacks: function (plugin) {
         var self = $(this)
+        // performance view has borrowed the plugin icons, leave the canvas alone
+        if (self.data('performanceMode')) {
+            return
+        }
         var myjacks = []
         var connMgr = self.data('connectionManager')
         connMgr.iterateInstance(plugin.data('instance'), function (jack) {

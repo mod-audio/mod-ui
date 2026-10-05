@@ -35,6 +35,8 @@ function Desktop(elements) {
         cloudPluginBox: $('<div>'),
         cloudPluginBoxTrigger: $('<div>'),
         pedalboardTrigger: $('<div>'),
+        performanceView: $('<div>'),
+        performanceTrigger: $('<div>'),
         fileManagerBox: $('<div>'),
         fileManagerBoxTrigger: $('<div>'),
         pedalboardBox: $('<div>'),
@@ -220,6 +222,13 @@ function Desktop(elements) {
     this.loadingPeldaboardForFirstTime = true
 
     this.pedalboard = self.makePedalboard(elements.pedalboard, elements.effectBox)
+
+    this.performanceView = new PerformanceView({
+        pedalboard: this.pedalboard,
+        view: elements.performanceView,
+        trigger: elements.performanceTrigger,
+        exitTrigger: elements.pedalboardTrigger,
+    })
 
     elements.zoomIn.click(function () {
         self.pedalboard.pedalboard('zoomIn')
@@ -1313,6 +1322,7 @@ function Desktop(elements) {
 
     elements.settingsIcon.statusTooltip()
     elements.pedalboardTrigger.statusTooltip()
+    elements.performanceTrigger.statusTooltip()
     elements.pedalboardBoxTrigger.statusTooltip()
     elements.bankBoxTrigger.statusTooltip()
     elements.cloudPluginBoxTrigger.statusTooltip()
