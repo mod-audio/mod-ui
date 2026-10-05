@@ -1,0 +1,16 @@
+[package]
+name = "mod-ui-desktop"
+version = "0.1.0"
+description = "Desktop wrapper for the MOD UI web frontend"
+authors = ["MOD Audio"]
+license = "AGPL-3.0-or-later"
+edition = "2021"
+rust-version = "1.77.2"
+build = "build.rs"
+
+[build-dependencies]
+tauri-build = { version = "2.6.3", features = [] }
+
+[dependencies]
+tauri = { version = "2.11.5", features = [] }
+
