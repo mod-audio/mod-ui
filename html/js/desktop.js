@@ -726,19 +726,6 @@ function Desktop(elements) {
         })
     }
 
-    this.setupApp = function () {
-        self.isApp = true
-        $('#mod-bank').hide()
-        $('#mod-file-manager').hide()
-        $('#mod-settings').hide()
-        $('#mod-devices').hide()
-        $('#mod-status').hide()
-        $('#mod-ram').hide()
-        $('#mod-show-midi-port').hide()
-        $('#pedalboards-library').find('a').hide()
-        $('#pedal-presets-window').find('.js-assign-all').hide()
-    }
-
     this.setupDeviceAuthentication = function () {
         self.authenticateDevice(function (ok) {
             if (ok) {

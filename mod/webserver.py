@@ -1872,6 +1872,10 @@ class TemplateHandler(TimelessRequestHandler):
             'titleblend': '' if SESSION.host.pedalboard_name else 'blend',
             'dev_api_class': 'dev_api' if DEV_API else '',
             'using_desktop': 'true' if DESKTOP else 'false',
+            # Real bool, for {% if %}. 'using_desktop' above is the *string*
+            # 'true'/'false', because it is substituted into JS; both strings
+            # are truthy, so it cannot be branched on in the template.
+            'desktop_app': DESKTOP,
             'using_mod': 'true' if DEVICE_KEY and hwdesc.get('platform', None) is not None else 'false',
             'user_name': mod_squeeze(user_id.get("name", "")),
             'user_email': mod_squeeze(user_id.get("email", "")),
@@ -1970,6 +1974,21 @@ class BulkTemplateLoader(TimelessRequestHandler):
                           mod_squeeze(contents)
                           )
                        )
+        # MOD Desktop specific templates, exposed as TEMPLATES['desktop_app_<name>'].
+        # Skipped entirely on hardware: nothing there renders them, and they are
+        # dead weight in a bundle the device parses on every load.
+        appdir = os.path.join(basedir, 'desktop-app')
+        if DESKTOP and os.path.isdir(appdir):
+            for template in os.listdir(appdir):
+                if not re.match('^[a-z_]+\.html$', template):
+                    continue
+                with open(os.path.join(appdir, template), 'r') as fh:
+                    contents = fh.read()
+                self.write("TEMPLATES['desktop_app_%s'] = '%s';\n\n"
+                           % (template[:-5],
+                              mod_squeeze(contents)
+                              )
+                           )
         self.finish()
 
     # custom call, we cannot use CachedJsonRequestHandler
