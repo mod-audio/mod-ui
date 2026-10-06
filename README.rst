@@ -58,3 +58,24 @@ And now you are ready to start the webserver::
 
 Setting the environment variables is needed when developing on a PC.
 Open your browser and point to http://localhost:8888/.
+
+Tests
+-----
+
+Frontend tests live in ``test/js/`` and run under Node's built-in test runner against the
+real files in ``html/`` (see ``test/js/README.md``)::
+
+    $ npm install      # once, pulls in jsdom
+    $ npm test
+
+Python-side tests are plain ``unittest`` modules in ``test/``::
+
+    $ python3 -m unittest discover -s test -p 'test_*.py'
+
+MOD Desktop
+-----------
+
+The same code base runs inside `MOD Desktop <https://github.com/mod-audio/mod-desktop>`_ with
+``MOD_DESKTOP=1``. That flag serves one extra script (``html/js/desktop-app.js``), one stylesheet
+and the mustache partials under ``html/include/desktop-app/``; a MOD device never downloads any
+of them. See the header of ``html/js/desktop-app.js`` for what the Desktop build shows and hides.
