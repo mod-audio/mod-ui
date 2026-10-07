@@ -33,6 +33,9 @@
 <link rel="stylesheet" type="text/css" href="resources/pedals/default.css?v={{version}}"/>
 <link rel="stylesheet" type="text/css" href="js/lib/slick/slick.css?v={{version}}"/>
 <link rel="stylesheet" type="text/css" href="js/lib/slick/slick-theme.css?v={{version}}"/>
+{% if desktop_app %}
+<link rel="stylesheet" type="text/css" href="css/desktop-app.css?v={{version}}"/>
+{% end %}
 
 <style type="text/css">
     /* STYLE FOR LOADING ANIMATION */
@@ -239,13 +242,13 @@ $('document').ready(function() {
         desktop.problemReport.open()
     })
 
-    if ({{using_desktop}}) {
-        desktop.setupApp()
-    } else {
-        if (PREFERENCES['dev-mode'] == "on") {
-            enable_dev_mode(true)
-        }
+{% if desktop_app %}
+    DesktopApp.setup(desktop)
+{% else %}
+    if (PREFERENCES['dev-mode'] == "on") {
+        enable_dev_mode(true)
     }
+{% end %}
 
     // start code for ajax loading bar
 
@@ -328,7 +331,14 @@ $('document').ready(function() {
 })
 </script>
 
+{% if desktop_app %}
+{# MOD Desktop gets its own mustache partials through this shared endpoint. The
+   endpoint is cache-forever, and a Desktop build's `version` can repeat between
+   packages, so the cache key differs from any response that lacked them. #}
+<script type="text/javascript" src="js/templates.js?v={{version}}&desktop_app_templates=1"></script>
+{% else %}
 <script type="text/javascript" src="js/templates.js?v={{version}}"></script>
+{% end %}
 <script type="text/javascript" src="js/common.js?v={{version}}"></script>
 <script type="text/javascript" src="js/wait.js?v={{version}}"></script>
 <script type="text/javascript" src="js/file_transfer.js?v={{version}}"></script>
@@ -336,6 +346,12 @@ $('document').ready(function() {
 <script type="text/javascript" src="js/modgui.js?v={{version}}"></script>
 <script type="text/javascript" src="js/notification.js?v={{version}}"></script>
 <script type="text/javascript" src="js/installation.js?v={{version}}"></script>
+{% if desktop_app %}
+{# The MOD Desktop seam. A device never loads it: nothing else on this page
+   mentions DesktopApp outside a desktop_app block, and hardware.js only does
+   so behind isApp(). #}
+<script type="text/javascript" src="js/desktop-app.js?v={{version}}"></script>
+{% end %}
 <script type="text/javascript" src="js/desktop.js?v={{version}}"></script>
 <script type="text/javascript" src="js/pedalboard.js?v={{version}}"></script>
 <script type="text/javascript" src="js/pedalboards.js?v={{version}}"></script>
