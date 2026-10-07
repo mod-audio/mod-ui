@@ -3060,8 +3060,11 @@ function T3KIntegration(pedalboard, pubKey) {
         t3kOpenPopups = t3kOpenPopups.filter(item => item.effect != effect)
     }
 
-    this.startSelectFlow = function(effect, parameter, skipAuthCheck) {
+    // folder: where the picker was when the user asked for Tone3000, relative to the port's
+    // root ("" = root); the downloaded files go there.
+    this.startSelectFlow = function(effect, parameter, skipAuthCheck, folder) {
         const hasApiKey = pubKey && pubKey.length > 0
+        folder = folder || ""
 
         if (!skipAuthCheck || !hasApiKey) {
             let authenticated = false
@@ -3101,7 +3104,7 @@ function T3KIntegration(pedalboard, pubKey) {
                 window.onT3KSplashContinue = function() {
                     // continue with the select workflow skipAuthCheck = true
                     if (hasApiKey) {
-                        self.startSelectFlow(effect, parameter, true)
+                        self.startSelectFlow(effect, parameter, true, folder)
                     }
                 }
                 try { t3kwelcome.onSplashContinue = window.onT3KSplashContinue } catch (e) {}
@@ -3112,44 +3115,27 @@ function T3KIntegration(pedalboard, pubKey) {
 
         // start the select workflow
         const callbackUrl = window.location.origin + '/effect/t3k/select' + effect
-        // todo: gears -> check if we need to load an amp/effet or a cab/ir
 
-        gears = []
-        parameter.fileTypes.forEach(value => {
-            if (value == 'nammodel' || value == 'aidadspmodel') {
-                gears.push('amp')
-                gears.push('amp-cab')
-                gears.push('pedal')
-                gears.push('outboard')
-            } else if (value == 'cabsim') {
-                gears.push('cab')
-            } else if (value == 'ir') {
-                gears.push('space')
-            }
-        });
-
-        if (gears.length == 0) {
-            gears.push('amp')
-            gears.push('amp-cab')
-            gears.push('pedal')
-            gears.push('outboard')
-        } else {
-            gears = [...new Set(gears)];
-        }
-
+        // Restrict Tone3000's browser by model FORMAT, not by gear type: a `gears` filter is
+        // locked in Tone3000's UI (the user cannot narrow it to, say, amp heads), while `format`
+        // only hides files this port cannot load and leaves the gear filters free.
+        // Tone3000 formats: nam for NAM captures (amps, pedals, amps+cabs, outboard), ir for cabinets.
         const options = {
-            gears: gears.join('_'),
-            //format: string,
             menubar: true,
             //loginHint: string,
-            architecture: 2, // NAM A2
             preview: true
+        }
+        if (parameter.fileTypes.indexOf('nammodel') >= 0) {
+            options.format = 'nam'
+            options.architecture = 2 // NAM A2; without it Tone3000 hides A2-only tones
+        } else {
+            options.format = 'ir'
         }
         window.Tone3000Client
             .startSelectFlowPopup(pubKey, callbackUrl, options)
             .then((data) => {
                 // add the popup to the traked popups
-                t3kOpenPopups.push({effect: effect, parameter: parameter, popup: data})
+                t3kOpenPopups.push({effect: effect, parameter: parameter, popup: data, folder: folder})
             })
             .catch((error) => {
                 console.error("T3KSelect error:", error);
@@ -3232,12 +3218,34 @@ function T3KIntegration(pedalboard, pubKey) {
     /*
      * This function download the models files and upload to the device using the file upload api
      */
-    this.downloadModelsFiles = async function (access_token, tone, models, progressFunc) {
+    // parameter: the file port the download is for (decides the user-files folder: NAM Models,
+    // Speaker Cabinets IRs or Reverb IRs); folder: subfolder of that root the picker was in.
+    this.downloadModelsFiles = async function (access_token, tone, models, progressFunc, parameter, folder) {
         try {
             const total = models.length
             const files = []
             let current = 0
-            let directory = total > 1 ? tone.title : "" // do not place in a subfolder if it's just one file
+            // a pack (several files) gets its own subfolder, named after the tone; a single file
+            // goes straight into the folder the user was browsing
+            let directory = total > 1 ? tone.title : ""
+            if (folder) {
+                directory = directory ? folder + '/' + directory : folder
+            }
+
+            // the port decides where the files belong; the tone's gear only as a fallback
+            let filetype
+            const fileTypes = parameter?.fileTypes || []
+            if (fileTypes.indexOf('nammodel') >= 0) {
+                filetype = 'nammodel'
+            } else if (fileTypes.indexOf('cabsim') >= 0) {
+                filetype = 'cabsim'
+            } else if (fileTypes.indexOf('ir') >= 0) {
+                filetype = 'ir'
+            } else if (tone.gear == 'cab') {
+                filetype = 'cabsim'
+            } else {
+                filetype = 'nammodel'
+            }
 
             progressFunc?.(null, 0, total)
             for(const model of models) {
@@ -3247,14 +3255,6 @@ function T3KIntegration(pedalboard, pubKey) {
                 const tmpFilename = url.pathname.split('/').pop();
                 const fileExtension = tmpFilename.split('.').pop();
                 let fileName = (total > 1 ? model.name : tone.title)
-
-                if (tone.gear == 'cab') {
-                    filetype = 'cabsim'
-                } else if (tone.gear == 'space') {
-                    filetype = 'ir'
-                } else {
-                    filetype = 'nammodel'
-                }
                 const uploadConfig = {
                     directory: directory,
                     onDirectoryConflict: current == 1 ? 'rename' : 'merge', // rename directory if exists, the file is always renamed on conflict
@@ -3371,7 +3371,7 @@ function T3KIntegration(pedalboard, pubKey) {
                                             const msg = `Downloading files ${current}/${count}...`
                                             const perc = Math.round(current / Math.min(1, count) * 100)
                                             t3kinfo.popup?.progress?.(msg, perc)
-                                        })
+                                        }, t3kinfo.parameter, t3kinfo.folder)
                                         .then((files) => {
                                             // refresh the file lists and load the first downloaded
                                             // file (alphabetical) into the requesting plugin

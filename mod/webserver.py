@@ -2278,6 +2278,25 @@ class FilesUpload(SimpleFileReceiver):
     }
 
     @staticmethod
+    def sanitize_relpath(relpath: str) -> str:
+        """A relative directory path made of sanitized components; '.', '..' and empty parts are dropped."""
+        parts = []
+        for part in str(relpath or "").replace("\\", "/").split("/"):
+            part = part.strip()
+            if part in ("", ".", ".."):
+                continue
+            part = FilesUpload.sanitize_filename(part)
+            if part and part not in (".", ".."):
+                parts.append(part)
+        return os.path.join(*parts) if parts else ""
+
+    @staticmethod
+    def is_inside(path: str, root: str) -> bool:
+        path = os.path.realpath(path)
+        root = os.path.realpath(root)
+        return path == root or path.startswith(root + os.sep)
+
+    @staticmethod
     def sanitize_filename(filename: str, replacement: str = "-") -> str:
         # 1. Normalize Unicode (e.g., convert accented characters like 'é' -> 'e')
         filename = unicodedata.normalize('NFKD', filename).encode('ascii', 'ignore').decode('ascii')
@@ -2345,21 +2364,26 @@ class FilesUpload(SimpleFileReceiver):
             os.remove(source_file)
             callback()
             return
-        configDirectory = config.get('directory', "")
-        if configDirectory:
-            model_dir_name = FilesUpload.sanitize_filename(configDirectory)
-        else:
-            model_dir_name = ""
+        # 'directory' is a path relative to the file type's root: the folder the picker was in when
+        # the user asked for Tone3000, plus the pack name. Every component is sanitized, '.', '..' and
+        # empty ones are dropped, and the result has to stay inside basepath.
         basepath = os.path.join(USER_FILES_DIR, directory) # eg. /user-files/NAM Models/
-        dirname = os.path.join(basepath, model_dir_name) # eg. /user-files/NAM Models/VOX AC 30/
+        model_dir_name = FilesUpload.sanitize_relpath(config.get('directory', ""))
+        dirname = os.path.join(basepath, model_dir_name) if model_dir_name else basepath # eg. /user-files/NAM Models/Vox/VOX AC 30/
+        if not FilesUpload.is_inside(dirname, basepath):
+            logging.warning("upload directory %r escapes %s, using the root instead", config.get('directory', ""), basepath)
+            model_dir_name = ""
+            dirname = basepath
         onDirectoryConflict = config.get('onDirectoryConflict', 'merge').lower()
         # logging.debug("model_file_name %s, model_base_name %s, ext %s, directory %s, model_dir_name %s, basepath %s, dirname %s",
         #               model_file_name, model_base_name, ext, directory, model_dir_name, basepath, dirname)
         if model_dir_name != "" and onDirectoryConflict == 'rename':
+            # only the last component (the pack) is renamed; the folder the user was in stays
             index = 0
+            parent_dir, leaf = os.path.split(model_dir_name)
             while os.path.exists(dirname):
                 index += 1
-                model_dir_name = FilesUpload.sanitize_filename(configDirectory) + " {:02d}".format(index)
+                model_dir_name = os.path.join(parent_dir, leaf + " {:02d}".format(index))
                 dirname = os.path.join(basepath, model_dir_name)
 
         model_name = FilesUpload.sanitize_filename(model_base_name)
