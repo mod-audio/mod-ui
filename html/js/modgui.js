@@ -24,8 +24,32 @@ function shouldSkipPort(port) {
     return false;
 }
 
+// Tone3000 hosts NAM captures (amp heads, pedals, amps+cabs, outboard) and cabinet IRs; it has no
+// AIDA-X models, so AIDA-X ports get no Tone3000 entry.
 function supportsT3K(parameter) {
-    return parameter.fileTypes.some(type => type == 'nammodel' || type == 'cabsim' || type == 'ir' || type == 'aidadspmodel')
+    return parameter.fileTypes.some(type => type == 'nammodel' || type == 'cabsim' || type == 'ir')
+}
+
+// Folder the file picker is currently in, relative to the port's root ("" = the root), so a
+// Tone3000 download lands where the user is browsing. The picker keeps full paths per level.
+function t3kCurrentFolder(widget, parameter) {
+    if (!widget || !widget.length || !widget.customSelectPath) {
+        return ""
+    }
+    const current = widget.customSelectPath('getCurrentPath') || []
+    if (current.length == 0) {
+        return ""
+    }
+    const full = current[current.length - 1]
+    for (const base of (parameter.basepaths || [])) {
+        if (full == base) {
+            return ""
+        }
+        if (full.startsWith(base + '/')) {
+            return full.substring(base.length + 1)
+        }
+    }
+    return ""
 }
 
 function loadFileTypesList(parameter, dummy, callback) {
@@ -1112,9 +1136,11 @@ function GUI(effect, options) {
                         const parameter = self.effect.parameters.find((p) => p.uri == uri)
 
                         if (parameter) {
-                            // TODO T3K: check if file type can be downloaded from tone3000
+                            const widget = elem.find('[mod-parameter-uri="' + uri + '"]').filter(function () {
+                                return $(this).data('currentPath') !== undefined
+                            }).first()
                             const t3k = desktop.pedalboard.data('T3KIntegration')
-                            t3k.startSelectFlow(instance, parameter)
+                            t3k.startSelectFlow(instance, parameter, false, t3kCurrentFolder(widget, parameter))
                         }
                     })
                 })
@@ -1410,7 +1436,7 @@ function GUI(effect, options) {
                 urihandle: function(value) {
                     console.log(`handle special uri ${value}`)
                     const t3k = desktop.pedalboard.data('T3KIntegration')
-                    t3k.startSelectFlow(instance, parameter)
+                    t3k.startSelectFlow(instance, parameter, false, t3kCurrentFolder(control, parameter))
                 }
             })
 
