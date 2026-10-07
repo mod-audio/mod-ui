@@ -2910,8 +2910,8 @@ JqueryClass('customSelectPath', baseWidget, {
         if (current.length == 0) {
             currentPaths = port.basepaths
         } else {
-            // show only files in the current path
-            currentPaths = [ current.join('/') ]
+            // show only files in the current path (each entry is a full path, see pushDir)
+            currentPaths = [ current[current.length - 1] ]
         }
 
         let validItems = []
@@ -3046,7 +3046,6 @@ JqueryClass('customSelectPath', baseWidget, {
         if (self.data('initialized')) {
             let parts = value.split('/')
             let path = ""
-            let parentPath = ""
             let newCurrent = []
 
             for(let index = 0; index < parts.length - 1; index++) {
@@ -3054,14 +3053,8 @@ JqueryClass('customSelectPath', baseWidget, {
                 path += parts[index]
                 const folder = self.find("[mod-role=enumeration-option][mod-parameter-value='dir://" + path + "']")
                 if (folder.length > 0) {
-                    if (parentPath.length > 0) {
-                        // puth the other folders
-                        newCurrent.push(parts[index])
-                    } else {
-                        // push the root
-                        newCurrent.push(path)
-                    }
-                    parentPath = path
+                    // full path of every folder level, same as pushDir
+                    newCurrent.push(path)
                     // update the element UI
                     const backArrow = self.data('icons').backArrow
 
