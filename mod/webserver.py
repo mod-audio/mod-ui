@@ -8,6 +8,7 @@ import os
 import re
 import shutil
 import subprocess
+import threading
 import sys
 import time
 import urllib.parse
@@ -157,18 +158,21 @@ def install_bundles_in_tmp_dir(callback):
     callback(resp)
 
 def run_command(args, cwd, callback):
+    # The command's exit is awaited on a thread and the callback posted back to the IOLoop.
+    # The previous version registered the child's stdout for epoll's HUP event (the raw
+    # mask 16): that fires on Linux only, so on macOS and Windows (MOD Desktop) the callback
+    # never ran and every request through here, plugin install included, hung for good.
     ioloop = IOLoop.instance()
     proc   = subprocess.Popen(args, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
-    def end_fileno(fileno, event):
-        ret = proc.poll()
-        if ret is None:
-            return
-        ioloop.remove_handler(fileno)
+    def wait_for_exit():
+        stdout, stderr = proc.communicate()
         if callback is not None:
-            callback((ret,) + proc.communicate())
+            ioloop.add_callback(callback, (proc.returncode, stdout, stderr))
 
-    ioloop.add_handler(proc.stdout.fileno(), end_fileno, 16)
+    thread = threading.Thread(target=wait_for_exit)
+    thread.daemon = True
+    thread.start()
 
 def install_package(filename, callback):
     if not os.path.exists(filename):
