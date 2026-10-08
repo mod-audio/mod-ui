@@ -94,7 +94,14 @@ CONTROLCHAIN_HTTP_ADDRESS = os.environ.pop('MOD_CONTROLCHAIN_HTTP_ADDRESS',
 
 # Where "Report a problem" sends people: the forum topic (or category) for the running
 # release. Set per build, like the version; the default is the forum's Beta Testing category.
-FEEDBACK_URL = os.environ.get('MOD_FEEDBACK_URL', "https://forum.mod.audio/c/beta-testing/41")
+# "Report a problem" target. The OS build sets MOD_FEEDBACK_URL per release (the RC topic); a frozen
+# MOD Desktop build gets it baked in the same way as the Tone3000 id (its own topic, distinct from
+# the OS one). The environment wins, then the build constant, then the Beta Testing category.
+try:
+    from BUILD_CONSTANTS import MOD_FEEDBACK_URL as _FROZEN_FEEDBACK_URL
+except ImportError:
+    _FROZEN_FEEDBACK_URL = None
+FEEDBACK_URL = os.environ.get('MOD_FEEDBACK_URL') or _FROZEN_FEEDBACK_URL or "https://forum.mod.audio/c/beta-testing/41"
 
 MIDI_BEAT_CLOCK_SENDER_URI = "urn:mod:mclk"
 MIDI_BEAT_CLOCK_SENDER_INSTANCE_ID = 9993

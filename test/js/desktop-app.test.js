@@ -11,7 +11,7 @@
  *
  *   - Plugin Store, Banks and File Manager keep their icon, lose their window, and open
  *     the one shared overlay with their own copy.
- *   - Control Chain and hardware addressing keep the in-window card.
+ *   - Hardware addressing keeps the in-window card; the Control Chain icon is hidden; Share is greyed.
  *   - Settings, status, RAM and the MIDI-port toggle hide; the Constructor and the
  *     Pedalboard Library are untouched.
  *   - setup() is what flips the switch, and nothing else does. That a MOD device never
@@ -103,7 +103,7 @@ test('setup() finds every element it reaches for in index.html', () => {
     const targets = ['#mod-cloud-plugins', '#mod-bank', '#mod-file-manager',
                      '#mod-settings', '#mod-status', '#mod-ram', '#mod-show-midi-port',
                      '#pedalboards-library', '#mod-devices', '#mod-devices-window',
-                     '#mod-devices-window .box .mod-devices-window-list',
+                     '#pedalboard-info .js-cloud',
                      '#pedal-presets-window']
     targets.forEach(sel => {
         assert.strictEqual($(sel).length, 1, sel + ' is missing from index.html')
@@ -171,7 +171,7 @@ test('the overlay closes on its button and on Escape', () => {
     assert.strictEqual(overlay.css('display'), 'none', 'a click beside the card closes it')
 })
 
-test('setup() hides the device-only readouts and keeps the Constructor, the Library and Control Chain', () => {
+test('setup() hides the device-only readouts, Control Chain included, and keeps the Constructor and the Library', () => {
     loadIndexBody(ctx)
     DesktopApp.setup(null)
 
@@ -187,21 +187,30 @@ test('setup() hides the device-only readouts and keeps the Constructor, the Libr
         assert.ok(!$(sel).hasClass('desktop-app-greyed'), sel + ' must not be greyed')
     })
 
-    // Control Chain keeps its icon and window; the window carries the card.
-    assert.notStrictEqual($('#mod-devices').css('display'), 'none')
-    const box = $('#mod-devices-window .box')
-    assert.strictEqual(box.find('.desktop-app-exclusive-panel').length, 1)
-    assert.ok(box.find('.desktop-app-exclusive-panel').hasClass('desktop-app-exclusive-form'), 'the wide light card, the window is a small white popup')
-    assert.strictEqual(box.find('.desktop-app-exclusive-panel h2').text(), 'Control Chain')
-    assert.strictEqual(box.find('.mod-devices-window-list').css('display'), 'none')
+    // Control Chain is not advertised: icon and window gone, no card anywhere.
+    assert.strictEqual($('#mod-devices').css('display'), 'none', 'the Control Chain icon must not show')
+    assert.strictEqual($('#mod-devices-window').css('display'), 'none')
+    assert.strictEqual($('#mod-devices-window .desktop-app-exclusive-panel').length, 0, 'no card in the window')
+    $('#mod-devices').click()
+    assert.strictEqual($('#mod-devices-window').css('display'), 'none', 'clicking the hidden icon opens nothing')
+})
 
-    // cc-manager.js only opens the window while a device is connected, which
-    // never happens here, so the icon toggles it itself.
-    const win = $('#mod-devices-window').hide()
-    $('#mod-devices').click()
-    assert.strictEqual(win.css('display'), 'block', 'the icon opens the window')
-    $('#mod-devices').click()
-    assert.strictEqual(win.css('display'), 'none', 'and closes it again')
+test('setup() greys the Share button and routes it to the overlay instead of the share window', () => {
+    loadIndexBody(ctx)
+    let shared = 0
+    const button = $('#pedalboard-info .js-cloud')
+    button.click(() => { shared++ })          // what desktop.js binds: the share window
+    DesktopApp.setup(null)
+
+    assert.notStrictEqual(button.css('display'), 'none', 'the button stays visible')
+    assert.ok(button.hasClass('desktop-app-greyed'), 'and greyed like the other device-only entries')
+    button.click()
+    assert.strictEqual(shared, 0, 'the share window handler must be gone')
+    const overlay = $('#desktop-app-exclusive-overlay')
+    assert.strictEqual(overlay.length, 1, 'the shared overlay opened')
+    assert.notStrictEqual(overlay.css('display'), 'none')
+    assert.strictEqual(overlay.find('h2').text(), 'Share')
+    assert.ok(overlay.find('a.desktop-app-exclusive-cta').attr('href').startsWith('https://mod.audio/'), 'button to the website')
 })
 
 test('setup() tells the shared controller it is the app and switches analytics off', () => {

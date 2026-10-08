@@ -21,12 +21,13 @@
  * What it does not have, and how that shows:
  *
  *  - Plugin Store, Banks, File Manager: the icon stays in the main menu,
- *    greyed out. Clicking it opens ONE shared overlay -- a Dwarf press shot,
+ *    greyed out, as is the Share button. Clicking one opens ONE shared overlay -- a Dwarf press shot,
  *    the feature name, one sentence on what it does on a MOD device and a
  *    button to the website -- instead of the feature's own window. No store
  *    preview, no store queries, no "locked" plugin cards.
- *  - Control Chain window and hardware addressing: the same card inside the
- *    window / the addressing form, where the hardware-only content would be.
+ *  - Hardware addressing: the same card inside the addressing form, where the
+ *    hardware-only options would be.
+ *  - Control Chain: not advertised at all, icon and window hidden.
  *  - Settings, status and RAM readouts, MIDI-port toggle, snapshot "assign
  *    all": hidden, no card. They are absent for unrelated reasons, and
  *    advertising hardware for them would mislead.
@@ -71,6 +72,15 @@ var DesktopApp = {
                      'a MOD device\'s own storage, where its plugins use them on stage with ' +
                      'no computer attached.',
         },
+    },
+
+    /* The Share button on the pedalboard title bar: not an icon with an id, but
+     * the same treatment -- greyed, overlay on click. */
+    SHARE: {
+        feature: 'Share',
+        message: 'Sharing publishes a pedalboard to your MOD account, where it joins the ' +
+                 'pedalboards other MOD device owners browse and load straight onto their ' +
+                 'device. Pedalboards made on MOD Desktop stay on this computer.',
     },
 
     active: false,
@@ -173,7 +183,8 @@ var DesktopApp = {
         $('#pedalboards-library').find('a').hide()
 
         DesktopApp.setupExclusiveIcons()
-        DesktopApp.setupControlChain()
+        DesktopApp.setupShare()
+        DesktopApp.hideControlChain()
         DesktopApp.setupAddressing()
     },
 
@@ -195,26 +206,25 @@ var DesktopApp = {
         })
     },
 
-    /* The Control Chain icon keeps its window, which carries the card instead
-     * of the device list. cc-manager.js only opens that window while a device
-     * is connected -- never, here -- so the icon gets a plain toggle instead.
-     * The window is a small white popup above the icon, hence the wide light
-     * layout of the card. */
-    setupControlChain: function () {
-        var win = $('#mod-devices-window')
-        var box = win.find('.box').first()
-        box.find('.mod-devices-window-list').hide()
-        box.append(DesktopApp.formPanel('Control Chain',
-            'Control Chain lets you plug expression pedals, footswitches and other ' +
-            'controllers straight into a MOD device and assign them to any parameter.'))
-
-        $('#mod-devices').off('click').click(function () {
-            if (win.css('display') !== 'none') {
-                win.hide()
-            } else {
-                win.show()
-            }
+    /* The Share button: desktop.js bound the share window to it; that handler
+     * goes, the button stays visible but greyed and opens the overlay. */
+    setupShare: function () {
+        var button = $('#pedalboard-info').find('.js-cloud')
+        button.off('click')
+        button.addClass('desktop-app-greyed')
+        button.show()
+        button.click(function () {
+            DesktopApp.showUpsell(DesktopApp.SHARE.feature, DesktopApp.SHARE.message)
+            return false
         })
+    },
+
+    /* Control Chain is not advertised on MOD Desktop (Gianfranco, 2026-10-08):
+     * the status-bar icon and its window are simply gone. cc-manager.js keeps
+     * its tooltip on the hidden icon, harmless. */
+    hideControlChain: function () {
+        $('#mod-devices').hide()
+        $('#mod-devices-window').hide()
     },
 
     setupAddressing: function () {
