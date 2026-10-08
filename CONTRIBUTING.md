@@ -71,13 +71,44 @@ on the Desktop it is the Desktop build, and both identify the mod-ui commit.
   stated in the description).
 - The contributor keeps authorship. Maintainers may hand-rebase when it saves time, always with
   the original author on the commit.
-- Web-UI-only changes merge on review. Anything that writes pedalboard files or reads new
-  properties from plugin TTLs touches the shared LV2 vocabulary and needs that discussed first
-  (open an issue before the code).
+- Web-UI-only changes merge on review. Anything that writes a new term into pedalboard files
+  goes through the vocabulary rule below first.
 - Every merged change ships on the Testing channel first, then Stable.
 - No CLA. Your sign-off on the pull request is enough.
 - Do not add generated files, personal editor configuration or credentials. The Tone3000 client
   id and any API key are provided by the environment of the build, never committed.
+
+## Vocabulary: RDF terms in plugin and pedalboard files
+
+mod-ui reads plugin TTLs and writes pedalboard bundles. Both use RDF vocabulary that outlives
+any branch: a term written into a pedalboard file stays on users' devices for years. The
+published vocabulary lives at [moddevices.com/ns](http://moddevices.com/ns/) (source:
+[mod-audio/mod-ns](https://github.com/mod-audio/mod-ns)). Three tiers:
+
+| Tier | Namespace | Who defines it | MOD writes it? |
+| --- | --- | --- | --- |
+| Core | `mod#`, `modgui#`, `modpedal#` | MOD | yes |
+| Extension | `ns/ext/<feature>#` (and `ns/hmi#`) | the contributor who proposes the feature, published by MOD when it is adopted into `master` | yes, once published |
+| Third-party | the contributor's own domain | the contributor | never: read where supported, dropped on save |
+
+**The gate is on writing, not on reading.**
+
+- A pull request that only *reads* new terms (from plugin TTLs, or from pedalboard files
+  written elsewhere) merges on normal review. Unknown terms are harmless to a reader.
+- A pull request that *writes* a new predicate into a pedalboard file (the TTL templates in
+  `mod/host.py`) needs the term published first, in the right tier, and bumps
+  `modpedal:formatVersion` as the [pedalboard page](http://moddevices.com/ns/modpedal/#format-versions)
+  records. Open the mod-ns pull request alongside the mod-ui one.
+- A published term is never given a second meaning. If an existing name says almost what you
+  need, add a new term; `mod:label` (the plugin author's display name) and
+  `modpedal:instanceLabel` (the user's name for one instance) are the worked example.
+- What the user did in a pedalboard (placement, naming, ordering, visibility) is `modpedal#`;
+  what the plugin author declared is `mod#` / `modgui#`. A per-instance annotation is always
+  the former.
+
+The pedalboard writer regenerates the whole file from the running state on every save, so
+terms it does not know are lost. That is by design for the third-party tier and is the reason
+to get a feature adopted. Readers must keep working when any `modpedal#` term is absent.
 
 ## Tests
 
