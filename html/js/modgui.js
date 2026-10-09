@@ -24,8 +24,10 @@ function shouldSkipPort(port) {
     return false;
 }
 
+// Tone3000 hosts NAM captures (amp heads, pedals, amps+cabs, outboard) and cabinet IRs; it has no
+// AIDA-X models, so AIDA-X ports get no Tone3000 entry.
 function supportsT3K(parameter) {
-    return parameter.fileTypes.some(type => type == 'nammodel' || type == 'cabsim' || type == 'ir' || type == 'aidadspmodel')
+    return parameter.fileTypes.some(type => type == 'nammodel' || type == 'cabsim' || type == 'ir')
 }
 
 function loadFileTypesList(parameter, dummy, callback) {
