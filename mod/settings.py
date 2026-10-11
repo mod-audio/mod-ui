@@ -94,7 +94,13 @@ CONTROLCHAIN_HTTP_ADDRESS = os.environ.pop('MOD_CONTROLCHAIN_HTTP_ADDRESS',
 
 # Where "Report a problem" sends people: the forum topic (or category) for the running
 # release. Set per build, like the version; the default is the forum's Beta Testing category.
-FEEDBACK_URL = os.environ.get('MOD_FEEDBACK_URL', "https://forum.mod.audio/c/beta-testing/41")
+# A frozen MOD Desktop has no shell environment when started from Finder/Explorer, so its build
+# bakes the topic in as BUILD_CONSTANTS.MOD_FEEDBACK_URL; the environment still wins when set.
+try:
+    from BUILD_CONSTANTS import MOD_FEEDBACK_URL as _FROZEN_FEEDBACK_URL
+except ImportError:
+    _FROZEN_FEEDBACK_URL = None
+FEEDBACK_URL = os.environ.get('MOD_FEEDBACK_URL') or _FROZEN_FEEDBACK_URL or "https://forum.mod.audio/c/beta-testing/41"
 
 MIDI_BEAT_CLOCK_SENDER_URI = "urn:mod:mclk"
 MIDI_BEAT_CLOCK_SENDER_INSTANCE_ID = 9993
