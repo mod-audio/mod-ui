@@ -35,9 +35,9 @@
 
 var DesktopApp = {
 
-    /* Where the overlay and the cards send people: the buy page (Gianfranco,
-     * 2026-10-07). */
-    STORE_URL: 'https://mod.audio/retailers/',
+    /* Where the overlay and the cards send people: the MOD Dwarf product page
+     * (Gianfranco, 2026-10-11; it was the retailers page, 2026-10-07). */
+    STORE_URL: 'https://mod.audio/dwarf/',
 
     /* Press photo from mod.audio/dwarf, bundled rather than hotlinked: MOD
      * Desktop runs offline, and fetching it would tell mod.audio who is
