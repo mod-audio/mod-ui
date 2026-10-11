@@ -92,10 +92,9 @@ PEDALBOARDS_LABS_HTTP_ADDRESS = os.environ.pop('MOD_PEDALBOARDS_LABS_HTTP_ADDRES
 CONTROLCHAIN_HTTP_ADDRESS = os.environ.pop('MOD_CONTROLCHAIN_HTTP_ADDRESS',
                                            "https://download.mod.audio/releases/cc-firmware/v3")
 
-# Where "Report a problem" sends people: the forum topic (or category) for the running
-# release. Set per build, like the version; the default is the forum's Beta Testing category.
-# A frozen MOD Desktop has no shell environment when started from Finder/Explorer, so its build
-# bakes the topic in as BUILD_CONSTANTS.MOD_FEEDBACK_URL; the environment still wins when set.
+# "Report a problem" target. The OS build sets MOD_FEEDBACK_URL per release (the RC topic); a frozen
+# MOD Desktop build gets it baked in the same way as the Tone3000 id (its own topic, distinct from
+# the OS one). The environment wins, then the build constant, then the Beta Testing category.
 try:
     from BUILD_CONSTANTS import MOD_FEEDBACK_URL as _FROZEN_FEEDBACK_URL
 except ImportError:
