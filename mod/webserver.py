@@ -5,6 +5,7 @@
 import json
 import logging
 import os
+import platform
 import re
 import shutil
 import subprocess
@@ -31,6 +32,7 @@ try:
 except ImportError:
     haveSignal = False
 
+from mod import hostinfo
 from mod.profile import Profile
 from mod.settings import (DESKTOP, LOG, DEV_API,
                           HTML_DIR, DOWNLOAD_TMP_DIR, DEVICE_KEY, DEVICE_WEBSERVER_PORT,
@@ -380,7 +382,8 @@ class MultiPartFileReceiver(JsonRequestHandler):
 class SystemInfo(JsonRequestHandler):
     def get(self):
         hwdesc = get_hardware_descriptor()
-        uname  = os.uname()
+        # os.uname() does not exist on Windows
+        uname  = platform.uname()
 
         if os.path.exists("/etc/mod-release/system"):
             with open("/etc/mod-release/system") as fh:
@@ -420,10 +423,19 @@ class SystemInfo(JsonRequestHandler):
             "uname": {
                 "machine": uname.machine,
                 "release": uname.release,
-                "sysname": uname.sysname,
+                "sysname": uname.system,
                 "version": uname.version
             }
         }
+
+        if DESKTOP:
+            # a computer has no hardware descriptor, release file or controller:
+            # say what it is, what it runs on and what audio setup was started
+            info["host"] = hostinfo.collect([os.path.dirname(LV2_PEDALBOARDS_DIR.rstrip('/\\')), DATA_DIR])
+            info["host"]["buffer_size"] = get_jack_buffer_size()
+            info["host"]["sample_rate"] = get_jack_sample_rate()
+            if info["host"]["uptime"] is not None:
+                info["uptime"] = info["host"]["uptime"]
 
         self.write(info)
 
