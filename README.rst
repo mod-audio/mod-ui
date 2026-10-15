@@ -79,3 +79,10 @@ The same code base runs inside `MOD Desktop <https://github.com/mod-audio/mod-de
 ``MOD_DESKTOP=1``. That flag serves one extra script (``html/js/desktop-app.js``), one stylesheet
 and the mustache partials under ``html/include/desktop-app/``; a MOD device never downloads any
 of them. See the header of ``html/js/desktop-app.js`` for what the Desktop build shows and hides.
+
+Licence and trademarks
+----------------------
+
+mod-ui is released under the AGPL-3.0-or-later (see ``LICENSE``). That licence does not
+cover the logo. The MOD logo is a registered trademark (EU trade mark no. 016228827; UK trade mark no. UK00916228827).
+See ``TRADEMARKS.md``.

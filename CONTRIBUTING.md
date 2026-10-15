@@ -99,6 +99,13 @@ A pull request that touches the Desktop seam must keep `test/test_desktop_app.py
 `test/js/desktop-app*.test.js` green: they assert what the Desktop shows and hides and that the
 device output is unchanged with the flag off.
 
+## Licence and trademarks
+
+Contributions are accepted under the project licence, AGPL-3.0-or-later. The MOD logo is a registered trademark (EU trade mark no. 016228827; UK trade mark no. UK00916228827).
+The licence of the code does not extend to the logo: see [`TRADEMARKS.md`](TRADEMARKS.md).
+Please don't add new logo artwork or third-party brand assets without saying where they
+come from and under what terms.
+
 ## Questions
 
 Open an issue in this repository, or ask on the [MOD forum](https://forum.mod.audio). Release
