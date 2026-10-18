@@ -169,6 +169,11 @@ function refresh_sysinfo() {
     })
 }
 
+// the buffer size radio always shows the size JACK is running at (the server keeps the saved one equal to it)
+function set_buffer_size_radio(size) {
+    $("input[name=prefs-audio-buffer-size][value='" + size + "']").prop("checked", true)
+}
+
 function refresh_sysprefs() {
     $.ajax({
         url: '/system/prefs',
@@ -185,7 +190,6 @@ function refresh_sysprefs() {
                 $("#prefs-bluetooth-name").prop("disabled", true)
             }
 
-            $("#prefs-audio-256-frames").prop("checked", resp.jack_buffer_size == 256)
             $("#prefs-audio-mono-copy").prop("checked", resp.jack_mono_copy)
             $("#prefs-audio-sync-mode").prop("checked", resp.jack_sync_mode)
             $("#prefs-audio-separate-spdif-outs").prop("checked", resp.separate_spdif_outs)
@@ -452,7 +456,7 @@ $('document').ready(function() {
         if (cmd == "bufsize") {
             var bufsize = data.substr(cmd.length+1)
             $("#info-dsp-buffer-size").html(bufsize)
-            $("#prefs-audio-256-frames").prop("checked", bufsize == "256")
+            set_buffer_size_radio(bufsize)
             return
         }
 
@@ -675,16 +679,24 @@ $('document').ready(function() {
     // ----------------------------------------------------------------------------------------------------------------
     // --- Audio Server
 
-    $("#prefs-audio-256-frames").click(function () {
-        var bufferSize = $(this).prop("checked") ? '256' : '128'
-        write_file_contents("jack-buffer-size", bufferSize)
+    // the server persists the buffer size for the next boot itself (/data/jack-buffer-size + the marker files)
+    $("input[name=prefs-audio-buffer-size]").change(function () {
+        var bufferSize = $(this).val()
 
         $.ajax({
             url: '/set_buffersize/' + bufferSize,
             method: 'POST',
             cache: false,
-            success: function () {},
-            error: function () {},
+            success: function (resp) {
+                if (! resp.ok) {
+                    set_buffer_size_radio(resp.size)
+                    new Notification('error', 'Could not change the buffer size to ' + bufferSize + ' frames', 5000)
+                }
+            },
+            error: function () {
+                set_buffer_size_radio($("#info-dsp-buffer-size").text())
+                new Notification('error', 'Could not change the buffer size: communication failure', 5000)
+            },
         })
     })
     $("#prefs-audio-mono-copy").click(function () {
@@ -1120,15 +1132,23 @@ $('document').ready(function() {
                         </p>
                     </div>
 
-                    <label>
-                        <input type="checkbox" autocomplete="off" id="prefs-audio-256-frames">
-                            Use 256 frames as Buffer Size
-                        </input>
-                    </label>
+                    <label>Buffer Size</label>
+                    <div id="prefs-audio-buffer-size">
+                        {% for size in bufferSizes %}
+                        <label>
+                            <input type="radio" autocomplete="off" name="prefs-audio-buffer-size" value="{{size}}"{% if size == bufferSize %} checked{% end %}>
+                                {{size}} frames{% if size == 128 %} (default){% end %}
+                            </input>
+                        </label>
+                        {% end %}
+                    </div>
                     <p>
-                        MOD runs at 128 frames by default, enable this option to run JACK with 256 frames instead.<br/>
-                        Useful if you need the extra time for more plugin processing.<br/>
-                        Obviously this doubles the latency, so only enable it if really necessary.
+                        MOD runs at 128 frames by default.<br/>
+                        256 frames gives plugins twice the time per cycle, at the cost of doubling the latency: use it if you need the extra headroom.<br/>
+                        {% if 64 in bufferSizes %}
+                        64 frames halves the latency but leaves plugins half the time per cycle: a pedalboard that runs fine at 128 frames can drop out at 64.<br/>
+                        {% end %}
+                        Changing the buffer size restarts the audio and reloads the current pedalboard; unsaved changes are kept.
                     </p>
                 </form>
 

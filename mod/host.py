@@ -24,6 +24,7 @@ from tornado.ioloop import IOLoop, PeriodicCallback
 from urllib.parse import quote, unquote
 import os, json, socket, time, logging, sys
 import shutil
+import tempfile
 
 # only used for HMI screenshots, optional
 try:
@@ -2793,27 +2794,49 @@ class Host(object):
         # fallback is true
         return True
 
-    def reload_pedalboard(self, affected_uris):
-        # Reload pedalboard if any effect in affected_uris is in use
-        # Reloading works by saving and loading current pedalboard to a tmp path
-        running_uris = dict([ (p['uri'], 1) for p in self.plugins.values() ])
-        affected = False
-        for uri in affected_uris:
-            if running_uris.get(uri.decode()):
-                affected = True
-                break
-        if not affected:
-            return
-        bundlepath = '/tmp/reloaded.pedalboard'
+    def has_plugins_loaded(self):
+        return len(self.plugins) > 1
+
+    # Re-instantiate the running pedalboard, keeping its identity (name, path, bank, modified flag) and every
+    # unsaved change: the current state is written to a temporary bundle, the host is reset and the bundle loaded.
+    # Used after a JACK buffer size change, where mod-host only tells plugins with an LV2 options interface about
+    # the new block length and every other plugin keeps running with buffers sized for the old one.
+    def reload_current_pedalboard(self, callback):
+        name     = self.pedalboard_name
+        path     = self.pedalboard_path
+        empty    = self.pedalboard_empty
+        modified = self.pedalboard_modified
+        version  = self.pedalboard_version
+        bank_id  = self.bank_id
+        last_bank_id, last_path = get_last_bank_and_pedalboard()
+
+        bundlepath = os.path.join(tempfile.gettempdir(), 'reloaded.pedalboard')
         if os.path.exists(bundlepath):
             shutil.rmtree(bundlepath)
         os.mkdir(bundlepath)
-        self.save_state_to_ttl(bundlepath, self.pedalboard_name, 'tmp')
-        def load(ok):
+
+        self.save_state_to_ttl(bundlepath, name or 'Untitled', 'reloaded')
+
+        def loaded(ok):
             if ok:
-                self.load(bundlepath)
-            shutil.rmtree(bundlepath)
-        self.reset(None, load)
+                self.load(bundlepath, modified=modified)
+
+                # load() recorded the temporary bundle as the current pedalboard, put the real one back
+                self.pedalboard_name     = name
+                self.pedalboard_path     = path
+                self.pedalboard_empty    = empty
+                self.pedalboard_modified = modified
+                self.pedalboard_version  = version
+                self.bank_id             = bank_id
+
+                # load() also replaced the "last pedalboard" record (the temporary bundle is not in the library)
+                if last_path is not None:
+                    save_last_bank_and_pedalboard(last_bank_id, last_path)
+
+            shutil.rmtree(bundlepath, ignore_errors=True)
+            callback(ok)
+
+        self.reset(bank_id, loaded)
 
     # -----------------------------------------------------------------------------------------------------------------
     # Host stuff - plugin presets
@@ -3467,7 +3490,7 @@ class Host(object):
     # -----------------------------------------------------------------------------------------------------------------
     # Host stuff - load & save
 
-    def load(self, bundlepath, isDefault=False, abort_catcher=None):
+    def load(self, bundlepath, isDefault=False, abort_catcher=None, modified=False):
         first_pedalboard = self.first_pedalboard
         self.first_pedalboard = False
 
@@ -3498,7 +3521,7 @@ class Host(object):
         if bundlepath == DEFAULT_PEDALBOARD:
             pb['title'] = "" if isDefault else "Default"
 
-        self.msg_callback("loading_start %i 0" % int(isDefault))
+        self.msg_callback("loading_start %i %i" % (int(isDefault), int(modified)))
         self.msg_callback("size %d %d" % (pb['width'],pb['height']))
 
         midi_aggregated_mode = not pb.get('midi_separated_mode', True)

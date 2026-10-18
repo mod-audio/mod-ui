@@ -587,6 +587,24 @@ class SystemExeChange(JsonRequestHandler):
                 self.write(False)
                 return
 
+            # the buffer size also has boot-time marker files to keep in sync
+            if path == "jack-buffer-size":
+                try:
+                    size = int(content)
+                except ValueError:
+                    size = 0
+                if size not in get_allowed_buffer_sizes():
+                    self.write(False)
+                    return
+                try:
+                    save_jack_buffer_size(size)
+                except OSError as ex:
+                    logging.error("[webserver] cannot save the buffer size: %s", ex)
+                    self.write(False)
+                    return
+                self.write(True)
+                return
+
             filename = "/data/" + path
 
             if content:
@@ -1974,6 +1992,7 @@ class TemplateHandler(TimelessRequestHandler):
             'preferences': json.dumps(prefs),
             'feedback_url': FEEDBACK_URL,
             'bufferSize': get_jack_buffer_size(),
+            'bufferSizes': get_allowed_buffer_sizes(),
             'sampleRate': get_jack_sample_rate(),
         }
         return context
@@ -2074,22 +2093,64 @@ class TrueBypass(JsonRequestHandler):
         ok = set_truebypass_value(channelName == "Right", bypassed == "true")
         self.write(ok)
 
+# JACK buffer sizes a unit may run at.
+# 64 frames is a Dwarf and Duo X option only: the Duo cannot keep up with it.
+JACK_BUFFER_SIZES = (128, 256)
+JACK_BUFFER_SIZES_WITH_64 = (64, 128, 256)
+
+def get_allowed_buffer_sizes():
+    if get_hardware_descriptor().get('platform', None) in ("dwarf", "duox"):
+        return JACK_BUFFER_SIZES_WITH_64
+    return JACK_BUFFER_SIZES
+
+def save_jack_buffer_size(size, datadir="/data"):
+    """Persist the JACK buffer size for the next boot.
+    /data/jack-buffer-size holds the number; /usr/bin/mod-jackd itself only looks for the marker files
+    /data/using-256-frames and /data/using-64-frames, so those are kept in sync with it."""
+    with open(os.path.join(datadir, "jack-buffer-size"), 'w') as fh:
+        fh.write('%d\n' % size)
+
+    for marker, markersize in ((os.path.join(datadir, "using-64-frames"), 64),
+                               (os.path.join(datadir, "using-256-frames"), 256)):
+        if size == markersize:
+            if not os.path.exists(marker):
+                with open(marker, 'wb') as fh:
+                    fh.write(b"")
+        elif os.path.exists(marker):
+            os.remove(marker)
+
+    os_sync()
+
 class SetBufferSize(JsonRequestHandler):
     def post(self, size):
         size = int(size)
+        oldsize = get_jack_buffer_size()
+
+        if size not in get_allowed_buffer_sizes():
+            self.write({
+                'ok'  : False,
+                'size': oldsize,
+            })
+            return
 
         # If running a real MOD, save this setting for next boot
         if IMAGE_VERSION is not None:
-            with open("/data/jack-buffer-size", 'w') as fh:
-                fh.write('%d\n' % size)
-
-            os_sync()
+            save_jack_buffer_size(size)
 
         newsize = set_jack_buffer_size(size)
+        ok = newsize == size
         self.write({
-            'ok'  : newsize == size,
+            'ok'  : ok,
             'size': newsize,
         })
+
+        # The running plugins were instantiated for the old block length and only those with an LV2 options
+        # interface are told about the new one by mod-host: reload the pedalboard so every plugin starts afresh.
+        if ok and newsize != oldsize:
+            def reloaded(ok):
+                if not ok:
+                    logging.error("[webserver] pedalboard reload after the buffer size change failed")
+            IOLoop.instance().add_callback(SESSION.reload_current_pedalboard, reloaded)
 
 class ResetXruns(JsonRequestHandler):
     def post(self):
@@ -2637,7 +2698,7 @@ application = web.Application(
             (r"/hello/?", Hello),
 
             (r"/truebypass/(Left|Right)/(true|false)", TrueBypass),
-            (r"/set_buffersize/(128|256)", SetBufferSize),
+            (r"/set_buffersize/(64|128|256)", SetBufferSize),
             (r"/reset_xruns/", ResetXruns),
             (r"/switch_cpu_freq/", SwitchCpuFreq),
 
