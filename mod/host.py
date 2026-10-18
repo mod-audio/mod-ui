@@ -134,7 +134,7 @@ from mod.settings import (
     DATA_DIR, LV2_PEDALBOARDS_DIR, LV2_PLUGIN_DIR, LV2_FACTORY_PEDALBOARDS_DIR, USER_FILES_DIR,
     PEDALBOARD_INSTANCE, PEDALBOARD_INSTANCE_ID, PEDALBOARD_URI, PEDALBOARD_TMP_DIR,
     TUNER_URI, TUNER_INSTANCE_ID, TUNER_INPUT_PORT, TUNER_MONITOR_PORT, HMI_TIMEOUT, MODEL_TYPE,
-    UNTITLED_PEDALBOARD_NAME, DEFAULT_SNAPSHOT_NAME,
+    UNTITLED_PEDALBOARD_NAME, DEFAULT_SNAPSHOT_NAME, PEDALBOARD_FORMAT_VERSION,
     MIDI_BEAT_CLOCK_SENDER_URI, MIDI_BEAT_CLOCK_SENDER_INSTANCE_ID, MIDI_BEAT_CLOCK_SENDER_OUTPUT_PORT,
 )
 from mod.tuner import (
@@ -387,6 +387,7 @@ class Host(object):
         self.pedalboard_path     = ""
         self.pedalboard_size     = [0,0]
         self.pedalboard_version  = 0
+        self.pedalboard_format_version = 1
         self.current_pedalboard_snapshot_id = -1
         self.pedalboard_snapshots = []
         self.next_hmi_pedalboard_to_load = None
@@ -556,6 +557,12 @@ class Host(object):
 
     def jack_bufsize_changed(self, bufSize):
         self.msg_callback("bufsize %i" % bufSize)
+
+    # A pedalboard file whose pedal:formatVersion is higher than ours was made on a newer MOD OS.
+    # It loads anyway (unknown terms are ignored); the page tells the user that saving drops them.
+    def send_newer_format_notice(self, write, format_version):
+        if format_version > PEDALBOARD_FORMAT_VERSION:
+            write("pb_newer_format %i %i" % (format_version, PEDALBOARD_FORMAT_VERSION))
 
     def jack_port_appeared(self, name, isOutput):
         name = charPtrToString(name)
@@ -2038,6 +2045,7 @@ class Host(object):
         websocket.write_message("truebypass %i %i" % (self.last_true_bypass_left, self.last_true_bypass_right))
         websocket.write_message("loading_start %d %d" % (int(self.pedalboard_empty), int(self.pedalboard_modified)))
         websocket.write_message("size %d %d" % (self.pedalboard_size[0], self.pedalboard_size[1]))
+        self.send_newer_format_notice(websocket.write_message, self.pedalboard_format_version)
 
         for dev_uri, (dev_id, label, labelsuffix, version) in self.addressings.cchain.hw_versions.items():
             websocket.write_message("hw_add %s %s %s %s" % (dev_uri,
@@ -2324,6 +2332,7 @@ class Host(object):
         self.pedalboard_path     = ""
         self.pedalboard_size     = [0,0]
         self.pedalboard_version  = 0
+        self.pedalboard_format_version = 1
 
         if bank_id is None:
             save_last_bank_and_pedalboard(0, "")
@@ -3501,6 +3510,7 @@ class Host(object):
                         'available': False,
                     },
                     'version': 0,
+                    'formatVersion': 1,
                 }
 
         if bundlepath == DEFAULT_PEDALBOARD:
@@ -3508,6 +3518,7 @@ class Host(object):
 
         self.msg_callback("loading_start %i 0" % int(isDefault))
         self.msg_callback("size %d %d" % (pb['width'],pb['height']))
+        self.send_newer_format_notice(self.msg_callback, pb.get('formatVersion', 1))
 
         midi_aggregated_mode = not pb.get('midi_separated_mode', True)
         midi_loopback = pb.get('midi_loopback', False)
@@ -3708,6 +3719,7 @@ class Host(object):
             self.pedalboard_path     = ""
             self.pedalboard_size     = [0,0]
             self.pedalboard_version  = 0
+            self.pedalboard_format_version = 1
             self.midi_aggregated_mode = True
             #save_last_bank_and_pedalboard(0, "")
         else:
@@ -3717,6 +3729,7 @@ class Host(object):
             self.pedalboard_path     = bundlepath
             self.pedalboard_size     = [pb['width'],pb['height']]
             self.pedalboard_version  = pb['version']
+            self.pedalboard_format_version = pb.get('formatVersion', 1)
 
             if bundlepath and (bundlepath.startswith(LV2_PEDALBOARDS_DIR) or
                                bundlepath.startswith(LV2_FACTORY_PEDALBOARDS_DIR)):
@@ -4491,13 +4504,14 @@ _:b%i
     pedal:addressings <addressings.json> ;
     pedal:screenshot <screenshot.png> ;
     pedal:thumbnail <thumbnail.png> ;
+    pedal:formatVersion %i ;
     pedal:version %i ;
     ingen:polyphony 1 ;
 """ % (arcs, blocks, ports,
        title.replace('"','\\"'),
        self.descriptor.get('name', 'Unknown').replace('"','\\"'),
        MODEL_TYPE,
-       self.pedalboard_size[0], self.pedalboard_size[1], self.pedalboard_version)
+       self.pedalboard_size[0], self.pedalboard_size[1], PEDALBOARD_FORMAT_VERSION, self.pedalboard_version)
 
         # Arcs (connections)
         if len(self.connections) > 0:
