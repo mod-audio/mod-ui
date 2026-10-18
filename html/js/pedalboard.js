@@ -1499,6 +1499,11 @@ JqueryClass('pedalboard', {
             for (symbol in pluginGui.controls) {
                 port = pluginGui.controls[symbol]
                 if (symbol == ':bypass') {
+                    if (pluginData.bypassable === false) {
+                        // host-implemented plugin without a bypass: no switch and no addressing for it
+                        settings.find('.mod-switch.bypass').hide()
+                        continue
+                    }
                     address = settings.find('[mod-role=bypass-address]')
                 } else if (symbol == ':presets') {
                     address = settings.find('[mod-role=presets-address]')

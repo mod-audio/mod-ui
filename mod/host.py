@@ -146,7 +146,7 @@ from modtools.utils import (
     kPedalboardInfoUserOnly, kPedalboardInfoFactoryOnly,
     is_bundle_loaded, add_bundle_to_lilv_world, remove_bundle_from_lilv_world,
     is_plugin_preset_valid, rescan_plugin_presets,
-    get_plugin_info, get_plugin_info_essentials, get_pedalboard_info, get_state_port_values,
+    get_plugin_info, get_plugin_info_essentials, get_pedalboard_info, get_state_port_values, is_plugin_bypassable,
     list_plugins_in_bundle, get_all_pedalboards, get_all_user_pedalboard_names, get_pedalboard_plugin_values,
     init_jack, close_jack, get_jack_data,
     init_bypass, get_jack_port_alias, get_jack_hardware_ports,
@@ -2707,6 +2707,12 @@ class Host(object):
         instance_id = self.mapper.get_id_without_creating(instance)
         pluginData  = self.plugins[instance_id]
 
+        if not is_plugin_bypassable(pluginData['uri']):
+            logging.warning("[host] Plugin '%s' has no bypass, ignoring", pluginData['uri'])
+            if callback is not None:
+                callback(False)
+            return
+
         pluginData['bypassed'] = bypassed
         self.send_modified("bypass %d %d" % (instance_id, int(bypassed)), callback, datatype='boolean')
 
@@ -4852,6 +4858,12 @@ _:b%i
 
         if pluginData is None:
             logging.warning("[host] Trying to address non-existing plugin instance %i: '%s'", instance_id, instance)
+            callback(False)
+            return
+
+        # covers hardware, MIDI learn, MIDI CC and CV addressings alike
+        if portsymbol == ":bypass" and not is_plugin_bypassable(pluginData['uri']):
+            logging.warning("[host] Plugin '%s' has no bypass, refusing to address it", pluginData['uri'])
             callback(False)
             return
 
