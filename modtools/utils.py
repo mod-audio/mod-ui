@@ -483,6 +483,7 @@ class PedalboardInfo(Structure):
         ("hardware", PedalboardHardware),
         ("timeInfo", PedalboardTimeInfo),
         ("version", c_uint),
+        ("formatVersion", c_uint),
     ]
 
 class PedalboardInfo_Mini(Structure):

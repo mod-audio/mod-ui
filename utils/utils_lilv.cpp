@@ -4952,6 +4952,7 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
     LilvNode* const modpedal_width  = lilv_new_uri(w, LILV_NS_MODPEDAL "width");
     LilvNode* const modpedal_height = lilv_new_uri(w, LILV_NS_MODPEDAL "height");
     LilvNode* const modpedal_version = lilv_new_uri(w, LILV_NS_MODPEDAL "version");
+    LilvNode* const modpedal_formatVersion = lilv_new_uri(w, LILV_NS_MODPEDAL "formatVersion");
     LilvNode* const modpedal_instanceNumber = lilv_new_uri(w, LILV_NS_MODPEDAL "instanceNumber");
 
     // --------------------------------------------------------------------------------------------------------
@@ -5543,6 +5544,21 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
     }
 
     // --------------------------------------------------------------------------------------------------------
+    // format version (absent = 1, see http://moddevices.com/ns/modpedal#formatVersion)
+
+    info.formatVersion = 1;
+
+    if (LilvNodes* const nodes = lilv_plugin_get_value(p, modpedal_formatVersion))
+    {
+        const int formatVersion = lilv_node_as_int(lilv_nodes_get_first(nodes));
+
+        if (formatVersion > 0)
+            info.formatVersion = static_cast<unsigned int>(formatVersion);
+
+        lilv_nodes_free(nodes);
+    }
+
+    // --------------------------------------------------------------------------------------------------------
 
     lilv_node_free(ingen_arc);
     lilv_node_free(ingen_block);
@@ -5564,6 +5580,7 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
     lilv_node_free(modpedal_width);
     lilv_node_free(modpedal_height);
     lilv_node_free(modpedal_version);
+    lilv_node_free(modpedal_formatVersion);
     lilv_node_free(modpedal_instanceNumber);
     lilv_node_free(rdftypenode);
     lilv_world_free(w);
