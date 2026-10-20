@@ -2841,10 +2841,18 @@ class Host(object):
                 if last_path is not None:
                     save_last_bank_and_pedalboard(last_bank_id, last_path)
 
-            shutil.rmtree(bundlepath, ignore_errors=True)
+            # The bundle stays until the next reload: load() only queues "state_load" to mod-host,
+            # which reads the bundle after this returns.
             callback(ok)
 
-        self.reset(bank_id, loaded)
+        # Plugin state (the file a NAM, IR or sampler loader has open) lives outside the ttl,
+        # mod-host writes it into the bundle. Without it every file loader comes back empty.
+        def state_saved(ok):
+            if not ok:
+                logging.error("[host] could not save the plugin state before the pedalboard reload")
+            self.reset(bank_id, loaded)
+
+        self.send_notmodified("state_save \"{}\"".format(bundlepath), state_saved, datatype='boolean')
 
     # -----------------------------------------------------------------------------------------------------------------
     # Host stuff - plugin presets
