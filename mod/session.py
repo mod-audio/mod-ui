@@ -441,6 +441,40 @@ class Session(object):
         self.pedalboard_changed_callback(True, bundlepath, title)
         return title
 
+    # Re-instantiate the running pedalboard in place (see Host.reload_current_pedalboard).
+    # Same sequence as reset() + load_pedalboard(), without touching the pedalboard identity.
+    def reload_current_pedalboard(self, callback):
+        if not self.host.has_plugins_loaded():
+            callback(True)
+            return
+
+        logging.debug("SESSION RELOAD")
+        self.host.send_notmodified("feature_enable processing 0")
+
+        def host_callback(ok):
+            self.host.send_notmodified("feature_enable processing 1")
+
+            if self.hmi.initialized and (self.host.descriptor.get('hmi_set_pb_name', False) or
+                                         self.host.descriptor.get('hmi_set_ss_name', False)):
+                self.hmi_set_pb_and_ss_name(self.host.pedalboard_name or UNTITLED_PEDALBOARD_NAME)
+
+            callback(ok)
+
+        def reload_host(_):
+            self.host.reload_current_pedalboard(host_callback)
+
+        if self.hmi.initialized:
+            def clear_ss_name(_):
+                self.host.hmi_clear_ss_name(reload_host)
+            def clear_hmi(_):
+                self.hmi.clear(clear_ss_name)
+            if self.host.descriptor.get("hmi_bank_navigation", False):
+                self.host.setNavigateWithFootswitches(False, clear_hmi)
+            else:
+                clear_hmi(True)
+        else:
+            reload_host(True)
+
     def reset(self, callback):
         logging.debug("SESSION RESET")
         self.screenshot_needed = False
