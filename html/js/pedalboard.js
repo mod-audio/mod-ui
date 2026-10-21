@@ -3157,8 +3157,9 @@ function T3KIntegration(pedalboard, pubKey) {
                 t3kOpenPopups.push({effect: effect, parameter: parameter, popup: data})
             })
             .catch((error) => {
+                // the popup is tracked only on success, nothing to clean up here
+                new Notification('error', 'Error opening Tone3000.')
                 console.error("T3KSelect error:", error);
-                t3kOpenPopups.close()
             })
     }
 
@@ -3252,6 +3253,7 @@ function T3KIntegration(pedalboard, pubKey) {
                 const tmpFilename = url.pathname.split('/').pop();
                 const fileExtension = tmpFilename.split('.').pop();
                 let fileName = (total > 1 ? model.name : tone.title)
+                let filetype
 
                 if (tone.gear == 'cab') {
                     filetype = 'cabsim'
@@ -3374,7 +3376,7 @@ function T3KIntegration(pedalboard, pubKey) {
                                     self
                                         .downloadModelsFiles(auth.tokens.access_token, tone, models, function(model, current, count) {
                                             const msg = `Downloading files ${current}/${count}...`
-                                            const perc = Math.round(current / Math.min(1, count) * 100)
+                                            const perc = Math.round(current / Math.max(1, count) * 100)
                                             t3kinfo.popup?.progress?.(msg, perc)
                                         })
                                         .then((files) => {
