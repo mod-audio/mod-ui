@@ -148,8 +148,8 @@
                     {{/toggled}}
                 {{/trigger}}
                 {{#trigger}}
-                <div class="mod-switch" title="{{comment}}">
-                    <span class="mod-switch-title">{{shortName}}</span>
+                <div class="mod-switch{{#group}} mod-group{{#groupStart}} mod-group-start{{/groupStart}} mod-group-{{groupCssIndex}}{{#groupEnd}} mod-group-end{{/groupEnd}}{{/group}}" title="{{comment}}">
+                    <span class="mod-switch-title{{#group}} mod-group-item-title{{/group}}">{{shortName}}</span>
                     <div class="mod-footswitch-image" mod-role="input-control-port" mod-port-symbol="{{symbol}}" mod-widget="film"></div>
                     <div class="mod-address" mod-role="input-control-address" mod-port-symbol="{{symbol}}"></div>
                 </div>
