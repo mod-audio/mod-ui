@@ -2536,24 +2536,48 @@ JqueryClass('pedalboard', {
     },
 
     // The jack that pairs with `jack` to make one stereo cable, plus whether `jack` is
-    // the left/odd half. Null when there is no pair: the ports do not name themselves as
-    // one, they are crossed over, or nothing matching is wired up on the other side.
+    // the left/odd half. That is a stereo pair wired straight across, or one output into
+    // both halves of a stereo input (mono into stereo), or both halves of a stereo output
+    // into one input (stereo into mono): the ends that coincide meet in one point. Null
+    // when there is no pair: the ports do not name themselves as one, they are crossed
+    // over, or nothing matching is wired up on the other side.
     stereoPartnerJack: function (jack) {
         var self = $(this)
         var input = jack.data('destination')
         if (! jack.data('connected') || ! input) {
             return null
         }
-        var output = self.pedalboard('stereoPartner', jack.data('origin'))
+        var origin = jack.data('origin')
+        var output = self.pedalboard('stereoPartner', origin)
         var dest = self.pedalboard('stereoPartner', input)
+        var origIndex = self.data('connectionManager').origIndex
+        var jackBetween = function (from, to) {
+            return (origIndex[from.attr('mod-port')] || {})[to.attr('mod-port')] || null
+        }
+        var partner
         // A pair wired straight across is one cable. L to R and R to L is a channel swap,
         // and drawing that as one cable would hide what it does
-        if (! output || ! dest || dest.first !== output.first) {
-            return null
+        if (output && dest && dest.first === output.first) {
+            partner = jackBetween(output.element, dest.element)
+            if (partner) {
+                return { jack: partner, first: output.first }
+            }
         }
-        var conns = self.data('connectionManager').origIndex[output.element.attr('mod-port')]
-        var partner = conns ? conns[dest.element.attr('mod-port')] : null
-        return partner ? { jack: partner, first: output.first } : null
+        // the same output into the other half of the input's pair
+        if (dest) {
+            partner = jackBetween(origin, dest.element)
+            if (partner) {
+                return { jack: partner, first: dest.first }
+            }
+        }
+        // the other half of the output's pair into the same input
+        if (output) {
+            partner = jackBetween(output.element, input)
+            if (partner) {
+                return { jack: partner, first: output.first }
+            }
+        }
+        return null
     },
 
     // Origin and destination anchor points of one jack's cable, in canvas coordinates
