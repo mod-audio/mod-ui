@@ -37,6 +37,24 @@ function teleportDefaultName(pluginName, portName, names) {
     }
 }
 
+// What the two halves of a stereo pair are called with their side taken off: the part
+// their port names share. "Audio Output 1" and "Audio Output 2" give "Audio Output",
+// "Out 11" and "Out 12" give "Out" (a number cut in half is dropped, not kept as "Out 1"),
+// and "Left" and "Right" give "" -- they share nothing.
+function teleportPairPortName(left, right) {
+    left = left || ''
+    right = right || ''
+    var n = 0
+    while (n < left.length && n < right.length && left[n] === right[n]) {
+        n++
+    }
+    var shared = left.slice(0, n)
+    if (/\d$/.test(shared) && (/^\d/.test(left.slice(n)) || /^\d/.test(right.slice(n)))) {
+        shared = shared.replace(/\d+$/, '')
+    }
+    return shared.replace(/[\s_\-.:(]+$/, '')
+}
+
 // Whether a name the user typed can be accepted for this port. Empty is not a name --
 // clearing the box is how you ask for the teleport to go away, handled by the caller.
 function teleportNameAvailable(name, port, names) {
