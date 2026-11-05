@@ -2944,10 +2944,21 @@ JqueryClass('pedalboard', {
                         // what you called it last time, unless someone else has taken it
                         names[key] = last
                     } else {
-                        names[key] = teleportDefaultName(
-                            self.pedalboard('teleportPluginName', output),
-                            output.attr('title') || output.data('symbol') || '',
-                            names)
+                        var pluginName = self.pedalboard('teleportPluginName', output)
+                        var portName = output.attr('title') || output.data('symbol') || ''
+                        // The left half of a stereo pair names the pair, since that is the
+                        // one box shown for it: "Sitar Audio Output", not "... Output 1".
+                        var pair = self.pedalboard('stereoPartnerJack', jack)
+                        if (pair && pair.first && pair.jack.data('connected')) {
+                            var other = pair.jack.data('origin')
+                            var shared = teleportPairPortName(portName,
+                                other.attr('title') || other.data('symbol') || '')
+                            // hardware has no plugin name to fall back on, so keep the port's
+                            if (shared || pluginName) {
+                                portName = shared
+                            }
+                        }
+                        names[key] = teleportDefaultName(pluginName, portName, names)
                     }
                 }
             }
@@ -3135,6 +3146,17 @@ JqueryClass('pedalboard', {
         self.pedalboard('clearTracing')
 
         if (! name) {
+            // A pair is teleported together (toggleTeleport), and its box stands for both
+            // halves, so clearing it un-teleports both -- not just the half that owns the
+            // name, which would leave the other alone as a teleport of its own.
+            var partners = []
+            for (i = 0; i < affected.length; i++) {
+                var pair = self.pedalboard('stereoPartnerJack', affected[i])
+                if (pair && pair.jack.data('teleported')) {
+                    partners.push(pair.jack)
+                }
+            }
+            affected = affected.concat(partners)
             for (i = 0; i < affected.length; i++) {
                 affected[i].data('teleported', false)
             }
@@ -3303,6 +3325,11 @@ JqueryClass('pedalboard', {
             if (! name) {
                 continue
             }
+            // the left half's boxes stand for a merged pair; the right half has none
+            var tpair = self.pedalboard('teleportPair', jack)
+            if (tpair && tpair.right[0] === jack[0]) {
+                continue
+            }
             live['out ' + jack.data('origin').attr('mod-port') + ' ' + name] = true
             live['in ' + jack.data('destination').attr('mod-port') + ' ' + name] = true
         }
@@ -3373,6 +3400,13 @@ JqueryClass('pedalboard', {
     // one thing, so its leg is null.
     litCanvas: function (jack) {
         var self = $(this)
+        // A merged teleported pair is painted whole into its left half's canvas too, and
+        // lit whole: its legs are too short to be worth telling apart.
+        var tpair = self.pedalboard('teleportPair', jack)
+        if (tpair) {
+            return { canvas: tpair.left.data('canvas'), leg: null,
+                     partner: tpair.left[0] === jack[0] ? tpair.right : tpair.left }
+        }
         var pair = self.pedalboard('stereoPartnerJack', jack)
         // Same guard as drawStereoJack: a teleported pair is painted into two separate
         // canvases, not merged into the left half's, so resolving to the partner's canvas
@@ -3436,14 +3470,17 @@ JqueryClass('pedalboard', {
             // a teleported cable's boxes are not inside the canvas the tracing lights, so
             // they have to be picked out by name
             if (jack.data('teleported')) {
-                var tname = self.pedalboard('teleportName', jack.data('origin'))
+                // a merged pair's boxes are its left half's
+                var tpair = self.pedalboard('teleportPair', jack)
+                var owner = tpair ? tpair.left : jack
+                var tname = self.pedalboard('teleportName', owner.data('origin'))
                 if (tname) {
                     // read the boxes, never teleportBox(): that CREATES one on a key miss
                     // and tracing has no business placing it, so a miss would leave an
                     // unpositioned box sitting at the origin
                     var boxes = self.data('teleportBoxes')
-                    var outBox = boxes['out ' + jack.data('origin').attr('mod-port') + ' ' + tname]
-                    var inBox = boxes['in ' + jack.data('destination').attr('mod-port') + ' ' + tname]
+                    var outBox = boxes['out ' + owner.data('origin').attr('mod-port') + ' ' + tname]
+                    var inBox = boxes['in ' + owner.data('destination').attr('mod-port') + ' ' + tname]
                     if (outBox) {
                         outBox.attr('data-teleport-lit', '')
                     }
@@ -3529,8 +3566,11 @@ JqueryClass('pedalboard', {
             if (!jack.data('connected') && !force)
                 return
 
-            // a teleported cable is drawn split, and never merged with a stereo partner:
-            // a merged pair is one cable running end to end, which this no longer is
+            // A teleported cable is drawn split: two stubs and a box at each end. A teleported
+            // stereo pair is split the same way, but as one -- its legs meet at each end and
+            // one box stands for both. It is never merged into a cable running end to end.
+            if (jack.data('teleported') && self.pedalboard('drawTeleportPairJack', jack, force))
+                return
             if (jack.data('teleported') && self.pedalboard('drawTeleportJack', jack, force))
                 return
 
@@ -3626,14 +3666,25 @@ JqueryClass('pedalboard', {
         self.pedalboard('placeTeleportBox', inBox, 'in', input, name,
                         inX - inBox.outerWidth(), c.yo)
 
-        // Only worth saying when the boxes are actually piled up: expanding the input fans
-        // them onto their own cables, at which point you can see how many there are.
+        self.pedalboard('placeTeleportBadge', input, inBox, inX, c.yo)
+
+        self.pedalboard('drawTeleportBezier', jack.data('canvas'),
+                        { x: c.xi, y: c.yi }, { x: outX, y: c.yi },
+                        { x: inX, y: c.yo }, { x: c.xo, y: c.yo })
+
+        return true
+    },
+
+    // Only worth saying when the boxes are actually piled up: expanding the input fans
+    // them onto their own cables, at which point you can see how many there are.
+    placeTeleportBadge: function (input, inBox, inX, y) {
+        var self = $(this)
         var stacked = self.pedalboard('teleportsIntoPort', input)
         if (stacked > 1 && ! input.data('expanded')) {
             var badge = self.pedalboard('teleportBadge', input)
             badge.text('x' + stacked)
             badge.css({ left: inX - badge.outerWidth() - 3,
-                        top: c.yo - inBox.outerHeight() / 2 - badge.outerHeight() / 2 })
+                        top: y - inBox.outerHeight() / 2 - badge.outerHeight() / 2 })
         } else {
             var old = self.data('teleportBoxes')['badge ' + input.attr('mod-port')]
             if (old) {
@@ -3641,12 +3692,130 @@ JqueryClass('pedalboard', {
                 delete self.data('teleportBoxes')['badge ' + input.attr('mod-port')]
             }
         }
+    },
 
-        self.pedalboard('drawTeleportBezier', jack.data('canvas'),
-                        { x: c.xi, y: c.yi }, { x: outX, y: c.yi },
-                        { x: inX, y: c.yo }, { x: c.xo, y: c.yo })
+    // A teleported stereo pair: both halves teleported, running L to L and R to R (the
+    // same matching drawStereoJack merges), and named. Null otherwise. Its left half
+    // stands for it: that output's name is the one shown, and its boxes are the pair's.
+    // The right half keeps its own name in the map -- saved like any other, and shown
+    // again if the pair is ever split -- it is just not drawn while the pair is whole.
+    teleportPair: function (jack) {
+        var self = $(this)
+        if (! jack.data('teleported')) {
+            return null
+        }
+        var pair = self.pedalboard('stereoPartnerJack', jack)
+        // as in drawStereoJack, the partner's own flag is what says the pair is still whole
+        if (! pair || ! pair.jack.data('connected') || ! pair.jack.data('teleported')) {
+            return null
+        }
+        var left = pair.first ? jack : pair.jack
+        var right = pair.first ? pair.jack : jack
+        if (! left.data('destination') || ! self.pedalboard('teleportName', left.data('origin'))) {
+            return null
+        }
+        return { left: left, right: right }
+    },
 
+    // Draws a teleported pair as one: the two outputs' legs meet in a Y and run on as one
+    // stub into a single box, and the far end mirrors it into the two inputs. Like a
+    // merged stereo cable, the left half's canvas carries it all and the right half's is
+    // emptied, so redrawing either half alone leaves both right. Returns false when the
+    // jack is not half of a teleported pair, and the caller draws a single teleport.
+    drawTeleportPairJack: function (jack, force) {
+        var self = $(this)
+        var tpair = self.pedalboard('teleportPair', jack)
+        if (! tpair) {
+            return false
+        }
+        var left = tpair.left
+        var right = tpair.right
+        var output = left.data('origin')
+        var input = left.data('destination')
+        var name = self.pedalboard('teleportName', output)
+
+        var rightSvg = right.data('svg')
+        if (rightSvg) {
+            rightSvg.clear()
+        }
+        right.data('canvas').removeClass('mod-stereo')
+        self.pedalboard('dropMergedTeleportBoxes', right)
+
+        var l = self.pedalboard('jackCoords', left, force)
+        var r = self.pedalboard('jackCoords', right, force)
+
+        // The legs meet a short way out, like a merged stereo cable's, and the boxes sit
+        // where a single teleport's would, so a pair lines up with its neighbours.
+        var split = 18
+        var outJoin = { x: Math.max(l.xi, r.xi) + split, y: (l.yi + r.yi) / 2 }
+        var inJoin = { x: Math.min(l.xo, r.xo) - split, y: (l.yo + r.yo) / 2 }
+        var outX = Math.max(l.xi, r.xi) + TELEPORT_STUB
+        var inX = Math.min(l.xo, r.xo) - TELEPORT_STUB
+
+        var outBox = self.pedalboard('teleportBox', 'out', output, name)
+        var inBox = self.pedalboard('teleportBox', 'in', input, name)
+        outBox.data('sourcePort', output)
+        inBox.data('sourcePort', output)
+        self.pedalboard('placeTeleportBox', outBox, 'out', output, name, outX, outJoin.y)
+        self.pedalboard('placeTeleportBox', inBox, 'in', input, name,
+                        inX - inBox.outerWidth(), inJoin.y)
+        self.pedalboard('placeTeleportBadge', input, inBox, inX, inJoin.y)
+
+        var canvas = left.data('canvas')
+        var svg = canvas.svg('get')
+        if (! svg) {
+            return true
+        }
+        svg.clear()
+        canvas.addClass('mod-stereo')
+
+        // Same paths and classes as drawStereoBezier: the stubs between join and box carry
+        // both channels, so they are the trunk; the legs carry one channel each.
+        var parts = [['pathShadow', 'shadow'], ['pathCable', 'cable'], ['pathLight', 'light']]
+        var i
+        for (i = 0; i < parts.length; i++) {
+            var trunk = canvas.data(parts[i][0])
+            trunk.reset()
+            trunk.move(outJoin.x, outJoin.y).line(outX, outJoin.y)
+            trunk.move(inX, inJoin.y).line(inJoin.x, inJoin.y)
+            svg.path(null, trunk, { class_: parts[i][1] + ' mod-trunk' })
+        }
+        var channels = [[l, 0], [r, 1]]
+        for (i = 0; i < parts.length; i++) {
+            for (var c = 0; c < channels.length; c++) {
+                var p = channels[c][0]
+                var legs = svg.createPath()
+                legs.move(p.xi, p.yi).line(outJoin.x, outJoin.y)
+                legs.move(inJoin.x, inJoin.y).line(p.xo, p.yo)
+                svg.path(null, legs, { class_: parts[i][1] + ' mod-leg-' + channels[c][1] })
+            }
+        }
         return true
+    },
+
+    // Takes down the boxes the right half of a pair had while it was drawn on its own.
+    // Its output box stays if another teleported cable from that output still uses it.
+    dropMergedTeleportBoxes: function (right) {
+        var self = $(this)
+        var output = right.data('origin')
+        var name = self.pedalboard('teleportName', output)
+        if (! name) {
+            return
+        }
+        var boxes = self.data('teleportBoxes')
+        var keys = ['in ' + right.data('destination').attr('mod-port') + ' ' + name]
+        var others = self.pedalboard('teleportedJacks').filter(function (j) {
+            return j[0] !== right[0] && j.data('origin').attr('mod-port') === output.attr('mod-port')
+        })
+        if (! others.length) {
+            keys.push('out ' + output.attr('mod-port') + ' ' + name)
+        }
+        for (var k = 0; k < keys.length; k++) {
+            if (boxes[keys[k]]) {
+                boxes[keys[k]].remove()
+                delete boxes[keys[k]]
+            }
+        }
     },
 
     placeTeleportBox: function (box, side, port, name, x, y) {

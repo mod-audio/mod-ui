@@ -94,4 +94,23 @@ assert.deepEqual(teleportDeserialise({}), { names: {}, cables: [] })
 assert.deepEqual(teleportDeserialise({ names: 'nope', cables: 5 }), { names: {}, cables: [] })
 assert.deepEqual(teleportDeserialise({ names: {}, cables: ['malformed'] }).cables, [])
 
+// --- stereo pair names --------------------------------------------------------
+// a teleported stereo pair shows one box, named after what both halves share
+assert.equal(teleportPairPortName('Audio Output 1', 'Audio Output 2'), 'Audio Output')
+assert.equal(teleportPairPortName('Output Left', 'Output Right'), 'Output')
+assert.equal(teleportPairPortName('Out L', 'Out R'), 'Out')
+assert.equal(teleportPairPortName('OutL', 'OutR'), 'Out')
+assert.equal(teleportPairPortName('output_left', 'output_right'), 'output')
+// a number cut in half is not a name: 11/12 share "1", which is not channel 1
+assert.equal(teleportPairPortName('Out 11', 'Out 12'), 'Out')
+assert.equal(teleportPairPortName('In 9', 'In 10'), 'In')
+// nothing in common, or nothing at all
+assert.equal(teleportPairPortName('Left', 'Right'), '')
+assert.equal(teleportPairPortName('', 'R'), '')
+assert.equal(teleportPairPortName(undefined, null), '')
+// and it composes with the default name the way toggleTeleport uses it
+assert.equal(teleportDefaultName('Sitar', teleportPairPortName('Audio Output 1', 'Audio Output 2'), {}),
+             'Sitar Audio Output')
+assert.equal(teleportDefaultName('LP3 Basic', teleportPairPortName('Left', 'Right'), {}), 'LP3 Basic')
+
 console.log('teleport: all assertions passed')
