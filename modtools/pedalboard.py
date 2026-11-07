@@ -8,6 +8,7 @@ import json
 import os
 import shutil
 import sys
+import time
 
 from enum import Enum
 from PIL import Image
@@ -22,7 +23,17 @@ from modtools.utils import (
 
 MAX_THUMB_HEIGHT = 640
 MAX_THUMB_WIDTH = 640
+# The screenshot is only ever shown scaled down (the 640 px thumbnail here, the pedalboard page on the cloud), so
+# it is rendered at most this wide: a 3840 px canvas becomes 1920, four times fewer pixels to composite and encode.
+MAX_SCREENSHOT_WIDTH = 1920
+# Pause between the heavy image steps. A nice'd process still streams memory at full speed, and on the device that
+# is what starves the audio threads (xruns while the screenshot is made); short pauses spread the traffic out.
+PACE_SECONDS = 0.01
 __version__ = '1.0.1'
+
+
+def pace():
+    time.sleep(PACE_SECONDS)
 
 
 def resize_image(img):
@@ -115,11 +126,22 @@ def chunks(l, n):
         yield o[i:i + n]
 
 
-def take_screenshot(bundle_path, html_dir, cache_dir, size):
+def take_screenshot(bundle_path, html_dir, cache_dir, size, job=None):
     os.makedirs(cache_dir, exist_ok=True)
-    lv2_init()
-    pb = get_pedalboard_info(bundle_path)
 
+    if job is None:
+        # standalone use: load the LV2 world ourselves (slow, several seconds on a device)
+        lv2_init()
+        pb = get_pedalboard_info(bundle_path)
+        plugin_info = get_plugin_info
+        plugin_gui = get_plugin_gui
+    else:
+        # job made by mod-ui (mod/screenshot.py), whose LV2 world is already loaded: nothing to scan here
+        pb = job['pedalboard']
+        plugin_info = lambda uri: job['plugins'][uri]['info']
+        plugin_gui = lambda uri: job['plugins'][uri]['gui']
+
+    fixed_size = bool(size)
     if size:
         w, h = size.split('x')
         width, height = int(w), int(h)
@@ -236,11 +258,11 @@ def take_screenshot(bundle_path, html_dir, cache_dir, size):
     plugin_map = {}
     for p in plugins:
         # read plugin data
-        data = get_plugin_info(p['uri'])
+        data = plugin_info(p['uri'])
         p['data'] = data
 
         # read plugin image
-        gui = get_plugin_gui(p['uri'])
+        gui = plugin_gui(p['uri'])
         screenshot_path = gui.get('screenshot', None)
         if screenshot_path is not None and os.path.isfile(screenshot_path):
             try:
@@ -346,6 +368,21 @@ def take_screenshot(bundle_path, html_dir, cache_dir, size):
     width = rint(width)
     height = rint(height) or rint(1112)
 
+    # layout stays in canvas coordinates, the scale is applied when drawing
+    scale = 1.0 if fixed_size else min(1.0, float(MAX_SCREENSHOT_WIDTH) / width)
+    scaled_images = {}
+
+    def sc(v):
+        return rint(v * scale)
+
+    def scaled(image):
+        if scale == 1.0:
+            return image
+        key = id(image)
+        if key not in scaled_images:
+            scaled_images[key] = image.resize((max(1, sc(image.size[0])), max(1, sc(image.size[1]))), Image.BILINEAR)
+        return scaled_images[key]
+
     # calculate device connectors positions
     used_symbols = tuple(c['source'] for c in pb['connections']) + tuple(c['target'] for c in pb['connections'])
     used_types = ('audio', 'cv')
@@ -436,14 +473,14 @@ def take_screenshot(bundle_path, html_dir, cache_dir, size):
             delta_x /= 1.5
 
         path = 'm{0},{1} c{2},{3},{4},{5},{6},{7}'.format(
-            rint(source_x),
-            rint(source_y),
-            rint(target_x - delta_x - source_x),
+            sc(source_x),
+            sc(source_y),
+            sc(target_x - delta_x - source_x),
             0,
-            rint(delta_x),
-            rint(target_y - source_y),
-            rint(target_x - source_x),
-            rint(target_y - source_y)
+            sc(delta_x),
+            sc(target_y - source_y),
+            sc(target_x - source_x),
+            sc(target_y - source_y)
         )
         paths.append((path, source_type, target_type))
         connectors.append((source_connected_img, (rint(source_pos[0]), rint(source_pos[1])), source_connected_img))
@@ -453,19 +490,23 @@ def take_screenshot(bundle_path, html_dir, cache_dir, size):
     del plugin_map
 
     # create image
-    img = Image.new('RGBA', (width, height), (0, 0, 0, 0))
+    img = Image.new('RGBA', (sc(width), sc(height)), (0, 0, 0, 0))
 
     # draw plugins
     for p in plugins:
-        img.paste(p['img'], (rint(p['x']), rint(p['y'])), p['img'])
+        pimg = scaled(p['img'])
+        img.paste(pimg, (sc(p['x']), sc(p['y'])), pimg)
+        pace()
 
     del plugins
 
     # draw device connectors
     for d in device_capture:
-        img.paste(d['img'], anchor(d['img'].size, d['x'], d['y'], Anchor.LEFT_CENTER))
+        x, y = anchor(d['img'].size, d['x'], d['y'], Anchor.LEFT_CENTER)
+        img.paste(scaled(d['img']), (sc(x), sc(y)))
     for d in device_playback:
-        img.paste(d['img'], anchor(d['img'].size, d['x'], d['y'], Anchor.RIGHT_CENTER))
+        x, y = anchor(d['img'].size, d['x'], d['y'], Anchor.RIGHT_CENTER)
+        img.paste(scaled(d['img']), (sc(x), sc(y)))
 
     audio_input_img.close()
     audio_output_img.close()
@@ -484,9 +525,10 @@ def take_screenshot(bundle_path, html_dir, cache_dir, size):
     try:
         from aggdraw import Draw, Pen, Symbol
         draw = Draw(img)
-        audio_pen = Pen('#81009A', 7)
-        midi_pen = Pen('#00546C', 7)
-        cv_pen = Pen('#BB6736', 7)
+        pen_width = max(1.0, 7 * scale)
+        audio_pen = Pen('#81009A', pen_width)
+        midi_pen = Pen('#00546C', pen_width)
+        cv_pen = Pen('#BB6736', pen_width)
         for path, source_type, target_type in paths:
             symbol = Symbol(path)
             if source_type == 'midi' or target_type == 'midi':
@@ -497,6 +539,7 @@ def take_screenshot(bundle_path, html_dir, cache_dir, size):
                 pen = audio_pen
             draw.symbol((0, 0), symbol, pen)
         draw.flush()
+        pace()
         del draw
         del audio_pen
         del midi_pen
@@ -507,8 +550,9 @@ def take_screenshot(bundle_path, html_dir, cache_dir, size):
     del paths
 
     # draw all connectors
-    for c in connectors:
-        img.paste(*c)
+    for cimg, (x, y), cmask in connectors:
+        img.paste(scaled(cimg), (sc(x), sc(y)), scaled(cmask))
+    pace()
 
     audio_input_connected.close()
     audio_output_connected.close()
@@ -529,10 +573,13 @@ def take_screenshot(bundle_path, html_dir, cache_dir, size):
     default_screenshot.close()
     del default_screenshot
 
-    img.save(os.path.join(bundle_path, 'screenshot.png'), compress_level=3)
+    # zlib level 1: the fastest encode that still compresses the flat colours well, size is not a concern here
+    img.save(os.path.join(bundle_path, 'screenshot.png'), compress_level=1)
+    pace()
     resize_image(img)
     img.save(os.path.join(bundle_path, 'thumbnail.png'))
     img.close()
+    del scaled_images
 
 
 def main():
@@ -541,19 +588,25 @@ def main():
 
     # take screenshot bundle_path, html_dir, cache_dir
     def _take_screenshot(args):
+        job = None
+        if args.job:
+            with open(args.job, 'r') as fh:
+                job = json.load(fh)
         try:
-            take_screenshot(args.pedalboard_path, args.html_path, args.cache_path, args.size)
+            take_screenshot(args.pedalboard_path, args.html_path, args.cache_path, args.size, job)
         except:
             print("caught exception, retrying without cache...", file=sys.stderr, flush=True)
             # if we get exceptions thrown during screenshot generation, try invalidating cache
             shutil.rmtree(args.cache_path)
-            take_screenshot(args.pedalboard_path, args.html_path, args.cache_path, args.size)
+            take_screenshot(args.pedalboard_path, args.html_path, args.cache_path, args.size, job)
 
     subparser = subparsers.add_parser('take_screenshot', help='Take a screenshot of a given pedalboard')
     subparser.add_argument('pedalboard_path', help='Path to pedalboard bundle folder')
     subparser.add_argument('html_path', help='Path to mod-ui HTML folder')
     subparser.add_argument('cache_path', help='Path to cache folder')
     subparser.add_argument('-s', '--size', help='Screenshot width and height (i.e. 800x600)')
+    subparser.add_argument('-j', '--job', help='JSON file with the pedalboard and plugin data, made by mod-ui; '
+                                               'skips loading the LV2 world')
     subparser.set_defaults(func=_take_screenshot)
 
     args = parser.parse_args()

@@ -9,8 +9,10 @@
  * running release so they can paste it there as a reply.
  *
  * Nothing is sent anywhere by itself: the user copies the text and posts it.
- * The device serial and logs are deliberately not included; QA can ask for
- * them in the thread.
+ * The device serial and full logs are deliberately not included; QA can ask for
+ * them in the thread. On a computer (MOD Desktop) the system information
+ * answers with a "host" block: operating system, CPU, memory, audio setup and
+ * the problem lines of the launcher log, with the home folder shortened to ~.
  *
  * Used by index.html (with pedalboard and DSP stats) and settings.html
  * (system details only).
@@ -130,16 +132,34 @@ function ProblemReport(options) {
         info = info || {}
         var lines = []
         lines.push('```')
-        lines.push('OS release:    ' + (info.release || options.version || 'unknown') +
-                   (info.sysdate ? '  (built ' + info.sysdate + ')' : ''))
-        lines.push('Device:        ' + (info.hwname || 'unknown') +
-                   ' / ' + (info.platform || '?') + ' / ' + (info.bin_compat || '?') +
-                   (info.model ? ' / ' + info.model : ''))
-        lines.push('Controller fw: ' + (info.controller || 'unknown'))
-        if (info.uname) {
-            lines.push('Kernel:        ' + info.uname.release)
+        var host = info.host || null
+        lines.push('MOD release:   ' + (info.release || options.version || 'unknown') +
+                   (info.sysdate && info.sysdate !== 'Unknown' ? '  (built ' + info.sysdate + ')' : ''))
+        if (host) {
+            // a computer: describe the computer, not a device
+            lines.push('Product:       ' + (info.model || 'MOD Desktop') + ' / ' + (info.bin_compat || '?'))
+            lines.push('Computer OS:   ' + (host.os || 'unknown'))
+            lines.push('CPU:           ' + (host.cpu || 'unknown'))
+            lines.push('Memory:        ' + (host.memory_gb ? host.memory_gb + ' GB' : 'unknown'))
+            lines.push('Up for:        ' + formatUptime(host.uptime))
+            lines.push('Audio engine:  ' + (host.sample_rate ? Math.round(host.sample_rate) + ' Hz' : '? Hz') +
+                       ', buffer ' + (host.buffer_size || '?') + ' frames')
+            var launcher = host.launcher || null
+            if (launcher && launcher.jackd) {
+                lines.push('Audio start:   ' + launcher.jackd)
+            } else {
+                lines.push('Audio start:   unknown (no launcher log found)')
+            }
+        } else {
+            lines.push('Device:        ' + (info.hwname || 'unknown') +
+                       ' / ' + (info.platform || '?') + ' / ' + (info.bin_compat || '?') +
+                       (info.model ? ' / ' + info.model : ''))
+            lines.push('Controller fw: ' + (info.controller || 'unknown'))
+            if (info.uname) {
+                lines.push('Kernel:        ' + info.uname.release)
+            }
+            lines.push('Uptime:        ' + formatUptime(info.uptime))
         }
-        lines.push('Uptime:        ' + formatUptime(info.uptime))
 
         var stats = options.getStats ? options.getStats() : null
         if (stats) {
@@ -158,6 +178,14 @@ function ProblemReport(options) {
         lines.push('Web UI at:     ' + window.location.host)
         lines.push('Browser:       ' + navigator.userAgent)
         lines.push('```')
+
+        if (host && host.launcher && host.launcher.problems && host.launcher.problems.length) {
+            lines.push('')
+            lines.push('Launcher log, lines about problems since the last start (' + host.launcher.path + '):')
+            lines.push('```')
+            lines = lines.concat(host.launcher.problems)
+            lines.push('```')
+        }
         return lines.join('\n')
     }
 }

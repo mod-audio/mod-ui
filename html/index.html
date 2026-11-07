@@ -33,6 +33,9 @@
 <link rel="stylesheet" type="text/css" href="resources/pedals/default.css?v={{version}}"/>
 <link rel="stylesheet" type="text/css" href="js/lib/slick/slick.css?v={{version}}"/>
 <link rel="stylesheet" type="text/css" href="js/lib/slick/slick-theme.css?v={{version}}"/>
+{% if desktop_app %}
+<link rel="stylesheet" type="text/css" href="css/desktop-app.css?v={{version}}"/>
+{% end %}
 
 <style type="text/css">
     /* STYLE FOR LOADING ANIMATION */
@@ -94,6 +97,7 @@
     var DEFAULT_ICON_TEMPLATE = '{{default_icon_template}}'
     var DEFAULT_SETTINGS_TEMPLATE = '{{default_settings_template}}'
     var DEFAULT_PEDALBOARD = '{{default_pedalboard}}'
+    var PEDALBOARD_FILE_EXTENSION = '.modpedalboard'
     var FAVORITES = {{favorites}}
     var PREFERENCES = {{preferences}}
     var ADDRESSING_PAGES = {{addressing_pages}}
@@ -239,13 +243,14 @@ $('document').ready(function() {
         desktop.problemReport.open()
     })
 
-    if ({{using_desktop}}) {
-        desktop.setupApp()
-    } else {
-        if (PREFERENCES['dev-mode'] == "on") {
-            enable_dev_mode(true)
-        }
+{% if desktop_app %}
+    DesktopApp.setup(desktop)
+    $('body').addClass('preset-share pedalboard-share')
+{% else %}
+    if (PREFERENCES['dev-mode'] == "on") {
+        enable_dev_mode(true)
     }
+{% end %}
 
     // start code for ajax loading bar
 
@@ -328,7 +333,14 @@ $('document').ready(function() {
 })
 </script>
 
+{% if desktop_app %}
+{# MOD Desktop gets its own mustache partials through this shared endpoint. The
+   endpoint is cache-forever, and a Desktop build's `version` can repeat between
+   packages, so the cache key differs from any response that lacked them. #}
+<script type="text/javascript" src="js/templates.js?v={{version}}&desktop_app_templates=1"></script>
+{% else %}
 <script type="text/javascript" src="js/templates.js?v={{version}}"></script>
+{% end %}
 <script type="text/javascript" src="js/common.js?v={{version}}"></script>
 <script type="text/javascript" src="js/wait.js?v={{version}}"></script>
 <script type="text/javascript" src="js/file_transfer.js?v={{version}}"></script>
@@ -336,6 +348,12 @@ $('document').ready(function() {
 <script type="text/javascript" src="js/modgui.js?v={{version}}"></script>
 <script type="text/javascript" src="js/notification.js?v={{version}}"></script>
 <script type="text/javascript" src="js/installation.js?v={{version}}"></script>
+{% if desktop_app %}
+{# The MOD Desktop seam. A device never loads it: nothing else on this page
+   mentions DesktopApp outside a desktop_app block, and hardware.js only does
+   so behind isApp(). #}
+<script type="text/javascript" src="js/desktop-app.js?v={{version}}"></script>
+{% end %}
 <script type="text/javascript" src="js/desktop.js?v={{version}}"></script>
 <script type="text/javascript" src="js/pedalboard.js?v={{version}}"></script>
 <script type="text/javascript" src="js/pedalboards.js?v={{version}}"></script>
@@ -946,6 +964,7 @@ $('document').ready(function() {
                     <img style="width: 1.2em; height: 1.2em; opacity: 0.6; vertical-align: middle;" src="img/icons/25/language.png" alt=""/>
                     <span style="vertical-align: middle;">Browse Online Pedalboards</span>
                 </a>
+                <span class="js-import pedalboard-file-import" title="Import a .modpedalboard file">Import pedalboard...</span>
                 <span class="view-modes">
                   <i id="view-mode-grid" class="view-mode icon-th-1"></i>
                   <i id="view-mode-list" class="view-mode icon-th-list"></i>
