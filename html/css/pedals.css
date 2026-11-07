@@ -330,6 +330,27 @@ body > .mod-settings.mod-window-visible {
     background-image: url('../img/icons/25/delete.png');
     margin-right: 5px
 }
+/* Export / Import: shown only with Developer Mode, always on MOD Desktop (body.preset-share) */
+.mod-presets .btn.preset-btn-export,
+.mod-presets .btn.preset-btn-import {
+    display: none;
+    width: 29px !important;
+    padding: 0;
+    font-size: 12px;
+}
+body.preset-share .mod-presets .btn.preset-btn-export,
+body.preset-share .mod-presets .btn.preset-btn-import {
+    display: inline-block;
+}
+.mod-presets .btn.preset-btn-import {
+    margin-right: 5px
+}
+.btn.preset-btn-export:after {
+    content: 'EXP';
+}
+.btn.preset-btn-import:after {
+    content: 'IMP';
+}
 
 
 .preset-manager {

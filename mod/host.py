@@ -23,7 +23,7 @@ from tornado import gen, iostream
 from tornado.ioloop import IOLoop, PeriodicCallback
 from urllib.parse import quote, unquote
 import os, json, socket, time, logging, sys
-import shutil
+import shutil, tempfile
 
 # only used for HMI screenshots, optional
 try:
@@ -36,6 +36,7 @@ from mod import (
     get_hardware_descriptor, get_nearest_valid_scalepoint_value, get_unique_name,
     read_file_contents, safe_json_load, normalize_for_hw, os_sync, symbolify
 )
+from mod import preset_share
 from mod.addressings import Addressings
 from mod.bank import (
     list_banks, save_banks, get_last_bank_and_pedalboard, save_last_bank_and_pedalboard,
@@ -131,6 +132,7 @@ from mod.protocol import (
 )
 from mod.settings import (
     LOG, DEFAULT_PEDALBOARD, DEVICE_HOST_PORT,
+    DESKTOP, IMAGE_VERSION,
     DATA_DIR, LV2_PEDALBOARDS_DIR, LV2_PLUGIN_DIR, LV2_FACTORY_PEDALBOARDS_DIR, USER_FILES_DIR,
     PEDALBOARD_INSTANCE, PEDALBOARD_INSTANCE_ID, PEDALBOARD_URI, PEDALBOARD_TMP_DIR,
     TUNER_URI, TUNER_INSTANCE_ID, TUNER_INPUT_PORT, TUNER_MONITOR_PORT, HMI_TIMEOUT, MODEL_TYPE,
@@ -3028,6 +3030,147 @@ class Host(object):
                                                                        symbolname), host_callback, datatype='boolean')
 
         self.remove_bundle(presetbundle, False, olduri, start)
+
+    # Export / Import as .modpreset files (preset bar, Developer Mode; always on MOD Desktop)
+
+    def _new_preset_bundle_path(self, instance, symbolname):
+        presetbundle = os.path.expanduser("%s/%s-%s.lv2") % (LV2_PLUGIN_DIR, instance.replace("/graph/","",1), symbolname)
+
+        while os.path.exists(presetbundle):
+            presetbundle = os.path.expanduser("%s/%s-%s-%i.lv2" % (LV2_PLUGIN_DIR,
+                                                                   instance.replace("/graph/","",1),
+                                                                   symbolname,
+                                                                   randint(1,99999)))
+        return presetbundle
+
+    def _plugin_version_string(self, plugin_uri):
+        info = get_plugin_info_essentials(plugin_uri)
+        return "%d.%d" % (info['minorVersion'], info['microVersion'])
+
+    def preset_export(self, instance, name, callback):
+        instance_id = self.mapper.instance_map.get(instance, None)
+        if instance_id is None or instance_id not in self.plugins:
+            callback({'ok': False, 'error': "Plugin not found"})
+            return
+
+        pluginData = self.plugins[instance_id]
+        plugin_uri = pluginData['uri']
+        name       = name.strip() or "Preset"
+        symbolname = symbolify(name)[:32]
+        tmpdir     = tempfile.mkdtemp(prefix="modpreset-")
+        bundlepath = os.path.join(tmpdir, symbolname + ".lv2")
+
+        try:
+            plugin_name = get_plugin_info(plugin_uri)['name']
+        except Exception:
+            plugin_name = instance.replace("/graph/","",1)
+
+        def host_callback(ok):
+            try:
+                if not ok:
+                    callback({'ok': False, 'error': "Could not save the plugin state"})
+                    return
+
+                header = preset_share.make_header(plugin_uri,
+                                                  self._plugin_version_string(plugin_uri),
+                                                  name,
+                                                  IMAGE_VERSION or ("desktop" if DESKTOP else ""),
+                                                  "desktop" if DESKTOP else (MODEL_TYPE or ""))
+                data, left_out = preset_share.pack(bundlepath, header)
+                callback({
+                    'ok'      : True,
+                    'data'    : data,
+                    'filename': "%s-%s%s" % (symbolify(plugin_name)[:32], symbolname, preset_share.EXTENSION),
+                    'left_out': left_out,
+                })
+            except Exception as e:
+                logging.exception(e)
+                callback({'ok': False, 'error': "Could not pack the preset"})
+            finally:
+                shutil.rmtree(tmpdir, True)
+
+        # same mod-host call as a normal save, but into a temp dir: nothing is added to the user's presets
+        self.send_notmodified("preset_save %d \"%s\" \"%s\" %s.ttl" % (instance_id,
+                                                                   name.replace('"','\\"'),
+                                                                   bundlepath.replace('"','\\"'),
+                                                                   symbolname), host_callback, datatype='boolean')
+
+    def preset_import(self, instance, data, callback):
+        instance_id = self.mapper.instance_map.get(instance, None)
+        if instance_id is None or instance_id not in self.plugins:
+            callback({'ok': False, 'error': "Plugin not found"})
+            return
+
+        pluginData = self.plugins[instance_id]
+        plugin_uri = pluginData['uri']
+
+        try:
+            preset = preset_share.unpack(data, plugin_uri)
+        except preset_share.PresetFileError as e:
+            callback({'ok': False, 'error': str(e)})
+            return
+
+        header       = preset['header']
+        name         = header['name']
+        presetbundle = self._new_preset_bundle_path(instance, symbolify(name)[:32])
+        preseturi    = "file://%s" % quote(os.path.join(presetbundle, preset['preset_file']))
+
+        warning = ""
+        theirs  = header.get('plugin_version')
+        ours    = self._plugin_version_string(plugin_uri)
+        if theirs and theirs != ours:
+            warning = "This preset was made with version %s of the plugin, this unit has %s" % (theirs, ours)
+        if header.get('files_left_out'):
+            if warning:
+                warning += ". "
+            warning += "Files used by the preset were not included"
+
+        try:
+            os.makedirs(presetbundle)
+            for filename, content in preset['files'].items():
+                with open(os.path.join(presetbundle, filename), 'wb') as fh:
+                    fh.write(content)
+        except Exception as e:
+            logging.exception(e)
+            shutil.rmtree(presetbundle, True)
+            callback({'ok': False, 'error': "Could not write the preset"})
+            return
+
+        os_sync()
+        rescan_plugin_presets(plugin_uri)
+
+        def remove_callback(_):
+            shutil.rmtree(presetbundle, True)
+            rescan_plugin_presets(plugin_uri)
+            os_sync()
+            callback({'ok': False, 'error': "This preset file is damaged"})
+
+        def add_bundle_callback(_):
+            # lilv has the last word: the preset must apply to this plugin.
+            # get_plugin_info applies the pending preset rescan first.
+            label = None
+            try:
+                for p in get_plugin_info(plugin_uri)['presets']:
+                    if p['uri'] == preseturi:
+                        label = p['label']
+                        break
+            except Exception as e:
+                logging.exception(e)
+
+            if label is None or not is_plugin_preset_valid(plugin_uri, preseturi):
+                logging.warning("[host] imported preset %s is not valid for %s", preseturi, plugin_uri)
+                self.remove_bundle(presetbundle, False, preseturi, remove_callback)
+                return
+
+            callback({
+                'ok'     : True,
+                'bundle' : presetbundle,
+                'uri'    : preseturi,
+                'name'   : label or name,
+                'warning': warning,
+            })
+
+        self.add_bundle(presetbundle, add_bundle_callback)
 
     def preset_delete(self, instance, uri, bundlepath, callback):
         instance_id = self.mapper.get_id_without_creating(instance)

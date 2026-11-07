@@ -1433,6 +1433,59 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
             })
         },
 
+        // .modpreset download of the current plugin settings
+        pluginPresetExport: function (instance, name, callback) {
+            var xhr = new XMLHttpRequest()
+            xhr.open('GET', '/effect/preset/export' + instance + '?name=' + encodeURIComponent(name) + '&_=' + Date.now())
+            xhr.responseType = 'blob'
+            xhr.onload = function () {
+                if (xhr.status != 200) {
+                    var reader = new FileReader()
+                    reader.onload = function () {
+                        callback({ ok: false, error: reader.result || "Export failed" })
+                    }
+                    reader.readAsText(xhr.response)
+                    return
+                }
+                var filename = xhr.getResponseHeader('X-Modpreset-Filename') || 'preset.modpreset'
+                var url = URL.createObjectURL(xhr.response)
+                var a = $('<a style="display:none">').attr('href', url).attr('download', filename).appendTo('body')
+                a[0].click()
+                setTimeout(function () {
+                    a.remove()
+                    URL.revokeObjectURL(url)
+                }, 1000)
+                callback({
+                    ok: true,
+                    filename: filename,
+                    leftOut: parseInt(xhr.getResponseHeader('X-Modpreset-Left-Out') || '0'),
+                })
+            }
+            xhr.onerror = function () {
+                callback({ ok: false, error: "Export failed" })
+            }
+            xhr.send()
+        },
+
+        // .modpreset file (a File from an <input type=file>) installed as a user preset
+        pluginPresetImport: function (instance, file, callback) {
+            $.ajax({
+                url: '/effect/preset/import' + instance,
+                method: 'POST',
+                data: file,
+                processData: false,
+                contentType: 'application/octet-stream',
+                success: function (resp) {
+                    callback(resp)
+                },
+                error: function () {
+                    callback({ ok: false, error: "Import failed" })
+                },
+                cache: false,
+                dataType: 'json'
+            })
+        },
+
         pluginPresetDelete: function (instance, uri, bundlepath, callback) {
             $.ajax({
                 url: '/effect/preset/delete/' + instance,
@@ -2140,6 +2193,9 @@ function enable_dev_mode(skipSaveConfig) {
     // buffer size button
     $('#mod-buffersize').show()
 
+    // preset Export / Import buttons
+    $('body').addClass('preset-share')
+
     // CPU speed and temperature, not available on the Duo
     if (PLATFORM != "duo") {
         $('#mod-cpu-stats').show()
@@ -2176,6 +2232,11 @@ function disable_dev_mode() {
 
     // buffer size button
     $('#mod-buffersize').hide()
+
+    // preset Export / Import buttons (MOD Desktop always shows them)
+    if (! USING_MOD_DESKTOP) {
+        $('body').removeClass('preset-share')
+    }
 
     // CPU speed and temperature
     $('#mod-cpu-stats').hide()

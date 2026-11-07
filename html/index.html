@@ -244,6 +244,7 @@ $('document').ready(function() {
 
 {% if desktop_app %}
     DesktopApp.setup(desktop)
+    $('body').addClass('preset-share')
 {% else %}
     if (PREFERENCES['dev-mode'] == "on") {
         enable_dev_mode(true)
