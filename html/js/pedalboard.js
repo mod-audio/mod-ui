@@ -143,6 +143,16 @@ JqueryClass('pedalboard', {
                 callback(true)
             },
 
+            // Export the current plugin settings as a .modpreset file
+            pluginPresetExport: function (instance, name, callback) {
+                callback({ok:false})
+            },
+
+            // Import a .modpreset file as a user preset
+            pluginPresetImport: function (instance, file, callback) {
+                callback({ok:false})
+            },
+
             // Changes the parameter of a plugin's control port
             pluginParameterChange: function (port, value) {},
 
@@ -211,6 +221,7 @@ JqueryClass('pedalboard', {
         self.pedalboard('wrapApplicationFunctions', options, [
             'pluginLoad', 'pluginRemove',
             'pluginPresetLoad', 'pluginPresetSaveNew', 'pluginPresetSaveReplace', 'pluginPresetDelete',
+            'pluginPresetExport', 'pluginPresetImport',
             'pluginParameterChange', 'pluginPatchGet', 'pluginPatchSet', 'pluginMove',
             'portConnect', 'portDisconnect', 'reset', 'getPluginsData'
         ])
@@ -1436,6 +1447,12 @@ JqueryClass('pedalboard', {
                             callback()
                         }
                     })
+            },
+            presetExport: function (name, callback) {
+                self.data('pluginPresetExport')(instance, name, callback)
+            },
+            presetImport: function (file, callback) {
+                self.data('pluginPresetImport')(instance, file, callback)
             },
             bypassed: bypassed ? 1 : 0,
             defaultIconTemplate: DEFAULT_ICON_TEMPLATE,
