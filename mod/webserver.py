@@ -516,7 +516,7 @@ class SystemExeChange(JsonRequestHandler):
         if etype == "command":
             cmd = self.get_argument('cmd').split(" ",1)
             if len(cmd) == 1:
-                cmd = cmd[0]
+                cmd, cdata = cmd[0], ""
             else:
                 cmd, cdata = cmd
 
