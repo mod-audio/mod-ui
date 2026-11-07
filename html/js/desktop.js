@@ -1693,6 +1693,12 @@ Desktop.prototype.makePedalboardBox = function (el, trigger) {
         list: self.pedalboardListFunction,
         search: self.pedalboardSearchFunction,
         saveConfigValue: self.saveConfigValue,
+        exportFile: function (pedalboard) {
+            self.exportPedalboardFile(pedalboard)
+        },
+        importFile: function (file, callback) {
+            self.importPedalboardFile(file, callback)
+        },
         remove: function (pedalboard, callback) {
             if (!confirm(sprintf('The pedalboard "%s" will be permanently removed! Confirm?', pedalboard.title)))
                 return
@@ -1902,6 +1908,122 @@ Desktop.prototype.setTrueBypassButton = function (channelName, state) {
     if (typeof state === "string") state = eval(state);
     var b = $("#mod-bypass" + channelName);
     b[(state ? "add" : "remove") + "Class"]("bypassed");
+}
+
+// .modpedalboard download of a saved pedalboard (Developer Mode, always on MOD Desktop)
+Desktop.prototype.exportPedalboardFile = function (pedalboard) {
+    if (pedalboard.bundle == this.pedalboardBundle && this.pedalboardModified) {
+        new Notification('warn', 'This pedalboard has unsaved changes: the export holds the last saved version', 5000)
+    }
+
+    var xhr = new XMLHttpRequest()
+    xhr.open('GET', '/pedalboard/file/export/?bundlepath=' + encodeURIComponent(pedalboard.bundle) + '&_=' + Date.now())
+    xhr.responseType = 'blob'
+    xhr.onload = function () {
+        if (xhr.status != 200) {
+            var reader = new FileReader()
+            reader.onload = function () {
+                new Notification('error', 'Export failed: ' + $('<div>').text(reader.result || "unknown error").html(), 6000)
+            }
+            reader.readAsText(xhr.response)
+            return
+        }
+        var filename = xhr.getResponseHeader('X-Modpedalboard-Filename') || ('pedalboard' + PEDALBOARD_FILE_EXTENSION)
+        var files = parseInt(xhr.getResponseHeader('X-Modpedalboard-Files') || '0')
+        var url = URL.createObjectURL(xhr.response)
+        var a = $('<a style="display:none">').attr('href', url).attr('download', filename).appendTo('body')
+        a[0].click()
+        setTimeout(function () {
+            a.remove()
+            URL.revokeObjectURL(url)
+        }, 1000)
+        var msg = 'Pedalboard exported as ' + $('<div>').text(filename).html()
+        if (files > 0) {
+            msg += '<br/>The ' + files + ' user file' + (files == 1 ? '' : 's') + ' it uses (NAM models, IRs, ...) are not included.'
+        }
+        new Notification('info', msg, 6000)
+    }
+    xhr.onerror = function () {
+        new Notification('error', 'Export failed: communication failure', 6000)
+    }
+    xhr.send()
+}
+
+// .modpedalboard file loaded as an unsaved pedalboard: check, install missing plugins (devices), load
+Desktop.prototype.importPedalboardFile = function (file, closeWindow) {
+    var self = this
+
+    $.ajax({
+        url: '/pedalboard/file/import/',
+        method: 'POST',
+        data: file,
+        processData: false,
+        contentType: 'application/octet-stream',
+        cache: false,
+        dataType: 'json',
+        success: function (resp) {
+            if (! resp.ok) {
+                new Notification('error', 'Import failed: ' + $('<div>').text(resp.error).html(), 6000)
+                return
+            }
+
+            var notes = []
+            if (resp.missingFiles.length > 0) {
+                notes.push(resp.missingFiles.length + ' user file' + (resp.missingFiles.length == 1 ? ' is' : 's are')
+                           + ' missing on this unit: ' + $('<div>').text(resp.missingFiles.slice(0, 5).join(', ')).html()
+                           + (resp.missingFiles.length > 5 ? ', ...' : ''))
+            }
+            if (self.isApp && resp.missingPlugins.length > 0) {
+                notes.push(resp.missingPlugins.length + ' plugin' + (resp.missingPlugins.length == 1 ? ' is' : 's are')
+                           + ' not available on MOD Desktop and will be left out')
+            }
+
+            closeWindow()
+
+            self.reset(function () {
+                var load = function (ok) {
+                    if (! ok) {
+                        self.pedalboard.data('wait').stop()
+                        return
+                    }
+                    $.ajax({
+                        url: '/pedalboard/file/load/',
+                        method: 'POST',
+                        data: { token: resp.token },
+                        cache: false,
+                        dataType: 'json',
+                        success: function (lresp) {
+                            if (! lresp.ok) {
+                                self.pedalboard.data('wait').stop()
+                                new Notification('error', 'Import failed: ' + $('<div>').text(lresp.error).html(), 6000)
+                                return
+                            }
+                            self.pedalboardEmpty = false
+                            self.setPedalboardAsModified(true)
+                            var msg = 'Imported "' + $('<div>').text(resp.title).html() + '": save it to add it to your pedalboards'
+                            if (notes.length > 0) {
+                                msg += '<br/>' + notes.join('<br/>')
+                            }
+                            new Notification(notes.length > 0 ? 'warn' : 'info', msg, 8000)
+                        },
+                        error: function () {
+                            self.pedalboard.data('wait').stop()
+                            new Bug("Couldn't load the imported pedalboard")
+                        },
+                    })
+                }
+
+                if (self.isApp || resp.missingPlugins.length == 0) {
+                    load(true)
+                } else {
+                    self.installMissingPlugins(resp.plugins, load)
+                }
+            })
+        },
+        error: function () {
+            new Notification('error', 'Import failed: communication failure', 6000)
+        },
+    })
 }
 
 Desktop.prototype.loadPedalboard = function (bundlepath, callback) {
@@ -2193,8 +2315,8 @@ function enable_dev_mode(skipSaveConfig) {
     // buffer size button
     $('#mod-buffersize').show()
 
-    // preset Export / Import buttons
-    $('body').addClass('preset-share')
+    // preset and pedalboard Export / Import buttons
+    $('body').addClass('preset-share pedalboard-share')
 
     // CPU speed and temperature, not available on the Duo
     if (PLATFORM != "duo") {
@@ -2233,9 +2355,9 @@ function disable_dev_mode() {
     // buffer size button
     $('#mod-buffersize').hide()
 
-    // preset Export / Import buttons (MOD Desktop always shows them)
+    // preset and pedalboard Export / Import buttons (MOD Desktop always shows them)
     if (! USING_MOD_DESKTOP) {
-        $('body').removeClass('preset-share')
+        $('body').removeClass('preset-share pedalboard-share')
     }
 
     // CPU speed and temperature

@@ -352,6 +352,39 @@ body.preset-share .mod-presets .btn.preset-btn-import {
     content: 'IMP';
 }
 
+/* Pedalboards Library: .modpedalboard Export / Import, only with Developer Mode, always on MOD Desktop (body.pedalboard-share) */
+#pedalboards-library .pedalboard-file-export,
+#pedalboards-library .pedalboard-file-import {
+    display: none;
+}
+body.pedalboard-share #pedalboards-library .pedalboards .pedalboard .actions .pedalboard-file-export {
+    display: inline-block;
+    width: 36px;
+    height: 32px;
+    line-height: 32px;
+    text-align: center;
+    font-size: 12px;
+    color: #aaa;
+}
+body.pedalboard-share #pedalboards-library .pedalboards .pedalboard .actions .pedalboard-file-export:hover {
+    color: #fff;
+    text-decoration: none;
+}
+body.pedalboard-share #pedalboards-library .pedalboards .pedalboard .title {
+    width: calc(100% - 68px);
+}
+body.pedalboard-share #pedalboards-library header .pedalboard-file-import {
+    display: inline-block;
+    float: right;
+    margin: 10px 18px 0 0;
+    color: #aaa;
+    cursor: pointer;
+}
+body.pedalboard-share #pedalboards-library header .pedalboard-file-import:hover {
+    color: #fff;
+    text-decoration: underline;
+}
+
 
 .preset-manager {
     color: #000;
