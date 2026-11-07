@@ -85,10 +85,8 @@ DEFAULT_ICON_IMAGE = {
 
 # Cloud API addresses
 CLOUD_HTTP_ADDRESS = os.environ.pop('MOD_CLOUD_HTTP_ADDRESS', "https://api.mod.audio/v2")
-CLOUD_LABS_HTTP_ADDRESS = os.environ.pop('MOD_CLOUD_LABS_HTTP_ADDRESS', "https://api-labs.mod.audio/v2")
 PLUGINS_HTTP_ADDRESS = os.environ.pop('MOD_PLUGINS_HTTP_ADDRESS', "https://pedalboards.mod.audio/plugins")
 PEDALBOARDS_HTTP_ADDRESS = os.environ.pop('MOD_PEDALBOARDS_HTTP_ADDRESS', "https://pedalboards.mod.audio")
-PEDALBOARDS_LABS_HTTP_ADDRESS = os.environ.pop('MOD_PEDALBOARDS_LABS_HTTP_ADDRESS', "https://pedalboards-labs.mod.audio")
 CONTROLCHAIN_HTTP_ADDRESS = os.environ.pop('MOD_CONTROLCHAIN_HTTP_ADDRESS',
                                            "https://download.mod.audio/releases/cc-firmware/v3")
 
@@ -123,6 +121,12 @@ PEDALBOARD_URI = "urn:mod:pedalboard"
 
 UNTITLED_PEDALBOARD_NAME="Untitled Pedalboard"
 DEFAULT_SNAPSHOT_NAME="Default"
+
+# pedal:formatVersion written into every saved pedalboard: which modpedal# terms the writer may use.
+# Assigned on http://moddevices.com/ns/modpedal#formatVersion (absent = 1 up to MOD OS 1.14, 2 from 1.15).
+# A file with a higher number than this was made on a newer MOD OS: it still loads, the user is warned
+# that saving it here drops what this version does not know.
+PEDALBOARD_FORMAT_VERSION = 2
 
 CAPTURE_PATH='/tmp/capture.ogg'
 PLAYBACK_PATH='/tmp/playback.ogg'

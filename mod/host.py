@@ -23,8 +23,7 @@ from tornado import gen, iostream
 from tornado.ioloop import IOLoop, PeriodicCallback
 from urllib.parse import quote, unquote
 import os, json, socket, time, logging, sys
-import shutil
-import tempfile
+import shutil, tempfile
 
 # only used for HMI screenshots, optional
 try:
@@ -37,6 +36,7 @@ from mod import (
     get_hardware_descriptor, get_nearest_valid_scalepoint_value, get_unique_name,
     read_file_contents, safe_json_load, normalize_for_hw, os_sync, symbolify
 )
+from mod import preset_share
 from mod.addressings import Addressings
 from mod.bank import (
     list_banks, save_banks, get_last_bank_and_pedalboard, save_last_bank_and_pedalboard,
@@ -132,10 +132,11 @@ from mod.protocol import (
 )
 from mod.settings import (
     LOG, DEFAULT_PEDALBOARD, DEVICE_HOST_PORT,
+    DESKTOP, IMAGE_VERSION,
     DATA_DIR, LV2_PEDALBOARDS_DIR, LV2_PLUGIN_DIR, LV2_FACTORY_PEDALBOARDS_DIR, USER_FILES_DIR,
     PEDALBOARD_INSTANCE, PEDALBOARD_INSTANCE_ID, PEDALBOARD_URI, PEDALBOARD_TMP_DIR,
     TUNER_URI, TUNER_INSTANCE_ID, TUNER_INPUT_PORT, TUNER_MONITOR_PORT, HMI_TIMEOUT, MODEL_TYPE,
-    UNTITLED_PEDALBOARD_NAME, DEFAULT_SNAPSHOT_NAME,
+    UNTITLED_PEDALBOARD_NAME, DEFAULT_SNAPSHOT_NAME, PEDALBOARD_FORMAT_VERSION,
     MIDI_BEAT_CLOCK_SENDER_URI, MIDI_BEAT_CLOCK_SENDER_INSTANCE_ID, MIDI_BEAT_CLOCK_SENDER_OUTPUT_PORT,
 )
 from mod.tuner import (
@@ -146,7 +147,7 @@ from modtools.utils import (
     kPedalboardInfoUserOnly, kPedalboardInfoFactoryOnly,
     is_bundle_loaded, add_bundle_to_lilv_world, remove_bundle_from_lilv_world,
     is_plugin_preset_valid, rescan_plugin_presets,
-    get_plugin_info, get_plugin_info_essentials, get_pedalboard_info, get_state_port_values,
+    get_plugin_info, get_plugin_info_essentials, get_pedalboard_info, get_state_port_values, is_plugin_bypassable,
     list_plugins_in_bundle, get_all_pedalboards, get_all_user_pedalboard_names, get_pedalboard_plugin_values,
     init_jack, close_jack, get_jack_data,
     init_bypass, get_jack_port_alias, get_jack_hardware_ports,
@@ -388,6 +389,7 @@ class Host(object):
         self.pedalboard_path     = ""
         self.pedalboard_size     = [0,0]
         self.pedalboard_version  = 0
+        self.pedalboard_format_version = 1
         self.current_pedalboard_snapshot_id = -1
         self.pedalboard_snapshots = []
         self.next_hmi_pedalboard_to_load = None
@@ -557,6 +559,12 @@ class Host(object):
 
     def jack_bufsize_changed(self, bufSize):
         self.msg_callback("bufsize %i" % bufSize)
+
+    # A pedalboard file whose pedal:formatVersion is higher than ours was made on a newer MOD OS.
+    # It loads anyway (unknown terms are ignored); the page tells the user that saving drops them.
+    def send_newer_format_notice(self, write, format_version):
+        if format_version > PEDALBOARD_FORMAT_VERSION:
+            write("pb_newer_format %i %i" % (format_version, PEDALBOARD_FORMAT_VERSION))
 
     def jack_port_appeared(self, name, isOutput):
         name = charPtrToString(name)
@@ -2039,6 +2047,7 @@ class Host(object):
         websocket.write_message("truebypass %i %i" % (self.last_true_bypass_left, self.last_true_bypass_right))
         websocket.write_message("loading_start %d %d" % (int(self.pedalboard_empty), int(self.pedalboard_modified)))
         websocket.write_message("size %d %d" % (self.pedalboard_size[0], self.pedalboard_size[1]))
+        self.send_newer_format_notice(websocket.write_message, self.pedalboard_format_version)
 
         for dev_uri, (dev_id, label, labelsuffix, version) in self.addressings.cchain.hw_versions.items():
             websocket.write_message("hw_add %s %s %s %s" % (dev_uri,
@@ -2325,6 +2334,7 @@ class Host(object):
         self.pedalboard_path     = ""
         self.pedalboard_size     = [0,0]
         self.pedalboard_version  = 0
+        self.pedalboard_format_version = 1
 
         if bank_id is None:
             save_last_bank_and_pedalboard(0, "")
@@ -2715,6 +2725,12 @@ class Host(object):
         instance_id = self.mapper.get_id_without_creating(instance)
         pluginData  = self.plugins[instance_id]
 
+        if not is_plugin_bypassable(pluginData['uri']):
+            logging.warning("[host] Plugin '%s' has no bypass, ignoring", pluginData['uri'])
+            if callback is not None:
+                callback(False)
+            return
+
         pluginData['bypassed'] = bypassed
         self.send_modified("bypass %d %d" % (instance_id, int(bypassed)), callback, datatype='boolean')
 
@@ -3044,6 +3060,147 @@ class Host(object):
                                                                        symbolname), host_callback, datatype='boolean')
 
         self.remove_bundle(presetbundle, False, olduri, start)
+
+    # Export / Import as .modpreset files (preset bar, Developer Mode; always on MOD Desktop)
+
+    def _new_preset_bundle_path(self, instance, symbolname):
+        presetbundle = os.path.expanduser("%s/%s-%s.lv2") % (LV2_PLUGIN_DIR, instance.replace("/graph/","",1), symbolname)
+
+        while os.path.exists(presetbundle):
+            presetbundle = os.path.expanduser("%s/%s-%s-%i.lv2" % (LV2_PLUGIN_DIR,
+                                                                   instance.replace("/graph/","",1),
+                                                                   symbolname,
+                                                                   randint(1,99999)))
+        return presetbundle
+
+    def _plugin_version_string(self, plugin_uri):
+        info = get_plugin_info_essentials(plugin_uri)
+        return "%d.%d" % (info['minorVersion'], info['microVersion'])
+
+    def preset_export(self, instance, name, callback):
+        instance_id = self.mapper.instance_map.get(instance, None)
+        if instance_id is None or instance_id not in self.plugins:
+            callback({'ok': False, 'error': "Plugin not found"})
+            return
+
+        pluginData = self.plugins[instance_id]
+        plugin_uri = pluginData['uri']
+        name       = name.strip() or "Preset"
+        symbolname = symbolify(name)[:32]
+        tmpdir     = tempfile.mkdtemp(prefix="modpreset-")
+        bundlepath = os.path.join(tmpdir, symbolname + ".lv2")
+
+        try:
+            plugin_name = get_plugin_info(plugin_uri)['name']
+        except Exception:
+            plugin_name = instance.replace("/graph/","",1)
+
+        def host_callback(ok):
+            try:
+                if not ok:
+                    callback({'ok': False, 'error': "Could not save the plugin state"})
+                    return
+
+                header = preset_share.make_header(plugin_uri,
+                                                  self._plugin_version_string(plugin_uri),
+                                                  name,
+                                                  IMAGE_VERSION or ("desktop" if DESKTOP else ""),
+                                                  "desktop" if DESKTOP else (MODEL_TYPE or ""))
+                data, left_out = preset_share.pack(bundlepath, header)
+                callback({
+                    'ok'      : True,
+                    'data'    : data,
+                    'filename': "%s-%s%s" % (symbolify(plugin_name)[:32], symbolname, preset_share.EXTENSION),
+                    'left_out': left_out,
+                })
+            except Exception as e:
+                logging.exception(e)
+                callback({'ok': False, 'error': "Could not pack the preset"})
+            finally:
+                shutil.rmtree(tmpdir, True)
+
+        # same mod-host call as a normal save, but into a temp dir: nothing is added to the user's presets
+        self.send_notmodified("preset_save %d \"%s\" \"%s\" %s.ttl" % (instance_id,
+                                                                   name.replace('"','\\"'),
+                                                                   bundlepath.replace('"','\\"'),
+                                                                   symbolname), host_callback, datatype='boolean')
+
+    def preset_import(self, instance, data, callback):
+        instance_id = self.mapper.instance_map.get(instance, None)
+        if instance_id is None or instance_id not in self.plugins:
+            callback({'ok': False, 'error': "Plugin not found"})
+            return
+
+        pluginData = self.plugins[instance_id]
+        plugin_uri = pluginData['uri']
+
+        try:
+            preset = preset_share.unpack(data, plugin_uri)
+        except preset_share.PresetFileError as e:
+            callback({'ok': False, 'error': str(e)})
+            return
+
+        header       = preset['header']
+        name         = header['name']
+        presetbundle = self._new_preset_bundle_path(instance, symbolify(name)[:32])
+        preseturi    = "file://%s" % quote(os.path.join(presetbundle, preset['preset_file']))
+
+        warning = ""
+        theirs  = header.get('plugin_version')
+        ours    = self._plugin_version_string(plugin_uri)
+        if theirs and theirs != ours:
+            warning = "This preset was made with version %s of the plugin, this unit has %s" % (theirs, ours)
+        if header.get('files_left_out'):
+            if warning:
+                warning += ". "
+            warning += "Files used by the preset were not included"
+
+        try:
+            os.makedirs(presetbundle)
+            for filename, content in preset['files'].items():
+                with open(os.path.join(presetbundle, filename), 'wb') as fh:
+                    fh.write(content)
+        except Exception as e:
+            logging.exception(e)
+            shutil.rmtree(presetbundle, True)
+            callback({'ok': False, 'error': "Could not write the preset"})
+            return
+
+        os_sync()
+        rescan_plugin_presets(plugin_uri)
+
+        def remove_callback(_):
+            shutil.rmtree(presetbundle, True)
+            rescan_plugin_presets(plugin_uri)
+            os_sync()
+            callback({'ok': False, 'error': "This preset file is damaged"})
+
+        def add_bundle_callback(_):
+            # lilv has the last word: the preset must apply to this plugin.
+            # get_plugin_info applies the pending preset rescan first.
+            label = None
+            try:
+                for p in get_plugin_info(plugin_uri)['presets']:
+                    if p['uri'] == preseturi:
+                        label = p['label']
+                        break
+            except Exception as e:
+                logging.exception(e)
+
+            if label is None or not is_plugin_preset_valid(plugin_uri, preseturi):
+                logging.warning("[host] imported preset %s is not valid for %s", preseturi, plugin_uri)
+                self.remove_bundle(presetbundle, False, preseturi, remove_callback)
+                return
+
+            callback({
+                'ok'     : True,
+                'bundle' : presetbundle,
+                'uri'    : preseturi,
+                'name'   : label or name,
+                'warning': warning,
+            })
+
+        self.add_bundle(presetbundle, add_bundle_callback)
 
     def preset_delete(self, instance, uri, bundlepath, callback):
         instance_id = self.mapper.get_id_without_creating(instance)
@@ -3532,6 +3689,7 @@ class Host(object):
                         'available': False,
                     },
                     'version': 0,
+                    'formatVersion': 1,
                 }
 
         if bundlepath == DEFAULT_PEDALBOARD:
@@ -3539,6 +3697,7 @@ class Host(object):
 
         self.msg_callback("loading_start %i %i" % (int(isDefault), int(modified)))
         self.msg_callback("size %d %d" % (pb['width'],pb['height']))
+        self.send_newer_format_notice(self.msg_callback, pb.get('formatVersion', 1))
 
         midi_aggregated_mode = not pb.get('midi_separated_mode', True)
         midi_loopback = pb.get('midi_loopback', False)
@@ -3739,6 +3898,7 @@ class Host(object):
             self.pedalboard_path     = ""
             self.pedalboard_size     = [0,0]
             self.pedalboard_version  = 0
+            self.pedalboard_format_version = 1
             self.midi_aggregated_mode = True
             #save_last_bank_and_pedalboard(0, "")
         else:
@@ -3748,6 +3908,7 @@ class Host(object):
             self.pedalboard_path     = bundlepath
             self.pedalboard_size     = [pb['width'],pb['height']]
             self.pedalboard_version  = pb['version']
+            self.pedalboard_format_version = pb.get('formatVersion', 1)
 
             if bundlepath and (bundlepath.startswith(LV2_PEDALBOARDS_DIR) or
                                bundlepath.startswith(LV2_FACTORY_PEDALBOARDS_DIR)):
@@ -4522,13 +4683,14 @@ _:b%i
     pedal:addressings <addressings.json> ;
     pedal:screenshot <screenshot.png> ;
     pedal:thumbnail <thumbnail.png> ;
+    pedal:formatVersion %i ;
     pedal:version %i ;
     ingen:polyphony 1 ;
 """ % (arcs, blocks, ports,
        title.replace('"','\\"'),
        self.descriptor.get('name', 'Unknown').replace('"','\\"'),
        MODEL_TYPE,
-       self.pedalboard_size[0], self.pedalboard_size[1], self.pedalboard_version)
+       self.pedalboard_size[0], self.pedalboard_size[1], PEDALBOARD_FORMAT_VERSION, self.pedalboard_version)
 
         # Arcs (connections)
         if len(self.connections) > 0:
@@ -4868,6 +5030,12 @@ _:b%i
 
         if pluginData is None:
             logging.warning("[host] Trying to address non-existing plugin instance %i: '%s'", instance_id, instance)
+            callback(False)
+            return
+
+        # covers hardware, MIDI learn, MIDI CC and CV addressings alike
+        if portsymbol == ":bypass" and not is_plugin_bypassable(pluginData['uri']):
+            logging.warning("[host] Plugin '%s' has no bypass, refusing to address it", pluginData['uri'])
             callback(False)
             return
 

@@ -143,6 +143,16 @@ JqueryClass('pedalboard', {
                 callback(true)
             },
 
+            // Export the current plugin settings as a .modpreset file
+            pluginPresetExport: function (instance, name, callback) {
+                callback({ok:false})
+            },
+
+            // Import a .modpreset file as a user preset
+            pluginPresetImport: function (instance, file, callback) {
+                callback({ok:false})
+            },
+
             // Changes the parameter of a plugin's control port
             pluginParameterChange: function (port, value) {},
 
@@ -211,6 +221,7 @@ JqueryClass('pedalboard', {
         self.pedalboard('wrapApplicationFunctions', options, [
             'pluginLoad', 'pluginRemove',
             'pluginPresetLoad', 'pluginPresetSaveNew', 'pluginPresetSaveReplace', 'pluginPresetDelete',
+            'pluginPresetExport', 'pluginPresetImport',
             'pluginParameterChange', 'pluginPatchGet', 'pluginPatchSet', 'pluginMove',
             'portConnect', 'portDisconnect', 'reset', 'getPluginsData'
         ])
@@ -1437,6 +1448,12 @@ JqueryClass('pedalboard', {
                         }
                     })
             },
+            presetExport: function (name, callback) {
+                self.data('pluginPresetExport')(instance, name, callback)
+            },
+            presetImport: function (file, callback) {
+                self.data('pluginPresetImport')(instance, file, callback)
+            },
             bypassed: bypassed ? 1 : 0,
             defaultIconTemplate: DEFAULT_ICON_TEMPLATE,
             defaultSettingsTemplate: DEFAULT_SETTINGS_TEMPLATE
@@ -1491,6 +1508,11 @@ JqueryClass('pedalboard', {
             for (symbol in pluginGui.controls) {
                 port = pluginGui.controls[symbol]
                 if (symbol == ':bypass') {
+                    if (pluginData.bypassable === false) {
+                        // host-implemented plugin without a bypass: no switch and no addressing for it
+                        settings.find('.mod-switch.bypass').hide()
+                        continue
+                    }
                     address = settings.find('[mod-role=bypass-address]')
                 } else if (symbol == ':presets') {
                     address = settings.find('[mod-role=presets-address]')
@@ -3134,8 +3156,9 @@ function T3KIntegration(pedalboard, pubKey) {
                 t3kOpenPopups.push({effect: effect, parameter: parameter, popup: data})
             })
             .catch((error) => {
+                // the popup is tracked only on success, nothing to clean up here
+                new Notification('error', 'Error opening Tone3000.')
                 console.error("T3KSelect error:", error);
-                t3kOpenPopups.close()
             })
     }
 
@@ -3229,6 +3252,7 @@ function T3KIntegration(pedalboard, pubKey) {
                 const tmpFilename = url.pathname.split('/').pop();
                 const fileExtension = tmpFilename.split('.').pop();
                 let fileName = (total > 1 ? model.name : tone.title)
+                let filetype
 
                 if (tone.gear == 'cab') {
                     filetype = 'cabsim'
@@ -3351,7 +3375,7 @@ function T3KIntegration(pedalboard, pubKey) {
                                     self
                                         .downloadModelsFiles(auth.tokens.access_token, tone, models, function(model, current, count) {
                                             const msg = `Downloading files ${current}/${count}...`
-                                            const perc = Math.round(current / Math.min(1, count) * 100)
+                                            const perc = Math.round(current / Math.max(1, count) * 100)
                                             t3kinfo.popup?.progress?.(msg, perc)
                                         })
                                         .then((files) => {

@@ -806,7 +806,7 @@ function Desktop(elements) {
         var installPlugin = function (uri, data) {
             missingCount++
 
-            self.installationQueue.installUsingURI(uri, 'auto', function (resp, bundlename) {
+            self.installationQueue.installUsingURI(uri, function (resp, bundlename) {
                 if (! resp.ok) {
                     error = true
                 }
@@ -868,8 +868,8 @@ function Desktop(elements) {
             url: startsWith(pedalboard_id, 'https://') ? pedalboard_id : (SITEURL + '/pedalboards/' + pedalboard_id),
             contentType: 'application/json',
             success: function (resp) {
-                if (!resp.data.stable && PREFERENCES['show-labs-plugins'] !== "true") {
-                    new Notification('error', 'This pedalboard contains one or more community maintained MOD Labs plugins. To load it, you need to enable MOD Labs plugins in <a href="settings">Settings</a> -> Advanced');
+                if (resp.data.stable === false && PREFERENCES['show-unstable-plugins'] !== "true") {
+                    new Notification('error', 'This pedalboard contains beta plugins. To load it, you need to enable beta plugins in <a href="settings">Settings</a> -> Developer');
                     return;
                 }
                 self.reset(function () {
@@ -1433,6 +1433,59 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
             })
         },
 
+        // .modpreset download of the current plugin settings
+        pluginPresetExport: function (instance, name, callback) {
+            var xhr = new XMLHttpRequest()
+            xhr.open('GET', '/effect/preset/export' + instance + '?name=' + encodeURIComponent(name) + '&_=' + Date.now())
+            xhr.responseType = 'blob'
+            xhr.onload = function () {
+                if (xhr.status != 200) {
+                    var reader = new FileReader()
+                    reader.onload = function () {
+                        callback({ ok: false, error: reader.result || "Export failed" })
+                    }
+                    reader.readAsText(xhr.response)
+                    return
+                }
+                var filename = xhr.getResponseHeader('X-Modpreset-Filename') || 'preset.modpreset'
+                var url = URL.createObjectURL(xhr.response)
+                var a = $('<a style="display:none">').attr('href', url).attr('download', filename).appendTo('body')
+                a[0].click()
+                setTimeout(function () {
+                    a.remove()
+                    URL.revokeObjectURL(url)
+                }, 1000)
+                callback({
+                    ok: true,
+                    filename: filename,
+                    leftOut: parseInt(xhr.getResponseHeader('X-Modpreset-Left-Out') || '0'),
+                })
+            }
+            xhr.onerror = function () {
+                callback({ ok: false, error: "Export failed" })
+            }
+            xhr.send()
+        },
+
+        // .modpreset file (a File from an <input type=file>) installed as a user preset
+        pluginPresetImport: function (instance, file, callback) {
+            $.ajax({
+                url: '/effect/preset/import' + instance,
+                method: 'POST',
+                data: file,
+                processData: false,
+                contentType: 'application/octet-stream',
+                success: function (resp) {
+                    callback(resp)
+                },
+                error: function () {
+                    callback({ ok: false, error: "Import failed" })
+                },
+                cache: false,
+                dataType: 'json'
+            })
+        },
+
         pluginPresetDelete: function (instance, uri, bundlepath, callback) {
             $.ajax({
                 url: '/effect/preset/delete/' + instance,
@@ -1727,13 +1780,13 @@ Desktop.prototype.makeCloudPluginBox = function (el, trigger) {
                 dataType: 'json'
             })
         },
-        upgradePluginURI: function (uri, usingLabs, callback) {
+        upgradePluginURI: function (uri, callback) {
             self.previousPedalboardList = null
-            self.installationQueue.installUsingURI(uri, usingLabs, callback)
+            self.installationQueue.installUsingURI(uri, callback)
         },
-        installPluginURI: function (uri, usingLabs, callback) {
+        installPluginURI: function (uri, callback) {
             self.previousPedalboardList = null
-            self.installationQueue.installUsingURI(uri, usingLabs, callback)
+            self.installationQueue.installUsingURI(uri, callback)
         }
     })
 }
@@ -2140,6 +2193,9 @@ function enable_dev_mode(skipSaveConfig) {
     // buffer size button
     $('#mod-buffersize').show()
 
+    // preset Export / Import buttons
+    $('body').addClass('preset-share')
+
     // CPU speed and temperature, not available on the Duo
     if (PLATFORM != "duo") {
         $('#mod-cpu-stats').show()
@@ -2176,6 +2232,11 @@ function disable_dev_mode() {
 
     // buffer size button
     $('#mod-buffersize').hide()
+
+    // preset Export / Import buttons (MOD Desktop always shows them)
+    if (! USING_MOD_DESKTOP) {
+        $('body').removeClass('preset-share')
+    }
 
     // CPU speed and temperature
     $('#mod-cpu-stats').hide()

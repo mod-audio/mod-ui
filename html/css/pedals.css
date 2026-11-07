@@ -330,6 +330,27 @@ body > .mod-settings.mod-window-visible {
     background-image: url('../img/icons/25/delete.png');
     margin-right: 5px
 }
+/* Export / Import: shown only with Developer Mode, always on MOD Desktop (body.preset-share) */
+.mod-presets .btn.preset-btn-export,
+.mod-presets .btn.preset-btn-import {
+    display: none;
+    width: 29px !important;
+    padding: 0;
+    font-size: 12px;
+}
+body.preset-share .mod-presets .btn.preset-btn-export,
+body.preset-share .mod-presets .btn.preset-btn-import {
+    display: inline-block;
+}
+.mod-presets .btn.preset-btn-import {
+    margin-right: 5px
+}
+.btn.preset-btn-export:after {
+    content: 'EXP';
+}
+.btn.preset-btn-import:after {
+    content: 'IMP';
+}
 
 
 .preset-manager {
@@ -759,6 +780,17 @@ body > .mod-settings.mod-window-visible {
 .mod-pedal-settings #mod-switch-transport-play .mod-switch-image.play {
   background-image:url(../img/icons/transport.png);
   left: 80px;
+}
+
+/* group color behind the faded nut face of footswitch.png; ungrouped triggers get the nut's own gray */
+.mod-pedal-settings .mod-footswitch-background {
+    background-color: #8b8b8b;
+    clip-path: polygon(39.8% 9.1%, 79.5% 20.5%, 90.9% 62.5%, 58.0% 90.9%, 18.2% 78.4%, 10.2% 37.5%);
+    height: 64px;
+    left: 47px;
+    position: absolute;
+    top: 55px;
+    width: 64px;
 }
 
 .mod-pedal-settings .mod-switch .mod-footswitch-image {
