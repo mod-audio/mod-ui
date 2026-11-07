@@ -374,7 +374,9 @@ function show_blocker (action) {
     } else if (action == "export") {
         text = 'Exporting data, please wait...';
     } else if (action == "import") {
-        text = 'Import data, please wait...<br/>This might take a few minutes.';
+        text = 'Restoring data, please wait...<br/>This might take a few minutes.';
+    } else if (action == "info") {
+        text = 'Reading the USB stick, please wait...';
     } else {
         text = 'Please wait..'
     }
@@ -480,11 +482,11 @@ function enable_service(name, enable, inverted, persistent) {
     }
 }
 
-function run_custom_command(cmd, callback) {
+function run_custom_command(cmd, callback, errback) {
     system_exechange({
         'type': 'command',
         'cmd' : cmd,
-    }, callback)
+    }, callback, errback)
 }
 
 function write_file_contents(path, content) {
@@ -695,45 +697,117 @@ $('document').ready(function() {
     // ----------------------------------------------------------------------------------------------------------------
     // --- Backup & Restore
 
-    $("#button-action-backup-export").click(function () {
-        var block = show_blocker("export"),
-            pConfigs = $("#prefs-backup-configs").prop("checked") ? '1' : '0',
-            pPlugins = $("#prefs-backup-plugins").prop("checked") ? '1' : '0'
+    // "<device configs>,<plugins>,<user files>"
+    function backup_options() {
+        return ($("#prefs-backup-configs").prop("checked") ? '1' : '0') + ","
+             + ($("#prefs-backup-plugins").prop("checked") ? '1' : '0') + ","
+             + ($("#prefs-backup-userfiles").prop("checked") ? '1' : '0')
+    }
 
-        run_custom_command("backup-export " + pConfigs + "," + pPlugins, function (resp) {
+    $("#button-action-backup-export").click(function () {
+        var block = show_blocker("export")
+
+        run_custom_command("backup-export " + backup_options(), function (resp) {
             block.remove()
             if (resp.ok) {
                 new Notification("info", "Backup to USB stick complete!<br>You can now safely remove the USB stick.")
             } else {
                 new Notification("error", "Backup to USB stick failed!<br>" + resp.error)
             }
+        }, function () {
+            block.remove()
+            new Notification("error", "Backup to USB stick failed!<br>Communication failure.")
         })
     })
 
     $("#button-action-backup-import").click(function () {
-        if (!confirm("Restoring data from USB stick will erase the current data inside the MOD.\n"
-                    +"Are you sure you want to continue?")) {
-            return
-        }
+        var block = show_blocker("info")
 
-        var block = show_blocker("import"),
-            pConfigs = $("#prefs-backup-configs").prop("checked") ? '1' : '0',
-            pPlugins = $("#prefs-backup-plugins").prop("checked") ? '1' : '0'
-
-        run_custom_command("backup-import " + pConfigs + "," + pPlugins, function (resp) {
-            if (resp.ok) {
-                setTimeout(function () {
-                    block.html('<p>Import from USB stick complete!</p>')
-
-                    var re = $("<div class='button icon'>Reload</div>").appendTo(block);
-                    re.css("background-image", "url(img/icons/25/reload.png)");
-                    re.click(function () { location.reload(); });
-                }, 1000)
-            } else {
-                block.html('<p>Importing from USB stick failed!<br/>' + resp.error + '</p>')
+        run_custom_command("backup-info", function (resp) {
+            block.remove()
+            if (! resp.ok) {
+                new Notification("error", "Cannot read a backup from the USB stick.<br>" + resp.error)
+                return
             }
+            if (! confirm(backup_restore_question(resp.info))) {
+                return
+            }
+            start_backup_restore()
+        }, function () {
+            block.remove()
+            new Notification("error", "Cannot read a backup from the USB stick.<br>Communication failure.")
         })
     })
+
+    function backup_restore_question(info) {
+        var opts = info.options || {},
+            sizes = info.sizes || {},
+            mb = function (bytes) { return Math.max(1, Math.round((bytes || 0) / 1048576)) + " MB" },
+            created = info.created ? new Date(info.created) : null,
+            text = "Backup found on the USB stick:\n"
+
+        text += "  made on " + (created && !isNaN(created.getTime()) ? created.toLocaleString() : "an unknown date")
+        if (info.release) {
+            text += " with MOD OS " + info.release
+        }
+        text += "\n  pedalboards, banks, settings and presets (" + mb(sizes.user) + ")\n"
+        if (opts.plugins) {
+            text += "  LV2 plugins (" + mb(sizes.plugins) + ")\n"
+        }
+        if (opts.device_configs) {
+            text += "  device configs (" + mb(sizes.device) + ")\n"
+        }
+        if (opts.user_files) {
+            text += "  user files (" + mb(sizes.files) + ")\n"
+        }
+
+        text += "\nThe restore replaces the pedalboards, banks, settings and presets on this MOD"
+        if ($("#prefs-backup-configs").prop("checked") && opts.device_configs) {
+            text += ", the device configs"
+        }
+        if ($("#prefs-backup-userfiles").prop("checked") && opts.user_files) {
+            text += ", the user files"
+        }
+        text += ". Plugins and licences are only added, never removed. "
+              + "The current data is kept aside on the MOD until the next restore.\n"
+
+        if ($("#prefs-backup-userfiles").prop("checked") && ! opts.user_files) {
+            text += "\nThis backup has no user files: the user files on this MOD stay as they are.\n"
+        }
+        if ($("#prefs-backup-configs").prop("checked") && ! opts.device_configs) {
+            text += "\nThis backup has no device configs: the current ones stay as they are.\n"
+        }
+        if (info.format === 0) {
+            text += "\nThis backup was made before MOD OS 1.15.\n"
+        }
+
+        return text + "\nContinue?"
+    }
+
+    function start_backup_restore() {
+        var block = show_blocker("import")
+
+        run_custom_command("backup-import " + backup_options(), function (resp) {
+            if (resp.ok) {
+                block.html('<p>Restore from USB stick complete!<br/>'
+                          +'The MOD now restarts its audio and web interface: reload this page in a few seconds.</p>')
+
+                var re = $("<div class='button icon'>Reload</div>").appendTo(block);
+                re.css("background-image", "url(img/icons/25/reload.png)");
+                re.click(function () { location.reload(); });
+            } else {
+                block.html('<p>Restore from USB stick failed!<br/>' + resp.error + '</p>')
+
+                var cl = $("<div class='button icon'>Close</div>").appendTo(block);
+                cl.click(function () { block.remove(); });
+            }
+        }, function () {
+            block.html('<p>Restore from USB stick: lost contact with the MOD.<br/>Reload this page in a few seconds.</p>')
+
+            var re = $("<div class='button icon'>Reload</div>").appendTo(block);
+            re.click(function () { location.reload(); });
+        })
+    }
 
     // ----------------------------------------------------------------------------------------------------------------
     // --- Boot & Restore
@@ -1226,9 +1300,13 @@ $('document').ready(function() {
                 <form class="form">
                     <p>
                         <b>Backup and restore user data using a USB stick</b>.<br/>
-                        Make sure the USB stick has enough disk space, preferably with fat32 file system.<br/>
-                        User configuration, banks and pedalboards are always saved and overwritten.<br/>
-                        Note that current user data will be deleted during restore!
+                        A backup always holds your pedalboards, banks, settings and plugin presets, plus the parts you tick below.
+                        The previous backup on the stick is kept until the new one is complete.<br/>
+                        A restore replaces the pedalboards, banks, settings and presets on this MOD (and the ticked parts
+                        that the backup holds). Plugins and licences are only added, never removed.
+                        The data a restore replaces is kept aside on the MOD until the next restore.<br/>
+                        The USB stick needs enough free space. A FAT32 stick holds at most 4 GB per part (plugins, user files):
+                        above that, leave the part out or, on a MOD Dwarf, use a stick formatted as exFAT.
                     </p>
                     <label>
                         <input type="checkbox" autocomplete="off" id="prefs-backup-configs">
@@ -1239,6 +1317,12 @@ $('document').ready(function() {
                     <label>
                         <input type="checkbox" autocomplete="off" id="prefs-backup-plugins">
                             Also backup/restore LV2 plugins
+                        </input>
+                    </label>
+                    <br/>
+                    <label>
+                        <input type="checkbox" autocomplete="off" id="prefs-backup-userfiles">
+                            Also backup/restore user files (NAM models, IRs, audio loops, samples, etc)
                         </input>
                     </label>
                     <br/>
