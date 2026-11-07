@@ -697,11 +697,14 @@ $('document').ready(function() {
     // ----------------------------------------------------------------------------------------------------------------
     // --- Backup & Restore
 
-    // "<device configs>,<plugins>,<user files>"
+    // "<device configs>,<plugins>,<user files>,<browser time>"
+    // The browser's time dates the backup (and the safety copy of a restore): the Dwarf has no
+    // battery-backed clock and would write 1970.
     function backup_options() {
         return ($("#prefs-backup-configs").prop("checked") ? '1' : '0') + ","
              + ($("#prefs-backup-plugins").prop("checked") ? '1' : '0') + ","
-             + ($("#prefs-backup-userfiles").prop("checked") ? '1' : '0')
+             + ($("#prefs-backup-userfiles").prop("checked") ? '1' : '0') + ","
+             + Math.floor(Date.now() / 1000)
     }
 
     $("#button-action-backup-export").click(function () {
@@ -746,7 +749,11 @@ $('document').ready(function() {
             created = info.created ? new Date(info.created) : null,
             text = "Backup found on the USB stick:\n"
 
-        text += "  made on " + (created && !isNaN(created.getTime()) ? created.toLocaleString() : "an unknown date")
+        // a date before 2020 comes from a unit whose clock was not set (1970)
+        if (created && (isNaN(created.getTime()) || created.getFullYear() < 2020)) {
+            created = null
+        }
+        text += "  made on " + (created ? created.toLocaleString() : "an unknown date")
         if (info.release) {
             text += " with MOD OS " + info.release
         }
