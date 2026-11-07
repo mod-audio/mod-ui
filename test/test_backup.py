@@ -30,9 +30,16 @@ class BackupFlagsTest(unittest.TestCase):
         self.assertEqual(backup_flags("1,1"), ["-d", "-p"])
         self.assertEqual(backup_flags("0,1"), ["-p"])
 
+    def test_browser_time(self):
+        self.assertEqual(backup_flags("0,0,1,1794045600"), ["-u", "--time=1794045600"])
+        self.assertEqual(backup_flags("0,0,0,1794045600"), ["--time=1794045600"])
+
     def test_nothing_else_reaches_the_command(self):
         self.assertEqual(backup_flags("yes,-rf,1;reboot"), [])
         self.assertEqual(backup_flags(""), [])
+        self.assertEqual(backup_flags("0,0,0,12;reboot"), [])
+        self.assertEqual(backup_flags("0,0,0,-1"), [])
+        self.assertEqual(backup_flags("0,0,0,1234567890123"), [])
 
 
 class BackupMessageTest(unittest.TestCase):
