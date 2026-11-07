@@ -90,6 +90,8 @@ JqueryClass('pedalboard', {
             // wherever to skip zoom animations
             skipAnimations: false,
 
+            // WindowManager instance
+            windowManager: new WindowManager(),
             // HardwareManager instance, must be specified
             hardwareManager: null,
 
@@ -1477,6 +1479,12 @@ JqueryClass('pedalboard', {
             obj.icon = icon
             icon.attr('mod-uri', escape(pluginData.uri));
 
+            if (pluginData.licensed < 0) {
+                // This is a TRIAL plugin
+                icon.find('[mod-role="drag-handle"]').addClass('demo-plugin').addClass('demo-plugin-light');
+                self.data('notifyDemoPluginLoaded')()
+            }
+
             self.data('plugins')[instance] = icon
 
             if (! skipModified) {
@@ -1671,6 +1679,7 @@ JqueryClass('pedalboard', {
 
             settings.window({
                 windowName: "Plugin Settings",
+                windowManager: self.data('windowManager')
             }).appendTo($('body'))
             icon.css({
                 'z-index': self.data('z_index'),
@@ -1764,6 +1773,20 @@ JqueryClass('pedalboard', {
                 }
 
                 self.data('portConnect')(outport, inport, finalizeConnection)
+            }
+        }
+    },
+
+    // Remove "Trial" watermark from all instances of a plugin
+    license: function(uri) {
+        var self = $(this);
+        var plugins = self.data('plugins');
+
+        var icon;
+        for (var instance in plugins) {
+            icon = plugins[instance]
+            if (icon && icon.data && icon.data('uri') == uri) {
+                icon.find('[mod-role="drag-handle"]').removeClass('demo-plugin').removeClass('demo-plugin-light');
             }
         }
     },

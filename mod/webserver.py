@@ -56,6 +56,7 @@ from mod import pedalboard_share
 from mod.backup import backup_flags, backup_message
 from mod.bank import list_banks, save_banks, remove_pedalboard_from_banks
 from mod.session import SESSION
+from mod.licensing import check_missing_licenses, save_license, get_new_licenses_and_flush
 from modtools.utils import (
     kPedalboardInfoUserOnly, kPedalboardInfoFactoryOnly, kPedalboardInfoBoth,
     init as lv2_init, cleanup as lv2_cleanup,
@@ -813,6 +814,34 @@ class EffectList(JsonRequestHandler):
     def get(self):
         data = get_all_plugins()
         self.write(data)
+
+class EffectLicenseList(JsonRequestHandler):
+    def post(self):
+        # Receives a list of available licenses from cloud
+        # and returns a list of licenses that are missing
+        licenses = json.loads(self.request.body.decode())
+        missing = check_missing_licenses(licenses)
+        self.write(missing)
+
+class EffectLicenseSave(JsonRequestHandler):
+    def post(self, license_id):
+        save_license(license_id, self.request.body)
+        self.write(True)
+
+class EffectRefresh(JsonRequestHandler):
+    def get(self):
+        # This is called after new licenses are installed
+
+        # First clear LV2 effect cache
+        # TODO clear cache only of affected bundles
+        lv2_cleanup()
+        lv2_init()
+
+        # Reload pedalboard if licenses affect any running plugin
+        affected_uris = get_new_licenses_and_flush()
+        SESSION.host.reload_pedalboard(affected_uris)
+
+        self.write(True)
 
 class EffectT3KSelect(JsonRequestHandler):
     """This is the select callback handler from tone3k integration"""
@@ -2762,6 +2791,11 @@ application = web.Application(
             # connections
             (r"/effect/connect/*(/[A-Za-z0-9_/]+[^/]),([A-Za-z0-9_/]+[^/])/?", EffectConnect),
             (r"/effect/disconnect/*(/[A-Za-z0-9_/]+[^/]),([A-Za-z0-9_/]+[^/])/?", EffectDisconnect),
+
+            # plugin licensing
+            (r"/effect/licenses/list", EffectLicenseList),
+            (r"/effect/licenses/save/(.*)", EffectLicenseSave),
+            (r"/effect/refresh", EffectRefresh),
 
             (r"/effect/t3k/select/*(/[A-Za-z0-9_/]+[^/])/?", EffectT3KSelect),
 

@@ -263,7 +263,7 @@ JqueryClass('cloudPluginBox', {
             cloudReached = false
 
         renderResults = function () {
-            if (results.local == null || results.cloud == null)
+            if (results.local == null || results.cloud == null || results.shopify == null)
                 return
 
             var plugins = []
@@ -282,6 +282,33 @@ JqueryClass('cloudPluginBox', {
                 }
 
                 cplugin.latestVersion = [cplugin.builder_version || 0, cplugin.minorVersion, cplugin.microVersion, cplugin.release_number]
+                if (desktop.licenseManager && cplugin.mod_license === 'paid_perpetual') {
+                    cplugin.commercial = true
+                    if (results.shopify[cplugin.uri]) {
+                        cplugin.shopify_id = results.shopify[cplugin.uri].id
+                        cplugin.licensed = desktop.licenseManager.licensed(cplugin.uri)
+
+                        if (!cplugin.licensed)
+                            cplugin.price = results.shopify[cplugin.uri].price
+                    } else {
+                        // Plugin is commercial but it's not at shopify.
+                        // Trial available, commercial version coming soon
+                        cplugin.licensed = desktop.licenseManager.licensed(cplugin.uri)
+                    }
+                }
+
+                cplugin.demo = lplugin && cplugin.commercial && !cplugin.licensed
+
+                if (cplugin.shopify_id) {
+                    if (!cplugin.licensed)
+                        cplugin.price = results.shopify[cplugin.uri].price;
+                    if (lplugin && cplugin.licensed && !lplugin.licensed) {
+                        // Should not happen
+                        new Notification('warn', 'License for '+cplugin.label+' not downloaded, please reload interface', 4000);
+                    }
+                } else if (cplugin.commercial) {
+                    cplugin.coming = true;
+                }
 
                 if (lplugin) {
                     if (!lplugin.installedVersion) {
@@ -329,6 +356,14 @@ JqueryClass('cloudPluginBox', {
                     lplugin.status = 'installed'
                     lplugin.latestVersion = null
                     self.cloudPluginBox('checkLocalScreenshot', lplugin)
+                    if (lplugin.licensed) {
+                        if (lplugin.licensed > 0) {
+                            lplugin.licensed = true;
+                        } else {
+                            lplugin.licensed = false;
+                            lplugin.demo = true;
+                        }
+                    }
                     self.cloudPluginBox('synchronizePluginData', lplugin)
                     plugins.push(lplugin)
                 }
@@ -347,6 +382,24 @@ JqueryClass('cloudPluginBox', {
             }
             self.cloudPluginBox('rebuildSearchIndex')
         }
+
+        // get list of shopify commercial plugins
+        desktop.fetchShopProducts().then(function(products) {
+            results.shopify = {};
+            for (var i in products) {
+                var uri = products[i].selectedVariant.attrs.variant.sku;
+                results.shopify[uri] = {
+                    id: products[i].id,
+                    price: products[i].selectedVariant.price
+                }
+            }
+            renderResults();
+        }, function() {
+            if (desktop.cloudAccessToken)
+                new Notification('error', "Our commercial plugin store is offline now, sorry for the inconvenience")
+            results.shopify = {}
+            renderResults();
+        });
 
         // cloud search
         var cloudResults
@@ -464,9 +517,21 @@ JqueryClass('cloudPluginBox', {
                     } else {
                         lplugin.status = 'outdated'
                     }
+                    if (cplugin.shopify_id && !lplugin.licensed) {
+                        lplugin.demo = true
+                    }
                 } else {
                     lplugin.latestVersion = null
                     lplugin.status = 'installed'
+                }
+
+                if (lplugin.licensed) {
+                    if (lplugin.licensed > 0) {
+                        lplugin.licensed = true;
+                    } else {
+                        lplugin.licensed = false;
+                        lplugin.demo = true;
+                    }
                 }
 
                 // we're showing installed only, so prefer to show installed modgui screenshot
@@ -722,6 +787,11 @@ JqueryClass('cloudPluginBox', {
             status: plugin.status,
             brand : plugin.brand,
             label : plugin.label,
+            demo: !!plugin.demo,
+            price: plugin.price,
+            licensed: plugin.licensed,
+            featured: plugin.featured,
+            coming: plugin.coming,
             unstable: plugin.stable === false,
             build_env: plugin.buildEnvironment,
         }
@@ -821,6 +891,8 @@ JqueryClass('cloudPluginBox', {
             }
 
             plugin.status  = 'installed'
+            if (plugin.commercial && !plugin.licensed)
+                plugin.demo = true;
             plugin.bundles = [bundle]
             plugin.installedVersion = plugin.latestVersion
 
@@ -849,6 +921,7 @@ JqueryClass('cloudPluginBox', {
             if (plugin.latestVersion) {
                 // removing a plugin available on cloud, keep its store item
                 plugin.status = 'blocked'
+                plugin.demo = false
                 plugin.bundle_name = bundle
                 delete plugin.bundles
                 plugin.installedVersion = null
@@ -916,6 +989,15 @@ JqueryClass('cloudPluginBox', {
                 category = 'MIDI'
             }
 
+            // Plugin might have been licensed after plugin data was bound to event,
+            // so let's check
+            if (desktop.licenseManager && desktop.licenseManager.licensed(plugin.uri)) {
+                plugin.licensed = true;
+                plugin.demo = false;
+                plugin.coming = false;
+                plugin.price = null;
+            }
+
             var metadata = {
                 author: plugin.author,
                 uri: plugin.uri,
@@ -933,6 +1015,12 @@ JqueryClass('cloudPluginBox', {
                 ports : plugin.ports,
                 plugin_href: PLUGINS_URL + '/' + btoa(plugin.uri),
                 pedalboard_href: desktop.getPedalboardHref(plugin.uri, plugin.stable === false),
+                shopify_id: plugin.shopify_id,
+                price: plugin.price,
+                trial: plugin.commercial && !plugin.licensed && status != 'blocked',
+                demo  : !!plugin.demo,
+                licensed: plugin.licensed,
+                coming: plugin.coming,
                 build_env_uppercase: plugin.buildEnvironment ? plugin.buildEnvironment.toUpperCase()
                                                              : (plugin.stable === false ? "BETA" : "LOCAL"),
                 show_build_env: plugin.buildEnvironment !== "prod",
@@ -1013,6 +1101,11 @@ JqueryClass('cloudPluginBox', {
             info.window({
                 windowName: "Cloud Plugin Info"
             })
+
+            if (metadata.shopify_id && !metadata.licensed) {
+                desktop.createBuyButton(metadata.shopify_id)
+            }
+
             info.window('open')
             self.data('info', info)
         }

@@ -18,6 +18,10 @@ function WindowManager() {
         })
     }
 
+    this.registerShopify = function(ui) {
+        this.shopifyUI = ui;
+    }
+
     this.closeWindows = function (window, forced) {
         for (var i = 0; i < self.windows.length; i++) {
             var win = self.windows[i]
@@ -26,6 +30,8 @@ function WindowManager() {
                 win.window('close')
             }
         }
+        if (self.shopifyUI)
+            self.shopifyUI.destroyComponent('cart');
     }
 
     $(document).bind('keydown', function (e) {

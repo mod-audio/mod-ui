@@ -361,6 +361,8 @@ JqueryClass('effectBox', {
             thumbnail_href: (plugin.gui && plugin.gui.thumbnail)
                           ? ("/effect/image/thumbnail.png?uri=" + uri + "&v=" + ver)
                           :  "/resources/pedals/default-thumbnail.png",
+            licensed: plugin.licensed > 0,
+            demo: plugin.licensed < 0,
         }
 
         if (window.devicePixelRatio && window.devicePixelRatio >= 2) {
@@ -445,6 +447,8 @@ JqueryClass('effectBox', {
                 name  : plugin.name,
                 label : plugin.label,
                 ports : plugin.ports,
+                demo  : plugin.licensed < 0,
+                licensed: plugin.licensed > 0,
                 installed: true,
                 favorite_class: FAVORITES.indexOf(plugin.uri) >= 0 ? "favorite" : "",
                 plugin_href: PLUGINS_URL + '/' + btoa(plugin.uri),
@@ -517,6 +521,10 @@ JqueryClass('effectBox', {
                     })
                 });
 
+                if (metadata.shopify_id && !metadata.licensed) {
+                    desktop.createBuyButton(metadata.shopify_id)
+                }
+
                 info.window({
                     windowName: "Plugin Info",
                     windowManager: self.data('windowManager'),
@@ -532,6 +540,19 @@ JqueryClass('effectBox', {
             }
 
             render(metadata)
+
+            if (!metadata.licensed) {
+                desktop.fetchShopProduct(plugin.uri).then(function(product) {
+                    if (product) {
+                        metadata.shopify_id = product.id
+                        metadata.price = product.selectedVariant.price
+                        render(metadata)
+                    } else if (metadata.demo) {
+                        metadata.coming = true
+                        render(metadata)
+                    }
+                })
+            }
         }
 
         if (plugin.bundles) {

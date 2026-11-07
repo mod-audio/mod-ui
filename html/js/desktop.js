@@ -218,6 +218,7 @@ function Desktop(elements) {
     this.pedalboardPresetName = ''
     this.pedalboardDemoPluginsNotified = false
     this.loadingPeldaboardForFirstTime = true
+    this.licenseManager = null
 
     this.pedalboard = self.makePedalboard(elements.pedalboard, elements.effectBox)
 
@@ -416,6 +417,8 @@ function Desktop(elements) {
                                     return;
                                 }
 
+                                var license_info = resp.license_info;
+
                                 if (resp['upgrade']) {
                                     $.ajax({
                                         method: 'GET',
@@ -446,6 +449,15 @@ function Desktop(elements) {
                                             from_args: {
                                                 headers: { 'Authorization' : 'MOD ' + resp.access_token }
                                             }
+                                        }
+                                        if (self.licenseManager === null) {
+                                            self.licenseManager = new LicenseManager()
+                                            self.licenseManager.addLicenses(license_info, function(installed) {
+                                                if (installed > 0) {
+                                                    var s = installed > 1 ? 's' : ''
+                                                    new Notification('info', installed + ' plugin'+s+' licensed')
+                                                }
+                                            })
                                         }
                                         callback(true, opts);
                                     },
@@ -2105,6 +2117,140 @@ Desktop.prototype.openPresetSaveWindow = function (windowTitle, name, callback) 
         function (ok, ignored, newName) {
             callback(newName)
         })
+}
+
+Desktop.prototype.getDeviceShopToken = function(callback) {
+    var self = this;
+
+    var getToken = function() {
+        $.ajax({
+            url: SITEURL + '/licenses/requests/',
+            cache: false,
+            method: 'GET',
+            headers: {
+                'Authorization' : 'MOD ' + self.cloudAccessToken
+            },
+            success: function(result) {
+                callback(result.id);
+            },
+            error: function(result) {
+                new Notification('error', "Cannot get transaction authorization from Cloud, please contact support", 10000);
+            }
+        });
+    }
+
+    if (self.cloudAccessToken == null) {
+        desktop.authenticateDevice(function (ok) {
+            if (ok && self.cloudAccessToken != null) {
+                getToken()
+            } else {
+                new Notification('error', "Can't authenticate with Cloud to access plugin store", 5000)
+            }
+        })
+    } else {
+        getToken();
+    }
+}
+// TODO cache
+Desktop.prototype.fetchShopProducts = function() {
+    var self = this
+    return new Promise(function(resolve, reject) {
+        var shopClient = ShopifyBuy.buildClient(SHOPIFY_CLIENT_OPTIONS);
+        shopClient.fetchAllProducts().then(function(products) {
+            if (products.length > 0) {
+                self.createCart(shopClient)
+            }
+            resolve(products)
+        }, reject)
+    })
+}
+
+Desktop.prototype.fetchShopProduct = function(uri) {
+    var self = this
+    var shopClient = ShopifyBuy.buildClient(SHOPIFY_CLIENT_OPTIONS);
+    // TODO would be more efficient to query one single product,
+    // but don't know how to query by variant's SKU
+    return shopClient.fetchAllProducts().then(function(products) {
+        for (var i in products) {
+            if (uri == products[i].selectedVariant.attrs.variant.sku) {
+                self.createCart(shopClient)
+                return products[i]
+            }
+        }
+    })
+}
+
+Desktop.prototype.createCart = function(shopClient) {
+    var self = this
+    ShopifyBuy.UI.onReady(shopClient).then(function (ui) {
+        ui.createComponent('cart', {
+            moneyFormat: '%E2%82%AC%7B%7Bamount%7D%7D',
+            options: SHOPIFY_PRODUCT_OPTIONS
+        }).then(function(cart) {
+            self.cart = cart;
+        })
+        self.windowManager.registerShopify(ui);
+    })
+}
+
+Desktop.prototype.createBuyButton = function(shopifyId) {
+    var shopClient = ShopifyBuy.buildClient(SHOPIFY_CLIENT_OPTIONS);
+    ShopifyBuy.UI.onReady(shopClient).then(function (ui) {
+        var node = document.getElementById('product-component-'+shopifyId);
+        var button = $('<div class="shopify-fake-button">ADD TO CART</div>').appendTo(node);
+        ui.createComponent('product', {
+            id: [shopifyId],
+            node: node,
+            moneyFormat: '%E2%82%AC%7B%7Bamount%7D%7D',
+            options: SHOPIFY_PRODUCT_OPTIONS
+        });
+    });
+}
+
+Desktop.prototype.waitForLicenses = function(deviceToken) {
+    var self = this;
+    var poll = function() {
+        $.ajax({
+            url: SITEURL + '/licenses/requests/'+deviceToken,
+            method: 'GET',
+            headers: {
+                'Authorization' : 'MOD ' + self.cloudAccessToken
+            },
+            success: function(result) {
+                if (self.licenseManager === null || !result.fulfilled) {
+                    setTimeout(poll, 5000);
+                    return;
+                }
+                self.licenseManager.addLicenses(result.license_info, function() {
+                    var s = result.license_info.length > 1 ? 's' : ''
+                    var msg = result.license_info.length + ' new plugin'+s+' purchased'
+                    new Notification('info', msg);
+                    var uris = result.license_info.map(function(l) { return l.plugin_uri });
+                    if (self.cart) {
+                        self.cart.empty()
+                        self.cart.close()
+                    }
+                })
+            },
+            error: function() {
+                new Notification('error', "Can't get licenses from Cloud, please reload interface after finishing your purchase");
+            }
+        });
+    }
+    setTimeout(poll, 5000);
+}
+
+Desktop.prototype.license = function(uri) {
+    var container = $('[mod-uri="'+escape(uri)+'"]')
+    container.find('.price').removeClass('price').addClass('licensed').html('')
+    container.find('.description-price').removeClass('description-price').addClass('description-licensed').html('')
+    container.find('.demo-mask').remove()
+    container.find('.buy-button').remove()
+    container.find('button').each(function(index, button) {
+        $(button).html($(button).html().replace(/\s+Trial/, ''))
+    });
+
+    this.pedalboard.pedalboard('license', uri)
 }
 
 JqueryClass('saveBox', {
