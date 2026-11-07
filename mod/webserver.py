@@ -51,6 +51,7 @@ from mod import (
     check_environment, jsoncall, safe_json_load,
     get_hardware_descriptor, get_unique_name, os_sync, symbolify,
 )
+from mod.backup import backup_flags, backup_message
 from mod.bank import list_banks, save_banks, remove_pedalboard_from_banks
 from mod.session import SESSION
 from modtools.utils import (
@@ -202,6 +203,10 @@ def restart_services(restartJACK2, restartUI):
     reset_get_all_pedalboards_cache(kPedalboardInfoBoth)
     lv2_cleanup()
     lv2_init()
+
+def restart_after_restore():
+    os_sync()
+    subprocess.Popen(["systemctl", "--no-block", "restart", "jack2", "mod-ui"])
 
 @gen.coroutine
 def start_restore():
@@ -508,7 +513,7 @@ class SystemExeChange(JsonRequestHandler):
         if etype == "command":
             cmd = self.get_argument('cmd').split(" ",1)
             if len(cmd) == 1:
-                cmd = cmd[0]
+                cmd, cdata = cmd[0], ""
             else:
                 cmd, cdata = cmd
 
@@ -519,40 +524,33 @@ class SystemExeChange(JsonRequestHandler):
             elif cmd == "restore":
                 IOLoop.instance().add_callback(start_restore)
 
-            elif cmd == "backup-export":
-                args  = ["mod-backup", "backup"]
-                cdata = cdata.split(",")
-                if cdata[0] == "1":
-                    args.append("-d")
-                if cdata[1] == "1":
-                    args.append("-p")
-                resp  = yield gen.Task(run_command, args, None)
-                error = resp[2].decode("utf-8", errors="ignore").strip()
-                if len(error) > 1:
-                    error = error[0].title()+error[1:]+"."
+            elif cmd in ("backup-export", "backup-import"):
+                args = ["mod-backup", "backup" if cmd == "backup-export" else "restore"] + backup_flags(cdata)
+                resp = yield gen.Task(run_command, args, None)
+                ok   = resp[0] == 0
                 self.write({
-                    'ok'   : resp[0] == 0,
-                    'error': error,
+                    'ok'   : ok,
+                    'error': backup_message(resp[2]) if not ok else "",
+                    'notes': backup_message(resp[2]) if ok else "",
                 })
+                if ok and cmd == "backup-import":
+                    # restart the web interface too: it keeps settings, banks and favorites in memory
+                    IOLoop.instance().add_callback(restart_after_restore)
                 return
 
-            elif cmd == "backup-import":
-                args  = ["mod-backup", "restore"]
-                cdata = cdata.split(",")
-                if cdata[0] == "1":
-                    args.append("-d")
-                if cdata[1] == "1":
-                    args.append("-p")
-                resp = yield gen.Task(run_command, args, None)
-                error = resp[2].decode("utf-8", errors="ignore").strip()
-                if len(error) > 1:
-                    error = error[0].title()+error[1:]+"."
-                self.write({
-                    'ok'   : resp[0] == 0,
-                    'error': error,
-                })
+            elif cmd == "backup-info":
+                resp = yield gen.Task(run_command, ["mod-backup", "info"], None)
+                info = None
                 if resp[0] == 0:
-                    IOLoop.instance().add_callback(restart_services, True, False)
+                    try:
+                        info = json.loads(resp[1].decode("utf-8", errors="ignore"))
+                    except ValueError:
+                        info = None
+                self.write({
+                    'ok'   : info is not None,
+                    'info' : info,
+                    'error': backup_message(resp[2]) if info is None else "",
+                })
                 return
 
             else:
