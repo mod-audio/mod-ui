@@ -330,6 +330,60 @@ body > .mod-settings.mod-window-visible {
     background-image: url('../img/icons/25/delete.png');
     margin-right: 5px
 }
+/* Export / Import: shown only with Developer Mode, always on MOD Desktop (body.preset-share) */
+.mod-presets .btn.preset-btn-export,
+.mod-presets .btn.preset-btn-import {
+    display: none;
+    width: 29px !important;
+    padding: 0;
+    font-size: 12px;
+}
+body.preset-share .mod-presets .btn.preset-btn-export,
+body.preset-share .mod-presets .btn.preset-btn-import {
+    display: inline-block;
+}
+.mod-presets .btn.preset-btn-import {
+    margin-right: 5px
+}
+.btn.preset-btn-export:after {
+    content: 'EXP';
+}
+.btn.preset-btn-import:after {
+    content: 'IMP';
+}
+
+/* Pedalboards Library: .modpedalboard Export / Import, only with Developer Mode, always on MOD Desktop (body.pedalboard-share) */
+#pedalboards-library .pedalboard-file-export,
+#pedalboards-library .pedalboard-file-import {
+    display: none;
+}
+body.pedalboard-share #pedalboards-library .pedalboards .pedalboard .actions .pedalboard-file-export {
+    display: inline-block;
+    width: 36px;
+    height: 32px;
+    line-height: 32px;
+    text-align: center;
+    font-size: 12px;
+    color: #aaa;
+}
+body.pedalboard-share #pedalboards-library .pedalboards .pedalboard .actions .pedalboard-file-export:hover {
+    color: #fff;
+    text-decoration: none;
+}
+body.pedalboard-share #pedalboards-library .pedalboards .pedalboard .title {
+    width: calc(100% - 68px);
+}
+body.pedalboard-share #pedalboards-library header .pedalboard-file-import {
+    display: inline-block;
+    float: right;
+    margin: 10px 18px 0 0;
+    color: #aaa;
+    cursor: pointer;
+}
+body.pedalboard-share #pedalboards-library header .pedalboard-file-import:hover {
+    color: #fff;
+    text-decoration: underline;
+}
 
 
 .preset-manager {
@@ -759,6 +813,17 @@ body > .mod-settings.mod-window-visible {
 .mod-pedal-settings #mod-switch-transport-play .mod-switch-image.play {
   background-image:url(../img/icons/transport.png);
   left: 80px;
+}
+
+/* group color behind the faded nut face of footswitch.png; ungrouped triggers get the nut's own gray */
+.mod-pedal-settings .mod-footswitch-background {
+    background-color: #8b8b8b;
+    clip-path: polygon(39.8% 9.1%, 79.5% 20.5%, 90.9% 62.5%, 58.0% 90.9%, 18.2% 78.4%, 10.2% 37.5%);
+    height: 64px;
+    left: 47px;
+    position: absolute;
+    top: 55px;
+    width: 64px;
 }
 
 .mod-pedal-settings .mod-switch .mod-footswitch-image {

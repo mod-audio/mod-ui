@@ -592,6 +592,19 @@ $('document').ready(function() {
             return
         }
 
+        if (cmd == "pb_newer_format") {
+            // pedal:formatVersion of the file is higher than what this MOD OS writes
+            data = data.split(" ",2)
+            var fileFormat = parseInt(data[0])
+            var ourFormat  = parseInt(data[1])
+            new Notification('warn',
+                             'This pedalboard was made on a newer version of MOD OS (pedalboard format ' + fileFormat +
+                             ', this version knows ' + ourFormat + '). ' +
+                             'It plays as usual, but saving it here drops what this version does not know.',
+                             10000)
+            return
+        }
+
         if (cmd == "truebypass") {
             data      = data.split(" ",2)
             var left  = parseInt(data[0]) != 0

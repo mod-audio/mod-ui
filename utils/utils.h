@@ -313,6 +313,8 @@ typedef struct {
     PedalboardHardware hardware;
     PedalboardTimeInfo timeInfo;
     unsigned int version;
+    // modpedal:formatVersion, 1 when absent (files written up to MOD OS 1.14)
+    unsigned int formatVersion;
 } PedalboardInfo;
 
 typedef struct {
