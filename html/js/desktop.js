@@ -806,7 +806,7 @@ function Desktop(elements) {
         var installPlugin = function (uri, data) {
             missingCount++
 
-            self.installationQueue.installUsingURI(uri, 'auto', function (resp, bundlename) {
+            self.installationQueue.installUsingURI(uri, function (resp, bundlename) {
                 if (! resp.ok) {
                     error = true
                 }
@@ -868,8 +868,8 @@ function Desktop(elements) {
             url: startsWith(pedalboard_id, 'https://') ? pedalboard_id : (SITEURL + '/pedalboards/' + pedalboard_id),
             contentType: 'application/json',
             success: function (resp) {
-                if (!resp.data.stable && PREFERENCES['show-labs-plugins'] !== "true") {
-                    new Notification('error', 'This pedalboard contains one or more community maintained MOD Labs plugins. To load it, you need to enable MOD Labs plugins in <a href="settings">Settings</a> -> Advanced');
+                if (resp.data.stable === false && PREFERENCES['show-unstable-plugins'] !== "true") {
+                    new Notification('error', 'This pedalboard contains beta plugins. To load it, you need to enable beta plugins in <a href="settings">Settings</a> -> Developer');
                     return;
                 }
                 self.reset(function () {
@@ -1780,13 +1780,13 @@ Desktop.prototype.makeCloudPluginBox = function (el, trigger) {
                 dataType: 'json'
             })
         },
-        upgradePluginURI: function (uri, usingLabs, callback) {
+        upgradePluginURI: function (uri, callback) {
             self.previousPedalboardList = null
-            self.installationQueue.installUsingURI(uri, usingLabs, callback)
+            self.installationQueue.installUsingURI(uri, callback)
         },
-        installPluginURI: function (uri, usingLabs, callback) {
+        installPluginURI: function (uri, callback) {
             self.previousPedalboardList = null
-            self.installationQueue.installUsingURI(uri, usingLabs, callback)
+            self.installationQueue.installUsingURI(uri, callback)
         }
     })
 }
