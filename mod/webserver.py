@@ -9,6 +9,7 @@ import platform
 import re
 import shutil
 import subprocess
+import tempfile
 import threading
 import sys
 import time
@@ -38,7 +39,7 @@ from mod.settings import (DESKTOP, LOG, DEV_API,
                           HTML_DIR, DOWNLOAD_TMP_DIR, DEVICE_KEY, DEVICE_WEBSERVER_PORT,
                           CLOUD_HTTP_ADDRESS, PLUGINS_HTTP_ADDRESS, PEDALBOARDS_HTTP_ADDRESS, CONTROLCHAIN_HTTP_ADDRESS,
                           USER_BANKS_JSON_FILE,
-                          LV2_PLUGIN_DIR, LV2_PEDALBOARDS_DIR, IMAGE_VERSION,
+                          LV2_PLUGIN_DIR, LV2_PEDALBOARDS_DIR, LV2_FACTORY_PEDALBOARDS_DIR, IMAGE_VERSION,
                           UPDATE_CC_FIRMWARE_FILE, UPDATE_MOD_OS_FILE, UPDATE_MOD_OS_HERLPER_FILE,
                           DEFAULT_ICON_TEMPLATE, DEFAULT_SETTINGS_TEMPLATE, DEFAULT_ICON_IMAGE,
                           DEFAULT_PEDALBOARD, DEFAULT_SNAPSHOT_NAME, DATA_DIR, KEYS_PATH, USER_FILES_DIR,
@@ -51,12 +52,13 @@ from mod import (
     check_environment, jsoncall, safe_json_load,
     get_hardware_descriptor, get_unique_name, os_sync, symbolify,
 )
+from mod import pedalboard_share
 from mod.bank import list_banks, save_banks, remove_pedalboard_from_banks
 from mod.session import SESSION
 from modtools.utils import (
     kPedalboardInfoUserOnly, kPedalboardInfoFactoryOnly, kPedalboardInfoBoth,
     init as lv2_init, cleanup as lv2_cleanup,
-    get_plugin_list, get_all_plugins, get_plugin_info, get_non_cached_plugin_info,
+    get_plugin_list, get_all_plugins, get_plugin_info, get_non_cached_plugin_info, get_plugin_info_essentials,
     get_plugin_gui, get_plugin_gui_mini,
     get_all_pedalboards, get_all_user_pedalboard_names, get_broken_pedalboards, get_pedalboard_info,
     get_jack_buffer_size,
@@ -1585,6 +1587,132 @@ class PedalboardLoadWeb(SimpleFileReceiver):
         os.remove(filename)
         callback()
 
+# Pedalboard files (.modpedalboard): Export / Import in the Pedalboards Library.
+# Shown with Developer Mode, always on MOD Desktop.
+PEDALBOARD_IMPORT_DIR = os.path.join(tempfile.gettempdir(), "mod-pedalboard-import")
+PEDALBOARD_IMPORTS = {}
+
+def pedalboard_file_plugins(bundlepath):
+    "Plugins of a pedalboard bundle as [{uri, minorVersion, microVersion}], one entry per URI."
+    plugins = []
+    seen = set()
+    for plugin in get_pedalboard_info(bundlepath).get('plugins', []):
+        uri = plugin.get('uri')
+        if not uri or uri in seen:
+            continue
+        seen.add(uri)
+        plugins.append({
+            'uri': uri,
+            'minorVersion': plugin.get('minorVersion', 0),
+            'microVersion': plugin.get('microVersion', 0),
+        })
+    return plugins
+
+def pedalboard_file_name(title):
+    name = re.sub(r'[^A-Za-z0-9 _.()-]', '', title).strip(" .") or "pedalboard"
+    return name[:64] + pedalboard_share.EXTENSION
+
+class PedalboardFileExport(TimelessRequestHandler):
+    def get(self):
+        bundlepath = os.path.abspath(self.get_argument('bundlepath'))
+        allowed = any(bundlepath.startswith(os.path.abspath(d) + os.sep)
+                      for d in (LV2_PEDALBOARDS_DIR, LV2_FACTORY_PEDALBOARDS_DIR))
+
+        try:
+            if not allowed or not os.path.isdir(bundlepath):
+                raise pedalboard_share.PedalboardFileError("Pedalboard not found")
+            try:
+                info = get_pedalboard_info(bundlepath)
+            except Exception:
+                raise pedalboard_share.PedalboardFileError("This pedalboard cannot be read")
+            title  = info.get('title') or os.path.basename(bundlepath).rsplit(".", 1)[0]
+            files  = pedalboard_share.find_user_files(bundlepath, USER_FILES_DIR)
+            header = pedalboard_share.make_header(title,
+                                                  pedalboard_file_plugins(bundlepath),
+                                                  files,
+                                                  IMAGE_VERSION or ("desktop" if DESKTOP else ""),
+                                                  "desktop" if DESKTOP else (MODEL_TYPE or ""))
+            header['user_files_dir'] = USER_FILES_DIR
+            data = pedalboard_share.pack(bundlepath, header)
+        except pedalboard_share.PedalboardFileError as e:
+            self.set_status(500)
+            self.set_header("Content-Type", "text/plain; charset=UTF-8")
+            self.write(str(e))
+            return
+        except Exception as e:
+            logging.exception(e)
+            self.set_status(500)
+            self.set_header("Content-Type", "text/plain; charset=UTF-8")
+            self.write("Could not export the pedalboard")
+            return
+
+        filename = pedalboard_file_name(title)
+        self.set_header("Content-Type", "application/octet-stream")
+        self.set_header("Content-Disposition", 'attachment; filename="%s"' % filename)
+        self.set_header("X-Modpedalboard-Filename", filename)
+        self.set_header("X-Modpedalboard-Files", str(len(files)))
+        self.set_header("Cache-Control", "no-store")
+        self.write(data)
+
+class PedalboardFileImport(JsonRequestHandler):
+    # body = the .modpedalboard file. Unpacks and checks it, nothing is loaded yet.
+    def post(self):
+        shutil.rmtree(PEDALBOARD_IMPORT_DIR, True)
+        PEDALBOARD_IMPORTS.clear()
+
+        token   = uuid4().hex
+        destdir = os.path.join(PEDALBOARD_IMPORT_DIR, token)
+
+        try:
+            os.makedirs(destdir)
+            header, bundlepath = pedalboard_share.unpack(self.request.body, destdir)
+            pedalboard_share.relocate_user_files(bundlepath, header.get('user_files_dir'), USER_FILES_DIR)
+            try:
+                info    = get_pedalboard_info(bundlepath)
+                plugins = pedalboard_file_plugins(bundlepath)
+            except Exception:
+                raise pedalboard_share.PedalboardFileError("This pedalboard file is damaged")
+        except pedalboard_share.PedalboardFileError as e:
+            shutil.rmtree(destdir, True)
+            self.write({'ok': False, 'error': str(e)})
+            return
+        except Exception as e:
+            logging.exception(e)
+            shutil.rmtree(destdir, True)
+            self.write({'ok': False, 'error': "Could not read the pedalboard file"})
+            return
+
+        missing_plugins = [p['uri'] for p in plugins if get_plugin_info_essentials(p['uri']).get('error', False)]
+        missing_files   = [f for f in header['files'] if isinstance(f, str) and
+                           not os.path.exists(os.path.join(USER_FILES_DIR, *f.split("/")))]
+
+        PEDALBOARD_IMPORTS[token] = bundlepath
+        self.write({
+            'ok'            : True,
+            'token'         : token,
+            'title'         : info.get('title') or header['title'],
+            'plugins'       : plugins,
+            'missingPlugins': missing_plugins,
+            'missingFiles'  : missing_files,
+            'platform'      : header.get('platform', ""),
+            'osVersion'     : header.get('os_version', ""),
+        })
+
+class PedalboardFileLoad(JsonRequestHandler):
+    # loads a checked import as an unsaved pedalboard (the page resets the current one first)
+    def post(self):
+        bundlepath = PEDALBOARD_IMPORTS.get(self.get_argument('token'), None)
+        if bundlepath is None or not os.path.isdir(bundlepath):
+            self.write({'ok': False, 'error': "The imported pedalboard is no longer available, please import it again"})
+            return
+        try:
+            title = SESSION.load_pedalboard(bundlepath, False)
+        except Exception as e:
+            logging.exception(e)
+            self.write({'ok': False, 'error': "Could not load the pedalboard"})
+            return
+        self.write({'ok': True, 'title': title})
+
 class PedalboardFactoryCopy(JsonRequestHandler):
     def get(self):
         bundlepath = os.path.abspath(self.get_argument('bundlepath'))
@@ -2648,6 +2776,9 @@ application = web.Application(
             (r"/pedalboard/load_bundle/", PedalboardLoadBundle),
             (r"/pedalboard/load_remote/*(/[A-Za-z0-9_/]+[^/])/?", PedalboardLoadRemote),
             (r"/pedalboard/load_web/", PedalboardLoadWeb),
+            (r"/pedalboard/file/export/?", PedalboardFileExport),
+            (r"/pedalboard/file/import/?", PedalboardFileImport),
+            (r"/pedalboard/file/load/?", PedalboardFileLoad),
             (r"/pedalboard/factorycopy/", PedalboardFactoryCopy),
             (r"/pedalboard/info/", PedalboardInfo),
             (r"/pedalboard/remove/", PedalboardRemove),

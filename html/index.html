@@ -95,6 +95,7 @@
     var DEFAULT_ICON_TEMPLATE = '{{default_icon_template}}'
     var DEFAULT_SETTINGS_TEMPLATE = '{{default_settings_template}}'
     var DEFAULT_PEDALBOARD = '{{default_pedalboard}}'
+    var PEDALBOARD_FILE_EXTENSION = '.modpedalboard'
     var FAVORITES = {{favorites}}
     var PREFERENCES = {{preferences}}
     var ADDRESSING_PAGES = {{addressing_pages}}
@@ -242,7 +243,7 @@ $('document').ready(function() {
 
 {% if desktop_app %}
     DesktopApp.setup(desktop)
-    $('body').addClass('preset-share')
+    $('body').addClass('preset-share pedalboard-share')
 {% else %}
     if (PREFERENCES['dev-mode'] == "on") {
         enable_dev_mode(true)
@@ -960,6 +961,7 @@ $('document').ready(function() {
                     <img style="width: 1.2em; height: 1.2em; opacity: 0.6; vertical-align: middle;" src="img/icons/25/language.png" alt=""/>
                     <span style="vertical-align: middle;">Browse Online Pedalboards</span>
                 </a>
+                <span class="js-import pedalboard-file-import" title="Import a .modpedalboard file">Import pedalboard...</span>
                 <span class="view-modes">
                   <i id="view-mode-grid" class="view-mode icon-th-1"></i>
                   <i id="view-mode-list" class="view-mode icon-th-list"></i>
