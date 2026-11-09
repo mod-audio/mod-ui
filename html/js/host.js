@@ -165,17 +165,29 @@ $('document').ready(function() {
             data = data.split(" ", 2)
             var instance = data[0]
             var label = data[1].replace(/_/g," ")
-            
+
             desktop.pedalboard.pedalboard("setPluginLabel", instance, label)
+            desktop.performanceBox.data('refreshPlugins')()
             return
         }
 
-        if (cmd == "plugin_performance_visiblity") {
+        if (cmd == "performance_plugin_visibility") {
             data = data.split(" ", 2)
             var instance = data[0]
-            var visible = (data[1] === "1" ? true : false)
+            var visible = data[1] === "1"
 
-            desktop.pedalboard.pedalboard("setPluginPerformanceIsFavorite", instance, visible)
+            desktop.pedalboard.pedalboard("setPluginPerformanceOptions", instance, { visible: visible })
+            desktop.performanceBox.data('refreshPlugins')()
+            return
+        }
+
+        if (cmd == "performance_plugin_index") {
+            data = data.split(" ", 2)
+            var instance = data[0]
+            var index = parseInt(data[1])
+
+            desktop.pedalboard.pedalboard("setPluginPerformanceOptions", instance, { index: index })
+            desktop.performanceBox.data('refreshPlugins')()
             return
         }
 

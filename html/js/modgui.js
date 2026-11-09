@@ -882,8 +882,9 @@ function GUI(effect, options) {
      * Change this plugin label and update all the UI components
      *
      * newName: new label value null -> restore defaults
+     * notifyHost: false when the change comes from the host (another client), default true
      */
-    this.setLabel = function(newName) {
+    this.setLabel = function(newName, notifyHost) {
         if (newName && newName.trim().length > 0) {
             self.label = newName.trim()
         } else {
@@ -899,7 +900,9 @@ function GUI(effect, options) {
         self.settingsTemplate?.find('.mod-pedal-settings .plugin-label')?.text(settingsLabel)
 
         // let the host know about this change
-        desktop.pedalboard.data('pluginLabelSet')(self.instance, self.label ?? "")
+        if (notifyHost !== false) {
+            desktop.pedalboard.data('pluginLabelSet')(self.instance, self.label ?? "")
+        }
     }
 
     this.preRender = function () {
