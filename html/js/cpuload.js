@@ -76,6 +76,15 @@ function CpuLoadPanel(options) {
             url: '/cpu_monitor/' + enable,
             type: 'POST',
             cache: false,
+            dataType: 'json',
+            success: function (ok) {
+                // false is mod-host refusing the command (or not answering in time): a
+                // mod-host without monitor_cpu_load would otherwise leave the panel waiting forever
+                if (! ok && enable && self.open_) {
+                    options.list.html('<div class="cpu-load-empty">Per-plugin CPU monitoring is not ' +
+                                      'available: mod-host did not accept the monitor_cpu_load command.</div>')
+                }
+            },
             error: function () {
                 if (self.open_) {
                     self.close()
