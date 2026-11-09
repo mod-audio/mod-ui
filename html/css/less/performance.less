@@ -1,0 +1,258 @@
+#performance {
+  background: #2c2c2c;
+  bottom: 45px;
+  left: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  position: absolute;
+  right: 0;
+  top: 0;
+  z-index: 2;
+
+  .actions {
+    display: flex;
+  }
+
+  h1 {
+    color: #fff;
+    display: inline-block;
+    font-size: 24px;
+    line-height: 35px;
+    margin: 0 0 18px 0;
+    padding: 0;
+  }
+
+ .remote {
+    left: 0px;
+    position: fixed;
+    right: 0px;
+    top: 45px;
+    bottom: 45px;
+    overflow: auto;
+    background: #111 url(../img/watermark.png) 100% 100% no-repeat;
+    padding-top: 1%;
+  }
+
+  .js-performance {
+    position: absolute;
+  }
+
+  .js-performance-plugins {
+  }
+
+
+  .js-performance-plugin-settings {
+
+    .mod-pedal-settings {
+      left: 12px;
+      top: 12px;
+      right: 12px;
+      bottom: 12px;
+    }
+  }
+
+  .plugin {
+    padding: 8px;
+    text-align: center;
+    color: #fff;
+
+    .label-container {
+      display: inline;
+      text-wrap: nowrap;
+      padding: 1px;
+      border-radius: 2px;
+    }
+    /* don't show author in perfomance view */
+    .author {
+      display: none;
+    }
+
+    .thumb {
+      padding: 32px;
+      padding-bottom: 12px;
+    }
+
+    img {
+      min-width: 100%;
+      min-height: 100%;
+      max-width: 100%;
+      max-height: 100%;
+    }
+
+    span {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .icon-visible {
+      display: block;
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      z-index: 1;
+    }
+
+    .icon {
+      position: relative;
+      top: 0px;
+      right: 0px;
+      z-index: 1;
+    }
+
+    .is-visible {
+      color: @brand-primary;
+    }
+
+    .title {
+      display: inline;
+      z-index: 1;
+      text-wrap: nowrap;
+    }
+  }
+
+  .snapshot-container {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    height: 100%;
+    width: 100%;
+    padding: 24px;
+    overflow-x: clip;
+    overflow-y: auto;
+
+    .snapshot {
+      flex-grow: 1;
+      min-width: 300px;
+      min-height: 144px;
+      text-align: center;
+      background-color: black;
+      margin: 12px;
+      border-radius: 2px;
+      overflow: hidden;
+      position: relative;
+      box-shadow: rgba(100, 100, 111, 0.2) 0px 7px 29px 0px;
+
+      .title {
+        position: absolute;
+        top: 0px;
+        right: 0px;
+        bottom: 0px;
+        left: 0px;
+        font-size: 5rem;
+        word-break: break-all;
+        color: lightgray;
+        margin: 16px;
+      }
+
+      .index {
+        position: absolute;
+        right: 8px;
+        bottom: 0px;
+        font-size: 10rem;
+        /* opacity: 0.09;
+           color: white; */
+        color: #1e1e1e;
+        height: 132px;
+      }
+    }
+  }
+
+  #performance-filter-visibility {
+    font-size: 26px;
+    cursor: pointer;
+    width: 45px;
+    text-align: center;
+    color: lightgray;
+  }
+
+  .active {
+    color: @brand-primary !important;
+  }
+
+  .mod-knob-snapshot-status.active {
+    /* this color should be in sync with active in pedals.css */
+    color: #eee !important;
+  }
+
+  /* desktop and large tablets */
+  @media screen and (min-width: 1023px), screen and (orientation: portrait) {
+     .js-performance-plugins {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: nowrap;
+        align-items: end;
+        width: 100%;
+        height: 200px;
+        bottom: 0px;
+        left: 0px;
+        overflow-x: auto;
+        overflow-y: clip;
+
+        .plugin {
+          height: 100%;
+          width: 140px;
+          display: flex;
+          flex-direction: column;
+          justify-content: end;
+          flex-grow: 0;
+          flex-shrink: 0;
+        }
+
+        .selected > .label-container {
+          background-color: @brand-primary; 
+        }
+
+      }
+
+      .js-performance-plugin-settings
+      {
+        left: 0px;
+        top: 0px;
+        bottom: 200px;
+        right: 0px;
+      }
+
+      .icon-visible {
+        font-size: 18px;
+      }
+  }
+
+  /* horizontal mobile and small screen */
+  @media screen and (max-width: 1022px) and (orientation: landscape) {
+    .js-performance-plugins {
+      display: flex;
+      flex-direction: column;
+      flex-wrap: nowrap;
+      width: 200px;
+      top: 0px;
+      bottom: 0px;
+      left: 0px;
+      overflow-x: clip;
+      overflow-y: auto;
+
+      .plugin {
+        display: flex;
+        height: 100%;
+        width: 100%;
+        flex-grow: 0;
+        flex-shrink: 0;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      }
+    }
+
+    .js-performance-plugin-settings
+    {
+      left: 200px;
+      top: 0px;
+      bottom: 0px;
+      right: 0px;
+    }
+
+    .icon-visible {
+      font-size: 24px;
+    }
+  }
+}

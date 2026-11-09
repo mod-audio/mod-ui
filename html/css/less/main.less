@@ -73,6 +73,7 @@
 @import 'banks.less';
 @import 'file_manager.less';
 @import 'pedalboards.less';
+@import 'performance.less';
 @import 'nprogress.less';
 @import 'addressings.less';
 @import 't3k.less';
@@ -151,6 +152,11 @@ body {
   background: #111;
   min-width: 1024px;
 
+  &.mobile {
+    // this solve bottom & right space in mobile UI
+    position: fixed;
+  }
+  
   // iOS/iPadOS device-specific styles
   &.ios {
     // prevent vertical inertia scrolling
@@ -158,6 +164,7 @@ body {
     // set 980px min-width to match default virtual viewport width
     min-width: 980px;
   }
+
 }
 
 * {
@@ -293,6 +300,20 @@ hr.dotted {
     &.selected {
       background-color: #000;
       background-position: -45px bottom;
+    }
+  }
+  #performance-trigger {
+    background-image: url(../img/menu-icons-sprite.png?v=2);
+    background-position: -360px top;
+    background-repeat: no-repeat;
+    transition: all 0.33s;
+    &:hover {
+      background-color: #000;
+      background-position: -360px bottom;
+    }
+    &.selected {
+      background-color: #000;
+      background-position: -360px bottom;
     }
   }
   #mod-cloud-plugins {
@@ -532,6 +553,7 @@ hr.dotted {
 header#pedalboard-actions,
 #bank-library header,
 #cloud-plugins-library header,
+#performance header,
 #pedalboards-library header,
 #file-manager-library header {
   display: block;
@@ -657,6 +679,14 @@ header#pedalboard-actions,
       background-image: url(../img/icn-share.png);
       background-size: 32px;
       background-position: 5px center;
+    }
+    &.js-edit {
+        background-image: url(../img/icons/36/edit.png);
+        background-size: 30px 30px;
+    }
+    &.js-settings {
+        background-image: url(../img/icons/36/settings.png);
+        background-size: 30px 30px;
     }
   }
   h1 {

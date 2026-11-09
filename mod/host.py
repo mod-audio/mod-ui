@@ -22,6 +22,7 @@ from random import randint
 from tornado import gen, iostream
 from tornado.ioloop import IOLoop, PeriodicCallback
 from urllib.parse import quote, unquote
+from pprint import pprint
 import os, json, socket, time, logging, sys
 import shutil, tempfile
 
@@ -157,7 +158,8 @@ from modtools.utils import (
     connect_jack_ports, connect_jack_midi_output_ports, disconnect_jack_ports, disconnect_all_jack_ports,
     set_truebypass_value, get_master_volume,
     set_util_callbacks, set_extra_util_callbacks, kPedalboardTimeAvailableBPB,
-    kPedalboardTimeAvailableBPM, kPedalboardTimeAvailableRolling
+    kPedalboardTimeAvailableBPM, kPedalboardTimeAvailableRolling,
+    PerformancePluginInfo
 )
 from modtools.tempo import (
     convert_port_value_to_seconds_equivalent,
@@ -2167,11 +2169,32 @@ class Host(object):
 
             rinstances[instance_id] = pluginData['instance']
 
-            websocket.write_message("add %s %s %.1f %.1f %d %s %d" % (pluginData['instance'], pluginData['uri'],
+            # dump performance data
+            # print("[host] Plugin: %s (%s), performance index: %d%s" % (pluginData['instance'],
+            #                                                          pluginData['uri'],
+            #                                                          pluginData['performance'],
+            #                                                          " (FAVORITE)" if pluginData['performance_visible'] else ""))
+            print ("********************")
+            pprint(pluginData)
+            print ("********************")
+
+            # websocket.write_message("add %s %s %.1f %.1f %d %s %d %s %d %d" % (pluginData['instance'], pluginData['uri'],
+            #                                                           pluginData['x'], pluginData['y'],
+            #                                                           int(pluginData['bypassed']),
+            #                                                           pluginData['sversion'],
+            #                                                           int(bool(pluginData['buildEnv'])),
+            #                                                           pluginData['slabel'],
+            #                                                           int(pluginData['performance_index']),
+            #                                                           int(bool(pluginData['performance_visible']))))
+
+            websocket.write_message("add %s %s %.1f %.1f %d %s %d %s %d %d" % (pluginData['instance'], pluginData['uri'],
                                                                       pluginData['x'], pluginData['y'],
                                                                       int(pluginData['bypassed']),
                                                                       pluginData['sversion'],
-                                                                      int(bool(pluginData['buildEnv']))))
+                                                                      int(bool(pluginData['buildEnv'])),
+                                                                      pluginData['slabel'],
+                                                                      int(pluginData['performance']['index']),
+                                                                      int(bool(pluginData['performance']['visible']))))
 
             if crashed:
                 self.send_notmodified("add %s %d" % (pluginData['uri'], instance_id))
@@ -2576,6 +2599,14 @@ class Host(object):
                                                  extinfo['microVersion'],
                                                  extinfo['minorVersion'],
                                                  extinfo['release']))
+
+            # initial performance values
+            self.maxPerformanceIndex += 1
+            performanceInfo = PerformancePluginInfo()
+            performanceInfo.visible = True
+            performanceInfo.index = self.maxPerformanceIndex
+
+            print(performanceInfo)
             self.plugins[instance_id] = {
                 "instance"    : instance,
                 "uri"         : uri,
@@ -2596,6 +2627,9 @@ class Host(object):
                 "nextPreset"  : "",
                 "buildEnv"    : extinfo['buildEnvironment'],
                 "sversion"    : sversion,
+                "label"       : "", #initial label value
+                "slabel"       : "",
+                "performance" : dict(visible=performanceInfo.visible, index=performanceInfo.index) #  extinfo['performance']
             }
 
             for output in extinfo['monitoredOutputs']:
@@ -2610,10 +2644,13 @@ class Host(object):
                     snapshot['plugins_added'].append(instance_id)
 
             callback(True)
-            self.msg_callback("add %s %s %.1f %.1f %d %s %d" % (instance, uri, x, y,
+            self.msg_callback("add %s %s %.1f %.1f %d %s %d %s %d %d" % (instance, uri, x, y,
                                                                 int(bypassed),
                                                                 sversion,
-                                                                int(bool(extinfo['buildEnvironment']))))
+                                                                int(bool(extinfo['buildEnvironment'])),
+                                                                "",
+                                                                performanceInfo.index,
+                                                                performanceInfo.visible))
 
         self.send_modified("add %s %d" % (uri, instance_id), host_callback, datatype='int')
 
@@ -2788,6 +2825,26 @@ class Host(object):
 
         pluginData['x'] = x
         pluginData['y'] = y
+
+    def set_label(self, instance, label):
+        instance_id = self.mapper.get_id_without_creating(instance)
+        pluginData  = self.plugins[instance_id]
+
+        pluginData['label'] = label
+        pluginData['slabel'] = label.replace(" ","_")
+
+    def set_performance_plugin_visibility(self, instance, visible):
+        instance_id = self.mapper.get_id_without_creating(instance)
+        pluginData  = self.plugins[instance_id]
+
+        pluginData['performance']['visible'] = visible
+
+    def set_performance_plugin_index(self, instance, index):
+        instance_id = self.mapper.get_id_without_creating(instance)
+        pluginData  = self.plugins[instance_id]
+
+        pluginData['performance']['index'] = index
+
 
     # check if addressing is momentary or trigger, in which case we do not want to save current/changed value
     def should_save_addressing_value(self, addressing, value):
@@ -3874,6 +3931,7 @@ class Host(object):
         else:
             motos = {}
 
+        self.maxPerformanceIndex = max(p['performance']['index'] for p in pb['plugins'])
         self.load_pb_plugins(pb['plugins'], instances, rinstances, motos)
         self.load_pb_connections(pb['connections'], mappedOldMidiIns, mappedOldMidiOuts,
                                                     mappedNewMidiIns, mappedNewMidiOuts)
@@ -4041,6 +4099,12 @@ class Host(object):
                 logging.warning("[host] preset '%s' was not valid" % p['preset'])
                 p['preset'] = ""
 
+            # fix performance id for pedalboards created before its introduction
+            if p['performance']['index'] < 0:
+                self.maxPerformanceIndex += 1
+                p['performance']['index'] = self.maxPerformanceIndex
+                logging.info("[host] plugin %s added performance view index: %d" % (instance, self.maxPerformanceIndex))
+
             self.plugins[instance_id] = pluginData = {
                 "instance"    : instance,
                 "uri"         : p['uri'],
@@ -4064,6 +4128,9 @@ class Host(object):
                                                           extinfo['microVersion'],
                                                           extinfo['minorVersion'],
                                                           extinfo['release'])),
+                "label"       : p['label'],
+                "slabel"      : p['label'].replace(' ', '_') if p['label'] is not None else "", # replace spaces with _
+                "performance" : dict((prop, p['performance'].get(prop)) for prop in p['performance'].keys())
             }
 
             self.send_notmodified("add %s %d" % (p['uri'], instance_id))
@@ -4071,11 +4138,14 @@ class Host(object):
             if p['bypassed']:
                 self.send_notmodified("bypass %d 1" % (instance_id,))
 
-            self.msg_callback("add %s %s %.1f %.1f %d %s %d" % (instance,
+            self.msg_callback("add %s %s %.1f %.1f %d %s %d %s %d %d" % (instance,
                                                                 p['uri'], p['x'], p['y'],
                                                                 int(p['bypassed']),
                                                                 pluginData['sversion'],
-                                                                int(bool(extinfo['buildEnvironment']))))
+                                                                int(bool(extinfo['buildEnvironment'])),
+                                                                pluginData['slabel'],
+                                                                int(p['performance']['index']),
+                                                                int(bool(p['performance']['visible']))))
 
             if p['bypassCC']['channel'] >= 0 and p['bypassCC']['control'] >= 0:
                 pluginData['addressings'][':bypass'] = self.addressings.add_midi(instance_id, ":bypass",
@@ -4340,13 +4410,16 @@ _:b%i
     lv2:minorVersion %i ;
     mod:builderVersion %i ;
     mod:releaseNumber %i ;
+    mod:label '%s' ;
     lv2:port <%s> ;
     lv2:prototype <%s> ;
+    perf:visible %s ;
+    perf:index %i ;
     pedal:instanceNumber %i ;
     pedal:preset <%s> ;
     a ingen:Block .
 """ % (instance, pluginData['x'], pluginData['y'], "false" if pluginData['bypassed'] else "true",
-       info['microVersion'], info['minorVersion'], info['builder'], info['release'],
+       info['microVersion'], info['minorVersion'], info['builder'], info['release'], pluginData['label'],
        "> ,\n             <".join(tuple("%s/%s" % (instance, port['symbol']) for port in (info['ports']['audio']['input']+
                                                                                           info['ports']['audio']['output']+
                                                                                           info['ports']['control']['input']+
@@ -4356,7 +4429,11 @@ _:b%i
                                                                                           info['ports']['midi']['input']+
                                                                                           info['ports']['midi']['output']+
                                                                                           [{'symbol': ":bypass"}]))),
-       pluginData['uri'], instance_id, pluginData['preset'])
+       pluginData['uri'],
+       "true" if pluginData['performance']['visible'] else "false",
+       pluginData['performance']['index'],
+       instance_id,
+       pluginData['preset'])
 
             # audio input
             for port in info['ports']['audio']['input']:
@@ -4672,6 +4749,7 @@ _:b%i
 @prefix midi:  <http://lv2plug.in/ns/ext/midi#> .
 @prefix mod:   <http://moddevices.com/ns/mod#> .
 @prefix pedal: <http://moddevices.com/ns/modpedal#> .
+@prefix perf:  <http://moddevices.com/ns/modperformance#> .
 @prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
 %s%s%s
 <>

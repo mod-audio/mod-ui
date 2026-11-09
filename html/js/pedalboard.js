@@ -558,7 +558,7 @@ JqueryClass('pedalboard', {
                         self.pedalboard('setPortWidgetsValue', instance, symbol, value)
                     }
 
-                    self.pedalboard('addPlugin', pluginData, instance, plugin.bypassed, plugin.x, plugin.y, {}, function () {
+                    self.pedalboard('addPlugin', pluginData, instance, plugin.label, plugin.bypassed, plugin.x, plugin.y, {}, function () {
                             loadPlugin(pluginsData)
                         }
                     )
@@ -1367,7 +1367,7 @@ JqueryClass('pedalboard', {
 
     // Adds a plugin to pedalboard. This is called after the application loads the plugin with the
     // instance, now we need to put it in screen.
-    addPlugin: function (pluginData, instance, bypassed, x, y, guiOptions, renderCallback, skipModified) {
+    addPlugin: function (pluginData, instance, label, bypassed, x, y, guiOptions, renderCallback, skipModified) {
         var self = $(this)
         var scale = self.data('scale')
 
@@ -1473,6 +1473,7 @@ JqueryClass('pedalboard', {
         */
         var pluginGui = new GUI(pluginData, options)
 
+        pluginGui.label = label
         pluginGui.render(instance, function (icon, settings) {
             obj.icon = icon
             icon.attr('mod-uri', escape(pluginData.uri));
@@ -1483,7 +1484,6 @@ JqueryClass('pedalboard', {
                 self.trigger('modified')
             }
 
-            icon.data('label', pluginData.label)
             icon.data('uri', pluginData.uri)
             icon.data('gui', pluginGui)
             icon.data('settings', settings)

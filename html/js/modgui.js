@@ -340,6 +340,7 @@ function GUI(effect, options) {
 
     self.effect = effect
     self.instance = null
+    self.label = null
 
     self.bypassed = options.bypassed
     self.currentPreset = ""
@@ -872,6 +873,30 @@ function GUI(effect, options) {
         }
     }
 
+    /*
+     * Change this plugin label and update all the UI components
+     *
+     * newName: new label value null -> restore defaults
+     */
+    this.setLabel = function(newName) {
+        if (newName && newName.trim().length > 0) {
+            self.label = newName.trim()
+        } else {
+            self.label = null
+        }
+
+        var templateData = self.getTemplateData(effect, true)
+        // update the UI label & settings label
+        self.icon?.find('.mod-plugin-name > h1')?.text(templateData.label)
+        // this is the same rule implemented on settings.html template
+        const settingsLabel = templateData.userLabel ? " - " + templateData.userLabel  : ""
+        self.settings?.find('.mod-pedal-settings .plugin-label')?.text(settingsLabel)
+        self.settingsTemplate?.find('.mod-pedal-settings .plugin-label')?.text(settingsLabel)
+
+        // let the host know about this change
+        desktop.pedalboard.data('pluginLabelSet')(self.instance, self.label ?? "")
+    }
+
     this.preRender = function () {
         self.controls = self.makePortIndexes(effect.ports.control.input)
         self.parameters = self.makeParameterIndexes(effect.parameters)
@@ -916,6 +941,7 @@ function GUI(effect, options) {
 
             if (instance) {
                 self.settings = $('<div class="mod-settings" mod-instance="' + instance + '">')
+                self.settingsPerformance = $('<div class="mod-settings" mod-instance="' + instance + '">')
             } else {
                 self.settings = $('<div class="mod-settings">')
             }
@@ -937,8 +963,14 @@ function GUI(effect, options) {
             var totalPresetCount = self.effect.presets.length
 
             self.settings.html(Mustache.render(effect.gui.settingsTemplate || options.defaultSettingsTemplate, templateData))
+            // add to template data that this is the performaceView so the UI can adapt
+            templateData['isPerformanceView'] = true;
+            self.settingsPerformance.html(Mustache.render(effect.gui.settingsTemplate || options.defaultSettingsTemplate, templateData))
+            // remove to mantain the templateData as clean as possible
+            delete templateData['isPerformanceView'];
 
             self.assignControlFunctionality(self.settings, false)
+            self.assignControlFunctionality(self.settingsPerformance, false)
 
             var presetElem = self.settings.find('.mod-presets')
 
@@ -1178,6 +1210,23 @@ function GUI(effect, options) {
                             const t3k = desktop.pedalboard.data('T3KIntegration')
                             t3k.startSelectFlow(instance, parameter)
                         }
+                    })
+                })
+            }
+
+            var editButton = self.settings.find('.mod-pedal-settings .mod-edit')
+            if (instance && editButton.length == 1) {
+                editButton.click(function () {
+                    console.log("Edit clicked")
+                    desktop.openInputBoxWindow("Rename", self.label || self.effect.name, function(newName, cancelled) {
+                        if (cancelled)
+                            return
+
+                        self.setLabel(newName)
+                    },
+                    "Rename", 
+                    function(value) {
+                        return true; // always valid
                     })
                 })
             }
@@ -1757,9 +1806,13 @@ function GUI(effect, options) {
         if (!data.brand) {
             data.brand = options.gui.brand || ""
         }
-        if (!data.label) {
-            data.label = options.gui.label || ""
+        if (!data.userLabel) {
+            data.userLabel = this.label
         }
+        if (!data.label) {
+            data.label =  data.userLabel || options.gui.label  || ""
+        }
+
         if (!data.color) {
             data.color = options.gui.color
         }
@@ -1967,6 +2020,21 @@ function GUI(effect, options) {
             self.jsCallback = null
             console.log("A plugin javascript code is broken and has been disabled, reason:\n", err)
         }
+    }
+
+    /*
+     * Options for the performance view.
+     *
+     * Returns an object with these properties:
+     *    "index": plugin index in the view
+     *    "visible": true always shown in the plugin list
+     *
+     */
+    this.getPerformanceOptions = function() {
+        if (!options.performance)
+            options.performance = {"index": 0, "visible": true}
+
+        return options.performance
     }
 }
 

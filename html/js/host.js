@@ -161,6 +161,24 @@ $('document').ready(function() {
             return
         }
 
+        if (cmd == "plugin_label") {
+            data = data.split(" ", 2)
+            var instance = data[0]
+            var label = data[1].replace(/_/g," ")
+            
+            desktop.pedalboard.pedalboard("setPluginLabel", instance, label)
+            return
+        }
+
+        if (cmd == "plugin_performance_visiblity") {
+            data = data.split(" ", 2)
+            var instance = data[0]
+            var visible = (data[1] === "1" ? true : false)
+
+            desktop.pedalboard.pedalboard("setPluginPerformanceIsFavorite", instance, visible)
+            return
+        }
+
         if (cmd == "transport") {
             data         = data.split(" ",4)
             var rolling  = parseInt(data[0]) != 0
@@ -189,7 +207,9 @@ $('document').ready(function() {
 
             desktop.pedalboardPresetId = index
             desktop.pedalboardPresetName = name
-            desktop.titleBox.text((desktop.title || 'Untitled') + " - " + name)
+            const newTitle = (desktop.title || 'Untitled') + " - " + name
+            desktop.titleBox.text(newTitle)
+            desktop.performanceTitleBox.text(newTitle)
             return
         }
 
@@ -347,7 +367,7 @@ $('document').ready(function() {
         }
 
         if (cmd == "add") {
-            data         = data.split(" ",7)
+            data         = data.split(" ",10)
             var instance = data[0]
             var uri      = data[1]
             var x        = parseFloat(data[2])
@@ -357,6 +377,9 @@ $('document').ready(function() {
             var offBuild = parseInt(data[6]) != 0 // official MOD build coming from store, can be cached
             var plugins  = desktop.pedalboard.data('plugins')
             var skipModified = pb_loading
+            var label = data[7].replace(/_/g," ") // replace underscores with spaces
+            var perfview_index = parseInt(data[8])
+            var perfview_visible = parseInt(data[9]) != 0
 
             if (plugins[instance] == null) {
                 plugins[instance] = {} // register plugin
@@ -437,7 +460,11 @@ $('document').ready(function() {
                             $('#pedalboard-dashboard').arrive(instancekey, cb)
                         }
 
-                        desktop.pedalboard.pedalboard("addPlugin", pluginData, instance, bypassed, x, y, {}, null, skipModified)
+                        var guiOptions = {
+                            "label" : label,
+                            "performance": {"index": perfview_index, "visible": perfview_visible}
+                        }
+                        desktop.pedalboard.pedalboard("addPlugin", pluginData, instance, label, bypassed, x, y, guiOptions, null, skipModified)
                     },
                     cache: offBuild,
                     dataType: 'json'
