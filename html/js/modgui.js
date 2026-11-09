@@ -758,38 +758,43 @@ function GUI(effect, options) {
             presetElem,
             presetElems = [
             self.icon.find('[mod-role=presets]'),
-            self.settings.find('.mod-presets')
+            self.settings.find('.mod-presets'),
+            self.settingsPerformance.find('.mod-presets'),
         ]
         for (var i in presetElems) {
             presetElem = presetElems[i]
             presetElem.find('[mod-role=enumeration-option]').removeClass("selected")
             if (value) {
-                bundlepath = presetElem.find('[mod-role=enumeration-option][mod-uri="' + value + '"]').addClass("selected").attr('mod-path')
+                var selectedPreset = presetElem.find('[mod-role=enumeration-option][mod-uri="' + value + '"]')
+                bundlepath = selectedPreset.addClass("selected").attr('mod-path')
+                if (selectedPreset.length) {
+                    selectedPreset[0].scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' })
+                }
             }
-        }
 
-        if (value) {
-            // TODO: implement addressing for single presets
-            //presetElem.find('.preset-btn-assign-sel').removeClass("disabled")
+            if (value) {
+                // TODO: implement addressing for single presets
+                //presetElem.find('.preset-btn-assign-sel').removeClass("disabled")
 
-            if (bundlepath) {
-                presetElem.find('.preset-btn-save').removeClass("disabled")
+                if (bundlepath) {
+                    presetElem.find('.preset-btn-save').removeClass("disabled")
+                } else {
+                    presetElem.find('.preset-btn-save').addClass("disabled")
+                }
+
+                if (bundlepath && presetElem.data('enabled')) {
+                    presetElem.find('.preset-btn-rename').removeClass("disabled")
+                    presetElem.find('.preset-btn-delete').removeClass("disabled")
+                } else {
+                    presetElem.find('.preset-btn-rename').addClass("disabled")
+                    presetElem.find('.preset-btn-delete').addClass("disabled")
+                }
             } else {
                 presetElem.find('.preset-btn-save').addClass("disabled")
-            }
-
-            if (bundlepath && presetElem.data('enabled')) {
-                presetElem.find('.preset-btn-rename').removeClass("disabled")
-                presetElem.find('.preset-btn-delete').removeClass("disabled")
-            } else {
                 presetElem.find('.preset-btn-rename').addClass("disabled")
                 presetElem.find('.preset-btn-delete').addClass("disabled")
+                presetElem.find('.preset-btn-assign-sel').addClass("disabled")
             }
-        } else {
-            presetElem.find('.preset-btn-save').addClass("disabled")
-            presetElem.find('.preset-btn-rename').addClass("disabled")
-            presetElem.find('.preset-btn-delete').addClass("disabled")
-            presetElem.find('.preset-btn-assign-sel').addClass("disabled")
         }
     }
 
@@ -902,6 +907,47 @@ function GUI(effect, options) {
         self.parameters = self.makeParameterIndexes(effect.parameters)
     }
 
+    this.presetItemClicked = function (presetItem, presetElem, e) {
+        if (!presetElem.data('enabled'))
+            return presetElem.customSelect('prevent', e)
+
+        var value = presetItem.attr('mod-uri')
+        options.presetLoad(value)
+    }
+
+    /* this function handles the preset list on both the settings and the performance view */
+    this.handleSettingsPresets = function (presetElem, presets) {
+        presetElem.data('enabled', true)
+
+        presetElem.find('.radio-preset-factory').click(function () {
+            presetElem.find('.mod-preset-user').hide()
+            presetElem.find('.mod-preset-factory').show()
+        })
+        presetElem.find('.radio-preset-user').click(function () {
+            presetElem.find('.mod-preset-factory').hide()
+            presetElem.find('.mod-preset-user').show()
+        })
+        presetElem.find('[mod-role=enumeration-option]').each(function () {
+            var item = $(this)
+            item.click(function (e) {
+                self.presetItemClicked(item, presetElem, e)
+            })
+        })
+
+        if (self.effect.presets.length == 1) {
+            presetElem.find('.preset-btn-assign-all').addClass("disabled")
+
+        } else if (presets.factory.length == 0) {
+            presetElem.find('.mod-enumerated-title').find('span').hide()
+            presetElem.find('.mod-preset-factory').hide()
+            presetElem.find('.mod-preset-user').show()
+
+            if (presets.user.length == 0) {
+                presetElem.find('.preset-btn-assign-all').addClass("disabled")
+            }
+        }
+    }
+
     this.render = function (instance, callback, skipNamespace) {
         self.instance = instance
 
@@ -973,11 +1019,13 @@ function GUI(effect, options) {
             self.assignControlFunctionality(self.settingsPerformance, false)
 
             var presetElem = self.settings.find('.mod-presets')
+            var presetElemPerfView = self.settingsPerformance.find('.mod-presets')
 
             if (instance &&
                 (totalPresetCount > 0 || self.effect.parameters.length + self.effect.ports.control.input.length > 0))
             {
-                presetElem.data('enabled', true)
+                self.handleSettingsPresets(presetElem, presets)
+                self.handleSettingsPresets(presetElemPerfView, presets)
 
                 var getCurrentPresetItem = function () {
                     if (! self.currentPreset) {
@@ -990,14 +1038,7 @@ function GUI(effect, options) {
                     return opt
                 }
 
-                var presetItemClicked = function (e) {
-                    if (!presetElem.data('enabled'))
-                        return presetElem.customSelect('prevent', e)
-
-                    var value = $(this).attr('mod-uri')
-                    options.presetLoad(value)
-                }
-
+                /* preset save/rename/delete are only handled in the settings view, not in the performance view */
                 presetElem.find('.preset-btn-save').click(function () {
                     if ($(this).hasClass('disabled')) {
                         return
@@ -1033,7 +1074,9 @@ function GUI(effect, options) {
                     desktop.openPresetSaveWindow("Saving Preset", name, function (newName) {
                         options.presetSaveNew(newName, function (resp) {
                             var newItem = $('<div mod-role="enumeration-option" mod-uri="'+resp.uri+'" mod-path="'+resp.bundle+'">'+newName+'</div>')
-                            newItem.appendTo(presetElem.find('.mod-preset-user')).click(presetItemClicked)
+                            newItem.appendTo(presetElem.find('.mod-preset-user')).click(function (e) {
+                                self.presetItemClicked(newItem, presetElem, e)
+                            })
 
                             presetElem.find('.radio-preset-user').click()
                             presetElem.find('.preset-btn-assign-all').removeClass("disabled")
@@ -1134,7 +1177,9 @@ function GUI(effect, options) {
                             var newItem = $('<div mod-role="enumeration-option">').attr('mod-uri', resp.uri)
                                                                                  .attr('mod-path', resp.bundle)
                                                                                  .text(resp.name)
-                            newItem.appendTo(presetElem.find('.mod-preset-user')).click(presetItemClicked)
+                            newItem.appendTo(presetElem.find('.mod-preset-user')).click(function (e) {
+                                self.presetItemClicked(newItem, presetElem, e)
+                            })
 
                             presetElem.find('.radio-preset-user').click()
                             presetElem.find('.preset-btn-assign-all').removeClass("disabled")
@@ -1153,35 +1198,11 @@ function GUI(effect, options) {
                     })
                     input.click()
                 })
-
-                presetElem.find('.radio-preset-factory').click(function () {
-                    presetElem.find('.mod-preset-user').hide()
-                    presetElem.find('.mod-preset-factory').show()
-                })
-                presetElem.find('.radio-preset-user').click(function () {
-                    presetElem.find('.mod-preset-factory').hide()
-                    presetElem.find('.mod-preset-user').show()
-                })
-                presetElem.find('[mod-role=enumeration-option]').each(function () {
-                    $(this).click(presetItemClicked)
-                })
-
-                if (totalPresetCount == 1) {
-                    presetElem.find('.preset-btn-assign-all').addClass("disabled")
-
-                } else if (presets.factory.length == 0) {
-                    presetElem.find('.mod-enumerated-title').find('span').hide()
-                    presetElem.find('.mod-preset-factory').hide()
-                    presetElem.find('.mod-preset-user').show()
-
-                    if (presets.user.length == 0) {
-                        presetElem.find('.preset-btn-assign-all').addClass("disabled")
-                    }
-                }
             }
             else
             {
                 presetElem.hide()
+                presetElemPerfView.hide()
             }
 
             if (instance && self.effect.parameters.length)
