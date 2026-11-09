@@ -1262,6 +1262,12 @@ JqueryClass('pedalboard', {
     // Enlarge the pedalboard to a minimum size capable of accommodating all plugins.
     adapt: function (forcedUpdate) {
         var self = $(this)
+        // A board with no room to show in (a page not laid out yet, or hidden) has nothing
+        // to fit: every size below would divide by zero and leave the scale NaN for good.
+        // The next adapt, from the load or a resize, fits it once there is room.
+        if (! self.parent().width() || ! self.parent().height()) {
+            return
+        }
         // First, get the minmum bounding rectangle,
         // given by minX, maxX, minY and maxY
         var minX, maxX, minY, maxY, padX, padY, w, h, x, y, plugin, pos
