@@ -22,7 +22,6 @@ from random import randint
 from tornado import gen, iostream
 from tornado.ioloop import IOLoop, PeriodicCallback
 from urllib.parse import quote, unquote
-from pprint import pprint
 import os, json, socket, time, logging, sys
 import shutil, tempfile
 
@@ -2169,24 +2168,6 @@ class Host(object):
 
             rinstances[instance_id] = pluginData['instance']
 
-            # dump performance data
-            # print("[host] Plugin: %s (%s), performance index: %d%s" % (pluginData['instance'],
-            #                                                          pluginData['uri'],
-            #                                                          pluginData['performance'],
-            #                                                          " (FAVORITE)" if pluginData['performance_visible'] else ""))
-            print ("********************")
-            pprint(pluginData)
-            print ("********************")
-
-            # websocket.write_message("add %s %s %.1f %.1f %d %s %d %s %d %d" % (pluginData['instance'], pluginData['uri'],
-            #                                                           pluginData['x'], pluginData['y'],
-            #                                                           int(pluginData['bypassed']),
-            #                                                           pluginData['sversion'],
-            #                                                           int(bool(pluginData['buildEnv'])),
-            #                                                           pluginData['slabel'],
-            #                                                           int(pluginData['performance_index']),
-            #                                                           int(bool(pluginData['performance_visible']))))
-
             websocket.write_message("add %s %s %.1f %.1f %d %s %d %s %d %d" % (pluginData['instance'], pluginData['uri'],
                                                                       pluginData['x'], pluginData['y'],
                                                                       int(pluginData['bypassed']),
@@ -2606,7 +2587,6 @@ class Host(object):
             performanceInfo.visible = True
             performanceInfo.index = self.maxPerformanceIndex
 
-            print(performanceInfo)
             self.plugins[instance_id] = {
                 "instance"    : instance,
                 "uri"         : uri,
@@ -2650,7 +2630,7 @@ class Host(object):
                                                                 int(bool(extinfo['buildEnvironment'])),
                                                                 "",
                                                                 performanceInfo.index,
-                                                                performanceInfo.visible))
+                                                                int(performanceInfo.visible)))
 
         self.send_modified("add %s %d" % (uri, instance_id), host_callback, datatype='int')
 
@@ -3931,7 +3911,19 @@ class Host(object):
         else:
             motos = {}
 
-        self.maxPerformanceIndex = max(p['performance']['index'] for p in pb['plugins'])
+        if pb['plugins']:
+            self.maxPerformanceIndex = max(p['performance']['index'] for p in pb['plugins'])
+        else:
+            self.maxPerformanceIndex = 0
+
+        # fix performance index for pedalboards saved without it (modpedal#performanceIndex absent):
+        # after every plugin that has one, in instanceNumber order
+        for p in sorted((p for p in pb['plugins'] if p['performance']['index'] < 0),
+                        key=lambda p: (p['instanceNumber'], p['instance'])):
+            self.maxPerformanceIndex += 1
+            p['performance']['index'] = self.maxPerformanceIndex
+            logging.info("[host] plugin %s added performance view index: %d" % (p['instance'], self.maxPerformanceIndex))
+
         self.load_pb_plugins(pb['plugins'], instances, rinstances, motos)
         self.load_pb_connections(pb['connections'], mappedOldMidiIns, mappedOldMidiOuts,
                                                     mappedNewMidiIns, mappedNewMidiOuts)
@@ -4098,12 +4090,6 @@ class Host(object):
             if p['preset'] and not is_plugin_preset_valid(p['uri'], p['preset']):
                 logging.warning("[host] preset '%s' was not valid" % p['preset'])
                 p['preset'] = ""
-
-            # fix performance id for pedalboards created before its introduction
-            if p['performance']['index'] < 0:
-                self.maxPerformanceIndex += 1
-                p['performance']['index'] = self.maxPerformanceIndex
-                logging.info("[host] plugin %s added performance view index: %d" % (instance, self.maxPerformanceIndex))
 
             self.plugins[instance_id] = pluginData = {
                 "instance"    : instance,
@@ -4410,16 +4396,16 @@ _:b%i
     lv2:minorVersion %i ;
     mod:builderVersion %i ;
     mod:releaseNumber %i ;
-    mod:label '%s' ;
+    pedal:instanceLabel "%s" ;
     lv2:port <%s> ;
     lv2:prototype <%s> ;
-    perf:visible %s ;
-    perf:index %i ;
+    pedal:performanceVisible %s ;
+    pedal:performanceIndex %i ;
     pedal:instanceNumber %i ;
     pedal:preset <%s> ;
     a ingen:Block .
 """ % (instance, pluginData['x'], pluginData['y'], "false" if pluginData['bypassed'] else "true",
-       info['microVersion'], info['minorVersion'], info['builder'], info['release'], pluginData['label'],
+       info['microVersion'], info['minorVersion'], info['builder'], info['release'], pluginData['label'].replace('\\','\\\\').replace('"','\\"'),
        "> ,\n             <".join(tuple("%s/%s" % (instance, port['symbol']) for port in (info['ports']['audio']['input']+
                                                                                           info['ports']['audio']['output']+
                                                                                           info['ports']['control']['input']+
@@ -4749,7 +4735,6 @@ _:b%i
 @prefix midi:  <http://lv2plug.in/ns/ext/midi#> .
 @prefix mod:   <http://moddevices.com/ns/mod#> .
 @prefix pedal: <http://moddevices.com/ns/modpedal#> .
-@prefix perf:  <http://moddevices.com/ns/modperformance#> .
 @prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
 %s%s%s
 <>

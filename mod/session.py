@@ -351,20 +351,17 @@ class Session(object):
 
     # Set a plugin user label
     def ws_plugin_label(self, instance, label, ws):
-        print(f"Setting label of {instance} to '{label}'")
         self.screenshot_needed = True
         self.host.set_label(instance, label)
         self.msg_callback_broadcast("plugin_label %s %s" % (instance, label), ws)
 
     # Set a plugin visibility on the performance view
     def ws_performance_plugin_visibility(self, instance, visible, ws):
-        print(f"Setting performance visibility of {instance} to '{visible}'")
         #self.screenshot_needed = True
         self.host.set_performance_plugin_visibility(instance, visible)
         self.msg_callback_broadcast("performance_plugin_visibility %s %s" % (instance, visible), ws)
 
     def ws_performance_plugin_index(self, instance, index, ws):
-        print(f"Setting performance index of {instance} to '{index}'")
         #self.screenshot_needed = True
         self.host.set_performance_plugin_index(instance, index)
         self.msg_callback_broadcast("performance_plugin_index %s %d" % (instance, index), ws)
