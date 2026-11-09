@@ -392,6 +392,8 @@ class Host(object):
         self.pedalboard_format_version = 1
         self.current_pedalboard_snapshot_id = -1
         self.pedalboard_snapshots = []
+        # while the CPU panel is open, so plugins added meanwhile get monitored too
+        self.cpu_monitor_enabled = False
         self.next_hmi_pedalboard_to_load = None
         self.next_hmi_pedalboard_loading = False
         self.next_hmi_bpb = [0, False, False]
@@ -2611,6 +2613,8 @@ class Host(object):
             for output in extinfo['monitoredOutputs']:
                 self.send_notmodified("monitor_output %d %s" % (instance_id, output))
 
+            self.monitor_cpu_load_new_plugin(instance_id)
+
             for snapshot in self.pedalboard_snapshots:
                 if snapshot is None:
                     continue
@@ -4138,6 +4142,8 @@ class Host(object):
             for output in extinfo['monitoredOutputs']:
                 self.send_notmodified("monitor_output %d %s" % (instance_id, output))
 
+            self.monitor_cpu_load_new_plugin(instance_id)
+
     def load_pb_connections(self, connections, mappedOldMidiIns, mappedOldMidiOuts,
                                                mappedNewMidiIns, mappedNewMidiOuts):
         for c in connections:
@@ -4985,6 +4991,7 @@ _:b%i
         mod-host pushes "cpu_monitor <id> <load>" on the feedback socket whenever a
         plugin beats its own previous worst cycle, so nothing is polled. Enabling also
         resets those peaks, which is how the UI offers a "reset" button."""
+        self.cpu_monitor_enabled = enable
         instances = list(self.plugins.keys())
 
         if not instances:
@@ -4995,6 +5002,12 @@ _:b%i
                                                              len(instances),
                                                              " ".join(str(i) for i in instances)),
                               callback, datatype='boolean')
+
+    def monitor_cpu_load_new_plugin(self, instance_id):
+        # The instance list is sent when the panel opens, so a plugin added after that, by
+        # hand or by loading a pedalboard, joins on its own. Only its own peak is reset.
+        if self.cpu_monitor_enabled:
+            self.send_notmodified("monitor_cpu_load 1 1 %d" % instance_id)
 
     def get_free_memory_value(self):
         if not self.memfile:
