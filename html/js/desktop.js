@@ -7,6 +7,7 @@ function Desktop(elements) {
     // The elements below are expected to be all defined in HTML and passed as parameter
     elements = $.extend({
         titleBox: $('<div>'),
+        performanceTitleBox: $('<div>'),
         zoomIn: $('<div>'),
         zoomOut: $('<div>'),
         addMidiButton: $('<div>'),
@@ -37,6 +38,8 @@ function Desktop(elements) {
         pedalboardTrigger: $('<div>'),
         fileManagerBox: $('<div>'),
         fileManagerBoxTrigger: $('<div>'),
+        performanceBox: $('<div>'),
+        performanceBoxTrigger: $('<div>'),
         pedalboardBox: $('<div>'),
         pedalboardBoxTrigger: $('<div>'),
         bankBox: $('<div>'),
@@ -46,6 +49,7 @@ function Desktop(elements) {
         bankSearchResult: $('<div>'),
         shareButton: $('<div>'),
         shareWindow: $('<div>'),
+        inputBox: $('<div>'),
         presetSaveBox: $('<div>'),
         devicesIcon: $('<div>'),
         devicesWindow: $('<div>'),
@@ -203,7 +207,9 @@ function Desktop(elements) {
         pedalPresetsOverlay: elements.pedalPresetsOverlay,
         hardwareManager: self.hardwareManager,
         renamedCallback: function (name) {
-            self.titleBox.text((self.title || 'Untitled') + " - " + (name || 'Default'))
+            const newTitle = (self.title || 'Untitled') + " - " + (name || 'Default')
+            self.titleBox.text(newTitle)
+            self.performanceTitleBox.text(newTitle)
         }
     })
 
@@ -247,6 +253,7 @@ function Desktop(elements) {
     })
 
     this.titleBox = elements.titleBox
+    this.performanceTitleBox  = elements.performanceTitleBox
 
     this.ParameterSet = function (paramchange) {
         $.ajax({
@@ -367,6 +374,7 @@ function Desktop(elements) {
         $('#wrapper').css('z-index', -1)
         $('#plugins-library').css('z-index', -1)
         $('#cloud-plugins-library').css('z-index', -1)
+        $('#performance').css('z-index', -1)
         $('#pedalboards-library').css('z-index', -1)
         $('#bank-library').css('z-index', -1)
         $('#main-menu').css('z-index', -1)
@@ -753,8 +761,11 @@ function Desktop(elements) {
 
     this.effectBox = self.makeEffectBox(elements.effectBox,
                                         elements.effectBoxTrigger)
+    this.performanceBox = self.makePerformanceBox(elements.performanceBox,
+                                                elements.performanceBoxTrigger)                                        
     this.cloudPluginBox = self.makeCloudPluginBox(elements.cloudPluginBox,
                                                   elements.cloudPluginBoxTrigger)
+
     this.pedalboardBox = self.makePedalboardBox(elements.pedalboardBox,
                                                 elements.pedalboardBoxTrigger)
     this.bankBox = self.makeBankBox(elements.bankBox,
@@ -972,6 +983,9 @@ function Desktop(elements) {
         }
     })
 
+    this.inputBox = elements.inputBox.inputBox({})
+
+
     elements.addMidiButton.click(function () {
         self.showMidiDeviceList()
     })
@@ -1044,7 +1058,9 @@ function Desktop(elements) {
                     }
                     self.pedalboardPresetId = resp.id
                     self.pedalboardPresetName = resp.title
-                    self.titleBox.text((self.title || 'Untitled') + " - " + resp.title)
+                    const newTitle = (self.title || 'Untitled') + " - " + resp.title
+                    self.titleBox.text(newTitle)
+                    self.performanceTitleBox.text(newTitle)
                     new Notification('info', 'Pedalboard snapshot saved', 2000)
                 },
                 error: function () {
@@ -1300,6 +1316,7 @@ function Desktop(elements) {
 
     elements.settingsIcon.statusTooltip()
     elements.pedalboardTrigger.statusTooltip()
+    elements.performanceBoxTrigger.statusTooltip()
     elements.pedalboardBoxTrigger.statusTooltip()
     elements.bankBoxTrigger.statusTooltip()
     elements.cloudPluginBoxTrigger.statusTooltip()
@@ -1326,6 +1343,25 @@ function Desktop(elements) {
             self.ccDeviceManager.showUpdateWindow()
         },
     })
+
+    this.onPedalboardLoadComplete = function (callback) {
+      if (callback) {
+        callback()
+      }
+    }
+
+    // this callback is called when the pedalboard is loaded for the first time
+    this.onPedalboardFirstLoadComplete = function (callback) {
+        self.effectBox.effectBox('search', function () {
+            setTimeout(function () {
+                    if (self.isTouchDevice) {
+                        elements.performanceBoxTrigger.click()
+                    }
+                    // if is a touch device, open performance view by default
+                    self.onPedalboardLoadComplete(callback)
+            }, 500)
+        })
+    }
 
     var prevent = function (ev) {
         ev.preventDefault()
@@ -1545,6 +1581,7 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
                     self.pedalboardPresetName = ''
                     self.pedalboardDemoPluginsNotified = false
                     self.titleBox.text('Untitled')
+                    self.performanceTitleBox.text('Untitled')
                     self.titleBox.addClass("blend")
                     self.transportControls.resetControlsEnabled()
                     self.setPedalboardAsModified(false)
@@ -1591,6 +1628,33 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
             ws.send(sprintf("plugin_pos %s %f %f", instance, x, y))
         },
 
+        /*
+         * Set the label of a plugin instance
+         * label: string or null, undefined, empty string to reset to default
+         */
+        pluginLabelSet: function (instance, label) {
+            self.setPedalboardAsModified(true)
+            ws.send(sprintf("plugin_label %s %s", instance, label?.replace(/ /g, '_')))
+        },
+
+        /*
+         * Set if the plugin instance should be displayed on the performance view
+         * visible: true to display, else false
+         */
+        performancePluginVisibilitySet: function (instance, visible) {
+            self.setPedalboardAsModified(true)
+            ws.send(sprintf("performance_plugin_visibility %s %s", instance, (visible ? "1" : "0")))
+        },
+
+        /*
+         * Set if the order of the plugin instance in the performance view
+         * index: order
+         */
+        performancePluginIndexSet: function (instance, index) {
+            self.setPedalboardAsModified(true)
+            ws.send(sprintf("performance_plugin_index %s %d", instance, index))
+        },
+
         windowSize: function (width, height) {
             // FIXME
             if (ws && width > 0 && height > 0) {
@@ -1599,17 +1663,12 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
         },
 
         pedalboardFinishedLoading: function (callback) {
-            if (! self.loadingPeldaboardForFirstTime) {
-                callback()
-                return
+            if (self.loadingPeldaboardForFirstTime) {
+                self.loadingPeldaboardForFirstTime = false
+                self.onPedalboardFirstLoadComplete(callback)
+            } else {
+                self.onPedalboardLoadComplete(callback)
             }
-
-            self.loadingPeldaboardForFirstTime = false
-            self.effectBox.effectBox('search', function () {
-                setTimeout(function () {
-                    callback()
-                }, 500)
-            })
         },
 
         addCVAddressingPluginPort: function (uri, name, callback) {
@@ -1745,6 +1804,16 @@ Desktop.prototype.makePedalboardBox = function (el, trigger) {
                 cache: false
             })
         },
+    })
+}
+
+Desktop.prototype.makePerformanceBox = function (el, trigger) {
+    return el.performanceBox({
+        trigger: trigger,
+        windowManager: this.windowManager,
+        pedalboard: this.pedalboard,
+        pedalPresets: this.pedalPresets,
+        saveConfigValue: self.saveConfigValue,
     })
 }
 
@@ -2047,6 +2116,7 @@ Desktop.prototype.loadPedalboard = function (bundlepath, callback) {
                 self.pedalboardDemoPluginsNotified = false
                 self.setPedalboardAsModified(false)
                 self.titleBox.text(resp.name);
+                self.performanceTitleBox.text(resp.name);
                 self.titleBox.removeClass("blend");
 
                 callback(true)
@@ -2085,7 +2155,9 @@ Desktop.prototype.saveCurrentPedalboard = function (asNew, callback) {
             self.pedalboardBundle = errorOrPath
             self.pedalboardEmpty = false
             self.setPedalboardAsModified(false)
-            self.titleBox.text(title + " - " + self.pedalboardPresetName)
+            const newTitle = title + " - " + self.pedalboardPresetName
+            self.titleBox.text(newTitle)
+            self.performanceTitleBox.text(newTitle)
 
             if (self.previousPedalboardList != null) {
                 for (var i=0; i<self.previousPedalboardList.length; i++) {
@@ -2114,6 +2186,147 @@ Desktop.prototype.openPresetSaveWindow = function (windowTitle, name, callback) 
             callback(newName)
         })
 }
+
+/*
+ * Ask user for a text input
+ * windowTitle: title of the window
+ * value: default value
+ * callback: function(newValue) called when user clicks ok
+ * okLabel: label of the ok button (default: 'Ok')
+ */
+Desktop.prototype.openInputBoxWindow = function (windowTitle, value, callback, okLabel, validateCallback) {
+    this.inputBox.inputBox('show', windowTitle, value, callback, okLabel, validateCallback)
+}
+
+JqueryClass('inputBox', {
+    init: function (options) {
+        var self = $(this)
+
+        options = $.extend({
+          
+        }, options)
+
+        self.data(options)
+        self.data('disabled', false)
+
+        var done = function () {
+            // call the user callback
+            self.inputBox('_onResult', false)
+            return false
+        }
+
+        self.find('.js-done').click(done).prop('disabled',true)
+        self.find('.js-cancel').click(function () {
+            if (self.data('disabled')) {
+                return false
+            }
+            self.inputBox('_onResult', true)
+            self.hide()
+            return false
+        })
+
+        self.find('input').keyup(function () {
+            var value = self.find('input').val()
+            const isValid = self.inputBox('_validate', value)
+
+            self.find('.js-done').prop('disabled', isValid ? false : true);
+        })
+
+        self.keydown(function (e) {
+            if (self.data('disabled')) {
+                return false
+            }
+            if (e.keyCode == 13) {
+                return done()
+            }
+            if (e.keyCode == 27) {
+                self.inputBox('_onResult', true)
+                self.hide()
+                return false
+            }
+        })
+
+        return self
+    },
+
+
+    /*
+     * Show the input box
+     * windowTitle: title of the window
+     * value: default value
+     * callback: function(newValue) called when user clicks ok
+     * okLabel: label of the ok button (default: 'Ok')
+     * isValidCallback: optional function(newValue) called when user changes the text, should return true if the value is valid
+     */
+    show: function (windowTitle, value, callback, okLabel, isValidCallback) {
+        var self = $(this)
+
+        if (!okLabel) {
+            okLabel = 'Save'
+        }
+        var saveButton = self.find('.js-done')
+        saveButton.text(okLabel)
+        self.find('input').val(value)
+        self.data('callback', callback)
+        self.data('isValidCallback', isValidCallback)
+        if (windowTitle) {
+            self.find('h1').text(windowTitle)
+        }
+        self.show()
+        self.focus()
+        const input = self.find('input')
+        
+        input.focus(function() { $(this).select(); } )
+        input.focus()
+    },
+
+    _validate: function (value) {
+        var self = $(this)
+        const isValidCallback = self.data('isValidCallback')
+        let isValid = true
+
+        if (isValidCallback) {
+            isValid = isValidCallback(value)
+        } else {
+            // default validation: non empty
+            isValid = value && value.length > 0
+        }
+
+        return isValid
+    },
+    
+    _onResult: function (cancelled) {
+        var self  = $(this)
+        var newValue = self.find('input').val()
+
+        if (!cancelled) {
+            if (!self.inputBox('_validate', newValue)) {
+                new Bug("Input not valid")
+                return
+            }
+        }
+        
+        self.data('disabled', true)
+        self.find('.js-cancel').prop('disabled', true)
+        self.find('.js-done').prop('disabled', true)
+        let returnValue = undefined
+        
+        try {
+            returnValue = self.data('callback')(newValue, cancelled)
+        } catch (e) {
+            console.warn('Input box callback failed:', e)
+        }
+
+        if (returnValue !== false) {
+            self.hide()
+        }
+        self.data('disabled', false)
+        self.find('.js-cancel').prop('disabled', false)
+        self.find('.js-done').prop('disabled', false)
+
+        return
+    }
+})
 
 JqueryClass('saveBox', {
     init: function (options) {

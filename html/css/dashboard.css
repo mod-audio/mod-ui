@@ -697,6 +697,49 @@ svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1001
     background-position:right center;
 }
 
+/* INPUT BOX POP-UP */
+.input-box-popup {
+    background:rgba(0,0,0,.75);
+    bottom:0;
+    left:0;
+    position:absolute;
+    right:0;
+    top:0;
+    z-index:1001;
+}
+
+.input-box-popup .box {
+    background:white;
+    left:50%;
+    margin:-150px -168px;
+    padding:18px;
+    position:absolute;
+    top:50%;
+    width:300px;
+}
+
+.input-box-popup h1 {
+    font-size:18px;
+    line-height:1;
+    margin:0 0 18px 0;
+    padding:0;
+    text-transform:uppercase;
+}
+
+
+.input-box-popup .actions {
+    border-color:#ddd;
+    border-style:solid;
+    border-width:1px 0 0 0;
+    margin:9px 0 0 0;
+    padding:18px 0 0 0;
+    text-align:right;
+}
+
+.input-box-popup input[type="text"] {
+    width:190px;
+}
+
 
 /* SAVE POP-UP */
 .save-popup {
