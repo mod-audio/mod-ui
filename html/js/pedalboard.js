@@ -2511,9 +2511,10 @@ JqueryClass('pedalboard', {
     stereoPartner: function (element) {
         var self = $(this)
 
-        // Off by preference: every connection then draws as its own cable, which is
-        // what the rest of the code does anyway when nothing pairs up.
-        if (typeof PREFERENCES !== 'undefined' && PREFERENCES['merge-stereo-cables'] == "false") {
+        // Off unless turned on in Settings (and always off where there are no preferences,
+        // like the screenshot renderer): every connection then draws as its own cable,
+        // which is what the rest of the code does anyway when nothing pairs up.
+        if (typeof PREFERENCES === 'undefined' || PREFERENCES['merge-stereo-cables'] != "true") {
             return null
         }
 

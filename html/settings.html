@@ -620,7 +620,7 @@ $('document').ready(function() {
     } else {
         $("#prefs-update-channel-stable").prop("checked", true)
     }
-    if (PREFERENCES['merge-stereo-cables'] != "false") {
+    if (PREFERENCES['merge-stereo-cables'] == "true") {
         $("#prefs-ui-stereo-cables").prop("checked", true)
     }
     if (! HMI_EEPROM) {
@@ -1372,8 +1372,10 @@ $('document').ready(function() {
                     </label>
                     <p>
                         Draw the two halves of a stereo connection as a single cable, instead of
-                        one per channel. Only pairs wired straight across are merged; a left/right
-                        swap stays as two cables so it remains visible.
+                        one per channel. Pairs wired straight across are merged, and so are a mono
+                        output into both halves of a stereo input and a stereo output into one mono
+                        input; a left/right swap stays as two cables so it remains visible. Off by
+                        default.
                     </p>
                     <label>
                         <input type="checkbox" autocomplete="off" id="prefs-ui-unstable-plugins">
