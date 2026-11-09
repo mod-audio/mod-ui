@@ -41,6 +41,11 @@
   }
 
 
+  /* the selected plugin, in every layout */
+  .js-performance-plugins .selected > .label-container {
+    background-color: @brand-primary;
+  }
+
   .js-performance-plugin-settings {
 
     .mod-pedal-settings {
@@ -197,10 +202,6 @@
           justify-content: end;
           flex-grow: 0;
           flex-shrink: 0;
-        }
-
-        .selected > .label-container {
-          background-color: @brand-primary; 
         }
 
       }
