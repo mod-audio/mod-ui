@@ -3,7 +3,7 @@
 
 // Per-plugin CPU panel, opened by clicking the CPU bar.
 //
-// mod-host measures each plugin's worst cycle and pushes "cpu_load <instance> <pct>"
+// mod-host measures each plugin's worst cycle and pushes "plugin_cpu_load <instance> <pct>"
 // on the websocket whenever a plugin beats its own record. Peaks, not averages: a
 // plugin that averages 5% and spikes to 60% is the one that drops audio, and an
 // average hides exactly that. Nothing is polled, here or in mod-host -- reporting is

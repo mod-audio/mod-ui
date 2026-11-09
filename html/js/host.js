@@ -650,7 +650,7 @@ $('document').ready(function() {
             return
         }
 
-        if (cmd == "cpu_load") {
+        if (cmd == "plugin_cpu_load") {
             // per-plugin worst cycle, pushed by mod-host while the CPU panel is open
             data = data.split(" ",2)
             desktop.cpuLoadPanel.setLoad(data[0], parseFloat(data[1]))

@@ -2296,7 +2296,7 @@ class ResetXruns(JsonRequestHandler):
 
 class CpuMonitor(JsonRequestHandler):
     """Turn per-plugin CPU reporting on or off. Values arrive on the websocket as
-    "cpu_load <instance> <percent>", pushed by mod-host, so there is nothing to poll.
+    "plugin_cpu_load <instance> <percent>", pushed by mod-host, so there is nothing to poll.
     Enabling again resets each plugin's recorded peak."""
     @web.asynchronous
     @gen.engine

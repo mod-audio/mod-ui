@@ -1890,7 +1890,8 @@ class Host(object):
             load        = float(msg_data[1]) * 100.0
 
             if instance_id in self.plugins:
-                self.msg_callback("cpu_load %s %f" % (self.mapper.get_instance(instance_id), load))
+                # not "cpu_load": in mod-host that name is the global load of the whole graph
+                self.msg_callback("plugin_cpu_load %s %f" % (self.mapper.get_instance(instance_id), load))
 
         else:
             logging.error("[host] unrecognized command: %s", cmd)
