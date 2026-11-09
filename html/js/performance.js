@@ -119,6 +119,30 @@ JqueryClass('performanceBox', {
             },
 
             /*
+             * Update the plugin effect list after a change made by another client,
+             * keeping the selected plugin when it is still listed
+             */
+            refreshPlugins: function() {
+                if (!self.is(':visible'))
+                    return
+
+                const selectedElement = self.data("selectedElement")
+
+                self.data('updatePlugins')()
+
+                const selectedIndex = self.data("plugins").indexOf(selectedElement) + 1 // +1 'cause 0 is the snapshot page
+
+                if (selectedElement === ":presets") {
+                    $("#mod-performance-plugin-0").addClass("selected")
+                } else if (selectedIndex > 0) {
+                    self.data("selectedIndex", selectedIndex)
+                    $("#mod-performance-plugin-" + selectedIndex.toString()).addClass("selected")
+                } else {
+                    self.data('selectElement')(":presets")
+                }
+            },
+
+            /*
              * Update the plugin effect list
              */
             updatePlugins: function() {

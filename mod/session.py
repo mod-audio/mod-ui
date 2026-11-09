@@ -353,13 +353,13 @@ class Session(object):
     def ws_plugin_label(self, instance, label, ws):
         self.screenshot_needed = True
         self.host.set_label(instance, label)
-        self.msg_callback_broadcast("plugin_label %s %s" % (instance, label), ws)
+        self.msg_callback_broadcast("plugin_label %s %s" % (instance, label.replace(" ", "_")), ws)
 
     # Set a plugin visibility on the performance view
     def ws_performance_plugin_visibility(self, instance, visible, ws):
         #self.screenshot_needed = True
         self.host.set_performance_plugin_visibility(instance, visible)
-        self.msg_callback_broadcast("performance_plugin_visibility %s %s" % (instance, visible), ws)
+        self.msg_callback_broadcast("performance_plugin_visibility %s %d" % (instance, int(visible)), ws)
 
     def ws_performance_plugin_index(self, instance, index, ws):
         #self.screenshot_needed = True

@@ -2918,6 +2918,26 @@ JqueryClass('pedalboard', {
         self.pedalboard('fitToWindow')
         self.pedalboard('drawPluginJacks', plugin)
     },
+
+    // label changed by another client: update the UI, the host already knows
+    setPluginLabel: function(instance, label) {
+        var self = $(this)
+        var plugin = self.data('plugins')[instance]
+        if (!plugin) {
+            return
+        }
+        plugin.data('gui').setLabel(label, false)
+    },
+
+    // performance view options (index, visible) changed by another client
+    setPluginPerformanceOptions: function(instance, performanceOptions) {
+        var self = $(this)
+        var plugin = self.data('plugins')[instance]
+        if (!plugin) {
+            return
+        }
+        $.extend(plugin.data('gui').getPerformanceOptions(), performanceOptions)
+    },
 })
 
 function ConnectionManager() {
