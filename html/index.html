@@ -245,9 +245,7 @@ $('document').ready(function() {
     DesktopApp.setup(desktop)
     $('body').addClass('preset-share pedalboard-share')
 {% else %}
-    if (PREFERENCES['dev-mode'] == "on") {
-        enable_dev_mode(true)
-    }
+    apply_ui_tools()
 {% end %}
 
     // start code for ajax loading bar
