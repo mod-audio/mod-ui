@@ -4989,8 +4989,9 @@ _:b%i
         """Subscribe to (or stop) per-plugin CPU reporting for every loaded plugin.
 
         mod-host pushes "cpu_monitor <id> <load>" on the feedback socket whenever a
-        plugin beats its own previous worst cycle, so nothing is polled. Enabling also
-        resets those peaks, which is how the UI offers a "reset" button."""
+        plugin beats its own worst cycle of the current feedback round (the record is
+        reset on every output_data_ready), so nothing is polled. The UI keeps the peak
+        across rounds; enabling again also resets mod-host's records."""
         self.cpu_monitor_enabled = enable
         instances = list(self.plugins.keys())
 
@@ -5005,7 +5006,7 @@ _:b%i
 
     def monitor_cpu_load_new_plugin(self, instance_id):
         # The instance list is sent when the panel opens, so a plugin added after that, by
-        # hand or by loading a pedalboard, joins on its own. Only its own peak is reset.
+        # hand or by loading a pedalboard, joins on its own. Only its own record is reset.
         if self.cpu_monitor_enabled:
             self.send_notmodified("monitor_cpu_load 1 1 %d" % instance_id)
 
