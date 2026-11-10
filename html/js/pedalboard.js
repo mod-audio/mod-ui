@@ -2178,6 +2178,7 @@ JqueryClass('pedalboard', {
             drop: function (event, ui) {
                 var overCount = self.data('overCount');
                 self.data('overCount', 0);
+                self.data('background').droppable('enable')
 
                 var jack = ui.draggable
                 var outputType = jack.parent().attr('mod-role').split(/-/)[1]
@@ -2489,10 +2490,153 @@ JqueryClass('pedalboard', {
         var self = $(this)
         var output = jack.data('origin')
         var input = jack.data('destination')
+        // Looked up while the connection is still there, because that is what identifies
+        // the pair. A merged stereo cable is painted into one half's canvas, so losing
+        // either half leaves the wrong thing on screen - a cable with a leg dangling
+        // where its partner used to land, or nothing at all - until what is left of the
+        // pair is redrawn on its own
+        var pair = self.pedalboard('stereoPartnerJack', jack)
         self.data('connectionManager').disconnect(output.attr('mod-port'), input.attr('mod-port'))
         jack.data('canvas').remove()
         jack.remove()
         self.pedalboard('packJacks', input)
+        if (pair) {
+            self.pedalboard('drawJack', pair.jack)
+        }
+    },
+
+    // The port element that `element` forms a stereo pair with, or null. `first` tells
+    // whether `element` is the left/odd half of that pair, which is the half that owns
+    // the drawing of the merged cable.
+    stereoPartner: function (element) {
+        var self = $(this)
+
+        // Off unless turned on in Settings (and always off where there are no preferences,
+        // like the screenshot renderer): every connection then draws as its own cable,
+        // which is what the rest of the code does anyway when nothing pairs up.
+        if (typeof PREFERENCES === 'undefined' || PREFERENCES['merge-stereo-cables'] != "true") {
+            return null
+        }
+
+        var counterpart = stereoCounterpart(element.data('symbol'))
+        if (! counterpart) {
+            return null
+        }
+        var instance = element.data('instance')
+        var port = instance ? instance + '/' + counterpart.symbol : counterpart.symbol
+        var partner = self.find('[mod-port="' + port + '"]')
+        // Guessing the name is not enough. It has to be a port that exists, and one that
+        // faces the same way and carries the same kind of signal, or "gain_1" pairs with
+        // a control port and a hardware capture pairs with a playback
+        if (partner.length !== 1 ||
+            partner.hasClass('mod-output') !== element.hasClass('mod-output') ||
+            partner.data('portType') !== element.data('portType')) {
+            return null
+        }
+        return { element: partner, first: counterpart.first }
+    },
+
+    // The jack that pairs with `jack` to make one stereo cable, plus whether `jack` is
+    // the left/odd half. That is a stereo pair wired straight across, or one output into
+    // both halves of a stereo input (mono into stereo), or both halves of a stereo output
+    // into one input (stereo into mono): the ends that coincide meet in one point. Null
+    // when there is no pair: the ports do not name themselves as one, they are crossed
+    // over, or nothing matching is wired up on the other side.
+    stereoPartnerJack: function (jack) {
+        var self = $(this)
+        var input = jack.data('destination')
+        if (! jack.data('connected') || ! input) {
+            return null
+        }
+        var origin = jack.data('origin')
+        var output = self.pedalboard('stereoPartner', origin)
+        var dest = self.pedalboard('stereoPartner', input)
+        var origIndex = self.data('connectionManager').origIndex
+        var jackBetween = function (from, to) {
+            return (origIndex[from.attr('mod-port')] || {})[to.attr('mod-port')] || null
+        }
+        var partner
+        // A pair wired straight across is one cable. L to R and R to L is a channel swap,
+        // and drawing that as one cable would hide what it does
+        if (output && dest && dest.first === output.first) {
+            partner = jackBetween(output.element, dest.element)
+            if (partner) {
+                return { jack: partner, first: output.first }
+            }
+        }
+        // the same output into the other half of the input's pair
+        if (dest) {
+            partner = jackBetween(origin, dest.element)
+            if (partner) {
+                return { jack: partner, first: dest.first }
+            }
+        }
+        // the other half of the output's pair into the same input
+        if (output) {
+            partner = jackBetween(output.element, input)
+            if (partner) {
+                return { jack: partner, first: output.first }
+            }
+        }
+        return null
+    },
+
+    // Origin and destination anchor points of one jack's cable, in canvas coordinates
+    jackCoords: function (jack, force) {
+        var self = $(this)
+        var source = jack.data('origin')
+        var scale = self.data('scale')
+
+        // Cable will follow a cubic bezier curve, which is defined by 4 points. They are:
+        // P0 (xi, yi) - starting point
+        // P3 (xo, yo) - the destination point
+        // P1 (xo - deltaX, yi) and P2 (xi + deltaX, yo): define the curve
+        // Gets origin and destination coordinates
+        var xi = source.offset().left / scale - self.offset().left / scale + source.width()
+        var yi = source.offset().top / scale - self.offset().top / scale + source.height() / 2
+        var xo = jack.offset().left / scale - self.offset().left / scale
+        var jackOffsetTop = jack.offset().top
+
+        // Adjust jack offset top position
+        // that is sometimes biased by jack destination previous sibling margin bottom
+        if (!force && parseInt(jack.css('top')) === 0 && parseInt(jack.css('bottom')) === 0) {
+          jackOffsetTop = jack.offset().top - jack.position().top
+        }
+        var yo = jackOffsetTop / scale - self.offset().top / scale + jack.height() / 2
+
+        return { xi: xi, yi: yi, xo: xo, yo: yo }
+    },
+
+    // A stereo pair running to a matching stereo pair is drawn as one cable that splits
+    // into a Y at each end, rather than as two cables following the same route. Both
+    // halves keep their own jack, canvas and host connection - only the paint is merged.
+    // Returns false when this jack is not half of a mergeable pair, and the caller then
+    // draws an ordinary cable.
+    drawStereoJack: function (jack, force) {
+        var self = $(this)
+        var pair = self.pedalboard('stereoPartnerJack', jack)
+        // The partner is still in the connection index between a disconnect and the host
+        // confirming it, so its own connected flag is what says the pair is still whole
+        if (! pair || ! pair.jack.data('connected')) {
+            return false
+        }
+
+        // The left half's canvas carries the whole cable and the right half's is emptied,
+        // so redrawing either half on its own still leaves both of them right
+        var left = pair.first ? jack : pair.jack
+        var right = pair.first ? pair.jack : jack
+        var rightSvg = right.data('svg')
+        if (rightSvg) {
+            rightSvg.clear()
+        }
+        right.data('canvas').removeClass('mod-stereo')
+
+        var l = self.pedalboard('jackCoords', left, force)
+        var r = self.pedalboard('jackCoords', right, force)
+        self.pedalboard('drawStereoBezier', left.data('canvas'),
+                        { x: l.xi, y: l.yi }, { x: r.xi, y: r.yi },
+                        { x: l.xo, y: l.yo }, { x: r.xo, y: r.yo }, '')
+        return true
     },
 
     // Draws a cable from jack's source (the output) to it's current position
@@ -2513,31 +2657,55 @@ JqueryClass('pedalboard', {
             if (!jack.data('connected') && !force)
                 return
 
-            var source = jack.data('origin')
-            var scale = self.data('scale')
+            if (self.pedalboard('drawStereoJack', jack, force))
+                return
 
-            // Cable will follow a cubic bezier curve, which is defined by 4 points. They are:
-            // P0 (xi, yi) - starting point
-            // P3 (xo, yo) - the destination point
-            // P1 (xo - deltaX, yi) and P2 (xi + deltaX, yo): define the curve
-            // Gets origin and destination coordinates
-            var xi = source.offset().left / scale - self.offset().left / scale + source.width()
-            var yi = source.offset().top / scale - self.offset().top / scale + source.height() / 2
-            var xo = jack.offset().left / scale - self.offset().left / scale
-            var jackOffsetTop = jack.offset().top
-
-            // Adjust jack offset top position
-            // that is sometimes biased by jack destination previous sibling margin bottom
-            if (!force && parseInt(jack.css('top')) === 0 && parseInt(jack.css('bottom')) === 0) {
-              jackOffsetTop = jack.offset().top - jack.position().top
-            }
-            var yo = jackOffsetTop / scale - self.offset().top / scale + jack.height() / 2
-
-            //if (source.hasClass("mod-audio-output"))
-                //self.pedalboard('drawBezier', jack.data('canvas'), xi+12, yi, xo, yo, '')
-            //else
-            self.pedalboard('drawBezier', jack.data('canvas'), xi, yi, xo, yo, '')
+            var c = self.pedalboard('jackCoords', jack, force)
+            self.pedalboard('drawBezier', jack.data('canvas'), c.xi, c.yi, c.xo, c.yo, '')
         }, 0)
+    },
+
+    // One trunk with a Y at each end: out1 and out2 converge, run as a single cable, then
+    // split again to in1 and in2. Same three stroked paths as drawBezier, so the cable,
+    // shadow and light CSS is shared. Each point is an {x, y}.
+    drawStereoBezier: function (canvas, out1, out2, in1, in2, stylePrefix) {
+        var svg = canvas.svg('get')
+        if (!svg)
+            return
+        svg.clear()
+        canvas.addClass('mod-stereo')
+
+        // Where the two halves meet. Far enough clear of the ports that the split reads
+        // as a split, and not as a kink in a cable that left at an angle
+        var stub = 18
+        var x1 = Math.max(out1.x, out2.x) + stub
+        var y1 = (out1.y + out2.y) / 2
+        var x2 = Math.min(in1.x, in2.x) - stub
+        var y2 = (in1.y + in2.y) / 2
+        var deltaX = cableDeltaX(x1, x2)
+
+        var parts = [['pathShadow', 'shadow'], ['pathCable', 'cable'], ['pathLight', 'light']]
+        var i
+
+        // The trunk is the only part carrying both channels, so it is the only part drawn
+        // as a stereo cable -- heavier, and striped.
+        for (i = 0; i < parts.length; i++) {
+            var trunk = canvas.data(parts[i][0])
+            trunk.reset()
+            trunk.move(x1, y1).curveC(x2 - deltaX, y1, x1 + deltaX, y2, x2, y2)
+            svg.path(null, trunk, { class_: stylePrefix + parts[i][1] + ' mod-trunk' })
+        }
+
+        // The four legs carry one channel each, so they are drawn as ordinary cable. They
+        // are separate paths from the trunk only so the stereo styling can skip them.
+        for (i = 0; i < parts.length; i++) {
+            var legs = svg.createPath()
+            legs.move(out1.x, out1.y).line(x1, y1)
+            legs.move(out2.x, out2.y).line(x1, y1)
+            legs.move(x2, y2).line(in1.x, in1.y)
+            legs.move(x2, y2).line(in2.x, in2.y)
+            svg.path(null, legs, { class_: stylePrefix + parts[i][1] })
+        }
     },
 
     drawBezier: function (canvas, xi, yi, xo, yo, stylePrefix) {
@@ -2545,6 +2713,7 @@ JqueryClass('pedalboard', {
         if (!svg)
             return
         svg.clear()
+        canvas.removeClass('mod-stereo')
 
         var pathS = canvas.data('pathShadow')
         var pathC = canvas.data('pathCable')
@@ -2554,14 +2723,7 @@ JqueryClass('pedalboard', {
         pathC.reset()
         pathL.reset()
 
-        // The calculations below were empirically obtained by trying several things.
-        // It gives us a pretty good result
-        var deltaX = xo - xi - 50
-        if (deltaX < 0) {
-            deltaX = 8.5 * (deltaX / 6) // ^ 0.8
-        } else {
-            deltaX /= 1.5
-        }
+        var deltaX = cableDeltaX(xi, xo)
 
         // Draw three lines following same path, one for shadow, one for cable and one for light
         // The recipe for a good cable is that shadow is wide and darke, cable is not so wide and not so dark,
@@ -2775,6 +2937,9 @@ JqueryClass('pedalboard', {
         var connected = jack.data('connected')
         var input = jack.data('destination')
         var output = jack.data('origin')
+        // Same as in destroyJack: the surviving half of a merged pair has to be repainted,
+        // and the pair can only be found while this jack still counts as connected
+        var pair = self.pedalboard('stereoPartnerJack', jack)
 
         if (connected) {
             self.data('portDisconnect')(output.attr('mod-port'), input.attr('mod-port'), function (ok) {})
@@ -2802,6 +2967,10 @@ JqueryClass('pedalboard', {
         }
 
         jack.data('connected', false)
+
+        if (pair) {
+            self.pedalboard('drawJack', pair.jack)
+        }
     },
 
     // Connect two ports using instance and symbol information.
@@ -2919,6 +3088,16 @@ JqueryClass('pedalboard', {
         self.pedalboard('drawPluginJacks', plugin)
     },
 })
+
+// Horizontal pull on a cable's bezier control points. The numbers below were
+// empirically obtained by trying several things. It gives us a pretty good result
+function cableDeltaX(xi, xo) {
+    var deltaX = xo - xi - 50
+    if (deltaX < 0) {
+        return 8.5 * (deltaX / 6) // ^ 0.8
+    }
+    return deltaX / 1.5
+}
 
 function ConnectionManager() {
     /*

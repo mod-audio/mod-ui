@@ -539,6 +539,27 @@ svg .light {
     stroke: #E48E67;
 }
 
+/* A stereo pair is one cable that splits into a Y at each end (drawStereoBezier). Only the
+   trunk carries both channels, so only the trunk is set apart: a little heavier, and its
+   light path widened and dashed into bands instead of left as a thin highlight. The four
+   legs carry one channel each and are drawn as ordinary cable, which is what they are.
+   Translucent white, so the same stripe reads over audio purple, midi teal and cv orange
+   without needing a variant per type. */
+.mod-stereo svg .shadow.mod-trunk {
+    stroke-width: 13;
+}
+.mod-stereo svg .cable.mod-trunk {
+    stroke-width: 9;
+}
+.mod-stereo svg .light.mod-trunk {
+    stroke: rgba(255,255,255,0.5);
+    stroke-width: 6;
+    stroke-dasharray: 18 36;
+    /* Centred on the cable rather than nudged down, or the stripes sit off the edge */
+    -webkit-transform: none;
+    transform: none;
+}
+
 svg .connecting-shadow { fill: none; stroke: #077; stroke-width: 10; z-index: 1000; }
 svg .connecting-cable { fill: none; stroke: #0AA; stroke-width: 8; z-index: 1000; }
 svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1001; -webkit-transform: translateY(2px); transform: translateY(2px); }
