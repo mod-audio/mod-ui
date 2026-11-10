@@ -389,6 +389,7 @@ class Host(object):
         self.pedalboard_path     = ""
         self.pedalboard_size     = [0,0]
         self.pedalboard_version  = 0
+        self.reload_bundle_path  = None
         self.pedalboard_format_version = 1
         self.current_pedalboard_snapshot_id = -1
         self.pedalboard_snapshots = []
@@ -2826,10 +2827,12 @@ class Host(object):
         bank_id  = self.bank_id
         last_bank_id, last_path = get_last_bank_and_pedalboard()
 
-        bundlepath = os.path.join(tempfile.gettempdir(), 'reloaded.pedalboard')
-        if os.path.exists(bundlepath):
-            shutil.rmtree(bundlepath)
-        os.mkdir(bundlepath)
+        # A new bundle for every reload. After a reload the file loaders have their files open through the
+        # links in the previous bundle: deleting it before "state_save" would make them save a bare name and
+        # come back empty on the second reload. The previous bundle goes once the new one is loaded.
+        oldbundlepath = self.reload_bundle_path
+        bundlepath = tempfile.mkdtemp(prefix='reloaded-', suffix='.pedalboard')
+        self.reload_bundle_path = bundlepath
 
         self.save_state_to_ttl(bundlepath, name or 'Untitled', 'reloaded')
 
@@ -2849,8 +2852,11 @@ class Host(object):
                 if last_path is not None:
                     save_last_bank_and_pedalboard(last_bank_id, last_path)
 
-            # The bundle stays until the next reload: load() only queues "state_load" to mod-host,
+            # The new bundle stays until the next reload: load() only queues "state_load" to mod-host,
             # which reads the bundle after this returns.
+            if oldbundlepath is not None and os.path.isdir(oldbundlepath):
+                shutil.rmtree(oldbundlepath, ignore_errors=True)
+
             callback(ok)
 
         # Plugin state (the file a NAM, IR or sampler loader has open) lives outside the ttl,
