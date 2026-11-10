@@ -2155,6 +2155,7 @@ class TemplateHandler(TimelessRequestHandler):
             'controlchain_url': CONTROLCHAIN_HTTP_ADDRESS,
             'version': self.get_argument('v'),
             'hmi_eeprom': 'true' if hwdesc.get('hmi_eeprom', False) else 'false',
+            'platform': hwdesc.get('platform', "Unknown"),
             'preferences': json.dumps(prefs),
             'feedback_url': FEEDBACK_URL,
             'bufferSize': get_jack_buffer_size(),
