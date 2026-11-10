@@ -3,8 +3,9 @@
 
 // Per-plugin CPU panel, opened by clicking the CPU bar.
 //
-// mod-host measures each plugin's worst cycle and pushes "plugin_cpu_load <instance> <pct>"
-// on the websocket whenever a plugin beats its own record. Peaks, not averages: a
+// mod-host times each plugin on every cycle and pushes "plugin_cpu_load <instance> <pct>"
+// on the websocket whenever a plugin beats its own record. That record starts again from
+// zero on every feedback round, so the panel keeps the peak itself. Peaks, not averages: a
 // plugin that averages 5% and spikes to 60% is the one that drops audio, and an
 // average hides exactly that. Nothing is polled, here or in mod-host -- reporting is
 // switched on while the panel is open and off again when it closes.
@@ -94,7 +95,8 @@ function CpuLoadPanel(options) {
         })
     }
 
-    // Enabling again is what clears mod-host's recorded peaks
+    // The panel holds the peaks, so clearing them here is the reset; enabling again
+    // also starts mod-host's records from zero
     this.reset = function () {
         self.peaks = {}
         self.order = []
@@ -106,6 +108,11 @@ function CpuLoadPanel(options) {
     // timer rather than per message -- a burst would otherwise redraw the list per row.
     this.setLoad = function (instance, percent) {
         if (! self.open_) {
+            return
+        }
+        // mod-host's record restarts every feedback round, so a lower value is only a
+        // quieter round, not a new peak
+        if (self.peaks[instance] !== undefined && self.peaks[instance] >= percent) {
             return
         }
         self.peaks[instance] = percent
