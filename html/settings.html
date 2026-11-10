@@ -124,6 +124,7 @@
     var NOTIFICATIONS_ENABLED = true
     var HMI_EEPROM = {{hmi_eeprom}}
     var PREFERENCES = {{preferences}}
+    var PLATFORM = '{{platform}}'
 
     var INFO = {
         "hwname": "",
@@ -608,8 +609,17 @@ $('document').ready(function() {
     refresh_sysinfo()
     refresh_sysprefs()
 
-    if (PREFERENCES['dev-mode'] == "on") {
-        $("#prefs-ui-developer-mode").prop("checked", true)
+    // User Interface tools: each one on its own. One never set on its own follows the old Developer Mode switch.
+    $(".prefs-ui-tool").each(function () {
+        var value = PREFERENCES[$(this).data("key")]
+        if (value !== "on" && value !== "off") {
+            value = PREFERENCES['dev-mode']
+        }
+        $(this).prop("checked", value == "on")
+    })
+    // CPU speed and temperature are not available on the Duo
+    if (PLATFORM == "duo") {
+        $(".prefs-ui-cpu-stats-option").hide()
     }
     if (PREFERENCES['show-unstable-plugins'] == "true") {
         $("#prefs-ui-unstable-plugins").prop("checked", true)
@@ -893,8 +903,8 @@ $('document').ready(function() {
 
     // --- User Interface
 
-    $("#prefs-ui-developer-mode").click(function () {
-        config_set("dev-mode", $(this).prop("checked") ? "on" : "off")
+    $(".prefs-ui-tool").click(function () {
+        config_set($(this).data("key"), $(this).prop("checked") ? "on" : "off")
     })
 
     $("#prefs-ui-unstable-plugins").click(function () {
@@ -1136,6 +1146,7 @@ $('document').ready(function() {
         <div id="bank-list">
             <div id="tab-device" class="add-bank selected">Device</div>
             <div id="tab-audio" class="add-bank">Audio</div>
+            <div id="tab-ui" class="add-bank">User Interface</div>
             <div id="tab-updates" class="add-bank">Updates</div>
             <div id="tab-backup" class="add-bank">Backup &amp; Restore</div>
             <div id="tab-developer" class="add-bank">Developer</div>
@@ -1350,21 +1361,67 @@ $('document').ready(function() {
             </div>
             <!-- END SETTINGS PAGE (BACKUP & RESTORE) -->
 
-            <!-- SETTINGS PAGE (DEVELOPER) -->
-            <div class="settings-page mod-hidden" id="settings-page-developer">
-                <h1>User Interface</h1>
+            <!-- SETTINGS PAGE (USER INTERFACE) -->
+            <div class="settings-page mod-hidden" id="settings-page-ui">
+                <h1>Status Bar</h1>
                 <form class="form">
                     <label>
-                        <input type="checkbox" autocomplete="off" id="prefs-ui-developer-mode">
-                            Developer Mode
+                        <input type="checkbox" autocomplete="off" class="prefs-ui-tool" id="prefs-ui-xruns" data-key="ui-xruns">
+                            Xrun counter
                         </input>
                     </label>
                     <p>
-                        Show tools for developers and beta testers: the xrun counter, buffer size and CPU readouts, network and
-                        controller ping times, Install/Update All in the Plugin Store, and Export / Import buttons in each plugin's
-                        preset list (to send a preset to a plugin developer as a .modpreset file). Applies when you go back to the main
-                        screen.
+                        Count the audio dropouts (xruns) since the last reset. Click the counter to reset it.
                     </p>
+                    <label>
+                        <input type="checkbox" autocomplete="off" class="prefs-ui-tool" id="prefs-ui-buffersize" data-key="ui-buffersize">
+                            Buffer size
+                        </input>
+                    </label>
+                    <p>
+                        Show the audio buffer size in frames. Click it to change the size; the pedalboard reloads.
+                    </p>
+                    <label class="prefs-ui-cpu-stats-option">
+                        <input type="checkbox" autocomplete="off" class="prefs-ui-tool" id="prefs-ui-cpu-stats" data-key="ui-cpu-stats">
+                            CPU speed and temperature
+                        </input>
+                    </label>
+                    <p class="prefs-ui-cpu-stats-option">
+                        Show the processor speed and temperature. Click it to step through the available speeds.
+                    </p>
+                    <label>
+                        <input type="checkbox" autocomplete="off" class="prefs-ui-tool" id="prefs-ui-ping-times" data-key="ui-ping-times">
+                            Network and controller ping times
+                        </input>
+                    </label>
+                    <p>
+                        Show how long the unit takes to answer the browser and the controller.
+                    </p>
+                </form>
+
+                <h1>Plugins and Pedalboards</h1>
+                <form class="form">
+                    <label>
+                        <input type="checkbox" autocomplete="off" class="prefs-ui-tool" id="prefs-ui-store-all" data-key="ui-store-all">
+                            Install All and Update All in the Plugin Store
+                        </input>
+                    </label>
+                    <p>
+                        Buttons to install every plugin, or update every installed plugin, in one go.
+                    </p>
+                    <label>
+                        <input type="checkbox" autocomplete="off" class="prefs-ui-tool" id="prefs-ui-share" data-key="ui-share">
+                            Export and Import of presets and pedalboards
+                        </input>
+                    </label>
+                    <p>
+                        Export / Import buttons in each plugin's preset list (.modpreset files, for example to send a preset to a
+                        plugin developer) and in the pedalboard library (.modpedalboard files).
+                    </p>
+                </form>
+
+                <h1>Pedalboard</h1>
+                <form class="form">
                     <label>
                         <input type="checkbox" autocomplete="off" id="prefs-ui-stereo-cables">
                             Merge stereo cables
@@ -1377,6 +1434,17 @@ $('document').ready(function() {
                         input; a left/right swap stays as two cables so it remains visible. Off by
                         default.
                     </p>
+                </form>
+                <p class="prefs-ui-note">
+                    These options apply when you go back to the main screen.
+                </p>
+            </div>
+            <!-- END SETTINGS PAGE (USER INTERFACE) -->
+
+            <!-- SETTINGS PAGE (DEVELOPER) -->
+            <div class="settings-page mod-hidden" id="settings-page-developer">
+                <h1>Plugin Store</h1>
+                <form class="form">
                     <label>
                         <input type="checkbox" autocomplete="off" id="prefs-ui-unstable-plugins">
                             Show beta plugins in the Store
