@@ -2298,14 +2298,26 @@ JqueryClass('statusTooltip', {
 
 // Tools for developers and beta testers, each switched on its own in Settings > User Interface.
 // A tool never set on its own follows the old "dev-mode" switch, so units that had Developer Mode on keep everything.
-var UI_TOOLS = ['ui-xruns', 'ui-buffersize', 'ui-cpu-stats', 'ui-ping-times', 'ui-store-all', 'ui-share']
+// Install All and Update All were one switch ("ui-store-all") before they got one each; that value is their default.
+var UI_TOOLS = ['ui-xruns', 'ui-buffersize', 'ui-cpu-stats', 'ui-ping-times', 'ui-store-install-all', 'ui-store-update-all', 'ui-share']
+var UI_TOOL_FALLBACK = {
+    'ui-store-install-all': 'ui-store-all',
+    'ui-store-update-all': 'ui-store-all',
+}
 
-function ui_tool_enabled(key) {
+function ui_tool_value(key) {
     var value = PREFERENCES[key]
+    if (value !== "on" && value !== "off" && UI_TOOL_FALLBACK[key]) {
+        value = PREFERENCES[UI_TOOL_FALLBACK[key]]
+    }
     if (value !== "on" && value !== "off") {
         value = PREFERENCES['dev-mode']
     }
-    return value == "on"
+    return value
+}
+
+function ui_tool_enabled(key) {
+    return ui_tool_value(key) == "on"
 }
 
 function apply_ui_tools() {
@@ -2317,8 +2329,9 @@ function apply_ui_tools() {
         }
     }
 
-    // install/update all plugins
-    toggle('#cloud_install_all, #cloud_update_all', ui_tool_enabled('ui-store-all'))
+    // install all / update all plugins, one switch each
+    toggle('#cloud_install_all', ui_tool_enabled('ui-store-install-all'))
+    toggle('#cloud_update_all', ui_tool_enabled('ui-store-update-all'))
 
     // network and controller ping times
     toggle('#mod-status', ui_tool_enabled('ui-ping-times'))
