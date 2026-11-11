@@ -1609,11 +1609,10 @@ Desktop.prototype.makePedalboard = function (el, effectBox) {
             }
 
             self.loadingPeldaboardForFirstTime = false
-            self.effectBox.effectBox('search', function () {
-                setTimeout(function () {
-                    callback()
-                }, 500)
-            })
+            // The plugin bar does not depend on the board, so the first fit no longer waits for
+            // its list (and 300-odd thumbnails on a device) to load.
+            self.effectBox.effectBox('search')
+            callback()
         },
 
         addCVAddressingPluginPort: function (uri, name, callback) {

@@ -630,6 +630,15 @@ $('document').ready(function() {
     } else {
         $("#prefs-update-channel-stable").prop("checked", true)
     }
+    if (PREFERENCES['merge-stereo-cables'] == "true") {
+        $("#prefs-ui-stereo-cables").prop("checked", true)
+    }
+    var teleportScale = parseFloat(PREFERENCES['teleport-label-scale'])
+    if (! (teleportScale > 0)) {
+        teleportScale = 1
+    }
+    $("#prefs-ui-teleport-scale").val(teleportScale)
+    $("#prefs-ui-teleport-scale-value").text(teleportScale.toFixed(1) + "x")
     if (! HMI_EEPROM) {
         $("#prefs-delete-hmi-settings_br").hide()
         $("#prefs-delete-hmi-settings_label").hide()
@@ -906,6 +915,20 @@ $('document').ready(function() {
 
     $("#prefs-ui-unstable-plugins").click(function () {
         config_set("show-unstable-plugins", bool2str($(this).prop("checked")))
+    })
+
+    $("#prefs-ui-stereo-cables").click(function () {
+        config_set("merge-stereo-cables", bool2str($(this).prop("checked")))
+    })
+
+    // Readout follows the drag, value saved once on release -- a debounce on `input`
+    // would drop the save if the page is left inside its window. No live preview: this is
+    // a standalone page with no pedalboard in it, so the size applies on the next load.
+    $("#prefs-ui-teleport-scale").on("input", function () {
+        $("#prefs-ui-teleport-scale-value").text((parseFloat($(this).val()) || 1).toFixed(1) + "x")
+    })
+    $("#prefs-ui-teleport-scale").on("change", function () {
+        config_set("teleport-label-scale", String(parseFloat($(this).val()) || 1))
     })
 
     // ----------------------------------------------------------------------------------------------------------------
@@ -1354,7 +1377,6 @@ $('document').ready(function() {
             </div>
             <!-- END SETTINGS PAGE (BACKUP & RESTORE) -->
 
-            <!-- SETTINGS PAGE (DEVELOPER) -->
             <!-- SETTINGS PAGE (USER INTERFACE) -->
             <div class="settings-page mod-hidden" id="settings-page-ui">
                 <h1>Status Bar</h1>
@@ -1413,12 +1435,38 @@ $('document').ready(function() {
                         plugin developer) and in the pedalboard library (.modpedalboard files).
                     </p>
                 </form>
+
+                <h1>Pedalboard</h1>
+                <form class="form">
+                    <label>
+                        <input type="checkbox" autocomplete="off" id="prefs-ui-stereo-cables">
+                            Merge stereo cables
+                        </input>
+                    </label>
+                    <p>
+                        Draw the two halves of a stereo connection as a single cable, instead of
+                        one per channel. Pairs wired straight across are merged, and so are a mono
+                        output into both halves of a stereo input and a stereo output into one mono
+                        input; a left/right swap stays as two cables so it remains visible. Off by
+                        default.
+                    </p>
+                    <label>
+                        Teleport label size
+                        <input type="range" autocomplete="off" id="prefs-ui-teleport-scale"
+                               min="0.6" max="2" step="0.1" style="vertical-align:middle;width:160px">
+                        <span id="prefs-ui-teleport-scale-value"></span>
+                    </label>
+                    <p>
+                        How large the label boxes on a split cable are drawn.
+                    </p>
+                </form>
                 <p class="prefs-ui-note">
                     These options apply when you go back to the main screen.
                 </p>
             </div>
             <!-- END SETTINGS PAGE (USER INTERFACE) -->
 
+            <!-- SETTINGS PAGE (DEVELOPER) -->
             <div class="settings-page mod-hidden" id="settings-page-developer">
                 <h1>Plugin Store</h1>
                 <form class="form">

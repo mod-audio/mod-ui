@@ -539,6 +539,175 @@ svg .light {
     stroke: #E48E67;
 }
 
+/* A stereo pair is one cable that splits into a Y at each end (drawStereoBezier). Only the
+   trunk carries both channels, so only the trunk is set apart: a little heavier, and its
+   light path widened and dashed into bands instead of left as a thin highlight. The four
+   legs carry one channel each and are drawn as ordinary cable, which is what they are.
+   Translucent white, so the same stripe reads over audio purple, midi teal and cv orange
+   without needing a variant per type. */
+.mod-stereo svg .shadow.mod-trunk {
+    stroke-width: 13;
+}
+.mod-stereo svg .cable.mod-trunk {
+    stroke-width: 9;
+}
+.mod-stereo svg .light.mod-trunk {
+    stroke: rgba(255,255,255,0.5);
+    stroke-width: 6;
+    stroke-dasharray: 18 36;
+    /* Centred on the cable rather than nudged down, or the stripes sit off the edge */
+    -webkit-transform: none;
+    transform: none;
+}
+
+/* Hovering a jack traces its cable: every other cable on the board fades back, so the one
+   under the pointer is the only one left bright. This is for any cable, not only a merged
+   stereo pair -- for a pair it additionally fades the half that is not the hovered jack's,
+   which is what says which of the two channels you are on. The trunk carries both and so
+   stays bright either way.
+
+   The lit flag is an attribute on the canvas div rather than a class on the svg, because
+   jQuery 1.9.1 sets classes through element.className, which on an svg element is a
+   readonly SVGAnimatedString and silently no-ops. Matching svg classes from css is fine;
+   only setting them from script is not. */
+.mod-cable-canvas {
+    transition: opacity 0.12s ease;
+}
+.mod-tracing .mod-cable-canvas {
+    opacity: 0.22;
+}
+.mod-tracing .mod-cable-canvas[data-cable-lit] {
+    opacity: 1;
+}
+/* the jacks fade with their cables, so the two ends of the traced one stand out too */
+.mod-output-jack {
+    transition: opacity 0.12s ease;
+}
+.mod-tracing .mod-output-jack {
+    opacity: 0.35;
+}
+.mod-tracing .mod-output-jack[data-jack-lit] {
+    opacity: 1;
+}
+
+/* A teleport's label. The output end is typed into, the input ends follow it. Positioned
+   in board coordinates, so the pedalboard's transform scales them with the zoom. */
+.mod-teleport {
+    position: absolute;
+    z-index: 20;
+    width: 184px;
+    padding: 2px 8px;
+    border: 1px solid #6b6b6b;
+    border-radius: 5px;
+    /* opaque, not translucent: several teleports into one input draw their boxes at the
+       same spot, and at 0.92 the ones underneath ghost through as garbled text. The badge
+       says how many are there, so the pile only needs to read as one clean label. */
+    background: #141414;
+    color: #ddd;
+    font: 26px/34px sans-serif;
+    text-align: center;
+    text-overflow: ellipsis;
+    transition: opacity 0.12s ease;
+}
+.mod-teleport:focus {
+    border-color: #aaa;
+    color: #fff;
+    outline: none;
+}
+.mod-teleport-in {
+    color: #b9b9b9;
+    cursor: default;
+    /* a label, not a field: no drag-select, so nothing suggests it can be edited here */
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    user-select: none;
+}
+/* How many teleports are piled at one input, since they all draw at the same spot.
+   Clicking it fans the jacks out. Only shown while collapsed. */
+.mod-teleport-badge {
+    position: absolute;
+    z-index: 21;
+    padding: 0 10px;
+    border-radius: 16px;
+    background: #883996;
+    color: #fff;
+    font: bold 22px/32px sans-serif;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: opacity 0.12s ease;
+}
+.mod-tracing .mod-teleport-badge {
+    opacity: 0.22;
+}
+
+/* main.css sets ::selection { background: transparent } app-wide, so editable fields opt
+   back in individually -- same purple #share-window input.share-url uses. */
+.mod-teleport-out::selection {
+    background-color: #883996;
+    color: #fff;
+}
+.mod-teleport-out::-moz-selection {
+    background-color: #883996;
+    color: #fff;
+}
+/* right-click menu on a port: split / join its cables */
+.mod-teleport-menu {
+    position: fixed;
+    z-index: 10000;
+    padding: 4px 0;
+    border: 1px solid #6b6b6b;
+    border-radius: 4px;
+    background: #141414;
+    color: #ddd;
+    font: 13px sans-serif;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.6);
+}
+.mod-teleport-menu > div {
+    padding: 6px 14px;
+}
+.mod-teleport-menu > div:hover {
+    background: #883996;
+    color: #fff;
+}
+.mod-teleport-menu-key {
+    float: right;
+    margin-left: 24px;
+    padding: 0 5px;
+    border: 1px solid #6b6b6b;
+    border-radius: 3px;
+    color: #999;
+    font-size: 11px;
+    line-height: 15px;
+}
+.mod-teleport-menu > div:hover .mod-teleport-menu-key {
+    border-color: #fff;
+    color: #fff;
+}
+/* refused because another output already answers to this name */
+.mod-teleport.mod-teleport-clash {
+    border-color: #b4413c;
+}
+
+/* the boxes fade with the cable they belong to */
+.mod-tracing .mod-teleport {
+    opacity: 0.22;
+}
+/* The traced box is the highlight: a teleported cable is too short a stub for lighting
+   the cable to say much. White, so it reads over audio purple, midi teal and cv orange. */
+.mod-tracing .mod-teleport[data-teleport-lit] {
+    opacity: 1;
+    border-color: #fff;
+    color: #fff;
+    background: rgba(48,48,48,0.96);
+    box-shadow: 0 0 9px 2px rgba(255,255,255,0.4);
+}
+
+[data-cable-lit="0"] svg .mod-leg-1,
+[data-cable-lit="1"] svg .mod-leg-0 {
+    opacity: 0.28;
+}
+
 svg .connecting-shadow { fill: none; stroke: #077; stroke-width: 10; z-index: 1000; }
 svg .connecting-cable { fill: none; stroke: #0AA; stroke-width: 8; z-index: 1000; }
 svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1001; -webkit-transform: translateY(2px); transform: translateY(2px); }
