@@ -1553,3 +1553,41 @@ svg .connecting-light { fill: none; stroke: #6FF; stroke-width: 1; z-index: 1001
         display: none !important;
     }
 }
+
+/* Plugin Store filters: rows of mutually exclusive choices (install state, release, price).
+   Same palette as the old checkbox rows: dark cells, the chosen one in the brand orange. */
+#cloud-plugins-library .filter .filter-segments {
+    display: flex;
+    margin: 0 0 6px 0;
+}
+#cloud-plugins-library .filter .filter-segments.mod-hidden {
+    display: none;
+}
+#cloud-plugins-library .filter .filter-segments input[type='radio'] {
+    display: none;
+}
+#cloud-plugins-library .filter .filter-segments label {
+    flex: 1 1 auto;
+    margin: 0 1px 0 0;
+    height: 32px;
+    line-height: 32px;
+    padding: 0 6px;
+    background: #222;
+    color: #fff;
+    font-weight: normal;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: pointer;
+}
+#cloud-plugins-library .filter .filter-segments label:last-of-type {
+    margin-right: 0;
+}
+#cloud-plugins-library .filter .filter-segments label:hover {
+    background: #000;
+}
+#cloud-plugins-library .filter .filter-segments input[type='radio']:checked + label {
+    background: #F29446;
+    cursor: default;
+}

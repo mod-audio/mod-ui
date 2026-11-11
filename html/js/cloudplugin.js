@@ -93,15 +93,8 @@ JqueryClass('cloudPluginBox', {
             }, 400);
         })
 
-        self.find('input:checkbox[name=installed]').click(function (e) {
-            self.find('input:checkbox[name=non-installed]').prop('checked', false)
-            self.cloudPluginBox('search')
-        })
-        self.find('input:checkbox[name=non-installed]').click(function (e) {
-            self.find('input:checkbox[name=installed]').prop('checked', false)
-            self.cloudPluginBox('search')
-        })
-        self.find('input:checkbox[name=unstable]').click(function (e) {
+        // three filter rows, one choice each: install state, release (beta) and price
+        self.find('.filter-segments input:radio').change(function (e) {
             self.cloudPluginBox('search')
         })
 
@@ -132,12 +125,8 @@ JqueryClass('cloudPluginBox', {
             $('#cloud_install_all').addClass("disabled").css({color:'#444'})
             $('#cloud_update_all').addClass("disabled").css({color:'#444'})
 
-            var unstablecb = self.find('input:checkbox[name=unstable]')
-            if (!unstablecb.is(':checked')) {
-                self.cloudPluginBox('search')
-            } else {
-                unstablecb.click()
-            }
+            // the filters keep their choice while the page is open
+            self.cloudPluginBox('search')
 
             return false
         }
@@ -155,9 +144,6 @@ JqueryClass('cloudPluginBox', {
         self.find('#cloud-plugin-tab-' + category).addClass('selected')
         self.find('#cloud-plugin-content-' + category).show().css('display', 'inline-block')
         self.data('category', category)
-
-        // hide/show featured plugins if specific category/All
-        self.cloudPluginBox('toggleFeaturedPlugins')
     },
     cleanResults: function () {
         var self = $(this)
@@ -192,20 +178,6 @@ JqueryClass('cloudPluginBox', {
         }
     },
 
-    toggleFeaturedPlugins: function () {
-      var self  = $(this)
-      var featuredPlugins = self.find('.featured-plugins')
-      var queryText = self.data('searchbox').val()
-      var category = self.data('category')
-
-      if (queryText === '' && category === 'All') {
-        if (featuredPlugins.is(':hidden')) {
-          featuredPlugins.show()
-        }
-      } else if (featuredPlugins.is(':visible')) {
-        featuredPlugins.hide()
-      }
-    },
 
     // search all or installed, depending on selected option
     search: function (customRenderCallback) {
@@ -217,20 +189,59 @@ JqueryClass('cloudPluginBox', {
             bin_compat: BIN_COMPAT,
         }
 
-        if (self.find('input:checkbox[name=unstable]:checked').length == 0 || self.data('fake')) {
+        // betas only when enabled in Settings; otherwise the release row is hidden and official it is
+        var release = self.cloudPluginBox('filterValue', 'release-filter', 'official')
+        if (PREFERENCES['show-unstable-plugins'] != "true" || self.data('fake')) {
+            release = 'official'
+        }
+        self.data('releaseFilter', release)
+        self.data('priceFilter', self.cloudPluginBox('filterValue', 'price-filter', 'both'))
+
+        // the full list is fetched and the release choice applied here, so an installed beta
+        // is recognised as beta too (asking the store for stable only would hide that)
+        if (self.data('fake')) {
             query.stable = true
         }
 
-        // hide/show featured plugins if searching/not searching
-        self.cloudPluginBox('toggleFeaturedPlugins')
+        var install = self.cloudPluginBox('filterValue', 'install-filter', 'all')
 
-        if (self.find('input:checkbox[name=installed]:checked').length)
+        if (install == 'installed')
             return self.cloudPluginBox('searchInstalled', query, customRenderCallback)
 
-        if (self.find('input:checkbox[name=non-installed]:checked').length)
+        if (install == 'non-installed')
             return self.cloudPluginBox('searchAll', false, query, customRenderCallback)
 
         return self.cloudPluginBox('searchAll', true, query, customRenderCallback)
+    },
+
+    filterValue: function (name, fallback) {
+        return $(this).find('input:radio[name=' + name + ']:checked').val() || fallback
+    },
+
+    // keep the plugins that match the release (beta) and price choices of the last search
+    applyFilters: function (plugins) {
+        var self = $(this)
+        var release = self.data('releaseFilter')
+        var price = self.data('priceFilter')
+
+        return plugins.filter(function (plugin) {
+            if (release == 'beta' && plugin.stable !== false) {
+                return false
+            }
+            if (release == 'official' && plugin.stable === false) {
+                return false
+            }
+            if (price != 'both') {
+                // store data says paid_perpetual; a local plugin the store does not list still
+                // carries its licence state (0 = free, 1/-1 or true/false once converted = paid)
+                var paid = plugin.mod_license === 'paid_perpetual' ||
+                           (plugin.licensed != null && plugin.licensed !== 0)
+                if ((price == 'paid') != paid) {
+                    return false
+                }
+            }
+            return true
+        })
     },
 
     synchronizePluginData: function (plugin) {
@@ -276,10 +287,6 @@ JqueryClass('cloudPluginBox', {
                     continue
                 }
 
-
-                if (results.featured) {
-                    cplugin.featured = results.featured.filter(function (ft) { return ft.uri === cplugin.uri })[0]
-                }
 
                 cplugin.latestVersion = [cplugin.builder_version || 0, cplugin.minorVersion, cplugin.microVersion, cplugin.release_number]
 
@@ -334,6 +341,8 @@ JqueryClass('cloudPluginBox', {
                 }
             }
 
+            plugins = self.cloudPluginBox('applyFilters', plugins)
+
             if (customRenderCallback) {
                 customRenderCallback(plugins)
             } else {
@@ -362,23 +371,8 @@ JqueryClass('cloudPluginBox', {
                 cloudResults = []
             },
             complete: function () {
-                $.ajax({
-                    method: 'GET',
-                    url: SITEURL + "/lv2/plugins/featured",
-                    success: function (featured) {
-                        results.featured = featured
-                    },
-                    error: function () {
-                        results.featured = []
-                        $('.featured-plugins').hide()
-                    },
-                    complete: function () {
-                        results.cloud = cloudResults;
-                        renderResults()
-                    },
-                    cache: false,
-                    dataType: 'json'
-                })
+                results.cloud = cloudResults;
+                renderResults()
             },
             cache: false,
             dataType: 'json'
@@ -484,6 +478,8 @@ JqueryClass('cloudPluginBox', {
                 plugins.push(lplugin)
             }
 
+            plugins = self.cloudPluginBox('applyFilters', plugins)
+
             if (customRenderCallback) {
                 customRenderCallback(plugins)
             } else {
@@ -570,9 +566,6 @@ JqueryClass('cloudPluginBox', {
     showPlugins: function (plugins, cloudReached) {
         var self = $(this)
         self.cloudPluginBox('cleanResults')
-        var featured = plugins.filter(function(p) {
-            return p.featured;
-        })
 
         // sort plugins by label
         plugins.sort(function (a, b) {
@@ -587,18 +580,6 @@ JqueryClass('cloudPluginBox', {
             return 0
         })
 
-        // sort featured plugins by priority
-        featured.sort(function (a, b) {
-            a = a.featured.priority
-            b = b.featured.priority
-            if (a > b) {
-                return 1
-            }
-            if (a < b) {
-                return -1
-            }
-            return 0
-        })
 
         var category   = {}
         var categories = {
@@ -631,34 +612,6 @@ JqueryClass('cloudPluginBox', {
         }
 
         var plugin, render
-		var factory = function(img) {
-			return function() {
-			    img.css('opacity', 1)
-                            var top = (parseInt((img.parent().height()-img.height())/2))+'px'
-                            // We need to put a padding in image, but slick creates clones of the
-                            // element to use on carousel, so we need padding in all clones
-                            var uri = img.parent().parent().parent().parent().attr('mod-uri')
-                            var clones = $('div.slick-slide[mod-uri="'+uri+'"][mod-role="cloud-plugin"]')
-                            clones.find('img').css('padding-top', top);
-			};
-		}
-
-		if (!self.data('featuredInitialized')) {
-			var featuredCanvas = $('.carousel')
-			for (var i in featured) {
-				plugin = featured[i]
-				render   = self.cloudPluginBox('renderPlugin', plugin, cloudReached, true)
-				render.appendTo(featuredCanvas)
-				render.find('img').on('load', factory(render.find('img')));
-			}
-			var columns = $(window).width() >= 1650 ? 5 : 3;
-			featuredCanvas.slick({
-				slidesToShow: Math.min(columns, plugins.length),
-				centerPadding: '60px',
-				centerMode: true,
-			});
-			self.data('featuredInitialized', true)
-		}
 
         for (var i in plugins) {
             plugin   = plugins[i]
