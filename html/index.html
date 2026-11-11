@@ -213,7 +213,7 @@ $('document').ready(function() {
         desktop.effectBox.effectBox('toggle')
     }
     if (PREFERENCES['show-unstable-plugins'] == "true") {
-        $("#cloud-plugins-unstable").parent().show()
+        $("#cloud-plugins-release-filter").removeClass("mod-hidden")
     }
     desktop.pedalboardBox.pedalboardBox('initViewMode', PREFERENCES['pb-view-mode'])
 
@@ -884,17 +884,29 @@ $('document').ready(function() {
 
             <div class="filter clearfix">
                 <h2>Filter</h2>
-                <div class="control-group">
-                    <input type="checkbox" name="installed" id="cloud-plugins-installed" />
-                    <label for="cloud-plugins-installed">Installed only</label>
+                <div class="control-group filter-segments" id="cloud-plugins-install-filter">
+                    <input type="radio" name="install-filter" value="all" id="cloud-plugins-install-all" checked />
+                    <label for="cloud-plugins-install-all">All</label>
+                    <input type="radio" name="install-filter" value="installed" id="cloud-plugins-install-installed" />
+                    <label for="cloud-plugins-install-installed">Installed</label>
+                    <input type="radio" name="install-filter" value="non-installed" id="cloud-plugins-install-non-installed" />
+                    <label for="cloud-plugins-install-non-installed">Not installed</label>
                 </div>
-                <div class="control-group">
-                    <input type="checkbox" name="non-installed" id="cloud-plugins-non-installed" />
-                    <label for="cloud-plugins-non-installed">Non-Installed only</label>
+                <div class="control-group filter-segments mod-hidden" id="cloud-plugins-release-filter">
+                    <input type="radio" name="release-filter" value="official" id="cloud-plugins-release-official" checked />
+                    <label for="cloud-plugins-release-official">Official</label>
+                    <input type="radio" name="release-filter" value="beta" id="cloud-plugins-release-beta" />
+                    <label for="cloud-plugins-release-beta">Beta</label>
+                    <input type="radio" name="release-filter" value="both" id="cloud-plugins-release-both" />
+                    <label for="cloud-plugins-release-both">Both</label>
                 </div>
-                <div class="control-group mod-hidden">
-                    <input type="checkbox" name="unstable" id="cloud-plugins-unstable" />
-                    <label for="cloud-plugins-unstable">Show beta plugins</label>
+                <div class="control-group filter-segments" id="cloud-plugins-price-filter">
+                    <input type="radio" name="price-filter" value="free" id="cloud-plugins-price-free" />
+                    <label for="cloud-plugins-price-free">Free</label>
+                    <input type="radio" name="price-filter" value="paid" id="cloud-plugins-price-paid" />
+                    <label for="cloud-plugins-price-paid">Paid</label>
+                    <input type="radio" name="price-filter" value="both" id="cloud-plugins-price-both" checked />
+                    <label for="cloud-plugins-price-both">Both</label>
                 </div>
                 <ul class="categories list list-unstyled">
                     <li id="cloud-plugin-tab-All">All</li>
@@ -921,11 +933,6 @@ $('document').ready(function() {
 
             <div class="cloud-plugins clearfix js-cloud-plugins">
               <div id="cloudplugin-results-wrapper">
-				    <div class="featured-plugins">
-					  <h2>Featured plugins</h2>
-					  <div class="carousel"></div>
-					</div>
-					<h2>Filtered results</h2>
                     <div id="cloud-plugin-content-All" class="plugins-wrapper"></div>
                     <div id="cloud-plugin-content-ControlVoltage" class="plugins-wrapper"></div>
                     <div id="cloud-plugin-content-Delay" class="plugins-wrapper"></div>
