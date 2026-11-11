@@ -241,6 +241,9 @@ JqueryClass('pedalboard', {
         // Holds all plugins loaded, indexed by instance
         self.data('plugins', {})
 
+        // Instances currently selected by shift-drag or shift-click, indexed by instance
+        self.data('selected', {})
+
         // Hardware inputs and outputs, which have an instance of -1 and symbol as given by application
         self.data('hwInputs', [])
         self.data('hwOutputs', [])
@@ -343,27 +346,67 @@ JqueryClass('pedalboard', {
             }
         }});
 
-        // Dragging the pedalboard move the view area
+        // Dragging the pedalboard moves the view area, shift-dragging selects plugins.
+        // preventDrag is already set here if the mousedown landed on a plugin or a jack,
+        // as their own handlers fire first on the way up
         self.mousedown(function (e) {
-            self.pedalboard('drag', e)
+            if (self.data('preventDrag')) {
+                return
+            }
+            if (e.shiftKey) {
+                self.pedalboard('marquee', e)
+            } else {
+                self.pedalboard('setSelection', {})
+                self.pedalboard('drag', e)
+            }
         })
 
-        // The mouse wheel is used to zoom in and out
-        self.bind('mousewheel', function (e) {
-            // Zoom by mousewheel has been desactivated.
-            // Let's keep the code here so that maybe later this can be a user option
-            if (true) return;
-
-            var ev = e.originalEvent
-
-            // check if mouse is not over a control button
-            if (self.pedalboard('mouseIsOver', ev, self.find('[mod-role=input-control-port]')))
+        // Delete removes the selection. Bound on the document because the pedalboard is
+        // not focusable, and ignored while typing so the plugin settings windows, the
+        // save dialog and the plugin search all keep working. Backspace counts too, for
+        // keyboards whose only delete key is that one
+        $(document).keydown(function (e) {
+            if (e.which != 46 && e.which != 8) {
                 return
+            }
+            var tag = (e.target.tagName || '').toLowerCase()
+            if (tag == 'input' || tag == 'textarea' || tag == 'select' || e.target.isContentEditable) {
+                return
+            }
+            if (! Object.keys(self.data('selected')).length) {
+                return
+            }
+            e.preventDefault()
+            self.pedalboard('removeSelected')
+        })
+
+        // The mouse wheel is used to zoom in and out.
+        // A wheel gesture is locked to zooming-or-widget on its FIRST event: while zooming,
+        // the pan clamp can slide a knob under a cursor that started over the background,
+        // and the rest of the gesture must not start editing that knob's value.
+        // Capture phase, so we can decide before the widget's own mousewheel handler runs.
+        var gestureEnd = 0, gestureIsZoom = false
+        var wheelZoom = function (ev) {
+            if (ev.timeStamp > gestureEnd) {
+                // ask the event target, not the geometry: an open enumeration list
+                // overflows the box of the control port it lives in, so hit-testing
+                // bounding boxes calls it background and swallows the list's scrolling
+                gestureIsZoom = !self.pedalboard('wheelClaimedByWidget', ev.target)
+            }
+            // 300ms of quiet ends a gesture, raise it if slow scrolling breaks a zoom in two
+            gestureEnd = ev.timeStamp + 300
+
+            if (!gestureIsZoom) {
+                return
+            }
+            // this gesture is ours, keep it away from whatever is under the cursor now
+            ev.preventDefault()
+            ev.stopPropagation()
 
             var maxS = self.data('maxScale')
             var minS = self.data('minScale')
             var step = (maxS - minS) / 5
-            var steps = ev.wheelDelta / 120
+            var steps = ev.wheelDelta != null ? ev.wheelDelta / 120 : -ev.detail / 3
             var scale = self.data('scale')
             var newScale = scale + steps * step
             newScale = Math.min(maxS, newScale)
@@ -378,7 +421,10 @@ JqueryClass('pedalboard', {
             var screenY = ev.pageY - self.parent().offset().top
 
             self.pedalboard('zoom', newScale, canvasX, canvasY, screenX, screenY, 0)
-        })
+        }
+        // same event names jquery.mousewheel binds, so stopPropagation actually shields the knobs
+        self[0].addEventListener('mousewheel', wheelZoom, true)
+        self[0].addEventListener('DOMMouseScroll', wheelZoom, true)
 
         self.pedalboard('initGestures')
 
@@ -445,18 +491,23 @@ JqueryClass('pedalboard', {
         })
     },
 
-    // Check if mouse event has happened over any element of a jquery set in pedalboard
-    mouseIsOver: function (ev, elements) {
-        var scale = $(this).data('scale')
-        var top, left, right, bottom, element
-        for (var i = 0; i < elements.length; i++) {
-            element = $(elements[i])
-            top = element.offset().top
-            left = element.offset().left
-            right = left + element.width() * scale
-            bottom = top + element.height() * scale
-            if (ev.pageX >= left && ev.pageX <= right && ev.pageY >= top && ev.pageY <= bottom)
+    // Does anything between a wheel event's target and the pedalboard want the wheel
+    // for itself? Asking the target beats hit-testing bounding boxes: an open
+    // enumeration list overflows the box of the control port it belongs to, so a
+    // geometric test calls it background and the list never gets to scroll.
+    wheelClaimedByWidget: function (target) {
+        var root = this[0]
+        for (var el = target; el && el !== root; el = el.parentElement) {
+            // knobs and other value controls -- the wheel edits them
+            if (el.getAttribute && el.getAttribute('mod-role') === 'input-control-port')
                 return true
+            // anything that can actually scroll, e.g. an open .mod-enumerated-list.
+            // scrollHeight first: it is free, getComputedStyle is not.
+            if (el.scrollHeight > el.clientHeight) {
+                var overflow = window.getComputedStyle(el).overflowY
+                if (overflow === 'auto' || overflow === 'scroll')
+                    return true
+            }
         }
         return false
     },
@@ -849,6 +900,186 @@ JqueryClass('pedalboard', {
         $(this).data('preventDrag', prevent)
     },
 
+    // Replaces the current selection. Keys of `selected` are plugin instances
+    setSelection: function (selected) {
+        var self = $(this)
+        var plugins = self.data('plugins')
+        for (var instance in plugins) {
+            if (plugins[instance] && plugins[instance].length) {
+                plugins[instance].toggleClass('mod-selected', !!selected[instance])
+            }
+        }
+        // lets the stylesheet fade everything that is not selected
+        self.toggleClass('mod-has-selection', Object.keys(selected).length > 0)
+        self.data('selected', selected)
+    },
+
+    // Adds or removes a single plugin from the selection, for shift-click
+    toggleSelected: function (instance) {
+        var self = $(this)
+        var selected = self.data('selected')
+        if (selected[instance]) {
+            delete selected[instance]
+        } else {
+            selected[instance] = true
+        }
+        self.pedalboard('setSelection', selected)
+    },
+
+    // Removes every selected plugin. Asks first when more than one is going, since there
+    // is no undo and a stray Delete could otherwise take out a whole board
+    removeSelected: function () {
+        var self = $(this)
+        var plugins = self.data('plugins')
+        // snapshot the keys: removing a plugin drops it from the selection as it goes
+        var instances = Object.keys(self.data('selected'))
+        if (! instances.length) {
+            return
+        }
+        if (instances.length > 1 &&
+            ! confirm('Remove ' + instances.length + ' plugins from the pedalboard?')) {
+            return
+        }
+
+        self.pedalboard('finishConnection')
+        for (var i = 0; i < instances.length; i++) {
+            var plugin = plugins[instances[i]]
+            if (! plugin || ! plugin.length) {
+                continue
+            }
+            // ports is only needed so removePlugin can drop the plugin's cv outputs from
+            // the hardware manager; addPlugin stashes it on the icon for us
+            self.pedalboard('removePlugin', instances[i], plugin.data('ports'))
+        }
+        self.pedalboard('setSelection', {})
+    },
+
+    // Shift-dragging the background rubber-bands a box and selects what it touches.
+    // The box lives in the unscaled parent, so it needs no scale math, and the hit test
+    // uses getBoundingClientRect, which is already in the same screen space
+    marquee: function (start) {
+        var self = $(this)
+        var box = $('<div class="mod-selection-box">').appendTo(self.parent())
+        var parentRect = self.parent()[0].getBoundingClientRect()
+
+        var rectOf = function (e) {
+            return {
+                left: Math.min(start.clientX, e.clientX),
+                right: Math.max(start.clientX, e.clientX),
+                top: Math.min(start.clientY, e.clientY),
+                bottom: Math.max(start.clientY, e.clientY)
+            }
+        }
+
+        var moveHandler = function (e) {
+            var r = rectOf(e)
+            box.css({
+                left: r.left - parentRect.left,
+                top: r.top - parentRect.top,
+                width: r.right - r.left,
+                height: r.bottom - r.top
+            })
+        }
+
+        var upHandler = function (e) {
+            $(document).unbind('mousemove', moveHandler)
+            $(document).unbind('mouseup', upHandler)
+            box.remove()
+
+            var r = rectOf(e)
+            if (r.right - r.left < 4 && r.bottom - r.top < 4) {
+                // a shift-click with no drag, leave the selection alone
+                return
+            }
+
+            var selected = {}
+            var plugins = self.data('plugins')
+            for (var instance in plugins) {
+                if (! plugins[instance] || ! plugins[instance].length) {
+                    continue
+                }
+                var b = plugins[instance][0].getBoundingClientRect()
+                if (b.right > r.left && b.left < r.right && b.bottom > r.top && b.top < r.bottom) {
+                    selected[instance] = true
+                }
+            }
+            self.pedalboard('setSelection', selected)
+        }
+
+        $(document).bind('mousemove', moveHandler)
+        $(document).bind('mouseup', upHandler)
+    },
+
+    // Called when a plugin drag starts. If that plugin is selected, remember where every
+    // other selected plugin sits so the drag can move them all by the same delta
+    startGroupDrag: function (instance) {
+        var self = $(this)
+        var plugins = self.data('plugins')
+        var selected = self.data('selected')
+
+        self.data('dragGroup', null)
+        if (! selected[instance]) {
+            return
+        }
+
+        var group = []
+        for (var other in selected) {
+            if (other == instance || ! plugins[other] || ! plugins[other].length) {
+                continue
+            }
+            group.push({
+                instance: other,
+                icon: plugins[other],
+                left: parseInt(plugins[other].css('left')),
+                top: parseInt(plugins[other].css('top'))
+            })
+        }
+        if (! group.length) {
+            return
+        }
+
+        self.data('dragGroup', group)
+        self.data('dragOrigin', {
+            left: parseInt(plugins[instance].css('left')),
+            top: parseInt(plugins[instance].css('top'))
+        })
+    },
+
+    // Moves the rest of the selection to follow the dragged plugin. left/top are the
+    // dragged plugin's new position, in canvas units
+    dragGroupTo: function (left, top) {
+        var self = $(this)
+        var group = self.data('dragGroup')
+        if (! group) {
+            return
+        }
+        var origin = self.data('dragOrigin')
+        var dx = left - origin.left
+        var dy = top - origin.top
+        for (var i = 0; i < group.length; i++) {
+            group[i].icon.css({
+                left: group[i].left + dx,
+                top: group[i].top + dy
+            })
+            self.pedalboard('drawPluginJacks', group[i].icon)
+        }
+    },
+
+    // Persists the new position of every plugin that moved along with the dragged one
+    finishGroupDrag: function () {
+        var self = $(this)
+        var group = self.data('dragGroup')
+        if (! group) {
+            return
+        }
+        for (var i = 0; i < group.length; i++) {
+            self.data('pluginMove')(group[i].instance,
+                                    parseInt(group[i].icon.css('left')),
+                                    parseInt(group[i].icon.css('top')))
+        }
+        self.data('dragGroup', null)
+    },
+
     // Moves the viewable area of the pedalboard
     drag: function (start) {
         var self = $(this)
@@ -1037,16 +1268,41 @@ JqueryClass('pedalboard', {
         }
         // First, get the minmum bounding rectangle,
         // given by minX, maxX, minY and maxY
-        var minX, maxX, minY, maxY, rightMargin, w, h, x, y, plugin, pos
+        var minX, maxX, minY, maxY, padX, padY, w, h, x, y, plugin, pos
         //var pedals = self.find('.js-effect')
         var plugins = self.data('plugins')
         var scale = self.data('scale')
+        // Seeded from the size resetSize starts with rather than from the current canvas.
+        // Seeding with self.width()/height() made the box the union of canvas-and-plugins,
+        // so the canvas could only ever grow - deleting or moving plugins inwards left the
+        // vacated space behind forever. The floor already carries the viewport aspect
+        // ratio, which is what the ratio lock further down expects.
+        // Only the right and bottom are reclaimed this way, and neither moves a plugin.
+        // Left and top slack still cannot be given back without shifting every plugin.
         minX = 0
-        maxX = self.width()
+        maxX = self.parent().width() / self.data('baseScale')
         minY = 0
-        maxY = self.height()
-        rightMargin = 150
+        maxY = self.parent().height() / self.data('baseScale')
         var instance
+
+        // Keep one more plugin's worth of empty canvas past the outermost plugin, so
+        // there is always somewhere to drop the next one instead of having to shove one
+        // against an edge you cannot see past first. The unit is the biggest plugin
+        // currently on the board, so the gap is literally "one more of these fits".
+        // 150 is the old fixed margin, kept as the floor and as the empty board case.
+        //
+        // Right and bottom only. Growing left or up is implemented as a shift of every
+        // plugin (the minX/minY branches below), which runs through pluginMove and so
+        // rewrites and re-persists every saved position and marks the board modified.
+        // Those two sides still grow on demand when a plugin is actually dragged there.
+        padX = 150
+        padY = 150
+        for (instance in plugins) {
+            plugin = plugins[instance]
+            if (!plugin.position) continue
+            padX = Math.max(padX, plugin.width())
+            padY = Math.max(padY, plugin.height())
+        }
         for (instance in plugins) {
             plugin = plugins[instance]
             // A plugin still loading is a placeholder holding the position from its add
@@ -1068,9 +1324,9 @@ JqueryClass('pedalboard', {
             y = pos.top / scale
 
             minX = Math.min(minX, x)
-            maxX = Math.max(maxX, x + w + rightMargin)
+            maxX = Math.max(maxX, x + w + padX)
             minY = Math.min(minY, y)
-            maxY = Math.max(maxY, y + h)
+            maxY = Math.max(maxY, y + h + padY)
         }
 
         // Now calculate how much to increase in width and height,
@@ -1085,14 +1341,18 @@ JqueryClass('pedalboard', {
             wDif -= minX
             left -= minX
         }
-        if (maxX > w)
-            wDif += maxX - w
         if (minY < 0) {
             hDif -= minY
             top -= minY
         }
-        if (maxY > h)
-            hDif += maxY - h
+        // Unconditional, so these can come out negative and give space back. They used to
+        // be guarded by maxX > w / maxY > h, which is why the canvas could only grow: once
+        // maxX is the floor rather than the current width, the guard is false whenever
+        // there is slack to reclaim and adapt fell straight through to its early return.
+        // The result is w + wDif == maxX - minX, i.e. exactly the box we want, in either
+        // direction. Only the right and bottom move; left and top still need the shift.
+        wDif += maxX - w
+        hDif += maxY - h
 
         // Nothing has changed, or only by rounding: the zoomed positions make the target
         // wobble a pixel either way while knob images load, and each fit redraws every
@@ -1395,6 +1655,7 @@ JqueryClass('pedalboard', {
                 obj.icon.addClass('dragging')
                 obj.icon.css({'z-index': self.data('z_index')+1})
                 self.data('z_index', self.data('z_index')+1)
+                self.pedalboard('startGroupDrag', instance)
                 return true
             },
             drag: function (e, ui) {
@@ -1402,6 +1663,7 @@ JqueryClass('pedalboard', {
                 var scale = self.data('scale')
                 ui.position.left /= scale
                 ui.position.top /= scale
+                self.pedalboard('dragGroupTo', ui.position.left, ui.position.top)
                 self.trigger('modified')
                 self.pedalboard('drawPluginJacks', obj.icon)
             },
@@ -1411,9 +1673,22 @@ JqueryClass('pedalboard', {
                 self.pedalboard('drawPluginJacks', obj.icon)
                 obj.icon.removeClass('dragging')
                 self.data('pluginMove')(instance, ui.position.left, ui.position.top)
+                self.pedalboard('finishGroupDrag')
                 self.pedalboard('adapt', false)
             },
             click: function (event) {
+                if (event.shiftKey) {
+                    // A port has its own shift-click, which toggles its vu meter, and the
+                    // ports sit inside the plugin, so the click reaches here too on its
+                    // way up. Selecting is for the plugin's own body only. closest()
+                    // rather than is(), because the click can land on a jack or on some
+                    // other decoration inside the port.
+                    if ($(event.target).closest('[mod-port]').length) {
+                        return
+                    }
+                    self.pedalboard('toggleSelected', instance)
+                    return
+                }
                 obj.icon.css({'z-index': self.data('z_index')+1})
                 self.pedalboard('drawPluginJacks', obj.icon)
                 self.data('z_index', self.data('z_index')+1)
@@ -1502,6 +1777,7 @@ JqueryClass('pedalboard', {
 
             icon.data('label', pluginData.label)
             icon.data('uri', pluginData.uri)
+            icon.data('ports', pluginData.ports)
             icon.data('gui', pluginGui)
             icon.data('settings', settings)
             icon.data('instance', instance)
@@ -2039,6 +2315,11 @@ JqueryClass('pedalboard', {
             }
 
             delete plugins[instance]
+            delete self.data('selected')[instance]
+
+            // nothing else asks the canvas to reconsider its size after a removal, and
+            // scheduleAdapt debounces, so deleting several plugins recalculates once
+            self.pedalboard('scheduleAdapt', false)
         } else {
             connMgr.iterate(function (jack) {
                 var input   = jack.data('destination')
