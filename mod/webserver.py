@@ -2295,6 +2295,20 @@ class ResetXruns(JsonRequestHandler):
         reset_xruns()
         self.write(True)
 
+class CpuMonitor(JsonRequestHandler):
+    """Turn per-plugin CPU reporting on or off. Values arrive on the websocket as
+    "plugin_cpu_load <instance> <percent>", pushed by mod-host, so there is nothing to poll.
+    Enabling again resets each plugin's recorded peak."""
+    @web.asynchronous
+    @gen.engine
+    def post(self, enable):
+        try:
+            ok = yield gen.with_timeout(timedelta(seconds=5),
+                                        gen.Task(SESSION.host.monitor_cpu_load, enable == "1"))
+        except gen.TimeoutError:
+            ok = False
+        self.write(bool(ok))
+
 class SwitchCpuFreq(JsonRequestHandler):
     def post(self):
         with open("/sys/devices/system/cpu/cpu0/cpufreq/scaling_available_frequencies", 'r') as fh:
@@ -2839,6 +2853,7 @@ application = web.Application(
             (r"/set_buffersize/(64|128|256)", SetBufferSize),
             (r"/reset_xruns/", ResetXruns),
             (r"/switch_cpu_freq/", SwitchCpuFreq),
+            (r"/cpu_monitor/(0|1)", CpuMonitor),
 
             (r"/save_user_id/", SaveUserId),
 

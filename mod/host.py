@@ -393,6 +393,8 @@ class Host(object):
         self.pedalboard_format_version = 1
         self.current_pedalboard_snapshot_id = -1
         self.pedalboard_snapshots = []
+        # while the CPU panel is open, so plugins added meanwhile get monitored too
+        self.cpu_monitor_enabled = False
         self.next_hmi_pedalboard_to_load = None
         self.next_hmi_pedalboard_loading = False
         self.next_hmi_bpb = [0, False, False]
@@ -1884,6 +1886,16 @@ class Host(object):
             elif ltype == PLUGIN_LOG_ERROR:
                 logging.error("[plugin] %s", lmsg)
 
+        elif cmd == "cpu_monitor":
+            msg_data    = data.split(" ",2)
+            instance_id = int(msg_data[0])
+            # fraction of one audio cycle; the UI wants a percentage
+            load        = float(msg_data[1]) * 100.0
+
+            if instance_id in self.plugins:
+                # not "cpu_load": in mod-host that name is the global load of the whole graph
+                self.msg_callback("plugin_cpu_load %s %f" % (self.mapper.get_instance(instance_id), load))
+
         else:
             logging.error("[host] unrecognized command: %s", cmd)
 
@@ -2601,6 +2613,8 @@ class Host(object):
 
             for output in extinfo['monitoredOutputs']:
                 self.send_notmodified("monitor_output %d %s" % (instance_id, output))
+
+            self.monitor_cpu_load_new_plugin(instance_id)
 
             for snapshot in self.pedalboard_snapshots:
                 if snapshot is None:
@@ -4134,6 +4148,8 @@ class Host(object):
             for output in extinfo['monitoredOutputs']:
                 self.send_notmodified("monitor_output %d %s" % (instance_id, output))
 
+            self.monitor_cpu_load_new_plugin(instance_id)
+
     def load_pb_connections(self, connections, mappedOldMidiIns, mappedOldMidiOuts,
                                                mappedNewMidiIns, mappedNewMidiOuts):
         for c in connections:
@@ -4974,6 +4990,31 @@ _:b%i
         if self.web_connected and not self.web_data_ready_ok:
             if IOLoop.instance().time() - self.web_data_ready_time >= 2.0:
                 self.msg_callback("data_ready %i" % self.web_data_ready_counter)
+
+    def monitor_cpu_load(self, enable, callback):
+        """Subscribe to (or stop) per-plugin CPU reporting for every loaded plugin.
+
+        mod-host pushes "cpu_monitor <id> <load>" on the feedback socket whenever a
+        plugin beats its own worst cycle of the current feedback round (the record is
+        reset on every output_data_ready), so nothing is polled. The UI keeps the peak
+        across rounds; enabling again also resets mod-host's records."""
+        self.cpu_monitor_enabled = enable
+        instances = list(self.plugins.keys())
+
+        if not instances:
+            callback(True)
+            return
+
+        self.send_notmodified("monitor_cpu_load %d %d %s" % (1 if enable else 0,
+                                                             len(instances),
+                                                             " ".join(str(i) for i in instances)),
+                              callback, datatype='boolean')
+
+    def monitor_cpu_load_new_plugin(self, instance_id):
+        # The instance list is sent when the panel opens, so a plugin added after that, by
+        # hand or by loading a pedalboard, joins on its own. Only its own record is reset.
+        if self.cpu_monitor_enabled:
+            self.send_notmodified("monitor_cpu_load 1 1 %d" % instance_id)
 
     def get_free_memory_value(self):
         if not self.memfile:
