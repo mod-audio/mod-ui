@@ -609,9 +609,13 @@ $('document').ready(function() {
     refresh_sysinfo()
     refresh_sysprefs()
 
-    // User Interface tools: each one on its own. One never set on its own follows the old Developer Mode switch.
+    // User Interface tools: each one on its own. One never set on its own follows its data-fallback key if
+    // that was set (Install All / Update All were one switch), then the old Developer Mode switch.
     $(".prefs-ui-tool").each(function () {
         var value = PREFERENCES[$(this).data("key")]
+        if (value !== "on" && value !== "off" && $(this).data("fallback")) {
+            value = PREFERENCES[$(this).data("fallback")]
+        }
         if (value !== "on" && value !== "off") {
             value = PREFERENCES['dev-mode']
         }
@@ -1418,12 +1422,22 @@ $('document').ready(function() {
                 <h1>Plugins and Pedalboards</h1>
                 <form class="form">
                     <label>
-                        <input type="checkbox" autocomplete="off" class="prefs-ui-tool" id="prefs-ui-store-all" data-key="ui-store-all">
-                            Install All and Update All in the Plugin Store
+                        <input type="checkbox" autocomplete="off" class="prefs-ui-tool" id="prefs-ui-store-install-all"
+                               data-key="ui-store-install-all" data-fallback="ui-store-all">
+                            Install All in the Plugin Store
                         </input>
                     </label>
                     <p>
-                        Buttons to install every plugin, or update every installed plugin, in one go.
+                        A button to install every plugin shown in the Plugin Store in one go.
+                    </p>
+                    <label>
+                        <input type="checkbox" autocomplete="off" class="prefs-ui-tool" id="prefs-ui-store-update-all"
+                               data-key="ui-store-update-all" data-fallback="ui-store-all">
+                            Update All in the Plugin Store
+                        </input>
+                    </label>
+                    <p>
+                        A button to update every installed plugin that has a new version, in one go.
                     </p>
                     <label>
                         <input type="checkbox" autocomplete="off" class="prefs-ui-tool" id="prefs-ui-share" data-key="ui-share">
