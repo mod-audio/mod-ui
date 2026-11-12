@@ -6304,6 +6304,22 @@ _:b%i
         if page != 7:
             return
 
+        # The controller never answers the "screenshot" request itself: its 8 rows are the answer.
+        # The request stays first in the HMI queue while they come in, so nothing else is sent to the
+        # controller meanwhile (that garbles the rows); release it now, or every later HMI message waits.
+        if self.hmi.queue and self.hmi.queue[0][0].startswith(CMD_SCREENSHOT + " "):
+            self.hmi.queue.pop(0)
+            self.hmi.process_queue()
+
+        # A garbled row must not raise here: the exception would close the serial link to the HMI.
+        try:
+            self.hmi_screenshot_save()
+        except Exception:
+            logging.exception("[hmi] screenshot failed, row lengths: %s",
+                              [len(row or "") for row in self.hmi_screenshot_data])
+
+    def hmi_screenshot_save(self):
+
         # size in pixels, increase as needed
         pixel_size = 8
         margin_size = 1
