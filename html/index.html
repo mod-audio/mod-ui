@@ -244,6 +244,7 @@ $('document').ready(function() {
 
 {% if desktop_app %}
     DesktopApp.setup(desktop)
+    DesktopApp.checkForUpdate('{{version}}', {{desktop_update_check}}, '{{desktop_platform}}')
 {% else %}
     if (PREFERENCES['dev-mode'] == "on") {
         enable_dev_mode(true)
