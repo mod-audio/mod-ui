@@ -244,6 +244,7 @@ $('document').ready(function() {
 {% if desktop_app %}
     DesktopApp.setup(desktop)
     $('body').addClass('preset-share pedalboard-share')
+    DesktopApp.checkForUpdate('{{version}}', {{desktop_update_check}}, '{{desktop_platform}}')
 {% else %}
     apply_ui_tools()
 {% end %}

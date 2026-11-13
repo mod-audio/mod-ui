@@ -271,4 +271,182 @@ var DesktopApp = {
         form.find('.js-save').show()
         form.find('.advanced-toggle').show()
     },
+
+    // Update check --------------------------------------------------------
+
+    /* Is a newer MOD Desktop build out for this OS? Builds are GitHub release
+     * assets on mod-audio/mod-desktop; pre-releases count (Gianfranco,
+     * 2026-11-07), drafts are never listed. A release tag can hold several
+     * builds (pre-release "0.14" holds 0.14.1, 0.14.2, ...), so the version is
+     * read from the asset names, never from the tag. At most one anonymous
+     * request a day, no custom headers, nothing about the user. The
+     * launcher's "Check for updates" box turns it off (index.html passes the
+     * flag and this OS). */
+    RELEASES_API_URL: 'https://api.github.com/repos/mod-audio/mod-desktop/releases?per_page=20',
+    RELEASES_TAG_URL: 'https://github.com/mod-audio/mod-desktop/releases/tag/',
+    UPDATE_CHECK_INTERVAL: 24 * 60 * 60 * 1000,
+    UPDATE_STORAGE_KEY: 'mod-desktop-update-check',
+
+    // the installer each OS downloads; the Windows zip is not offered
+    UPDATE_ASSET_SUFFIX: {
+        macos: '-macOS.pkg',
+        linux: '-linux-x86_64.tar.xz',
+        windows: '-win64-installer.exe',
+    },
+
+    /* "0.14.2", "v0.14.2" or "0.0.14.37" -> [0, 14, 2] / [0, 0, 14]; else null.
+     * Versions are 0.<MOD OS line>.<build> since 2026-11-03; older internal
+     * builds had four numbers and only their first three count. */
+    parseVersion: function (version) {
+        var m = /^v?(\d+)\.(\d+)\.(\d+)(\.\d+)?$/.exec(String(version || '').trim())
+        return m ? [parseInt(m[1], 10), parseInt(m[2], 10), parseInt(m[3], 10)] : null
+    },
+
+    // numbers, not strings: 0.14.10 is newer than 0.14.9
+    compareVersions: function (a, b) {
+        for (var i = 0; i < 3; i++) {
+            if (a[i] !== b[i]) {
+                return a[i] > b[i] ? 1 : -1
+            }
+        }
+        return 0
+    },
+
+    /* null when `latest` is not newer than `running`; 'build' when it is the
+     * same line (first two numbers) with a higher build, i.e. bug fixes;
+     * 'version' when the line is higher, i.e. new features. */
+    updateKind: function (latest, running) {
+        var a = DesktopApp.parseVersion(latest)
+        var b = DesktopApp.parseVersion(running)
+        if (!a || !b || DesktopApp.compareVersions(a, b) <= 0) {
+            return null
+        }
+        return (a[0] === b[0] && a[1] === b[1]) ? 'build' : 'version'
+    },
+
+    /* The newest build for `platform` in a GitHub releases list:
+     * {version: '0.14.2', tag: '0.14'}, or null. Anything that does not look
+     * like one of our assets is ignored. */
+    newestBuild: function (releases, platform) {
+        var suffix = DesktopApp.UPDATE_ASSET_SUFFIX[platform]
+        if (!suffix || !Array.isArray(releases)) {
+            return null
+        }
+        var best = null, bestParsed = null
+        releases.forEach(function (release) {
+            if (!release || release.draft || typeof release.tag_name !== 'string' ||
+                !/^v?\d+(\.\d+){1,3}$/.test(release.tag_name) || !Array.isArray(release.assets)) {
+                return
+            }
+            release.assets.forEach(function (asset) {
+                var name = asset && typeof asset.name === 'string' ? asset.name : ''
+                if (name.indexOf('mod-desktop-') !== 0 || name.slice(-suffix.length) !== suffix) {
+                    return
+                }
+                var version = name.slice('mod-desktop-'.length, -suffix.length)
+                var parsed = /^\d+\.\d+\.\d+$/.test(version) ? DesktopApp.parseVersion(version) : null
+                if (parsed && (!bestParsed || DesktopApp.compareVersions(parsed, bestParsed) > 0)) {
+                    best = { version: version, tag: release.tag_name }
+                    bestParsed = parsed
+                }
+            })
+        })
+        return best
+    },
+
+    /* Per-browser memory: when we last asked, the newest build seen, the
+     * version the user skipped. Storage can be missing or throw (private
+     * window, blocked site data): then we simply ask on every start. */
+    loadUpdateState: function () {
+        try {
+            var state = JSON.parse(window.localStorage.getItem(DesktopApp.UPDATE_STORAGE_KEY))
+            return (state && typeof state === 'object') ? state : {}
+        } catch (e) {
+            return {}
+        }
+    },
+
+    saveUpdateState: function (state) {
+        try {
+            window.localStorage.setItem(DesktopApp.UPDATE_STORAGE_KEY, JSON.stringify(state))
+        } catch (e) {}
+    },
+
+    /* Called from index.html right after setup(). `running` is this build's
+     * VERSION (dev runs use a timestamp: never ask), `platform` is 'macos',
+     * 'linux' or 'windows'. */
+    checkForUpdate: function (running, enabled, platform, now) {
+        if (!enabled || !DesktopApp.parseVersion(running) || !DesktopApp.UPDATE_ASSET_SUFFIX[platform]) {
+            return
+        }
+        now = now || Date.now()
+
+        var state = DesktopApp.loadUpdateState()
+
+        if (state.checkedAt && now - state.checkedAt >= 0 && now - state.checkedAt < DesktopApp.UPDATE_CHECK_INTERVAL) {
+            DesktopApp.offerUpdate(running, state)
+            return
+        }
+
+        $.ajax({
+            url: DesktopApp.RELEASES_API_URL,
+            type: 'GET',
+            dataType: 'json',
+            timeout: 15000,
+            global: false, // no loading bar for a background request
+            success: function (releases) {
+                state.checkedAt = now
+                var newest = DesktopApp.newestBuild(releases, platform)
+                if (newest) {
+                    state.latest = newest
+                }
+                DesktopApp.saveUpdateState(state)
+                DesktopApp.offerUpdate(running, state)
+            },
+            error: function () {
+                // Offline or rate-limited: try again tomorrow, keep what we knew.
+                state.checkedAt = now
+                DesktopApp.saveUpdateState(state)
+                DesktopApp.offerUpdate(running, state)
+            },
+        })
+    },
+
+    offerUpdate: function (running, state) {
+        var latest = state.latest
+        if (!latest || typeof latest !== 'object' || latest.version === state.skipped) {
+            return
+        }
+        var kind = DesktopApp.updateKind(latest.version, running)
+        if (kind) {
+            DesktopApp.showUpdateBanner(latest.version, latest.tag, kind)
+        }
+    },
+
+    /* A small bar at the top: what kind of update it is, the release page
+     * (notes + downloads), "Skip this version", and a close button that only
+     * hides it until the next start. Version and tag were checked against
+     * strict patterns before they get here. */
+    showUpdateBanner: function (version, tag, kind) {
+        if ($('#desktop-app-update-banner').length !== 0) {
+            return
+        }
+        var banner = $(Mustache.render(TEMPLATES['desktop_app_update_banner'], {
+            version: version,
+            kind: kind === 'build' ? 'new build, bug fixes' : 'new version, new features',
+            url: DesktopApp.RELEASES_TAG_URL + encodeURIComponent(tag),
+        }))
+        banner.find('.js-skip').click(function () {
+            var state = DesktopApp.loadUpdateState()
+            state.skipped = version
+            DesktopApp.saveUpdateState(state)
+            banner.remove()
+            return false
+        })
+        banner.find('.js-close').click(function () {
+            banner.remove()
+            return false
+        })
+        banner.appendTo('body')
+    },
 }
