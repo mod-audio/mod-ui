@@ -157,7 +157,8 @@ from modtools.utils import (
     connect_jack_ports, connect_jack_midi_output_ports, disconnect_jack_ports, disconnect_all_jack_ports,
     set_truebypass_value, get_master_volume,
     set_util_callbacks, set_extra_util_callbacks, kPedalboardTimeAvailableBPB,
-    kPedalboardTimeAvailableBPM, kPedalboardTimeAvailableRolling
+    kPedalboardTimeAvailableBPM, kPedalboardTimeAvailableRolling,
+    PerformancePluginInfo
 )
 from modtools.tempo import (
     convert_port_value_to_seconds_equivalent,
@@ -398,6 +399,8 @@ class Host(object):
         # generation it was computed from and a stale one is dropped -- the browser's
         # teardown flags cannot cover the disconnect echoes, which arrive asynchronously.
         self.pedalboard_teleports_gen = 0
+        # while the CPU panel is open, so plugins added meanwhile get monitored too
+        self.cpu_monitor_enabled = False
         self.next_hmi_pedalboard_to_load = None
         self.next_hmi_pedalboard_loading = False
         self.next_hmi_bpb = [0, False, False]
@@ -1881,6 +1884,16 @@ class Host(object):
             elif ltype == PLUGIN_LOG_ERROR:
                 logging.error("[plugin] %s", lmsg)
 
+        elif cmd == "cpu_monitor":
+            msg_data    = data.split(" ",2)
+            instance_id = int(msg_data[0])
+            # fraction of one audio cycle; the UI wants a percentage
+            load        = float(msg_data[1]) * 100.0
+
+            if instance_id in self.plugins:
+                # not "cpu_load": in mod-host that name is the global load of the whole graph
+                self.msg_callback("plugin_cpu_load %s %f" % (self.mapper.get_instance(instance_id), load))
+
         else:
             logging.error("[host] unrecognized command: %s", cmd)
 
@@ -2165,11 +2178,14 @@ class Host(object):
 
             rinstances[instance_id] = pluginData['instance']
 
-            websocket.write_message("add %s %s %.1f %.1f %d %s %d" % (pluginData['instance'], pluginData['uri'],
+            websocket.write_message("add %s %s %.1f %.1f %d %s %d %s %d %d" % (pluginData['instance'], pluginData['uri'],
                                                                       pluginData['x'], pluginData['y'],
                                                                       int(pluginData['bypassed']),
                                                                       pluginData['sversion'],
-                                                                      int(bool(pluginData['buildEnv']))))
+                                                                      int(bool(pluginData['buildEnv'])),
+                                                                      pluginData['slabel'],
+                                                                      int(pluginData['performance']['index']),
+                                                                      int(bool(pluginData['performance']['visible']))))
 
             if crashed:
                 self.send_notmodified("add %s %d" % (pluginData['uri'], instance_id))
@@ -2588,6 +2604,13 @@ class Host(object):
                                                  extinfo['microVersion'],
                                                  extinfo['minorVersion'],
                                                  extinfo['release']))
+
+            # initial performance values
+            self.maxPerformanceIndex += 1
+            performanceInfo = PerformancePluginInfo()
+            performanceInfo.visible = True
+            performanceInfo.index = self.maxPerformanceIndex
+
             self.plugins[instance_id] = {
                 "instance"    : instance,
                 "uri"         : uri,
@@ -2608,10 +2631,15 @@ class Host(object):
                 "nextPreset"  : "",
                 "buildEnv"    : extinfo['buildEnvironment'],
                 "sversion"    : sversion,
+                "label"       : "", #initial label value
+                "slabel"       : "",
+                "performance" : dict(visible=performanceInfo.visible, index=performanceInfo.index) #  extinfo['performance']
             }
 
             for output in extinfo['monitoredOutputs']:
                 self.send_notmodified("monitor_output %d %s" % (instance_id, output))
+
+            self.monitor_cpu_load_new_plugin(instance_id)
 
             for snapshot in self.pedalboard_snapshots:
                 if snapshot is None:
@@ -2622,10 +2650,13 @@ class Host(object):
                     snapshot['plugins_added'].append(instance_id)
 
             callback(True)
-            self.msg_callback("add %s %s %.1f %.1f %d %s %d" % (instance, uri, x, y,
+            self.msg_callback("add %s %s %.1f %.1f %d %s %d %s %d %d" % (instance, uri, x, y,
                                                                 int(bypassed),
                                                                 sversion,
-                                                                int(bool(extinfo['buildEnvironment']))))
+                                                                int(bool(extinfo['buildEnvironment'])),
+                                                                "",
+                                                                performanceInfo.index,
+                                                                int(performanceInfo.visible)))
 
         self.send_modified("add %s %d" % (uri, instance_id), host_callback, datatype='int')
 
@@ -2800,6 +2831,26 @@ class Host(object):
 
         pluginData['x'] = x
         pluginData['y'] = y
+
+    def set_label(self, instance, label):
+        instance_id = self.mapper.get_id_without_creating(instance)
+        pluginData  = self.plugins[instance_id]
+
+        pluginData['label'] = label
+        pluginData['slabel'] = label.replace(" ","_")
+
+    def set_performance_plugin_visibility(self, instance, visible):
+        instance_id = self.mapper.get_id_without_creating(instance)
+        pluginData  = self.plugins[instance_id]
+
+        pluginData['performance']['visible'] = visible
+
+    def set_performance_plugin_index(self, instance, index):
+        instance_id = self.mapper.get_id_without_creating(instance)
+        pluginData  = self.plugins[instance_id]
+
+        pluginData['performance']['index'] = index
+
 
     # check if addressing is momentary or trigger, in which case we do not want to save current/changed value
     def should_save_addressing_value(self, addressing, value):
@@ -3891,6 +3942,19 @@ class Host(object):
         else:
             motos = {}
 
+        if pb['plugins']:
+            self.maxPerformanceIndex = max(p['performance']['index'] for p in pb['plugins'])
+        else:
+            self.maxPerformanceIndex = 0
+
+        # fix performance index for pedalboards saved without it (modpedal#performanceIndex absent):
+        # after every plugin that has one, in instanceNumber order
+        for p in sorted((p for p in pb['plugins'] if p['performance']['index'] < 0),
+                        key=lambda p: (p['instanceNumber'], p['instance'])):
+            self.maxPerformanceIndex += 1
+            p['performance']['index'] = self.maxPerformanceIndex
+            logging.info("[host] plugin %s added performance view index: %d" % (p['instance'], self.maxPerformanceIndex))
+
         self.load_pb_plugins(pb['plugins'], instances, rinstances, motos)
         self.load_pb_connections(pb['connections'], mappedOldMidiIns, mappedOldMidiOuts,
                                                     mappedNewMidiIns, mappedNewMidiOuts)
@@ -4157,6 +4221,9 @@ class Host(object):
                                                           extinfo['microVersion'],
                                                           extinfo['minorVersion'],
                                                           extinfo['release'])),
+                "label"       : p['label'],
+                "slabel"      : p['label'].replace(' ', '_') if p['label'] is not None else "", # replace spaces with _
+                "performance" : dict((prop, p['performance'].get(prop)) for prop in p['performance'].keys())
             }
 
             self.send_notmodified("add %s %d" % (p['uri'], instance_id))
@@ -4164,11 +4231,14 @@ class Host(object):
             if p['bypassed']:
                 self.send_notmodified("bypass %d 1" % (instance_id,))
 
-            self.msg_callback("add %s %s %.1f %.1f %d %s %d" % (instance,
+            self.msg_callback("add %s %s %.1f %.1f %d %s %d %s %d %d" % (instance,
                                                                 p['uri'], p['x'], p['y'],
                                                                 int(p['bypassed']),
                                                                 pluginData['sversion'],
-                                                                int(bool(extinfo['buildEnvironment']))))
+                                                                int(bool(extinfo['buildEnvironment'])),
+                                                                pluginData['slabel'],
+                                                                int(p['performance']['index']),
+                                                                int(bool(p['performance']['visible']))))
 
             if p['bypassCC']['channel'] >= 0 and p['bypassCC']['control'] >= 0:
                 pluginData['addressings'][':bypass'] = self.addressings.add_midi(instance_id, ":bypass",
@@ -4220,6 +4290,8 @@ class Host(object):
 
             for output in extinfo['monitoredOutputs']:
                 self.send_notmodified("monitor_output %d %s" % (instance_id, output))
+
+            self.monitor_cpu_load_new_plugin(instance_id)
 
     def load_pb_connections(self, connections, mappedOldMidiIns, mappedOldMidiOuts,
                                                mappedNewMidiIns, mappedNewMidiOuts):
@@ -4445,13 +4517,16 @@ _:b%i
     lv2:minorVersion %i ;
     mod:builderVersion %i ;
     mod:releaseNumber %i ;
+    pedal:instanceLabel "%s" ;
     lv2:port <%s> ;
     lv2:prototype <%s> ;
+    pedal:performanceVisible %s ;
+    pedal:performanceIndex %i ;
     pedal:instanceNumber %i ;
     pedal:preset <%s> ;
     a ingen:Block .
 """ % (instance, pluginData['x'], pluginData['y'], "false" if pluginData['bypassed'] else "true",
-       info['microVersion'], info['minorVersion'], info['builder'], info['release'],
+       info['microVersion'], info['minorVersion'], info['builder'], info['release'], pluginData['label'].replace('\\','\\\\').replace('"','\\"'),
        "> ,\n             <".join(tuple("%s/%s" % (instance, port['symbol']) for port in (info['ports']['audio']['input']+
                                                                                           info['ports']['audio']['output']+
                                                                                           info['ports']['control']['input']+
@@ -4461,7 +4536,11 @@ _:b%i
                                                                                           info['ports']['midi']['input']+
                                                                                           info['ports']['midi']['output']+
                                                                                           [{'symbol': ":bypass"}]))),
-       pluginData['uri'], instance_id, pluginData['preset'])
+       pluginData['uri'],
+       "true" if pluginData['performance']['visible'] else "false",
+       pluginData['performance']['index'],
+       instance_id,
+       pluginData['preset'])
 
             # audio input
             for port in info['ports']['audio']['input']:
@@ -5073,6 +5152,31 @@ _:b%i
         if self.web_connected and not self.web_data_ready_ok:
             if IOLoop.instance().time() - self.web_data_ready_time >= 2.0:
                 self.msg_callback("data_ready %i" % self.web_data_ready_counter)
+
+    def monitor_cpu_load(self, enable, callback):
+        """Subscribe to (or stop) per-plugin CPU reporting for every loaded plugin.
+
+        mod-host pushes "cpu_monitor <id> <load>" on the feedback socket whenever a
+        plugin beats its own worst cycle of the current feedback round (the record is
+        reset on every output_data_ready), so nothing is polled. The UI keeps the peak
+        across rounds; enabling again also resets mod-host's records."""
+        self.cpu_monitor_enabled = enable
+        instances = list(self.plugins.keys())
+
+        if not instances:
+            callback(True)
+            return
+
+        self.send_notmodified("monitor_cpu_load %d %d %s" % (1 if enable else 0,
+                                                             len(instances),
+                                                             " ".join(str(i) for i in instances)),
+                              callback, datatype='boolean')
+
+    def monitor_cpu_load_new_plugin(self, instance_id):
+        # The instance list is sent when the panel opens, so a plugin added after that, by
+        # hand or by loading a pedalboard, joins on its own. Only its own record is reset.
+        if self.cpu_monitor_enabled:
+            self.send_notmodified("monitor_cpu_load 1 1 %d" % instance_id)
 
     def get_free_memory_value(self):
         if not self.memfile:

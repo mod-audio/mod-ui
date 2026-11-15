@@ -1364,6 +1364,24 @@ class ServerWebSocket(websocket.WebSocketHandler):
             y    = float(data[2])
             SESSION.ws_plugin_position(inst, x, y, self)
 
+        elif cmd == "plugin_label":
+            data = data[1].split(" ",2)
+            inst = data[0]
+            label = data[1].replace("_", " ")
+            SESSION.ws_plugin_label(inst, label, self)
+
+        elif cmd == "performance_plugin_visibility":
+            data = data[1].split(" ",2)
+            inst = data[0]
+            visible = True if data[1] == "1" else False
+            SESSION.ws_performance_plugin_visibility(inst, visible, self)
+
+        elif cmd == "performance_plugin_index":
+            data = data[1].split(" ",2)
+            inst = data[0]
+            index = int(data[1])
+            SESSION.ws_performance_plugin_index(inst, index, self)
+
         elif cmd == "pb_size":
             data   = data[1].split(" ",2)
             width  = int(float(data[0]))
@@ -2344,6 +2362,20 @@ class ResetXruns(JsonRequestHandler):
         reset_xruns()
         self.write(True)
 
+class CpuMonitor(JsonRequestHandler):
+    """Turn per-plugin CPU reporting on or off. Values arrive on the websocket as
+    "plugin_cpu_load <instance> <percent>", pushed by mod-host, so there is nothing to poll.
+    Enabling again resets each plugin's recorded peak."""
+    @web.asynchronous
+    @gen.engine
+    def post(self, enable):
+        try:
+            ok = yield gen.with_timeout(timedelta(seconds=5),
+                                        gen.Task(SESSION.host.monitor_cpu_load, enable == "1"))
+        except gen.TimeoutError:
+            ok = False
+        self.write(bool(ok))
+
 class SwitchCpuFreq(JsonRequestHandler):
     def post(self):
         with open("/sys/devices/system/cpu/cpu0/cpufreq/scaling_available_frequencies", 'r') as fh:
@@ -2894,6 +2926,7 @@ application = web.Application(
             (r"/set_buffersize/(64|128|256)", SetBufferSize),
             (r"/reset_xruns/", ResetXruns),
             (r"/switch_cpu_freq/", SwitchCpuFreq),
+            (r"/cpu_monitor/(0|1)", CpuMonitor),
 
             (r"/save_user_id/", SaveUserId),
 
