@@ -256,3 +256,65 @@
     padding: 9px 22px;
     font-size: 12px;
 }
+
+/* ------------------------------------------------------------------ *
+ * update banner
+ *
+ * A newer MOD Desktop release is out. One slim bar, top centre, above
+ * everything; it never blocks the pedalboard and goes away on a click.
+ * ------------------------------------------------------------------ */
+
+.desktop-app-update-banner {
+    position: fixed;
+    top: 10px;
+    left: 50%;
+    z-index: 100000;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    max-width: calc(100% - 32px);
+    box-sizing: border-box;
+    padding: 9px 12px 9px 18px;
+    border-radius: 3px;
+    background: #1d1d1d;
+    border: 1px solid #883996;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+    color: #eee;
+    font-size: 13px;
+    white-space: nowrap;
+    transform: translateX(-50%);
+}
+
+.desktop-app-update-banner a {
+    color: #c98bd4;
+    text-decoration: none;
+}
+
+.desktop-app-update-banner a:hover {
+    color: #fff;
+    text-decoration: underline;
+}
+
+.desktop-app-update-banner .desktop-app-update-download {
+    padding: 5px 14px;
+    border-radius: 3px;
+    background: #883996;
+    color: #fff;
+}
+
+.desktop-app-update-banner .desktop-app-update-download:hover {
+    background: #9d4aab;
+    text-decoration: none;
+}
+
+.desktop-app-update-banner .desktop-app-update-close {
+    padding: 0 4px;
+    color: #999;
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.desktop-app-update-banner .desktop-app-update-close:hover {
+    color: #fff;
+}

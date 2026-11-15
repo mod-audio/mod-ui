@@ -99,6 +99,13 @@ except ImportError:
     _FROZEN_FEEDBACK_URL = None
 FEEDBACK_URL = os.environ.get('MOD_FEEDBACK_URL') or _FROZEN_FEEDBACK_URL or "https://forum.mod.audio/c/beta-testing/41"
 
+# MOD Desktop looks for a newer build for its OS (GitHub releases of mod-audio/mod-desktop, pre-releases
+# included) at most once a day and offers it in a banner. On by default (Gianfranco, 2026-10-25); the
+# launcher's "Check for updates" box passes MOD_DESKTOP_UPDATE_CHECK=0 to turn it off. Never on a device.
+DESKTOP_UPDATE_CHECK = DESKTOP and os.environ.get('MOD_DESKTOP_UPDATE_CHECK', '1') != '0'
+# which installer counts as "a build for this OS" in that check
+DESKTOP_PLATFORM = 'macos' if sys.platform == 'darwin' else 'windows' if sys.platform == 'win32' else 'linux'
+
 MIDI_BEAT_CLOCK_SENDER_URI = "urn:mod:mclk"
 MIDI_BEAT_CLOCK_SENDER_INSTANCE_ID = 9993
 MIDI_BEAT_CLOCK_SENDER_OUTPUT_PORT = "mclk" # This is the LV2 symbol of the plug-ins OutputPort

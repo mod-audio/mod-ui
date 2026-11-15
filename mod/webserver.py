@@ -35,7 +35,7 @@ except ImportError:
 
 from mod import hostinfo
 from mod.profile import Profile
-from mod.settings import (DESKTOP, LOG, DEV_API,
+from mod.settings import (DESKTOP, DESKTOP_UPDATE_CHECK, DESKTOP_PLATFORM, LOG, DEV_API,
                           HTML_DIR, DOWNLOAD_TMP_DIR, DEVICE_KEY, DEVICE_WEBSERVER_PORT,
                           CLOUD_HTTP_ADDRESS, PLUGINS_HTTP_ADDRESS, PEDALBOARDS_HTTP_ADDRESS, CONTROLCHAIN_HTTP_ADDRESS,
                           USER_BANKS_JSON_FILE,
@@ -1797,6 +1797,26 @@ class PedalboardImageWait(JsonRequestHandler):
             'ctime': "%.1f" % ctime,
         })
 
+class PedalboardTeleports(JsonRequestHandler):
+    def post(self):
+        # Drawing state for the web ui: which cables are drawn split, and the names of the
+        # outputs they leave. Held by the session so that a save from anywhere writes the
+        # current map rather than whatever the browser last sent along with a save.
+        try:
+            data = json.loads(self.get_argument('teleports', ''))
+        except ValueError:
+            self.write(False)
+            return
+        try:
+            # default rather than a bare get_argument: a missing argument raises
+            # MissingArgumentError, an HTTPError, which the except below would not catch
+            pbgen = int(self.get_argument('gen', ''))
+        except ValueError:
+            self.write(False)
+            return
+        SESSION.host.set_teleports(data, pbgen)
+        self.write(True)
+
 class PedalboardCvAddressingPluginPortAdd(JsonRequestHandler):
     @web.asynchronous
     @gen.engine
@@ -2069,6 +2089,8 @@ class TemplateHandler(TimelessRequestHandler):
             # 'true'/'false', because it is substituted into JS; both strings
             # are truthy, so it cannot be branched on in the template.
             'desktop_app': DESKTOP,
+            'desktop_update_check': 'true' if DESKTOP_UPDATE_CHECK else 'false',
+            'desktop_platform': DESKTOP_PLATFORM,
             'using_mod': 'true' if DEVICE_KEY and hwdesc.get('platform', None) is not None else 'false',
             'user_name': mod_squeeze(user_id.get("name", "")),
             'user_email': mod_squeeze(user_id.get("email", "")),
@@ -2126,6 +2148,7 @@ class TemplateHandler(TimelessRequestHandler):
             'controlchain_url': CONTROLCHAIN_HTTP_ADDRESS,
             'version': self.get_argument('v'),
             'hmi_eeprom': 'true' if hwdesc.get('hmi_eeprom', False) else 'false',
+            'platform': hwdesc.get('platform', "Unknown"),
             'preferences': json.dumps(prefs),
             'feedback_url': FEEDBACK_URL,
             'bufferSize': get_jack_buffer_size(),
@@ -2784,6 +2807,7 @@ application = web.Application(
             # pedalboard stuff
             (r"/pedalboard/list", PedalboardList),
             (r"/pedalboard/save", PedalboardSave),
+            (r"/pedalboard/teleports/?", PedalboardTeleports),
             (r"/pedalboard/pack_bundle/?", PedalboardPackBundle),
             (r"/pedalboard/load_bundle/", PedalboardLoadBundle),
             (r"/pedalboard/load_remote/*(/[A-Za-z0-9_/]+[^/])/?", PedalboardLoadRemote),
