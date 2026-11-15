@@ -1464,6 +1464,15 @@ $('document').ready(function() {
                         input; a left/right swap stays as two cables so it remains visible. Off by
                         default.
                     </p>
+                    <label>
+                        Teleport label size
+                        <input type="range" autocomplete="off" id="prefs-ui-teleport-scale"
+                               min="0.6" max="2" step="0.1" style="vertical-align:middle;width:160px">
+                        <span id="prefs-ui-teleport-scale-value"></span>
+                    </label>
+                    <p>
+                        How large the label boxes on a split cable are drawn.
+                    </p>
                 </form>
                 <p class="prefs-ui-note">
                     These options apply when you go back to the main screen.
@@ -1475,15 +1484,6 @@ $('document').ready(function() {
             <div class="settings-page mod-hidden" id="settings-page-developer">
                 <h1>Plugin Store</h1>
                 <form class="form">
-                    <label>
-                        Teleport label size
-                        <input type="range" autocomplete="off" id="prefs-ui-teleport-scale"
-                               min="0.6" max="2" step="0.1" style="vertical-align:middle;width:160px">
-                        <span id="prefs-ui-teleport-scale-value"></span>
-                    </label>
-                    <p>
-                        How large the label boxes on a split cable are drawn.
-                    </p>
                     <label>
                         <input type="checkbox" autocomplete="off" id="prefs-ui-unstable-plugins">
                             Show beta plugins in the Store
