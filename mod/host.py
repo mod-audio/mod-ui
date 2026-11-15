@@ -390,9 +390,15 @@ class Host(object):
         self.pedalboard_path     = ""
         self.pedalboard_size     = [0,0]
         self.pedalboard_version  = 0
+        self.reload_bundle_path  = None
         self.pedalboard_format_version = 1
         self.current_pedalboard_snapshot_id = -1
         self.pedalboard_snapshots = []
+        self.pedalboard_teleports = {'names': {}, 'cables': []}
+        # Bumped whenever the board changes under the browser. A POST carries the
+        # generation it was computed from and a stale one is dropped -- the browser's
+        # teardown flags cannot cover the disconnect echoes, which arrive asynchronously.
+        self.pedalboard_teleports_gen = 0
         self.next_hmi_pedalboard_to_load = None
         self.next_hmi_pedalboard_loading = False
         self.next_hmi_bpb = [0, False, False]
@@ -2262,6 +2268,13 @@ class Host(object):
 
         # TODO: restore HMI and CC addressings if crashed
 
+        # the same map load_pedalboard sends, because this replay is the only thing a
+        # refresh, a second tab or a reopened window gets: without it the browser draws
+        # the board with no teleports and posts that empty map back over the saved one
+        websocket.write_message("teleports %s" % b64encode(
+            json.dumps(dict(self.pedalboard_teleports,
+                            gen=self.pedalboard_teleports_gen)).encode("utf-8")).decode("utf-8"))
+
         websocket.write_message("loading_end %d" % self.current_pedalboard_snapshot_id)
 
     # -----------------------------------------------------------------------------------------------------------------
@@ -2319,6 +2332,11 @@ class Host(object):
     def reset(self, bank_id, callback):
         def host_callback(ok):
             self.msg_callback("remove :all")
+            # Sent even though the map is empty: it is how the browser learns the new
+            # generation. Without one, a teleport on a never-saved board never reaches us.
+            self.msg_callback("teleports %s" % b64encode(
+                json.dumps(dict(self.pedalboard_teleports,
+                                gen=self.pedalboard_teleports_gen)).encode("utf-8")).decode("utf-8"))
             if os.path.exists(PEDALBOARD_TMP_DIR):
                 shutil.rmtree(PEDALBOARD_TMP_DIR)
             os.makedirs(PEDALBOARD_TMP_DIR)
@@ -2339,6 +2357,8 @@ class Host(object):
         self.pedalboard_size     = [0,0]
         self.pedalboard_version  = 0
         self.pedalboard_format_version = 1
+        self.pedalboard_teleports = {'names': {}, 'cables': []}
+        self.pedalboard_teleports_gen += 1
 
         if bank_id is None:
             save_last_bank_and_pedalboard(0, "")
@@ -2871,10 +2891,12 @@ class Host(object):
         bank_id  = self.bank_id
         last_bank_id, last_path = get_last_bank_and_pedalboard()
 
-        bundlepath = os.path.join(tempfile.gettempdir(), 'reloaded.pedalboard')
-        if os.path.exists(bundlepath):
-            shutil.rmtree(bundlepath)
-        os.mkdir(bundlepath)
+        # A new bundle for every reload. After a reload the file loaders have their files open through the
+        # links in the previous bundle: deleting it before "state_save" would make them save a bare name and
+        # come back empty on the second reload. The previous bundle goes once the new one is loaded.
+        oldbundlepath = self.reload_bundle_path
+        bundlepath = tempfile.mkdtemp(prefix='reloaded-', suffix='.pedalboard')
+        self.reload_bundle_path = bundlepath
 
         self.save_state_to_ttl(bundlepath, name or 'Untitled', 'reloaded')
 
@@ -2894,8 +2916,11 @@ class Host(object):
                 if last_path is not None:
                     save_last_bank_and_pedalboard(last_bank_id, last_path)
 
-            # The bundle stays until the next reload: load() only queues "state_load" to mod-host,
+            # The new bundle stays until the next reload: load() only queues "state_load" to mod-host,
             # which reads the bundle after this returns.
+            if oldbundlepath is not None and os.path.isdir(oldbundlepath):
+                shutil.rmtree(oldbundlepath, ignore_errors=True)
+
             callback(ok)
 
         # Plugin state (the file a NAM, IR or sampler loader has open) lives outside the ttl,
@@ -3930,8 +3955,17 @@ class Host(object):
 
         if bundlepath:
             self.load_pb_snapshots(bundlepath)
+            self.load_pb_teleports(bundlepath, mappedOldMidiIns, mappedOldMidiOuts,
+                                                mappedNewMidiIns, mappedNewMidiOuts)
+            self.msg_callback("teleports %s" % b64encode(
+                json.dumps(dict(self.pedalboard_teleports,
+                                gen=self.pedalboard_teleports_gen)).encode("utf-8")).decode("utf-8"))
             self.send_notmodified("state_load \"{}\"".format(bundlepath))
             self.addressings.load(bundlepath, instances, skippedPortAddressings, abort_catcher)
+        else:
+            # No bundle, so no message went out -- and so the generation must NOT advance.
+            # Bumping silently would make every later POST look stale and be dropped.
+            self.pedalboard_teleports = {'names': {}, 'cables': []}
 
         if abort_catcher is not None and abort_catcher.get('abort', False):
             logging.warning("[host] Abort triggered during PB load request 2, caller: %s", abort_catcher['caller'])
@@ -3999,6 +4033,73 @@ class Host(object):
                 names.append(pbss['name'])
         else:
             self.snapshot_clear()
+
+    def load_pb_teleports(self, bundlepath, mappedOldMidiIns, mappedOldMidiOuts,
+                                             mappedNewMidiIns, mappedNewMidiOuts):
+        # Purely a drawing hint for the web ui: which cables are drawn split, and what the
+        # outputs they leave from are called. A missing or broken file simply means none.
+        data = safe_json_load(os.path.join(bundlepath, "teleports.json"), dict)
+        names = data.get('names', {})
+        cables = data.get('cables', [])
+        if not isinstance(names, dict):
+            names = {}
+        if not isinstance(cables, list):
+            cables = []
+
+        # Midi hardware ports get different names between boots, which is why connections
+        # are stored under an alias and remapped on load. Teleports name the same ports and
+        # need the same trip, or they miss their jack and are dropped.
+        def remap(port, old, new):
+            if not port.startswith("/graph/"):
+                return port
+            symbol = port[len("/graph/"):]
+            if symbol not in old:
+                return port
+            try:
+                return "/graph/%s" % new[old[symbol]]
+            except KeyError:
+                # the device is not plugged in this time; leave it alone rather than guess,
+                # and the browser will simply find no jack for it
+                return port
+
+        # source -> the Ins maps, target -> the Outs maps. That reads backwards and is not:
+        # a midi hardware capture device is registered as a graph OUTPUT, so it is the
+        # SOURCE of a cable, and mappedNewMidiIns is the map built from capture ports.
+        # load_pb_connections pairs them this way and is the authority.
+        remappedNames = {}
+        for port, name in names.items():
+            remappedNames[remap(port, mappedOldMidiIns, mappedNewMidiIns)] = name
+
+        remappedCables = []
+        for cable in cables:
+            if not isinstance(cable, str) or " -> " not in cable:
+                continue
+            source, target = cable.split(" -> ", 1)
+            remappedCables.append("%s -> %s" % (remap(source, mappedOldMidiIns, mappedNewMidiIns),
+                                                remap(target, mappedOldMidiOuts, mappedNewMidiOuts)))
+
+        self.pedalboard_teleports = {'names': remappedNames, 'cables': remappedCables}
+        self.pedalboard_teleports_gen += 1
+
+    def set_teleports(self, data, pbgen):
+        # A POST computed from a board that is already gone must not land on this one.
+        # Timing cannot exclude them: the disconnect echoes arrive well after the reset.
+        if pbgen != self.pedalboard_teleports_gen:
+            return
+        names = data.get('names', {}) if isinstance(data, dict) else {}
+        cables = data.get('cables', []) if isinstance(data, dict) else []
+        teleports = {
+            'names': names if isinstance(names, dict) else {},
+            'cables': cables if isinstance(cables, list) else [],
+        }
+        # the browser posts the whole map whenever anything could have changed one, which
+        # includes events that changed nothing at all -- a usb midi device being unplugged
+        # reaches removeItemFromCanvas. An identical map is not an edit and must not dirty
+        # the pedalboard.
+        if teleports == self.pedalboard_teleports:
+            return
+        self.pedalboard_teleports = teleports
+        self.pedalboard_modified = True
 
     def load_pb_plugins(self, plugins, instances, rinstances, motos):
         for p in plugins:
@@ -4288,6 +4389,7 @@ class Host(object):
         self.save_state_manifest(bundlepath, titlesym)
         self.save_state_addressings(bundlepath)
         self.save_state_snapshots(bundlepath)
+        self.save_state_teleports(bundlepath)
         self.save_state_mainfile(bundlepath, title, titlesym)
 
     def save_state_manifest(self, bundlepath, titlesym):
@@ -4316,6 +4418,17 @@ class Host(object):
             instances[instance_id] = plugin['instance']
 
         self.addressings.save(bundlepath, instances)
+
+    def save_state_teleports(self, bundlepath):
+        # Deliberately NOT in save_state_snapshots: the four snapshot routes reach that
+        # through save_snapshots_to_disk, so renaming a snapshot would commit -- or, via
+        # the remove branch, erase -- teleport state the user never saved.
+        teleportsfile = os.path.join(bundlepath, "teleports.json")
+        if self.pedalboard_teleports['names'] or self.pedalboard_teleports['cables']:
+            with TextFileFlusher(teleportsfile) as fh:
+                json.dump(self.pedalboard_teleports, fh, indent=4)
+        elif os.path.exists(teleportsfile):
+            os.remove(teleportsfile)
 
     def save_state_snapshots(self, bundlepath):
         for snapshot in self.pedalboard_snapshots:
@@ -6480,6 +6593,7 @@ _:b%i
             self.save_state_addressings(self.pedalboard_path)
 
         self.save_state_snapshots(self.pedalboard_path)
+        self.save_state_teleports(self.pedalboard_path)
         self.save_state_mainfile(self.pedalboard_path, self.pedalboard_name, titlesym)
         self.send_notmodified("state_save \"{}\"".format(self.pedalboard_path), host_callback)
 
