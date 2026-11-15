@@ -340,6 +340,7 @@ function GUI(effect, options) {
 
     self.effect = effect
     self.instance = null
+    self.label = null
 
     self.bypassed = options.bypassed
     self.currentPreset = ""
@@ -757,38 +758,43 @@ function GUI(effect, options) {
             presetElem,
             presetElems = [
             self.icon.find('[mod-role=presets]'),
-            self.settings.find('.mod-presets')
+            self.settings.find('.mod-presets'),
+            self.settingsPerformance.find('.mod-presets'),
         ]
         for (var i in presetElems) {
             presetElem = presetElems[i]
             presetElem.find('[mod-role=enumeration-option]').removeClass("selected")
             if (value) {
-                bundlepath = presetElem.find('[mod-role=enumeration-option][mod-uri="' + value + '"]').addClass("selected").attr('mod-path')
+                var selectedPreset = presetElem.find('[mod-role=enumeration-option][mod-uri="' + value + '"]')
+                bundlepath = selectedPreset.addClass("selected").attr('mod-path')
+                if (selectedPreset.length) {
+                    selectedPreset[0].scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' })
+                }
             }
-        }
 
-        if (value) {
-            // TODO: implement addressing for single presets
-            //presetElem.find('.preset-btn-assign-sel').removeClass("disabled")
+            if (value) {
+                // TODO: implement addressing for single presets
+                //presetElem.find('.preset-btn-assign-sel').removeClass("disabled")
 
-            if (bundlepath) {
-                presetElem.find('.preset-btn-save').removeClass("disabled")
+                if (bundlepath) {
+                    presetElem.find('.preset-btn-save').removeClass("disabled")
+                } else {
+                    presetElem.find('.preset-btn-save').addClass("disabled")
+                }
+
+                if (bundlepath && presetElem.data('enabled')) {
+                    presetElem.find('.preset-btn-rename').removeClass("disabled")
+                    presetElem.find('.preset-btn-delete').removeClass("disabled")
+                } else {
+                    presetElem.find('.preset-btn-rename').addClass("disabled")
+                    presetElem.find('.preset-btn-delete').addClass("disabled")
+                }
             } else {
                 presetElem.find('.preset-btn-save').addClass("disabled")
-            }
-
-            if (bundlepath && presetElem.data('enabled')) {
-                presetElem.find('.preset-btn-rename').removeClass("disabled")
-                presetElem.find('.preset-btn-delete').removeClass("disabled")
-            } else {
                 presetElem.find('.preset-btn-rename').addClass("disabled")
                 presetElem.find('.preset-btn-delete').addClass("disabled")
+                presetElem.find('.preset-btn-assign-sel').addClass("disabled")
             }
-        } else {
-            presetElem.find('.preset-btn-save').addClass("disabled")
-            presetElem.find('.preset-btn-rename').addClass("disabled")
-            presetElem.find('.preset-btn-delete').addClass("disabled")
-            presetElem.find('.preset-btn-assign-sel').addClass("disabled")
         }
     }
 
@@ -872,9 +878,77 @@ function GUI(effect, options) {
         }
     }
 
+    /*
+     * Change this plugin label and update all the UI components
+     *
+     * newName: new label value null -> restore defaults
+     * notifyHost: false when the change comes from the host (another client), default true
+     */
+    this.setLabel = function(newName, notifyHost) {
+        if (newName && newName.trim().length > 0) {
+            self.label = newName.trim()
+        } else {
+            self.label = null
+        }
+
+        var templateData = self.getTemplateData(effect, true)
+        // update the UI label & settings label
+        self.icon?.find('.mod-plugin-name > h1')?.text(templateData.label)
+        // this is the same rule implemented on settings.html template
+        const settingsLabel = templateData.userLabel ? " - " + templateData.userLabel  : ""
+        self.settings?.find('.mod-pedal-settings .plugin-label')?.text(settingsLabel)
+        self.settingsTemplate?.find('.mod-pedal-settings .plugin-label')?.text(settingsLabel)
+
+        // let the host know about this change
+        if (notifyHost !== false) {
+            desktop.pedalboard.data('pluginLabelSet')(self.instance, self.label ?? "")
+        }
+    }
+
     this.preRender = function () {
         self.controls = self.makePortIndexes(effect.ports.control.input)
         self.parameters = self.makeParameterIndexes(effect.parameters)
+    }
+
+    this.presetItemClicked = function (presetItem, presetElem, e) {
+        if (!presetElem.data('enabled'))
+            return presetElem.customSelect('prevent', e)
+
+        var value = presetItem.attr('mod-uri')
+        options.presetLoad(value)
+    }
+
+    /* this function handles the preset list on both the settings and the performance view */
+    this.handleSettingsPresets = function (presetElem, presets) {
+        presetElem.data('enabled', true)
+
+        presetElem.find('.radio-preset-factory').click(function () {
+            presetElem.find('.mod-preset-user').hide()
+            presetElem.find('.mod-preset-factory').show()
+        })
+        presetElem.find('.radio-preset-user').click(function () {
+            presetElem.find('.mod-preset-factory').hide()
+            presetElem.find('.mod-preset-user').show()
+        })
+        presetElem.find('[mod-role=enumeration-option]').each(function () {
+            var item = $(this)
+            item.click(function (e) {
+                self.presetItemClicked(item, presetElem, e)
+            })
+        })
+
+        if (self.effect.presets.length == 1) {
+            presetElem.find('.preset-btn-assign-all').addClass("disabled")
+
+        } else if (presets.factory.length == 0) {
+            presetElem.find('.mod-enumerated-title').find('span').hide()
+            presetElem.find('.mod-preset-factory').hide()
+            presetElem.find('.mod-preset-user').show()
+
+            if (presets.user.length == 0) {
+                presetElem.find('.preset-btn-assign-all').addClass("disabled")
+            }
+        }
     }
 
     this.render = function (instance, callback, skipNamespace) {
@@ -916,6 +990,7 @@ function GUI(effect, options) {
 
             if (instance) {
                 self.settings = $('<div class="mod-settings" mod-instance="' + instance + '">')
+                self.settingsPerformance = $('<div class="mod-settings" mod-instance="' + instance + '">')
             } else {
                 self.settings = $('<div class="mod-settings">')
             }
@@ -937,15 +1012,23 @@ function GUI(effect, options) {
             var totalPresetCount = self.effect.presets.length
 
             self.settings.html(Mustache.render(effect.gui.settingsTemplate || options.defaultSettingsTemplate, templateData))
+            // add to template data that this is the performaceView so the UI can adapt
+            templateData['isPerformanceView'] = true;
+            self.settingsPerformance.html(Mustache.render(effect.gui.settingsTemplate || options.defaultSettingsTemplate, templateData))
+            // remove to mantain the templateData as clean as possible
+            delete templateData['isPerformanceView'];
 
             self.assignControlFunctionality(self.settings, false)
+            self.assignControlFunctionality(self.settingsPerformance, false)
 
             var presetElem = self.settings.find('.mod-presets')
+            var presetElemPerfView = self.settingsPerformance.find('.mod-presets')
 
             if (instance &&
                 (totalPresetCount > 0 || self.effect.parameters.length + self.effect.ports.control.input.length > 0))
             {
-                presetElem.data('enabled', true)
+                self.handleSettingsPresets(presetElem, presets)
+                self.handleSettingsPresets(presetElemPerfView, presets)
 
                 var getCurrentPresetItem = function () {
                     if (! self.currentPreset) {
@@ -958,14 +1041,7 @@ function GUI(effect, options) {
                     return opt
                 }
 
-                var presetItemClicked = function (e) {
-                    if (!presetElem.data('enabled'))
-                        return presetElem.customSelect('prevent', e)
-
-                    var value = $(this).attr('mod-uri')
-                    options.presetLoad(value)
-                }
-
+                /* preset save/rename/delete are only handled in the settings view, not in the performance view */
                 presetElem.find('.preset-btn-save').click(function () {
                     if ($(this).hasClass('disabled')) {
                         return
@@ -1001,7 +1077,9 @@ function GUI(effect, options) {
                     desktop.openPresetSaveWindow("Saving Preset", name, function (newName) {
                         options.presetSaveNew(newName, function (resp) {
                             var newItem = $('<div mod-role="enumeration-option" mod-uri="'+resp.uri+'" mod-path="'+resp.bundle+'">'+newName+'</div>')
-                            newItem.appendTo(presetElem.find('.mod-preset-user')).click(presetItemClicked)
+                            newItem.appendTo(presetElem.find('.mod-preset-user')).click(function (e) {
+                                self.presetItemClicked(newItem, presetElem, e)
+                            })
 
                             presetElem.find('.radio-preset-user').click()
                             presetElem.find('.preset-btn-assign-all').removeClass("disabled")
@@ -1102,7 +1180,9 @@ function GUI(effect, options) {
                             var newItem = $('<div mod-role="enumeration-option">').attr('mod-uri', resp.uri)
                                                                                  .attr('mod-path', resp.bundle)
                                                                                  .text(resp.name)
-                            newItem.appendTo(presetElem.find('.mod-preset-user')).click(presetItemClicked)
+                            newItem.appendTo(presetElem.find('.mod-preset-user')).click(function (e) {
+                                self.presetItemClicked(newItem, presetElem, e)
+                            })
 
                             presetElem.find('.radio-preset-user').click()
                             presetElem.find('.preset-btn-assign-all').removeClass("disabled")
@@ -1121,35 +1201,11 @@ function GUI(effect, options) {
                     })
                     input.click()
                 })
-
-                presetElem.find('.radio-preset-factory').click(function () {
-                    presetElem.find('.mod-preset-user').hide()
-                    presetElem.find('.mod-preset-factory').show()
-                })
-                presetElem.find('.radio-preset-user').click(function () {
-                    presetElem.find('.mod-preset-factory').hide()
-                    presetElem.find('.mod-preset-user').show()
-                })
-                presetElem.find('[mod-role=enumeration-option]').each(function () {
-                    $(this).click(presetItemClicked)
-                })
-
-                if (totalPresetCount == 1) {
-                    presetElem.find('.preset-btn-assign-all').addClass("disabled")
-
-                } else if (presets.factory.length == 0) {
-                    presetElem.find('.mod-enumerated-title').find('span').hide()
-                    presetElem.find('.mod-preset-factory').hide()
-                    presetElem.find('.mod-preset-user').show()
-
-                    if (presets.user.length == 0) {
-                        presetElem.find('.preset-btn-assign-all').addClass("disabled")
-                    }
-                }
             }
             else
             {
                 presetElem.hide()
+                presetElemPerfView.hide()
             }
 
             if (instance && self.effect.parameters.length)
@@ -1178,6 +1234,23 @@ function GUI(effect, options) {
                             const t3k = desktop.pedalboard.data('T3KIntegration')
                             t3k.startSelectFlow(instance, parameter)
                         }
+                    })
+                })
+            }
+
+            var editButton = self.settings.find('.mod-pedal-settings .mod-edit')
+            if (instance && editButton.length == 1) {
+                editButton.click(function () {
+                    console.log("Edit clicked")
+                    desktop.openInputBoxWindow("Rename", self.label || self.effect.name, function(newName, cancelled) {
+                        if (cancelled)
+                            return
+
+                        self.setLabel(newName)
+                    },
+                    "Rename", 
+                    function(value) {
+                        return true; // always valid
                     })
                 })
             }
@@ -1757,9 +1830,13 @@ function GUI(effect, options) {
         if (!data.brand) {
             data.brand = options.gui.brand || ""
         }
-        if (!data.label) {
-            data.label = options.gui.label || ""
+        if (!data.userLabel) {
+            data.userLabel = this.label
         }
+        if (!data.label) {
+            data.label =  data.userLabel || options.gui.label  || ""
+        }
+
         if (!data.color) {
             data.color = options.gui.color
         }
@@ -1967,6 +2044,21 @@ function GUI(effect, options) {
             self.jsCallback = null
             console.log("A plugin javascript code is broken and has been disabled, reason:\n", err)
         }
+    }
+
+    /*
+     * Options for the performance view.
+     *
+     * Returns an object with these properties:
+     *    "index": plugin index in the view
+     *    "visible": true always shown in the plugin list
+     *
+     */
+    this.getPerformanceOptions = function() {
+        if (!options.performance)
+            options.performance = {"index": 0, "visible": true}
+
+        return options.performance
     }
 }
 

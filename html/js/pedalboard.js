@@ -752,7 +752,7 @@ JqueryClass('pedalboard', {
                         self.pedalboard('setPortWidgetsValue', instance, symbol, value)
                     }
 
-                    self.pedalboard('addPlugin', pluginData, instance, plugin.bypassed, plugin.x, plugin.y, {}, function () {
+                    self.pedalboard('addPlugin', pluginData, instance, plugin.label, plugin.bypassed, plugin.x, plugin.y, {}, function () {
                             loadPlugin(pluginsData)
                         }
                     )
@@ -1796,7 +1796,7 @@ JqueryClass('pedalboard', {
 
     // Adds a plugin to pedalboard. This is called after the application loads the plugin with the
     // instance, now we need to put it in screen.
-    addPlugin: function (pluginData, instance, bypassed, x, y, guiOptions, renderCallback, skipModified) {
+    addPlugin: function (pluginData, instance, label, bypassed, x, y, guiOptions, renderCallback, skipModified) {
         var self = $(this)
         var scale = self.data('scale')
 
@@ -1917,6 +1917,7 @@ JqueryClass('pedalboard', {
         */
         var pluginGui = new GUI(pluginData, options)
 
+        pluginGui.label = label
         pluginGui.render(instance, function (icon, settings) {
             obj.icon = icon
             icon.attr('mod-uri', escape(pluginData.uri));
@@ -1927,7 +1928,6 @@ JqueryClass('pedalboard', {
                 self.trigger('modified')
             }
 
-            icon.data('label', pluginData.label)
             icon.data('uri', pluginData.uri)
             icon.data('ports', pluginData.ports)
             icon.data('gui', pluginGui)
@@ -4540,6 +4540,26 @@ JqueryClass('pedalboard', {
         plugin.css({ top: y, left: x })
         self.pedalboard('fitToWindow')
         self.pedalboard('drawPluginJacks', plugin)
+    },
+
+    // label changed by another client: update the UI, the host already knows
+    setPluginLabel: function(instance, label) {
+        var self = $(this)
+        var plugin = self.data('plugins')[instance]
+        if (!plugin) {
+            return
+        }
+        plugin.data('gui').setLabel(label, false)
+    },
+
+    // performance view options (index, visible) changed by another client
+    setPluginPerformanceOptions: function(instance, performanceOptions) {
+        var self = $(this)
+        var plugin = self.data('plugins')[instance]
+        if (!plugin) {
+            return
+        }
+        $.extend(plugin.data('gui').getPerformanceOptions(), performanceOptions)
     },
 })
 

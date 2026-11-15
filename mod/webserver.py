@@ -1335,6 +1335,24 @@ class ServerWebSocket(websocket.WebSocketHandler):
             y    = float(data[2])
             SESSION.ws_plugin_position(inst, x, y, self)
 
+        elif cmd == "plugin_label":
+            data = data[1].split(" ",2)
+            inst = data[0]
+            label = data[1].replace("_", " ")
+            SESSION.ws_plugin_label(inst, label, self)
+
+        elif cmd == "performance_plugin_visibility":
+            data = data[1].split(" ",2)
+            inst = data[0]
+            visible = True if data[1] == "1" else False
+            SESSION.ws_performance_plugin_visibility(inst, visible, self)
+
+        elif cmd == "performance_plugin_index":
+            data = data[1].split(" ",2)
+            inst = data[0]
+            index = int(data[1])
+            SESSION.ws_performance_plugin_index(inst, index, self)
+
         elif cmd == "pb_size":
             data   = data[1].split(" ",2)
             width  = int(float(data[0]))

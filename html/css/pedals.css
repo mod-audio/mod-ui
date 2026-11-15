@@ -271,6 +271,21 @@ body > .mod-settings.mod-window-visible {
     padding:0 18px;
 }
 
+.mod-edit:after {
+    content: '\e809';
+}
+
+.mod-pedal-settings .mod-edit {
+    font-family: fontello !important;
+    cursor: pointer;
+    width: 32px;
+    right: 4.5em;
+    color: #666;
+    transition: color 0.33s;
+    margin-left: 12px;
+}
+.mod-pedal-settings .mod-edit:hover { color: #eee; }
+
 /* PRESETS */
 
 .mod-presets {
@@ -288,7 +303,7 @@ body > .mod-settings.mod-window-visible {
 }
 .mod-presets select {
     color: #000;
-    background-color: #FFFFFE; /* forces mod-remote to use custom combo-box bg */
+    background-color: #FFFFFE; /* forces performance to use custom combo-box bg */
 }
 .mod-presets footer{
     width: 100%;
