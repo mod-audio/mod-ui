@@ -595,6 +595,221 @@ function GUI(effect, options) {
         }
     }
 
+    this.setPortPropertyValue = function (symbol, property, value) {
+        var port = self.controls[symbol]
+
+        if (!port) {
+            console.error("setPortPropertyValue: unknown port", symbol)
+        }
+        let parsedValue = undefined;
+
+        if (property == "snapshotable") {
+            let elemId;
+            parsedValue = (value == "1" || value == "true" || value == 1 || value == true)
+
+            // update the snapshotable icon
+            if (symbol == ":bypass") {
+                elemId = '[mod-role=bypass-snapshotable]'
+            } else if (symbol == ":presets") {
+                elemId = '[mod-role=presets-snapshotable]'
+            } else {
+                elemId = '[mod-role=input-control-snapshotable][mod-port-symbol=' + symbol + ']'
+            }
+
+            // update the UI
+            const snapshotIconCallback = function(icon, isActive) {
+                if (isActive) {
+                    icon.addClass("active")
+                } else {
+                    icon.removeClass("active")
+                }
+            }
+            // settings: port snapshotable status
+            self.settings.find(elemId).each(function() {
+                var elem = $(this)
+
+                snapshotIconCallback(elem, parsedValue)
+            })
+            // performance view: port snapshotable status
+            self.settingsPerformance.find(elemId).each(function() {
+                var elem = $(this)
+
+                snapshotIconCallback(elem, parsedValue)
+            })
+        } else {
+            console.error("setPortPropertyValue: unsupported property", property)
+        }
+
+        if (parsedValue === undefined) {
+            console.error("setPortPropertyValue: property", property, " unknown value ", value)
+        } else {
+            let idx = port.properties.findIndex(function(p) { return p.hasOwnProperty(property) })
+            if (idx >= 0) {
+                port.properties[idx][property] = parsedValue
+            } else {
+                const prop = {}
+                
+                prop[property] = parsedValue
+                port.properties.push(prop)
+            }
+        }
+
+        if (property == "snapshotable") {
+            this.updateGlobalSnapshotableStatus()
+        }
+    }
+
+
+    this.setParameterPropertyValue = function (uri, property, value) {
+        var param = self.parameters[uri]
+
+        if (!param) {
+            console.error("setParameterPropertyValue: unknown parameter", uri)
+        }
+        let parsedValue = undefined;
+
+        if (property == "snapshotable") {
+            let elemId = "[mod-role=parameter-snapshotable][mod-parameter-uri='" + uri + "']"
+            parsedValue = (value == "1" || value == "true" || value == 1 || value == true)
+
+            // update the UI
+            const snapshotIconCallback = function(icon, isActive) {
+                if (isActive) {
+                    icon.addClass("active")
+                } else {
+                    icon.removeClass("active")
+                }
+            }
+            // settings: port snapshotable status
+            self.settings.find(elemId).each(function() {
+                var elem = $(this)
+
+                snapshotIconCallback(elem, parsedValue)
+            })
+            // performance view: port snapshotable status
+            self.settingsPerformance.find(elemId).each(function() {
+                var elem = $(this)
+
+                snapshotIconCallback(elem, parsedValue)
+            })
+        } else {
+            console.error("setParameterPropertyValue: unsupported property", property)
+        }
+
+        if (parsedValue === undefined) {
+            console.error("setParameterPropertyValue: property", property, " unknown value ", value)
+        } else {
+            let idx = param.properties.findIndex(function(p) { return p.hasOwnProperty(property) })
+            if (idx >= 0) {
+                param.properties[idx][property] = parsedValue
+            } else {
+                const prop = {}
+
+                prop[property] = parsedValue
+                param.properties.push(prop)
+            }
+        }
+
+        if (property == "snapshotable") {
+            this.updateGlobalSnapshotableStatus()
+        }
+    }
+
+    this.updateGlobalSnapshotableStatus = function () {
+        // global snapshotable status
+        let status = undefined
+
+        for(let key in self.controls) {
+            const p = self.controls[key]
+            const idx = p.properties.findIndex(function(prop) {
+                return prop.hasOwnProperty('snapshotable')
+            })
+            let propVal = false;
+
+            if (idx >= 0)
+                propVal = p.properties[idx].snapshotable
+
+            if (propVal === true) {
+                if (status === undefined)
+                    status = "allOn"
+                else if (status == "allOff") {
+                    status = "mixed"
+                    break; // exit the for
+                }
+            } else {
+                if (status === undefined)
+                    status = "allOff"
+                else if (status == "allOn") {
+                    status = "mixed"
+                    break; // exit the for
+                }
+            }
+        }
+
+        if (status != "mixed") {
+            // check parameters too only if all ports are on or off
+            for(let key in self.parameters) {
+                const p = self.parameters[key]
+                const idx = p.properties.findIndex(function(prop) {
+                    return prop.hasOwnProperty('snapshotable')
+                })
+                let propVal = false;
+
+                if (idx >= 0)
+                    propVal = p.properties[idx].snapshotable
+
+                if (propVal === true) {
+                    if (status === undefined)
+                        status = "allOn"
+                    else if (status == "allOff") {
+                        status = "mixed"
+                        break; // exit the for
+                    }
+                } else {
+                    if (status === undefined)
+                        status = "allOff"
+                    else if (status == "allOn") {
+                        status = "mixed"
+                        break; // exit the for
+                    }
+                }
+            }
+        }
+
+        let setStatusFunc;
+
+        if (status == "allOn") {
+            setStatusFunc = function (icon) {
+                icon.addClass('active')
+                icon.removeClass('mixed')
+            }
+        } else if (status == "allOff") {
+            setStatusFunc = function (icon) {
+                icon.removeClass('mixed')
+                icon.removeClass('active')
+            }
+        } else {
+            setStatusFunc = function (icon) {
+                icon.addClass('mixed')
+                icon.removeClass('active')
+            }
+        }
+
+        // icon on the contructor gui (visible only when hovering a plugin)
+        self.icon.find('.plugin-global-snapshot').each(function() {
+            let icon = $(this)
+
+            setStatusFunc(icon)
+        })
+
+        // icon on the setting page
+        self.settings.find('.plugin-global-snapshot').each(function() {
+            let icon = $(this)
+
+            setStatusFunc(icon)
+        })
+    }
+
     this.setOutputPortValue = function (symbol, value) {
         self.triggerJS({ type: 'change', symbol: symbol, value: value })
     }
@@ -1259,6 +1474,66 @@ function GUI(effect, options) {
                 self.settings.find(".js-close").hide()
                 self.settings.find(".mod-address").hide()
             }
+
+            // global plugin snapshot icon
+            self.settings.find('.plugin-global-snapshot').each(function () {
+                var control = $(this)
+
+                control.click(function () {
+                    let newSnapshotable = false;
+
+                    if (control.hasClass("active") || control.hasClass("mixed")) {
+                        // all snapshotable on or mixed -> turn all off
+                        newSnapshotable = false;
+                    } else {
+                        // all snapshotable off -> turn all on
+                        newSnapshotable = true;
+                    }
+
+                    desktop.pedalboard.data('pluginPortSnapshotableSet')(self.instance, ":bypass", newSnapshotable)
+                    desktop.pedalboard.data('pluginPortSnapshotableSet')(self.instance, ":presets", newSnapshotable)
+                    for(let key in templateData.effect.ports.control.input) {
+                        const port = templateData.effect.ports.control.input[key];
+                        const symbol = port.symbol;
+
+                        desktop.pedalboard.data('pluginPortSnapshotableSet')(self.instance, symbol, newSnapshotable)
+                    }
+                    for (let uri in self.parameters) {
+                        desktop.pedalboard.data('pluginParameterSnapshotableSet')(self.instance, uri, newSnapshotable)
+                    }
+                })
+            })
+
+            // snapshot icon click
+            self.settings.find('[mod-role=bypass-snapshotable],[mod-role=presets-snapshotable],[mod-role=input-control-snapshotable],[mod-role=parameter-snapshotable]').each(function () {
+                var control = $(this)
+
+                control.click(function () {
+                    const hasSnapshotable = control.hasClass("active")
+
+                    if (control.attr('mod-role') == 'parameter-snapshotable') {
+                        const uri = control.attr('mod-parameter-uri')
+                        if (!uri) {
+                            return
+                        }
+                        desktop.pedalboard.data('pluginParameterSnapshotableSet')(self.instance, uri, hasSnapshotable ? false : true)
+                    } else {
+                        let symbol;
+                        if (control.attr('mod-role') == 'bypass-snapshotable') {
+                            symbol = ":bypass"
+                        } else if (control.attr('mod-role') == 'presets-snapshotable') {
+                            symbol = ":presets"
+                        } else {
+                            symbol = control.attr('mod-port-symbol')
+                        }
+
+                        if (!symbol) {
+                            return
+                        }
+                        desktop.pedalboard.data('pluginPortSnapshotableSet')(self.instance, symbol, hasSnapshotable ? false : true)
+                    }
+                })
+            })
 
             // adjust icon size after adding all basic elements
             setTimeout(function () {

@@ -3,6 +3,7 @@
         <h1 class="alignleft">{{effect.name}}
             <span class="plugin-label">{{#userLabel}} - {{userLabel}}{{/userLabel}}</span>
             <span class="mod-edit"></span>
+            <span class="plugin-global-snapshot icon-camera"></span>
         </h1>
         <button class="js-close alignright btn btn-danger">Close</button>
     </header>
@@ -14,6 +15,7 @@
                 <div class="mod-switch-background"></div>
                 <div class="mod-switch-image" mod-role="bypass"></div>
                 <div class="mod-address {{#isPerformanceView}}mod-hidden{{/isPerformanceView}}" mod-role="bypass-address"></div>
+                <span class="mod-knob-snapshot-status icon-camera" mod-role="bypass-snapshotable"></span>
             </div>
 
             <!-- PRESET LIST -->
@@ -30,6 +32,7 @@
                         </span>
                     </form>
                 </span>
+                <span class="mod-knob-snapshot-status icon-camera" mod-role="presets-snapshotable"></span>
                 <div class="mod-enumerated-list mod-preset-factory" mod-widget="custom-select">
                     {{#presets.factory}}
                     <div mod-role="enumeration-option" mod-uri="{{uri}}">{{label}}</div>
@@ -60,6 +63,7 @@
             {{#path}}
             <div class="mod-enumerated mod-file-list">
                 <span class="mod-enumerated-title">{{label}}</span>
+                <span class="mod-knob-snapshot-status icon-camera" mod-parameter-uri="{{uri}}" mod-role="parameter-snapshotable"></span>
                 <div class="mod-file-list-buttons">
                     {{#t3k}}
                     <button class="btn btn-xs btn-primary file-list-btn-t3k" title="T3K Browse tones" mod-parameter-uri="{{uri}}">
@@ -78,6 +82,7 @@
             {{#string}}
             <div class="mod-string">
                 <span class="mod-string-title">{{label}}</span>
+                <span class="mod-knob-snapshot-status icon-camera" mod-parameter-uri="{{uri}}" mod-role="parameter-snapshotable"></span>
                 <div class="mod-string-content" mod-role="input-parameter" mod-parameter-uri="{{uri}}" mod-widget="string">
                     <textarea autocomplete=off spellcheck=false class="mod-string-value" mod-role="input-parameter-value" mod-parameter-uri="{{uri}}"></textarea>
                 </div>
@@ -87,6 +92,7 @@
             {{^toggled}}
             <div class="mod-knob" title="{{comment}}">
                 <span class="mod-knob-title">{{shortName}}</span>
+                <span class="mod-knob-snapshot-status icon-camera" mod-parameter-uri="{{uri}}" mod-role="parameter-snapshotable"></span>
                 <span class="mod-knob-min-value" mod-role="input-control-minimum" mod-parameter-uri="{{uri}}"></span>
                 <span class="mod-knob-max-value" mod-role="input-control-maximum" mod-parameter-uri="{{uri}}"></span>
                 <span class="mod-knob-current-value" mod-role="input-parameter-value" mod-parameter-uri="{{uri}}"></span>
@@ -96,6 +102,7 @@
             {{#toggled}}
             <div class="mod-switch" title="{{comment}}">
                 <span class="mod-switch-title">{{shortName}}</span>
+                <span class="mod-knob-snapshot-status icon-camera" mod-parameter-uri="{{uri}}" mod-role="parameter-snapshotable"></span>
                 <div class="mod-switch-image" mod-role="input-parameter" mod-parameter-uri="{{uri}}" mod-widget="film"></div>
             </div>
             {{/toggled}}
@@ -113,6 +120,7 @@
                     <div mod-role="enumeration-option" mod-port-value="{{value}}">{{label}}</div>
                     {{/scalePoints}}
                 </div>
+                <span class="mod-knob-snapshot-status icon-camera" mod-role="input-control-snapshotable" mod-port-symbol="{{symbol}}"></span>
             </div>
             {{/enumeration}}
             {{^enumeration}}
@@ -136,6 +144,7 @@
                         <div class="mod-knob-image" mod-role="input-control-port" mod-port-symbol="{{symbol}}" mod-widget="film"></div>
                         {{/integer}}
                         <div class="mod-address {{#isPerformanceView}}mod-hidden{{/isPerformanceView}}" mod-role="input-control-address" mod-port-symbol="{{symbol}}"></div>
+                        <span class="mod-knob-snapshot-status icon-camera" mod-role="input-control-snapshotable" mod-port-symbol="{{symbol}}"></span>
                     </div>
                     {{/toggled}}
                     {{#toggled}}
@@ -149,6 +158,7 @@
                         {{/group}}
                         <div class="mod-switch-image" mod-role="input-control-port" mod-port-symbol="{{symbol}}" mod-widget="film"></div>
                         <div class="mod-address {{#isPerformanceView}}mod-hidden{{/isPerformanceView}}" mod-role="input-control-address" mod-port-symbol="{{symbol}}"></div>
+                        <span class="mod-knob-snapshot-status icon-camera" mod-role="input-control-snapshotable" mod-port-symbol="{{symbol}}"></span>
                     </div>
                     {{/toggled}}
                 {{/trigger}}
@@ -163,6 +173,7 @@
                     {{/group}}
                     <div class="mod-footswitch-image" mod-role="input-control-port" mod-port-symbol="{{symbol}}" mod-widget="film"></div>
                     <div class="mod-address {{#isPerformanceView}}mod-hidden{{/isPerformanceView}}" mod-role="input-control-address" mod-port-symbol="{{symbol}}"></div>
+                    <span class="mod-knob-snapshot-status icon-camera" mod-role="input-control-snapshotable" mod-port-symbol="{{symbol}}"></span>
                 </div>
                 {{/trigger}}
             {{/enumeration}}
