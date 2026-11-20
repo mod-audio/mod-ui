@@ -417,12 +417,23 @@ class PedalboardPluginPort(Structure):
         ("symbol", c_char_p),
         ("value", c_float),
         ("midiCC", PedalboardMidiControl),
+        ("snapshotable", c_bool),
+    ]
+
+class PedalboardPluginParameter(Structure):
+    _fields_ = [
+        ("valid", c_bool),
+        ("uri", c_char_p),
+        ("readable", c_bool),
+        ("writable", c_bool),
+        ("snapshotable", c_bool),
     ]
 
 class PedalboardPlugin(Structure):
     _fields_ = [
         ("valid", c_bool),
         ("bypassed", c_bool),
+        ("bypass_snapshotable", c_bool),
         ("instanceNumber", c_int),
         ("instance", c_char_p),
         ("uri", c_char_p),
@@ -430,7 +441,9 @@ class PedalboardPlugin(Structure):
         ("x", c_float),
         ("y", c_float),
         ("ports", POINTER(PedalboardPluginPort)),
+        ("parameters", POINTER(PedalboardPluginParameter)),
         ("preset", c_char_p),
+        ("preset_snapshotable", c_bool),
         ("label", c_char_p),
         ("performance", PerformancePluginInfo)
     ]
@@ -545,6 +558,7 @@ c_struct_types = (PluginAuthor,
                   PluginPorts,
                   PluginLongParameterRanges,
                   PedalboardMidiControl,
+                  PedalboardPluginParameter,
                   PerformancePluginInfo,
                   PedalboardHardware,
                   PedalboardTimeInfo)
@@ -558,6 +572,7 @@ c_structp_types = (POINTER(PluginGUIPort),
                    POINTER(PedalboardPlugin),
                    POINTER(PedalboardConnection),
                    POINTER(PedalboardPluginPort),
+                   POINTER(PedalboardPluginParameter),
                    POINTER(PedalboardHardwareMidiPort),
                    POINTER(StatePortValue))
 
