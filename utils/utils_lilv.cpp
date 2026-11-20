@@ -5230,9 +5230,14 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
                             bool snapshotable = true;
                             char* parameteruri = lilv_file_uri_parse2(lilv_node_as_string(parameternode), nullptr);
 
-                            // get the parameter uri without the instance prefix, if it has it
-                            if (strstr(parameteruri, full_instance) != nullptr)
-                                memmove(parameteruri, parameteruri+(full_instance_size+1), strlen(parameteruri)-full_instance_size);
+                            // get the parameter uri without the instance prefix; anything else is not one of
+                            // this plugin's parameters (like the "<>" older builds wrote for a plugin without any)
+                            if (parameteruri == nullptr || strncmp(parameteruri, full_instance, full_instance_size) != 0 || parameteruri[full_instance_size] != '#')
+                            {
+                                lilv_free(parameteruri);
+                                continue;
+                            }
+                            memmove(parameteruri, parameteruri+(full_instance_size+1), strlen(parameteruri)-full_instance_size);
 
                             if (LilvNode* const snapshotablevalue = lilv_world_get(w, parameternode, mod_snapshotable, nullptr))
                             {

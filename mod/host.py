@@ -4712,6 +4712,8 @@ _:b%i
             presetSnapshotable = pluginData['portsprops'][':presets'].get('snapshotable', False)
             info = get_plugin_info(pluginData['uri'])
             instance = pluginData['instance'].replace("/graph/","",1)
+            writables = tuple("%s#%s" % (instance, parameter['uri'].partition("#")[2])
+                              for parameter in info['parameters'] if parameter['uri'].partition("#")[2])
             blocks += """
 <%s>
     ingen:canvasX %.1f ;
@@ -4725,8 +4727,7 @@ _:b%i
     mod:releaseNumber %i ;
     pedal:instanceLabel "%s" ;
     lv2:port <%s> ;
-    patch:writable <%s> ;
-    lv2:prototype <%s> ;
+%s    lv2:prototype <%s> ;
     pedal:performanceVisible %s ;
     pedal:performanceIndex %i ;
     pedal:instanceNumber %i ;
@@ -4744,7 +4745,8 @@ _:b%i
                                                                                           info['ports']['midi']['input']+
                                                                                           info['ports']['midi']['output']+
                                                                                           [{'symbol': ":bypass"}]))),
-       "> ,\n             <".join(tuple("%s#%s" % (instance, parameter['uri'].partition("#")[2]) for parameter in info['parameters'] if parameter['uri'].partition("#")[2])),
+       # no patch:writable without parameters: an empty "<>" would be the pedalboard file itself
+       "    patch:writable <%s> ;\n" % "> ,\n             <".join(writables) if writables else "",
        pluginData['uri'],
        "true" if pluginData['performance']['visible'] else "false",
        pluginData['performance']['index'],
