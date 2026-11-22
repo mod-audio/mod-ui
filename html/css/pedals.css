@@ -378,7 +378,7 @@ body.pedalboard-share #pedalboards-library .pedalboards .pedalboard .actions .pe
     height: 32px;
     line-height: 32px;
     text-align: center;
-    font-size: 12px;
+    font-size: 16px;
     color: #aaa;
 }
 body.pedalboard-share #pedalboards-library .pedalboards .pedalboard .actions .pedalboard-file-export:hover {
@@ -391,13 +391,13 @@ body.pedalboard-share #pedalboards-library .pedalboards .pedalboard .title {
 body.pedalboard-share #pedalboards-library header .pedalboard-file-import {
     display: inline-block;
     float: right;
-    margin: 10px 18px 0 0;
+    margin: 0 18px 0 0;
+    font-size: 18px;
     color: #aaa;
     cursor: pointer;
 }
 body.pedalboard-share #pedalboards-library header .pedalboard-file-import:hover {
     color: #fff;
-    text-decoration: underline;
 }
 
 
