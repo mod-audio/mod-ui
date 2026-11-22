@@ -4719,7 +4719,7 @@ _:b%i
     ingen:canvasX %.1f ;
     ingen:canvasY %.1f ;
     ingen:enabled %s ;
-    mod:enabledSnapshotable %s ;
+    pedal:enabledSnapshotable %s ;
     ingen:polyphonic false ;
     lv2:microVersion %i ;
     lv2:minorVersion %i ;
@@ -4732,7 +4732,7 @@ _:b%i
     pedal:performanceIndex %i ;
     pedal:instanceNumber %i ;
     pedal:preset <%s> ;
-    mod:presetSnapshotable %s ;
+    pedal:presetSnapshotable %s ;
     a ingen:Block .
 """ % (instance, pluginData['x'], pluginData['y'], "false" if pluginData['bypassed'] else "true", "true" if enabledSnapshotable else "false",
        info['microVersion'], info['minorVersion'], info['builder'], info['release'], pluginData['label'].replace('\\','\\\\').replace('"','\\"'),
@@ -4812,7 +4812,7 @@ _:b%i
                 blocks += """
 <%s/%s>
     ingen:value %f ;
-    mod:snapshotable %s ;%s
+    pedal:snapshotable %s ;%s
     a lv2:ControlPort ,
         lv2:InputPort .
 """ % (instance, symbol, value, 'true' if snapshotable else 'false',
@@ -4836,7 +4836,7 @@ _:b%i
             blocks += """
 <%s/:bypass>
     ingen:value %i ;
-    mod:snapshotable %s ;%s
+    pedal:snapshotable %s ;%s
     a lv2:ControlPort ,
         lv2:InputPort .
 """ % (instance, 1 if pluginData['bypassed'] else 0, 'true' if enabledSnapshotable else 'false',
@@ -4859,7 +4859,7 @@ _:b%i
                 snapshotable = pluginData['paramsprops'][uri].get('snapshotable', False)
                 blocks += """
 <%s#%s>
-    mod:snapshotable %s ;
+    pedal:snapshotable %s ;
     a lv2:Parameter .
 """ % (instance, paramname, 'true' if snapshotable else 'false')
 
