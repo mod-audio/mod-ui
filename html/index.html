@@ -1034,11 +1034,28 @@ $('document').ready(function() {
                     {{fulltitle}}
                 </h1>
                 <div class="actions alignright">
-                    <i id="performance-filter-visibility" class="mod-hidden view-filter active icon-eye"></i>
+                    <i id="performance-filter-visibility" class="mod-hidden view-filter icon-eye-off"></i>
                     <button id="performance-save-button" class="mod-hidden js-save">Save</button>
                     <button id="performance-design-button" class="button js-settings"></button>
+                    <span id="performance-fullscreen" class="fullscreen-toggle" title="Controls full screen">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path class="enter" d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/>
+                            <path class="leave" d="M9 4v5H4M20 9h-5V4M15 20v-5h5M4 15h5v5"/>
+                        </svg>
+                    </span>
                 </div>
             </header>
+            <div class="fullscreen-strip"></div>
+            <div class="current-plugin">
+                <span class="go previous" title="Previous plugin">&lsaquo;</span>
+                <img alt="">
+                <div class="what">
+                    <span class="name"></span>
+                    <span class="position"></span>
+                </div>
+                <span class="go next" title="Next plugin">&rsaquo;</span>
+            </div>
+            <div class="fullscreen-hint">Swipe here or tap the arrows to change plugin</div>
             <div class="remote clearfix">
                 <div class="js-performance js-performance-plugins"></div>
                 <div class="js-performance js-performance-plugin-settings"></div>

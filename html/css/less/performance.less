@@ -60,6 +60,9 @@
     padding: 8px;
     text-align: center;
     color: #fff;
+    // where its eye is, see .icon-visible: not just while arranging, which makes it
+    // relative to drag it
+    position: relative;
 
     .label-container {
       display: inline;
@@ -107,6 +110,12 @@
 
     .is-visible {
       color: @brand-primary;
+    }
+
+    // not made visible, shown while the view shows them all: a state, not a button
+    .visibility-state {
+      color: #888;
+      pointer-events: none;
     }
 
     .title {
@@ -256,4 +265,266 @@
       font-size: 24px;
     }
   }
+}
+
+// The gestures of the performance view, see js/performance.js: a swipe goes from one
+// plugin to the next, a double tap flips between its settings and its own face, and
+// full screen leaves the list out
+
+/* Full screen, the button with the view's actions */
+#performance .fullscreen-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 45px;
+    height: 45px;
+    color: #fff;
+    opacity: 0.66;
+    cursor: pointer;
+}
+
+#performance .fullscreen-toggle:hover {
+    opacity: 1;
+}
+
+#performance .fullscreen-toggle svg {
+    width: 22px;
+    height: 22px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+#performance .fullscreen-toggle .leave,
+body.performance-fullscreen #performance .fullscreen-toggle .enter {
+    display: none;
+}
+
+body.performance-fullscreen #performance .fullscreen-toggle .leave {
+    display: inline;
+}
+
+/* what is only there in full screen */
+#performance .current-plugin,
+#performance .fullscreen-strip,
+#performance .fullscreen-hint {
+    display: none;
+}
+
+/* no list, what is shown having it all */
+body.performance-fullscreen #performance .js-performance-plugins {
+    display: none;
+}
+
+body.performance-fullscreen #performance .js-performance-plugin-settings {
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+}
+
+/* a swipe along the title goes to another plugin, see js/performance.js */
+body.performance-fullscreen #performance header {
+    cursor: ew-resize;
+    touch-action: none;
+}
+
+/* what is shown, in the middle of the title's strip, with the arrows to its sides: over
+   the title, which is fixed over the page */
+body.performance-fullscreen #performance .current-plugin {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    z-index: 6;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    box-sizing: border-box;
+    max-width: 40%;
+    height: 45px;
+    transform: translateX(-50%);
+    color: #fff;
+    cursor: ew-resize;
+    touch-action: none;
+}
+
+#performance .current-plugin .go {
+    flex: none;
+    width: 26px;
+    height: 45px;
+    color: #fff;
+    font-size: 26px;
+    line-height: 42px;
+    text-align: center;
+    cursor: pointer;
+}
+
+/* faint where there is nothing that way */
+#performance .current-plugin .go.disabled {
+    opacity: 0.25;
+    cursor: default;
+}
+
+#performance .current-plugin img {
+    flex: none;
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+}
+
+#performance .current-plugin .what {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    line-height: 17px;
+}
+
+#performance .current-plugin .name {
+    overflow: hidden;
+    font-size: 14px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+#performance .current-plugin .position {
+    color: #aaa;
+    font-size: 12px;
+}
+
+/* the first time, see showHint in js/performance.js: it moves the way a swipe takes it,
+   and says what it and the arrows do */
+@keyframes current-plugin-nudge {
+    0%, 100% { transform: translateX(-50%); }
+    25% { transform: translateX(~"calc(-50% - 12px)"); }
+    75% { transform: translateX(~"calc(-50% + 12px)"); }
+}
+
+body.performance-fullscreen #performance .current-plugin.hinting {
+    animation: current-plugin-nudge 0.7s ease-in-out 3;
+}
+
+body.performance-fullscreen #performance .fullscreen-hint.hinting {
+    position: absolute;
+    top: 52px;
+    left: 50%;
+    z-index: 6;
+    display: block;
+    max-width: ~"calc(100% - 24px)";
+    box-sizing: border-box;
+    padding: 8px 14px;
+    border-radius: 12px;
+    transform: translateX(-50%);
+    background: @brand-primary;
+    color: #fff;
+    font-size: 14px;
+    white-space: nowrap;
+    pointer-events: none;
+}
+
+/* A plugin's own face, flipped to from its settings, see js/performance.js: in the
+   middle of where they were, as big as fits there. Without its actions, which are the
+   board's */
+#performance .mod-performance-face {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+/* its swipes are all ours, see js/performance.js, the browser scrolling it no way */
+#performance .mod-performance-face,
+#performance .mod-performance-face * {
+    touch-action: none;
+}
+
+#performance .mod-performance-face > .mod-pedal {
+    position: relative;
+    left: auto;
+    top: auto;
+    flex: none;
+    transform-origin: center;
+}
+
+#performance .mod-performance-face .mod-actions {
+    display: none;
+}
+
+/* Flipping between the settings and the face: the one going away turns and fades out,
+   the other turns and fades in. Back has keyframes of its own: the same ones run in
+   reverse would not start again, the browser only restarts an animation whose name
+   changes */
+#performance .mod-flip-away {
+    animation: mod-flip-face-away 0.35s ease-in-out forwards;
+}
+
+#performance .mod-flip-back {
+    animation: mod-flip-face-back 0.35s ease-in-out both;
+}
+
+@keyframes mod-flip-face-away {
+    from { transform: perspective(1200px) rotateY(0); opacity: 1; }
+    to { transform: perspective(1200px) rotateY(90deg); opacity: 0; }
+}
+
+@keyframes mod-flip-face-back {
+    from { transform: perspective(1200px) rotateY(90deg); opacity: 0; }
+    to { transform: perspective(1200px) rotateY(0); opacity: 1; }
+}
+
+/* What is shown is a carousel the way the list runs, and a swipe along the list goes to
+   the next plugin, see js/performance.js: the browser scrolls them the other way only */
+@media screen and (min-width: 1023px), screen and (orientation: portrait) {
+    #performance .js-performance-plugin-settings,
+    #performance .js-performance-plugin-settings .mod-controls,
+    #performance .js-performance-plugin-settings .snapshot-container,
+    #performance .js-performance-plugins,
+    #performance .js-performance-plugins * {
+        touch-action: pan-y;
+    }
+}
+
+@media screen and (max-width: 1022px) and (orientation: landscape) {
+    #performance .js-performance-plugin-settings,
+    #performance .js-performance-plugin-settings .mod-controls,
+    #performance .js-performance-plugin-settings .snapshot-container,
+    #performance .js-performance-plugins,
+    #performance .js-performance-plugins * {
+        touch-action: pan-x;
+    }
+
+    /* a few at a time down the side, rather than each as high as the screen */
+    #performance .js-performance-plugins .plugin {
+        height: 130px;
+        justify-content: flex-end;
+        overflow: hidden;
+    }
+
+    /* the picture in what is left of it above the name, whatever its shape */
+    #performance .js-performance-plugins .plugin .thumb {
+        flex: 1 1 0;
+        min-height: 0;
+        width: 100%;
+        box-sizing: border-box;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 10px 24px 6px;
+    }
+
+    #performance .js-performance-plugins .plugin .thumb img {
+        min-width: 0;
+        min-height: 0;
+        width: auto;
+        height: auto;
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+    }
 }
