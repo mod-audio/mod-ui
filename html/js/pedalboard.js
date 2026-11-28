@@ -2095,6 +2095,7 @@ JqueryClass('pedalboard', {
                 },
             })
 
+            // appenda standard UI icons like info, delete to plugin gui on the constructor
             var actions = $('<div>').addClass('ignore-arrive').addClass('mod-actions').appendTo(icon)
             if (pluginData.hasExternalUI) {
                 $('<div>').addClass('mod-external-ui').click(function () {
@@ -2103,6 +2104,10 @@ JqueryClass('pedalboard', {
                     return false
                 }).appendTo(actions)
             }
+            $('<div>').addClass('mod-snapshotable-status plugin-global-snapshot').click(function () {
+                self.pedalboard('finishConnection')
+                return false
+            }).appendTo(actions)
             $('<div>').addClass('mod-information').click(function () {
                 self.pedalboard('finishConnection')
                 self.data('showPluginInfo')(pluginData)
@@ -2306,6 +2311,56 @@ JqueryClass('pedalboard', {
 
                 var gui = self.pedalboard('getGui', instance)
                 gui.setPortWidgetsValue(symbol, value, null, true)
+            }
+
+            self.pedalboard('addUniqueCallbackToArrive', cb, targetname, callbackId)
+        }
+    },
+
+    /*
+     * Properties are special values of a port tied with the pedalboard
+     * set port property of a port
+     */
+    setPortPropertyValue: function (instance, symbol, property, value) {
+        var self = $(this)
+        var targetname = '.mod-pedal[mod-instance="'+instance+'"]'
+        var callbackId = instance+'/'+symbol+":property:"+property
+        var gui = self.pedalboard('getGui', instance)
+
+        if (gui && self.find(targetname).length) {
+            gui.setPortPropertyValue(symbol, property, value)
+        } else {
+            var cb = function () {
+                delete self.data('callbacksToArrive')[callbackId]
+                self.unbindArrive(targetname, cb)
+
+                var gui = self.pedalboard('getGui', instance)
+                gui.setPortPropertyValue(symbol, property, value)
+            }
+
+            self.pedalboard('addUniqueCallbackToArrive', cb, targetname, callbackId)
+        }
+    },
+
+    /*
+     * Properties are special values of a parameter tied with the pedalboard
+     * set parameter property of a parameter
+     */
+    setParameterPropertyValue: function (instance, uri, property, value) {
+        var self = $(this)
+        var targetname = '.mod-pedal[mod-instance="'+instance+'"]'
+        var callbackId = instance+'/'+uri+":property:"+property
+        var gui = self.pedalboard('getGui', instance)
+
+        if (gui && self.find(targetname).length) {
+            gui.setParameterPropertyValue(uri, property, value)
+        } else {
+            var cb = function () {
+                delete self.data('callbacksToArrive')[callbackId]
+                self.unbindArrive(targetname, cb)
+
+                var gui = self.pedalboard('getGui', instance)
+                gui.setParameterPropertyValue(uri, property, value)
             }
 
             self.pedalboard('addUniqueCallbackToArrive', cb, targetname, callbackId)

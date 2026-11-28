@@ -77,7 +77,7 @@
     cursor: pointer;
     position: absolute;
     width: 32px;
-    right: 4.5em;
+    right: 6em;
     color: #666;
     transition: color 0.33s;
 }
@@ -85,6 +85,25 @@
     content: '\e800';
 }
 .mod-pedal .mod-actions .mod-external-ui:hover { color: #eee; }
+
+.mod-pedal .mod-actions .mod-snapshotable-status  {
+    font-family: fontello !important;
+    cursor: default;
+    position: absolute;
+    right: 4.5em;
+    transition: color 0.33s;
+    visibility: hidden;
+    color: #666;
+}
+.mod-snapshotable-status:after {
+    content: '\e80e';
+}
+.mod-pedal:hover .mod-actions .mod-snapshotable-status:not(.active) { visibility: visible; }
+
+
+.mod-pedal .mod-actions .mod-snapshotable-status.mixed  {
+    color: #d9534f;
+}
 
 /* = DRAG HANDLE
 ================================================ */
@@ -403,6 +422,39 @@ body.pedalboard-share #pedalboards-library header .pedalboard-file-import:hover 
 
 .preset-manager {
     color: #000;
+}
+
+/* SNAPSHOT STATUS ICON */
+.mod-knob-snapshot-status {
+  position: absolute;
+  left: 1px;
+  top: 4px;
+  cursor: pointer;
+  color: #555;
+}
+
+.mod-knob-snapshot-status :hover {
+  color: #883996;
+}
+
+.mod-knob-snapshot-status.active {
+  /* this color should be in sync with active in performance.less */
+  color: #eee;
+}
+
+.plugin-global-snapshot {
+  cursor: pointer;
+  color: #555;
+  margin-left: 12px;
+}
+
+
+.plugin-global-snapshot.active {
+  color: ghostwhite;
+}
+
+.plugin-global-snapshot.mixed {
+  color: #d9534f;
 }
 
 /* = KNOB

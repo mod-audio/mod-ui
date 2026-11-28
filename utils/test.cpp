@@ -15,7 +15,7 @@
 
 void scanPlugins()
 {
-#if 1
+#if 0
     if (const char* const* const uris = get_plugin_list())
     {
         for (int i=0; uris[i] != nullptr; ++i)
@@ -45,9 +45,10 @@ void scanPlugins()
 #if 1
     if (const char* const* const pedalboards = get_broken_pedalboards())
     {
-        for (int i=0; pedalboards[i] != nullptr; ++i)
+        for (int i=0; pedalboards[i] != nullptr; ++i) {
             // do nothing
-            continue;
+            printf("Broken pedalboard: %s\n", pedalboards[i]);
+        }
     }
 
     if (const PedalboardInfo_Mini* const* const pedalboards = get_all_pedalboards(kPedalboardInfoBoth))
@@ -60,7 +61,39 @@ void scanPlugins()
                 break;
             }
 
-            get_pedalboard_info(pedalboards[i]->bundle);
+            const PedalboardInfo* pedalboard = get_pedalboard_info(pedalboards[i]->bundle);
+
+            printf("Pedalboard '%s' ", pedalboards[i]->bundle);
+            if (pedalboard->plugins == nullptr) {
+                printf("has no plugins\n");
+                continue;
+            }
+
+            printf("plugins:\n");
+            for (int pidx=0; pedalboard->plugins[pidx].valid; ++pidx) {
+                PedalboardPlugin plugin = pedalboard->plugins[pidx];
+                printf("\t '%s'\n", plugin.uri);
+                if (plugin.parameters == nullptr) {
+                    printf("\t\t has no parameters\n");
+                    continue;
+                }
+                for (int paridx=0; plugin.parameters[paridx].valid; ++paridx) {
+                    PedalboardPluginParameter parameter = plugin.parameters[paridx];
+                    printf("\t\t parameter '%s': snapshotable=%s\n", parameter.uri, parameter.snapshotable ? "true" : "false");
+                }
+
+                // dump the ports
+                if (plugin.ports == nullptr) {
+                    printf("\t\t has no ports\n");
+                    continue;
+                }
+                for (int portidx=0; plugin.ports[portidx].valid; ++portidx) {
+                    PedalboardPluginPort port = plugin.ports[portidx];
+                    printf("\t\t port '%s': snapshotable=%s\n", port.symbol, port.snapshotable ? "true" : "false");
+                }
+            }
+            printf("\n");
+
             get_pedalboard_size(pedalboards[i]->bundle);
             get_pedalboard_plugin_values(pedalboards[i]->bundle);
         }

@@ -3772,6 +3772,13 @@ static void _clear_pedalboard_info(PedalboardInfo& info)
                     lilv_free((void*)p.ports[j].symbol);
                 delete[] p.ports;
             }
+
+            if (p.parameters != nullptr)
+            {
+                for (int j=0; p.parameters[j].valid; ++j)
+                    lilv_free((void*)p.parameters[j].uri);
+                delete[] p.parameters;
+            }
         }
         delete[] info.plugins;
     }
@@ -4960,6 +4967,7 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
     LilvNode* const lv2_minimum     = lilv_new_uri(w, LV2_CORE__minimum);
     LilvNode* const lv2_name        = lilv_new_uri(w, LV2_CORE__name);
     LilvNode* const lv2_port        = lilv_new_uri(w, LV2_CORE__port);
+    LilvNode* const patch_writable  = lilv_new_uri(w, LV2_PATCH__writable);
     LilvNode* const lv2_prototype   = lilv_new_uri(w, LV2_CORE__prototype);
     LilvNode* const midi_binding    = lilv_new_uri(w, LV2_MIDI__binding);
     LilvNode* const midi_channel    = lilv_new_uri(w, LV2_MIDI__channel);
@@ -4977,6 +4985,9 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
     LilvNode* const modperf_visible = lilv_new_uri(w, LILV_NS_MODPERFORMANCE "visible");
     LilvNode* const modperf_index = lilv_new_uri(w, LILV_NS_MODPERFORMANCE "index");
     LilvNode* const mod_label = lilv_new_uri(w, LILV_NS_MOD "label");
+    LilvNode* const modpedal_snapshotable = lilv_new_uri(w, LILV_NS_MODPEDAL "snapshotable");
+    LilvNode* const modpedal_enabledSnapshotable = lilv_new_uri(w, LILV_NS_MODPEDAL "enabledSnapshotable");
+    LilvNode* const modpedal_presetSnapshotable = lilv_new_uri(w, LILV_NS_MODPEDAL "presetSnapshotable");
 
     // --------------------------------------------------------------------------------------------------------
     // uri node (ie, "this")
@@ -5072,6 +5083,9 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
                         lilv_node_free(node);
                     }
 
+                    bool bypassSnapshotable = true;
+                    bool presetSnapshotable = true;
+
                     if (strstr(full_instance, bundlepath) != nullptr)
                         instance = strdup(full_instance+(bundlepathsize+1));
                     else
@@ -5085,6 +5099,23 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
 
                     PedalboardMidiControl bypassCC = { -1, 0, false, 0.0f, 1.0f };
                     PedalboardPluginPort* ports = nullptr;
+                    PedalboardPluginParameter* parameters = nullptr;
+
+                    if (LilvNode* const node = lilv_world_get(w, block, modpedal_enabledSnapshotable, nullptr))
+                    {
+                        bypassSnapshotable = lilv_node_as_bool(node);
+                        lilv_node_free(node);
+                    }
+                    else
+                        bypassSnapshotable = true; // default true
+
+                    if (LilvNode* const node = lilv_world_get(w, block, modpedal_presetSnapshotable, nullptr))
+                    {
+                        presetSnapshotable = lilv_node_as_bool(node);
+                        lilv_node_free(node);
+                    }
+                    else
+                        presetSnapshotable = true; // default true
 
                     if (LilvNodes* const portnodes = lilv_world_find_nodes(w, block, lv2_port, nullptr))
                     {
@@ -5109,6 +5140,8 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
                               uint8_t mctrl = 0;
                               float minimum = 0.0f, maximum = 1.0f;
                               bool hasRanges = false;
+                              bool snapshotable = true;
+
 
                               if (LilvNode* const bind = lilv_world_get(w, portnode, midi_binding, nullptr))
                               {
@@ -5147,6 +5180,14 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
 
                               char* portsymbol = lilv_file_uri_parse2(lilv_node_as_string(portnode), nullptr);
 
+                              if (LilvNode* const snapshotablevalue = lilv_world_get(w, portnode, modpedal_snapshotable, nullptr))
+                              {
+                                snapshotable = lilv_node_as_bool(snapshotablevalue);
+                                lilv_node_free(snapshotablevalue);
+                              }
+                              else
+                                snapshotable = true; // default true
+
                               if (strstr(portsymbol, full_instance) != nullptr)
                                   memmove(portsymbol, portsymbol+(full_instance_size+1), strlen(portsymbol)-full_instance_size);
 
@@ -5162,7 +5203,8 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
                                       true,
                                       portsymbol,
                                       lilv_node_as_float(portvalue),
-                                      { mchan, mctrl, hasRanges, minimum, maximum }
+                                      { mchan, mctrl, hasRanges, minimum, maximum },
+                                      snapshotable
                                   };
                               }
 
@@ -5170,6 +5212,55 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
                         }
 
                         lilv_nodes_free(portnodes);
+                    }
+
+                    if (LilvNodes* const parameternodes = lilv_world_find_nodes(w, block, patch_writable, nullptr))
+                    {
+                        unsigned int parametercount = lilv_nodes_size(parameternodes);
+
+                        parameters = new PedalboardPluginParameter[parametercount+1];
+                        memset(parameters, 0, sizeof(PedalboardPluginParameter) * (parametercount+1));
+
+                        const size_t full_instance_size = strlen(full_instance);
+
+                        parametercount = 0;
+                        LILV_FOREACH(nodes, itparameter, parameternodes)
+                        {
+                            const LilvNode* const parameternode = lilv_nodes_get(parameternodes, itparameter);
+                            bool snapshotable = true;
+                            char* parameteruri = lilv_file_uri_parse2(lilv_node_as_string(parameternode), nullptr);
+
+                            // get the parameter uri without the instance prefix; anything else is not one of
+                            // this plugin's parameters (like the "<>" older builds wrote for a plugin without any)
+                            if (parameteruri == nullptr || strncmp(parameteruri, full_instance, full_instance_size) != 0 || parameteruri[full_instance_size] != '#')
+                            {
+                                lilv_free(parameteruri);
+                                continue;
+                            }
+                            memmove(parameteruri, parameteruri+(full_instance_size+1), strlen(parameteruri)-full_instance_size);
+
+                            if (LilvNode* const snapshotablevalue = lilv_world_get(w, parameternode, modpedal_snapshotable, nullptr))
+                            {
+                                snapshotable = lilv_node_as_bool(snapshotablevalue);
+                                lilv_node_free(snapshotablevalue);
+                            }
+                            else
+                                snapshotable = true; // default true
+                          
+                            parameters[parametercount++] = {
+                                true,
+                                parameteruri,
+                                false, // TODO: support for readable parameters, for now we scan just patch:writable parameters
+                                true,  // parameter is writable
+                                snapshotable
+                            };
+                        }
+
+                        lilv_nodes_free(parameternodes);
+                    }
+                    else
+                    {
+                        printf("NOTICE: No parameters found for plugin '%s'\n", LV2_CORE__port);
                     }
 
                     PerformancePluginInfo performanceInfo = {
@@ -5180,6 +5271,7 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
                     plugs[count++] = {
                         true,
                         enabled != nullptr ? !lilv_node_as_bool(enabled) : true,
+                        bypassSnapshotable,
                         instId != nullptr ? lilv_node_as_int(instId) : -1,
                         instance,
                         strdup(uri),
@@ -5187,7 +5279,9 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
                         x != nullptr ? lilv_node_as_float(x) : 0.0f,
                         y != nullptr ? lilv_node_as_float(y) : 0.0f,
                         ports,
+                        parameters,
                         (preset != nullptr && !lilv_node_equals(preset, urinode)) ? strdup(lilv_node_as_uri(preset)) : nc,
+                        presetSnapshotable,
                         label == nullptr ? nc : label,
                         performanceInfo
                     };
@@ -5626,6 +5720,7 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
     lilv_node_free(lv2_minimum);
     lilv_node_free(lv2_name);
     lilv_node_free(lv2_port);
+    lilv_node_free(patch_writable);
     lilv_node_free(lv2_prototype);
     lilv_node_free(midi_binding);
     lilv_node_free(midi_channel);
@@ -5642,6 +5737,9 @@ const PedalboardInfo* get_pedalboard_info(const char* const bundle)
     lilv_node_free(modperf_visible);
     lilv_node_free(modperf_index);
     lilv_node_free(mod_label);
+    lilv_node_free(modpedal_snapshotable);
+    lilv_node_free(modpedal_enabledSnapshotable);
+    lilv_node_free(modpedal_presetSnapshotable);
     lilv_node_free(rdftypenode);
     lilv_world_free(w);
 

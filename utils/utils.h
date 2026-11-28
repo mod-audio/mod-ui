@@ -246,7 +246,16 @@ typedef struct {
     const char* symbol;
     float value;
     PedalboardMidiControl midiCC;
+    bool snapshotable; // if true, this port is snapshotable
 } PedalboardPluginPort;
+
+typedef struct {
+    bool valid;
+    const char* uri;
+    bool readable;
+    bool writable;
+    bool snapshotable; // if true, this parameter is snapshotable
+} PedalboardPluginParameter;
 
 typedef struct  {
     bool visible;
@@ -256,6 +265,7 @@ typedef struct  {
 typedef struct {
     bool valid;
     bool bypassed;
+    bool bypass_snapshotable;
     int instanceNumber;
     const char* instance;
     const char* uri;
@@ -263,7 +273,9 @@ typedef struct {
     float x;
     float y;
     const PedalboardPluginPort* ports;
+    const PedalboardPluginParameter* parameters;
     const char* preset;
+    bool preset_snapshotable;
     const char *label;
     PerformancePluginInfo performance;
 } PedalboardPlugin;

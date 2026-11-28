@@ -2229,6 +2229,20 @@ class Host(object):
                 if crashed:
                     self.send_notmodified("param_set %d %s %f" % (instance_id, symbol, value))
 
+            # send port properties like snapshotable
+            for symbol, props in pluginData['portsprops'].items():
+                websocket.write_message("port_prop_set %s %s %s %s" % (pluginData['instance'], symbol, "snapshotable", "1" if props['snapshotable'] else "0"))
+
+                if crashed:
+                    self.send_notmodified("port_prop_set %d %s %s %s" % (instance_id, symbol, "snapshotable", "1" if props['snapshotable'] else "0"))
+
+            # send parameter properties like snapshotable
+            for uri, props in pluginData['paramsprops'].items():
+                websocket.write_message("param_prop_set %s %s %s %s" % (pluginData['instance'], uri, "snapshotable", "1" if props['snapshotable'] else "0"))
+
+                if crashed:
+                    self.send_notmodified("param_prop_set %d %s %s %s" % (instance_id, uri, "snapshotable", "1" if props['snapshotable'] else "0"))
+
             for symbol, value in pluginData['outputs'].items():
                 if value is None:
                     continue
@@ -2538,17 +2552,26 @@ class Host(object):
             valports = {}
             params = {}
             ranges = {}
-
+            portsprops = dict() # port properties (snapshot, ...)
+            paramsprops = dict() # parameter properties (snapshot, ...)
             enabled_symbol = None
             freewheel_symbol = None
             bpb_symbol = None
             bpm_symbol = None
             speed_symbol = None
 
+            # default for special ports symbols
+            portsprops[':bypass'] = {'snapshotable': False}
+            portsprops[':presets'] = {'snapshotable': False}
+
             for port in extinfo['controlInputs']:
                 symbol = port['symbol']
                 valports[symbol] = port['ranges']['default']
                 ranges[symbol] = (port['ranges']['minimum'], port['ranges']['maximum'])
+                # snapshot property defaults to False when adding a new plugin
+                # this is different from previous behaviour, before all ports
+                # were snapshotable, now we need to activate this functionality
+                portsprops[symbol] = {'snapshotable': port.get('snapshotable', False)}
 
                 # skip notOnGUI controls
                 if "notOnGUI" in port['properties']:
@@ -2603,7 +2626,12 @@ class Host(object):
                     continue
                 if paramtype not in ('s','p','u') and param['ranges']['minimum'] == param['ranges']['maximum']:
                     continue
+
                 paramuri = param['uri']
+                # snapshot property defaults to False when adding a new plugin
+                # this is different from previous behaviour, before all ports
+                # were snapshotable, now we need to activate this functionality
+                paramsprops[paramuri] = {'snapshotable': param.get('snapshotable', False)}
                 params[paramuri] = [param['ranges']['default'], paramtype]
                 ranges[paramuri] = (param['ranges']['minimum'], param['ranges']['maximum'])
 
@@ -2641,7 +2669,9 @@ class Host(object):
                 "sversion"    : sversion,
                 "label"       : "", #initial label value
                 "slabel"       : "",
-                "performance" : dict(visible=performanceInfo.visible, index=performanceInfo.index) #  extinfo['performance']
+                "performance" : dict(visible=performanceInfo.visible, index=performanceInfo.index), #  extinfo['performance']
+                "portsprops"  : portsprops,
+                "paramsprops" : paramsprops
             }
 
             for output in extinfo['monitoredOutputs']:
@@ -2846,6 +2876,107 @@ class Host(object):
 
         pluginData['label'] = label
         pluginData['slabel'] = label.replace(" ","_")
+
+    def set_port_prop(self, instance, portSymbol, propertyName, value):
+        instance_id = self.mapper.get_id_without_creating(instance)
+        pluginData  = self.plugins[instance_id]
+        portprop = pluginData['portsprops'].get(portSymbol, None)
+        if portprop is None:
+            logging.error("[host] Trying to modify a non-existing port '%s' of instance '%s'", portSymbol, instance)
+            return
+
+        logging.info("[host] modify port '%s' of instance '%s': %s", portSymbol, instance, value)
+        
+        if (propertyName == "snapshotable"):
+            parsedValue =  True if value in (1, True, "1", "true", "True") else False
+            portprop[propertyName] = parsedValue
+
+            # if parseValue is true we should add/update the current port value to all snapshots
+            # if parseValue is False we don't have anything to do since not snapshot-able ports are filtered on snapshot load
+            if parsedValue == True:
+                # for every snapshot
+                instance = instance.replace("/graph/","",1)
+                for snapshot in self.pedalboard_snapshots:
+                    if snapshot is None:
+                        continue
+
+                    data = snapshot['data']
+                    # search for this plugin instance
+                    snapshotData = data.get(instance, None)
+                    if snapshotData is None:
+                        logging.warning("[host] snapshot %s plugin %s not found", snapshot['name'], instance)
+                        continue
+
+                    # patching snapshot addind/updating just this port
+                    if portSymbol == ":bypass":
+                        snapshotData['bypassed'] = pluginData['bypassed']
+                    elif portSymbol == ":presets":
+                        snapshotData['preset'] = pluginData['preset']
+                    else:
+                        ports =  pluginData['ports']
+                        portValue = ports.get(portSymbol, None)
+                        # logging.debug("snapshot %s plugin %s port %s value %s", snapshot['name'], instance, portSymbol, portValue)
+                        if portValue is None:
+                            logging.warning("[host] snapshot %s plugin %s port %s value not found", snapshot['name'], instance, portSymbol)
+                            continue # next snapshot
+
+                        # logging.debug("snapshot %s patching plugin %s port %s value %s", snapshot['name'], instance, portSymbol, portValue)
+                        snapshotData['ports'][portSymbol] = portValue
+
+                self.save_snapshots_to_disk()
+        else:
+            logging.error("[host] Trying to modify an unknown port property '%s'", propertyName)
+            parsedValue = None
+
+        return parsedValue
+
+    def set_param_prop(self, instance, paramUri, propertyName, value):
+        instance_id = self.mapper.get_id_without_creating(instance)
+        pluginData  = self.plugins[instance_id]
+        paramprops = pluginData['paramsprops'].get(paramUri, None)
+        if paramprops is None:
+            logging.error("[host] Trying to modify a non-existing parameter '%s' of instance '%s'", paramUri, instance)
+            return
+
+        logging.info("[host] modify property '%s' of parameter '%s' of instance '%s': %s", propertyName, paramUri, instance, value)
+
+        if (propertyName == "snapshotable"):
+            parsedValue =  True if value in (1, True, "1", "true", "True") else False
+            paramprops[propertyName] = parsedValue
+
+            # if parseValue is true we should add/update the current port value to all snapshots
+            # if parseValue is False we don't have anything to do since not snapshot-able ports are filtered on snapshot load
+            if parsedValue == True:
+                # for every snapshot
+                instance = instance.replace("/graph/","",1)
+                for snapshot in self.pedalboard_snapshots:
+                    if snapshot is None:
+                        continue
+
+                    data = snapshot['data']
+                    # search for this plugin instance
+                    snapshotData = data.get(instance, None)
+                    if snapshotData is None:
+                        logging.warning("[host] snapshot %s plugin %s not found", snapshot['name'], instance)
+                        continue
+
+                    # patching snapshot addind/updating just this port
+                    parameters =  pluginData['parameters']
+                    parameterValue = parameters.get(paramUri, None)
+                    logging.debug("snapshot %s plugin %s parameter %s value %s", snapshot['name'], instance, paramUri, parameterValue)
+                    if parameterValue is None:
+                        logging.warning("[host] snapshot %s plugin %s parameter %s value not found", snapshot['name'], instance, paramUri)
+                        continue # next snapshot
+
+                    logging.debug("snapshot %s patching plugin %s parameter %s value %s", snapshot['name'], instance, paramUri, parameterValue)
+                    snapshotData['parameters'][paramUri] = parameterValue
+
+                self.save_snapshots_to_disk()
+        else:
+            logging.error("[host] Trying to modify an unknown parameter property '%s'", propertyName)
+            parsedValue = None
+
+        return parsedValue
 
     def set_performance_plugin_visibility(self, instance, visible):
         instance_id = self.mapper.get_id_without_creating(instance)
@@ -3378,40 +3509,10 @@ class Host(object):
 
         return True
 
-    # helper function for gen.Task, which has troubles calling into a coroutine directly
-    def snapshot_load_gen_helper(self, idx, from_hmi, abort_catcher, callback):
-        self.snapshot_load(idx, from_hmi, abort_catcher, callback)
-
     @gen.coroutine
-    def snapshot_load(self, idx, from_hmi, abort_catcher, callback):
-        if idx in (self.HMI_SNAPSHOTS_1, self.HMI_SNAPSHOTS_2, self.HMI_SNAPSHOTS_3):
-            idx = abs(idx + self.HMI_SNAPSHOTS_OFFSET)
-            snapshot = self.hmi_snapshots[idx]
-            is_hmi_snapshot = True
-
-            if snapshot is None:
-                logging.error("[host] Asked to load an invalid HMI preset, number %d", idx)
-                callback(False)
-                return
-
-        else:
-            if idx < 0 or idx >= len(self.pedalboard_snapshots):
-                callback(False)
-                return
-
-            snapshot = self.pedalboard_snapshots[idx]
-            is_hmi_snapshot = False
-
-            if snapshot is None:
-                logging.error("[host] Asked to load an invalid pedalboard snapshot, number %d", idx)
-                callback(False)
-                return
-
-            self.current_pedalboard_snapshot_id = idx
-            self.plugins[PEDALBOARD_INSTANCE_ID]['preset'] = "file:///%i" % idx
-
-        was_aborted = self.addressings.was_last_load_current_aborted()
+    def snapshot_load_parameters(self, snapshot, from_hmi, is_hmi_snapshot, abort_catcher, force_load_params, callback):
         used_actuators = []
+        was_aborted = self.addressings.was_last_load_current_aborted()
 
         for instance, data in snapshot['data'].items():
             if abort_catcher.get('abort', False):
@@ -3427,6 +3528,12 @@ class Host(object):
             except KeyError:
                 continue
 
+            portsprops = pluginData['portsprops']
+            paramsprops = pluginData['paramsprops']
+            # check if bypass is snapshotable
+            bypassSnapshotable = force_load_params or portsprops[':bypass'].get('snapshotable', False)
+            presetSnapshotable = force_load_params or portsprops[':presets'].get('snapshotable', False)
+            
             addressing = pluginData['addressings'].get(":bypass", None)
             diffBypass = (self.should_save_addressing_value(addressing, pluginData['bypassed']) and
                           pluginData['bypassed'] != data['bypassed'])
@@ -3438,15 +3545,16 @@ class Host(object):
                     if addressing['actuator_uri'] not in used_actuators:
                         used_actuators.append(addressing['actuator_uri'])
 
-            # if bypassed, do it now
-            if diffBypass and data['bypassed']:
+            # if snapshotable and bypassed, do it now
+            if bypassSnapshotable and diffBypass and data['bypassed']:
                 self.msg_callback("param_set %s :bypass 1.0" % (instance,))
                 try:
                     yield gen.Task(self.bypass, instance, True)
                 except Exception as e:
                     logging.exception(e)
 
-            if was_aborted or diffPreset:
+            # load preset if snapshotable
+            if presetSnapshotable and (was_aborted or diffPreset):
                 try:
                     index = pluginData['mapPresets'].index(data['preset'])
                 except ValueError:
@@ -3459,6 +3567,7 @@ class Host(object):
                         except Exception as e:
                             logging.exception(e)
 
+                    # FIXME: should this code executed even if preset is not snapshotable?
                     addressing = pluginData['addressings'].get(":presets", None)
                     if addressing is not None:
                         addressing['value'] = index
@@ -3471,8 +3580,14 @@ class Host(object):
                                     if actuator_uri not in used_actuators:
                                         used_actuators.append(actuator_uri)
 
+            # load port values from snapshot
             for symbol, value in data['ports'].items():
                 if symbol in pluginData['designations']:
+                    continue
+
+                # don't set parameters if port is not snapshotable
+                if force_load_params == False and portsprops[symbol].get('snapshotable', False) == False:
+                    logging.info("load snapshot %s port %s.%s is not snapshotable", snapshot['name'], instance, symbol)
                     continue
 
                 addressing = pluginData['addressings'].get(symbol, None)
@@ -3506,19 +3621,25 @@ class Host(object):
             for uri, param in data.get('parameters', {}).items():
                 if pluginData['parameters'].get(uri, None) in (param, None):
                     continue
+
+                if force_load_params == False and paramsprops[uri].get('snapshotable', False) == False:
+                    logging.info("load snapshot %s parameter %s.%s is not snapshotable", snapshot['name'], instance, uri)
+                    continue
+
                 self.msg_callback("patch_set %s 1 %s %s %s" % (instance, uri, param[1], param[0]))
                 try:
                     yield gen.Task(self.patch_set, instance, uri, param[0])
                 except Exception as e:
                     logging.exception(e)
 
-            # if not bypassed (enabled), do it at the end
-            if diffBypass and not data['bypassed']:
+            # if snapshotable and not bypassed (enabled), do it at the end
+            if bypassSnapshotable and diffBypass and not data['bypassed']:
                 self.msg_callback("param_set %s :bypass 0.0" % (instance,))
                 try:
                     yield gen.Task(self.bypass, instance, False)
                 except Exception as e:
                     logging.exception(e)
+
 
         if abort_catcher.get('abort', False):
             callback(False)
@@ -3530,6 +3651,41 @@ class Host(object):
             skippedPort = (PEDALBOARD_INSTANCE_ID, ":presets")
 
         self.addressings.load_current(used_actuators, skippedPort, True, from_hmi, abort_catcher)
+
+
+    # helper function for gen.Task, which has troubles calling into a coroutine directly
+    def snapshot_load_gen_helper(self, idx, from_hmi, abort_catcher, callback):
+        self.snapshot_load(idx, from_hmi, abort_catcher, callback)
+
+    @gen.coroutine
+    def snapshot_load(self, idx, from_hmi, abort_catcher, callback):
+        if idx in (self.HMI_SNAPSHOTS_1, self.HMI_SNAPSHOTS_2, self.HMI_SNAPSHOTS_3):
+            idx = abs(idx + self.HMI_SNAPSHOTS_OFFSET)
+            snapshot = self.hmi_snapshots[idx]
+            is_hmi_snapshot = True
+
+            if snapshot is None:
+                logging.error("[host] Asked to load an invalid HMI preset, number %d", idx)
+                callback(False)
+                return
+
+        else:
+            if idx < 0 or idx >= len(self.pedalboard_snapshots):
+                callback(False)
+                return
+
+            snapshot = self.pedalboard_snapshots[idx]
+            is_hmi_snapshot = False
+
+            if snapshot is None:
+                logging.error("[host] Asked to load an invalid pedalboard snapshot, number %d", idx)
+                callback(False)
+                return
+
+            self.current_pedalboard_snapshot_id = idx
+            self.plugins[PEDALBOARD_INSTANCE_ID]['preset'] = "file:///%i" % idx
+
+        self.snapshot_load_parameters(snapshot, from_hmi, is_hmi_snapshot, abort_catcher, False, callback)
 
         if not is_hmi_snapshot:
             name = self.snapshot_name() or DEFAULT_SNAPSHOT_NAME
@@ -4132,17 +4288,24 @@ class Host(object):
             valports = {}
             params = {}
             ranges = {}
-
+            portsprops = dict() # symbol: {property, value}
+            paramsprops = dict() # uri: {property, value}
             enabled_symbol = None
             freewheel_symbol = None
             bpb_symbol = None
             bpm_symbol = None
             speed_symbol = None
 
+            # read from the pedalboard, default to True if not present to be consistent with previous snapshot behaviour
+            portsprops[':bypass'] = {'snapshotable': p.get('bypass_snapshotable', True)}
+            portsprops[':presets'] = {'snapshotable':  p.get('preset_snapshotable', True)}
+
             for port in extinfo['controlInputs']:
                 symbol = port['symbol']
                 valports[symbol] = port['ranges']['default']
                 ranges[symbol] = (port['ranges']['minimum'], port['ranges']['maximum'])
+                # default for port properties (e.g. if port is snapshotable), current value is read from config below
+                portsprops[symbol] = {'snapshotable': False}
 
                 # skip notOnGUI controls
                 if "notOnGUI" in port['properties']:
@@ -4198,6 +4361,8 @@ class Host(object):
                 if paramtype not in ('s','p','u') and param['ranges']['minimum'] == param['ranges']['maximum']:
                     continue
                 paramuri = param['uri']
+                # default for port properties (e.g. if port is snapshotable), current value is read from config below
+                paramsprops[paramuri] = {'snapshotable': False}
                 params[paramuri] = [param['ranges']['default'], paramtype]
                 ranges[paramuri] = (param['ranges']['minimum'], param['ranges']['maximum'])
 
@@ -4231,7 +4396,9 @@ class Host(object):
                                                           extinfo['release'])),
                 "label"       : p['label'],
                 "slabel"      : p['label'].replace(' ', '_') if p['label'] is not None else "", # replace spaces with _
-                "performance" : dict((prop, p['performance'].get(prop)) for prop in p['performance'].keys())
+                "performance" : dict((prop, p['performance'].get(prop)) for prop in p['performance'].keys()),
+                "portsprops" : portsprops,
+                "paramsprops": paramsprops,
             }
 
             self.send_notmodified("add %s %d" % (p['uri'], instance_id))
@@ -4261,8 +4428,17 @@ class Host(object):
             for port in p['ports']:
                 symbol = port['symbol']
                 value  = port['value']
-
+                # snapshot property defaults to True when loading old pedalboards
+                # which don't have this property saved. This is consinstent with
+                # the previous behaviour.
+                snapshot = port.get('snapshotable', True)
                 oldValue = pluginData['ports'].get(symbol, None)
+
+                # store the snapshotable property read from the pedalboard .ttl file
+                if symbol not in pluginData['portsprops']:
+                    logging.warning("[host] port '%s' not found in plugin '%s' portsprops, skipping snapshotable property" % (symbol, instance))
+                else:
+                    pluginData['portsprops'][symbol]['snapshotable'] = snapshot
 
                 if oldValue is None:
                     continue
@@ -4275,6 +4451,8 @@ class Host(object):
 
                 if oldValue != value:
                     pluginData['ports'][symbol] = value
+                    # send value to web ui even if the port is snapshotted, this is the default state
+                    # when loading a pedalboard, the snapshot state will be applied later
                     self.send_notmodified("param_set %d %s %f" % (instance_id, symbol, value))
                     self.msg_callback("param_set %s %s %f" % (instance, symbol, value))
 
@@ -4295,6 +4473,22 @@ class Host(object):
                     pluginData['midiCCs'][symbol] = (mchnnl, mctrl, minimum, maximum)
                     pluginData['addressings'][symbol] = self.addressings.add_midi(instance_id, symbol,
                                                                                   mchnnl, mctrl, minimum, maximum)
+
+            # read the parameter properties from the pedalboard .ttl file and set them in the pluginData dictionary
+            for parameter in p['parameters']:
+                logging.debug("[host] loading parameter '%s' from %s" % (parameter, pluginData['paramsprops']))
+                # the parameter URI contains just the name of the parameter, we need to prepend the plugin URI to get the full URI
+                uri = p['uri'] + '#' + parameter['uri']
+                # snapshot property defaults to True when loading old pedalboards
+                # which don't have this property saved. This is consinstent with
+                # the previous behaviour.
+                snapshot = parameter.get('snapshotable', True)
+                # set the snapshotable property read from the pedalboard .ttl file
+                if uri not in pluginData['paramsprops']:
+                    logging.warning("[host] parameter '%s' not found in plugin '%s' paramsprops, skipping snapshotable property" % (uri, instance))
+                else:
+                    logging.debug("[host] setting parameter '%s' snapshotable property to %s" % (uri, snapshot))
+                    pluginData['paramsprops'][uri]['snapshotable'] = snapshot
 
             for output in extinfo['monitoredOutputs']:
                 self.send_notmodified("monitor_output %d %s" % (instance_id, output))
@@ -4509,17 +4703,23 @@ _:b%i
 
         # Blocks (plugins)
         blocks = ""
+
         for instance_id, pluginData in self.plugins.items():
             if instance_id == PEDALBOARD_INSTANCE_ID:
                 continue
 
+            enabledSnapshotable = pluginData['portsprops'][':bypass'].get('snapshotable', False)
+            presetSnapshotable = pluginData['portsprops'][':presets'].get('snapshotable', False)
             info = get_plugin_info(pluginData['uri'])
             instance = pluginData['instance'].replace("/graph/","",1)
+            writables = tuple("%s#%s" % (instance, parameter['uri'].partition("#")[2])
+                              for parameter in info['parameters'] if parameter['uri'].partition("#")[2])
             blocks += """
 <%s>
     ingen:canvasX %.1f ;
     ingen:canvasY %.1f ;
     ingen:enabled %s ;
+    pedal:enabledSnapshotable %s ;
     ingen:polyphonic false ;
     lv2:microVersion %i ;
     lv2:minorVersion %i ;
@@ -4527,13 +4727,14 @@ _:b%i
     mod:releaseNumber %i ;
     pedal:instanceLabel "%s" ;
     lv2:port <%s> ;
-    lv2:prototype <%s> ;
+%s    lv2:prototype <%s> ;
     pedal:performanceVisible %s ;
     pedal:performanceIndex %i ;
     pedal:instanceNumber %i ;
     pedal:preset <%s> ;
+    pedal:presetSnapshotable %s ;
     a ingen:Block .
-""" % (instance, pluginData['x'], pluginData['y'], "false" if pluginData['bypassed'] else "true",
+""" % (instance, pluginData['x'], pluginData['y'], "false" if pluginData['bypassed'] else "true", "true" if enabledSnapshotable else "false",
        info['microVersion'], info['minorVersion'], info['builder'], info['release'], pluginData['label'].replace('\\','\\\\').replace('"','\\"'),
        "> ,\n             <".join(tuple("%s/%s" % (instance, port['symbol']) for port in (info['ports']['audio']['input']+
                                                                                           info['ports']['audio']['output']+
@@ -4544,11 +4745,14 @@ _:b%i
                                                                                           info['ports']['midi']['input']+
                                                                                           info['ports']['midi']['output']+
                                                                                           [{'symbol': ":bypass"}]))),
+       # no patch:writable without parameters: an empty "<>" would be the pedalboard file itself
+       "    patch:writable <%s> ;\n" % "> ,\n             <".join(writables) if writables else "",
        pluginData['uri'],
        "true" if pluginData['performance']['visible'] else "false",
        pluginData['performance']['index'],
        instance_id,
-       pluginData['preset'])
+       pluginData['preset'],
+       "true" if presetSnapshotable else "false")
 
             # audio input
             for port in info['ports']['audio']['input']:
@@ -4604,12 +4808,14 @@ _:b%i
 
             # control input, save values
             for symbol, value in pluginData['ports'].items():
+                snapshotable = pluginData['portsprops'][symbol].get('snapshotable', False)
                 blocks += """
 <%s/%s>
-    ingen:value %f ;%s
+    ingen:value %f ;
+    pedal:snapshotable %s ;%s
     a lv2:ControlPort ,
         lv2:InputPort .
-""" % (instance, symbol, value,
+""" % (instance, symbol, value, 'true' if snapshotable else 'false',
        ("""
     midi:binding [
         midi:channel %i ;
@@ -4629,16 +4835,33 @@ _:b%i
 
             blocks += """
 <%s/:bypass>
-    ingen:value %i ;%s
+    ingen:value %i ;
+    pedal:snapshotable %s ;%s
     a lv2:ControlPort ,
         lv2:InputPort .
-""" % (instance, 1 if pluginData['bypassed'] else 0,
+""" % (instance, 1 if pluginData['bypassed'] else 0, 'true' if enabledSnapshotable else 'false',
        ("""
     midi:binding [
         midi:channel %i ;
         midi:controllerNumber %i ;
         a midi:Controller ;
     ] ;""" % pluginData['bypassCC']) if -1 not in pluginData['bypassCC'] else "")
+
+            # parameters
+            for parameter in info['parameters']:
+                uri = parameter['uri']
+                paramname = uri.partition("#")[2]
+                if not paramname:
+                    logging.error("[host] parameter %s has no name, skipping" % (uri))
+                    continue
+
+                logging.debug("[host] saving plugin parameter %s" % (paramname))
+                snapshotable = pluginData['paramsprops'][uri].get('snapshotable', False)
+                blocks += """
+<%s#%s>
+    pedal:snapshotable %s ;
+    a lv2:Parameter .
+""" % (instance, paramname, 'true' if snapshotable else 'false')
 
         # Globak Ports
         pluginData = self.plugins[PEDALBOARD_INSTANCE_ID]
@@ -4865,6 +5088,7 @@ _:b%i
 @prefix mod:   <http://moddevices.com/ns/mod#> .
 @prefix pedal: <http://moddevices.com/ns/modpedal#> .
 @prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix patch: <http://lv2plug.in/ns/ext/patch#> .
 %s%s%s
 <>
     doap:name "%s" ;
